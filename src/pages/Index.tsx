@@ -1,11 +1,13 @@
+
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, UserIcon, FileTextIcon, CreditCardIcon, BarChartIcon } from "lucide-react";
+import { PlusIcon, UserIcon, FileTextIcon, CreditCardIcon, BarChartIcon, WalletIcon, ReceiptIcon, UsersIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { EmployeeTable } from "@/components/EmployeeTable";
 import { RecurringBilling } from "@/components/RecurringBilling";
-import { InvoiceList } from "@/components/InvoiceList";
+import { ClientTable } from "@/components/ClientTable";
+import { CashFlow } from "@/components/CashFlow";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -58,8 +60,9 @@ const Index = () => {
           {[
             { id: "overview", icon: BarChartIcon, label: "Visão Geral" },
             { id: "clients", icon: UserIcon, label: "Clientes" },
-            { id: "invoices", icon: FileTextIcon, label: "Faturas" },
-            { id: "payments", icon: CreditCardIcon, label: "Pagamentos" },
+            { id: "employees", icon: UsersIcon, label: "Funcionários" },
+            { id: "receivables", icon: ReceiptIcon, label: "Recebimentos" },
+            { id: "cashflow", icon: WalletIcon, label: "Fluxo de Caixa" },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
@@ -88,27 +91,31 @@ const Index = () => {
           >
             {activeTab === "overview" && (
               <>
+                <CashFlow />
                 <EmployeeTable />
                 <RecurringBilling />
               </>
             )}
-            {activeTab === "clients" && (
-              <Card className="p-6">
-                <p className="text-lg font-display">Gestão de Clientes</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Gerencie seus clientes e visualize o histórico de faturamento.
-                </p>
-              </Card>
+            {activeTab === "clients" && <ClientTable />}
+            {activeTab === "employees" && <EmployeeTable />}
+            {activeTab === "receivables" && (
+              <>
+                <RecurringBilling />
+                <Card className="mt-6">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle className="text-xl font-display">Cobranças Pontuais</CardTitle>
+                    <Button size="sm">
+                      <PlusIcon className="h-4 w-4 mr-2" />
+                      Nova Cobrança
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Implementação da tabela de cobranças pontuais virá aqui */}
+                  </CardContent>
+                </Card>
+              </>
             )}
-            {activeTab === "invoices" && <InvoiceList />}
-            {activeTab === "payments" && (
-              <Card className="p-6">
-                <p className="text-lg font-display">Acompanhamento de Pagamentos</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Acompanhe o status dos pagamentos e cobranças.
-                </p>
-              </Card>
-            )}
+            {activeTab === "cashflow" && <CashFlow />}
           </motion.div>
         </AnimatePresence>
       </main>
