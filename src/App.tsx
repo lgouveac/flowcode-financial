@@ -10,6 +10,7 @@ import { ClientTable } from "@/components/ClientTable";
 import { EmployeeTable } from "@/components/EmployeeTable";
 import { RecurringBilling } from "@/components/RecurringBilling";
 import { CashFlow } from "@/components/CashFlow";
+import { Emails } from "./pages/Emails";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="clients" element={<ClientTable />} />
             <Route path="employees" element={<EmployeeTable />} />
             <Route path="receivables" element={<RecurringBilling />} />
+            <Route path="emails" element={<Emails />} />
             <Route path="cashflow" element={<CashFlow showChart={true} />} />
           </Route>
           <Route path="*" element={<NotFound />} />

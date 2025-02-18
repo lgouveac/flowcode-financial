@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { PlusIcon, UserIcon, BarChartIcon, WalletIcon, ReceiptIcon, UsersIcon } from "lucide-react";
+import { PlusIcon, UserIcon, BarChartIcon, WalletIcon, ReceiptIcon, UsersIcon, MailIcon } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -13,6 +12,7 @@ const Index = () => {
     { path: "/clients", icon: UserIcon, label: "Clientes" },
     { path: "/employees", icon: UsersIcon, label: "Funcionários" },
     { path: "/receivables", icon: ReceiptIcon, label: "Recebimentos" },
+    { path: "/emails", icon: MailIcon, label: "E-mails" },
     { path: "/cashflow", icon: WalletIcon, label: "Fluxo de Caixa" },
   ];
 
