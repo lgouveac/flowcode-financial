@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,8 +58,17 @@ export const Emails = () => {
   const { toast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [currentSection, setCurrentSection] = useState("employees");
-  const [currentType, setCurrentType] = useState("invoice");
+  const [currentType, setCurrentType] = useState(currentSection === "employees" ? "invoice" : "recurring");
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
+
+  const handleSectionChange = (section: string) => {
+    setCurrentSection(section);
+    setCurrentType(section === "employees" ? "invoice" : "recurring");
+  };
+
+  const handleTypeChange = (type: string) => {
+    setCurrentType(type);
+  };
 
   const handleSaveTemplate = () => {
     toast({
@@ -99,9 +109,16 @@ export const Emails = () => {
     e.preventDefault();
   };
 
+  const getCurrentVariables = () => {
+    if (currentSection === "employees") {
+      return variablesList.employees[currentType as keyof typeof variablesList.employees] || [];
+    }
+    return variablesList.clients[currentType as keyof typeof variablesList.clients] || [];
+  };
+
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="employees" className="w-full" onValueChange={setCurrentSection}>
+      <Tabs defaultValue="employees" className="w-full" onValueChange={handleSectionChange}>
         <TabsList className="mb-4">
           <TabsTrigger value="employees" className="flex items-center gap-2">
             Funcionários
@@ -112,7 +129,7 @@ export const Emails = () => {
         </TabsList>
 
         <TabsContent value="employees">
-          <Tabs defaultValue="invoice" onValueChange={setCurrentType}>
+          <Tabs defaultValue="invoice" onValueChange={handleTypeChange}>
             <TabsList className="mb-4">
               <TabsTrigger value="invoice">Template NF</TabsTrigger>
               <TabsTrigger value="hours">Template Horas</TabsTrigger>
@@ -168,7 +185,7 @@ export const Emails = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {variablesList.employees[currentType as keyof typeof variablesList.employees].map((variable) => (
+                    {getCurrentVariables().map((variable) => (
                       <div
                         key={variable.name}
                         className="flex items-start space-x-2 p-2 rounded border border-border cursor-move hover:bg-accent"
@@ -194,7 +211,7 @@ export const Emails = () => {
         </TabsContent>
 
         <TabsContent value="clients">
-          <Tabs defaultValue="recurring" onValueChange={setCurrentType}>
+          <Tabs defaultValue="recurring" onValueChange={handleTypeChange}>
             <TabsList className="mb-4">
               <TabsTrigger value="recurring">Cobrança Recorrente</TabsTrigger>
               <TabsTrigger value="oneTime">Cobrança Pontual</TabsTrigger>
@@ -256,7 +273,7 @@ export const Emails = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {variablesList.clients[currentType as keyof typeof variablesList.clients].map((variable) => (
+                    {getCurrentVariables().map((variable) => (
                       <div
                         key={variable.name}
                         className="flex items-start space-x-2 p-2 rounded border border-border cursor-move hover:bg-accent"
