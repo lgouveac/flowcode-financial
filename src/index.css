@@ -40,6 +40,45 @@
   .font-display {
     font-feature-settings: "ss01" on, "ss02" on, "ss03" on;
   }
+
+  /* Sistema de Headings usando proporção áurea (1.618) */
+  h1 {
+    @apply text-3xl font-display font-bold tracking-tight text-foreground;
+    font-size: 2.618rem;
+    margin-bottom: 1.618rem;
+  }
+
+  h2 {
+    @apply font-display font-semibold tracking-tight text-foreground;
+    font-size: 1.618rem;
+    margin-bottom: 1rem;
+    margin-top: 1.618rem;
+  }
+
+  h3 {
+    @apply font-display font-medium tracking-tight text-foreground;
+    font-size: 1rem;
+    margin-bottom: 0.618rem;
+    margin-top: 1rem;
+  }
+
+  /* Ajustes específicos para headers em cards */
+  .card h1 {
+    font-size: 1.618rem;
+    margin-bottom: 1rem;
+  }
+
+  .card h2 {
+    font-size: 1.318rem;
+    margin-bottom: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  .card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.618rem;
+    margin-top: 0.8rem;
+  }
 }
 
 .card-hover-effect {
@@ -50,31 +89,4 @@
   transform: translateY(-2px);
 }
 
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Better button and input focus states */
-button:focus-visible,
-input:focus-visible {
-  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-secondary;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20 rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/40;
-}
+/* ... keep existing code */
