@@ -1,7 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { PlusIcon, MailIcon, PhoneIcon } from "lucide-react";
+import { useState } from "react";
 
 interface Client {
   id: string;
@@ -35,6 +37,16 @@ const mockClients: Client[] = [
 ];
 
 export const ClientTable = () => {
+  const [clients, setClients] = useState(mockClients);
+
+  const handleChange = (id: string, field: keyof Client, value: string | number) => {
+    setClients(prevClients =>
+      prevClients.map(client =>
+        client.id === id ? { ...client, [field]: value } : client
+      )
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -59,20 +71,33 @@ export const ClientTable = () => {
               </tr>
             </thead>
             <tbody>
-              {mockClients.map((client) => (
+              {clients.map((client) => (
                 <tr key={client.id} className="border-b transition-colors hover:bg-muted/50">
                   <td className="p-4">
-                    <div className="font-medium">{client.name}</div>
+                    <Input
+                      value={client.name}
+                      onChange={(e) => handleChange(client.id, 'name', e.target.value)}
+                      className="h-8"
+                    />
                   </td>
                   <td className="p-4">
-                    <div className="flex flex-col space-y-1 text-sm">
-                      <div className="flex items-center text-muted-foreground">
-                        <MailIcon className="h-4 w-4 mr-2" />
-                        {client.email}
+                    <div className="flex flex-col space-y-1">
+                      <div className="flex items-center">
+                        <MailIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <Input
+                          value={client.email}
+                          onChange={(e) => handleChange(client.id, 'email', e.target.value)}
+                          className="h-8"
+                          type="email"
+                        />
                       </div>
-                      <div className="flex items-center text-muted-foreground">
-                        <PhoneIcon className="h-4 w-4 mr-2" />
-                        {client.phone}
+                      <div className="flex items-center">
+                        <PhoneIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <Input
+                          value={client.phone}
+                          onChange={(e) => handleChange(client.id, 'phone', e.target.value)}
+                          className="h-8"
+                        />
                       </div>
                     </div>
                   </td>
@@ -89,11 +114,22 @@ export const ClientTable = () => {
                         : "Inativo"}
                     </span>
                   </td>
-                  <td className="p-4 font-medium">
-                    R$ {client.totalBilling.toFixed(2)}
+                  <td className="p-4">
+                    <Input
+                      value={client.totalBilling.toFixed(2)}
+                      onChange={(e) => handleChange(client.id, 'totalBilling', parseFloat(e.target.value) || 0)}
+                      className="h-8"
+                      type="number"
+                      step="0.01"
+                    />
                   </td>
-                  <td className="p-4 text-muted-foreground">
-                    {client.lastPayment}
+                  <td className="p-4">
+                    <Input
+                      value={client.lastPayment}
+                      onChange={(e) => handleChange(client.id, 'lastPayment', e.target.value)}
+                      className="h-8"
+                      type="date"
+                    />
                   </td>
                   <td className="p-4">
                     <div className="flex gap-2">

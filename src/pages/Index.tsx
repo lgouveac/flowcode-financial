@@ -26,24 +26,26 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background pb-8">
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <nav className="container border-t border-border/40">
-          <div className="grid grid-cols-6 -mb-px">
-            {navigation.map(({ path, icon: Icon, label }) => (
-              <Link
-                key={path}
-                to={path}
-                className={`flex items-center justify-center px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                  isActive(path)
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                }`}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                {label}
-              </Link>
-            ))}
-          </div>
-        </nav>
+        <div className="container mx-auto">
+          <nav className="border-t border-border/40">
+            <div className="flex -mb-px">
+              {navigation.map(({ path, icon: Icon, label }) => (
+                <Link
+                  key={path}
+                  to={path}
+                  className={`flex-1 flex items-center justify-center px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                    isActive(path)
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  }`}
+                >
+                  <Icon className="mr-2 h-4 w-4" />
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        </div>
       </header>
 
       <main className="container pt-8 animate-fade-in">
