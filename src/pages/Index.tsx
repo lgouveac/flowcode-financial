@@ -13,10 +13,14 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   const stats = [
-    { title: "Receita Total", value: "R$ 24.500", change: "+12.5%" },
-    { title: "Em Aberto", value: "R$ 4.320", change: "-2.3%" },
-    { title: "Clientes Ativos", value: "45", change: "+5" },
-    { title: "Faturas Pendentes", value: "12", change: "-3" },
+    { title: "Receita Total", value: "R$ 24.500", change: "+12.5%", description: "Mês atual" },
+    { title: "Despesas Totais", value: "R$ 18.200", change: "+5.2%", description: "Mês atual" },
+    { title: "Lucro Líquido", value: "R$ 6.300", change: "+7.3%", description: "Mês atual" },
+    { title: "Clientes Ativos", value: "45", change: "+5", description: "Últimos 30 dias" },
+    { title: "Faturas Pendentes", value: "12", change: "-3", description: "A vencer" },
+    { title: "Ticket Médio", value: "R$ 2.850", change: "+15%", description: "Últimos 30 dias" },
+    { title: "Impostos a Pagar", value: "R$ 3.420", change: "+2.1%", description: "Mês atual" },
+    { title: "Folha de Pagamento", value: "R$ 12.500", change: "0%", description: "Mês atual" },
   ];
 
   return (
@@ -46,10 +50,11 @@ const Index = () => {
                 <h3 className="text-sm font-medium text-muted-foreground">{stat.title}</h3>
                 <div className="mt-2 flex items-baseline">
                   <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
-                  <span className={`ml-2 text-sm ${stat.change.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
+                  <span className={`ml-2 text-sm ${stat.change.startsWith('+') ? 'text-green-500' : stat.change === '0%' ? 'text-gray-500' : 'text-red-500'}`}>
                     {stat.change}
                   </span>
                 </div>
+                <p className="mt-1 text-sm text-muted-foreground">{stat.description}</p>
               </motion.div>
             </Card>
           ))}
@@ -90,11 +95,9 @@ const Index = () => {
             className="mt-8 space-y-6"
           >
             {activeTab === "overview" && (
-              <>
-                <CashFlow />
-                <EmployeeTable />
-                <RecurringBilling />
-              </>
+              <div className="grid gap-6 grid-cols-1">
+                <CashFlow showChart={true} />
+              </div>
             )}
             {activeTab === "clients" && <ClientTable />}
             {activeTab === "employees" && <EmployeeTable />}
@@ -115,7 +118,7 @@ const Index = () => {
                 </Card>
               </>
             )}
-            {activeTab === "cashflow" && <CashFlow />}
+            {activeTab === "cashflow" && <CashFlow showChart={false} />}
           </motion.div>
         </AnimatePresence>
       </main>
