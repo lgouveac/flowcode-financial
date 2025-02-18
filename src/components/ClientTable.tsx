@@ -1,9 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { PlusIcon, MailIcon, PhoneIcon } from "lucide-react";
 import { useState } from "react";
+import { EditableCell } from "./EditableCell";
 
 interface Client {
   id: string;
@@ -67,36 +67,32 @@ export const ClientTable = () => {
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Faturamento Total</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Último Pagamento</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
             <tbody>
               {clients.map((client) => (
                 <tr key={client.id} className="border-b transition-colors hover:bg-muted/50">
                   <td className="p-4">
-                    <Input
+                    <EditableCell
                       value={client.name}
-                      onChange={(e) => handleChange(client.id, 'name', e.target.value)}
-                      className="h-8"
+                      onChange={(value) => handleChange(client.id, 'name', value)}
                     />
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col space-y-1">
                       <div className="flex items-center">
                         <MailIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <Input
+                        <EditableCell
                           value={client.email}
-                          onChange={(e) => handleChange(client.id, 'email', e.target.value)}
-                          className="h-8"
+                          onChange={(value) => handleChange(client.id, 'email', value)}
                           type="email"
                         />
                       </div>
                       <div className="flex items-center">
                         <PhoneIcon className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <Input
+                        <EditableCell
                           value={client.phone}
-                          onChange={(e) => handleChange(client.id, 'phone', e.target.value)}
-                          className="h-8"
+                          onChange={(value) => handleChange(client.id, 'phone', value)}
                         />
                       </div>
                     </div>
@@ -115,31 +111,18 @@ export const ClientTable = () => {
                     </span>
                   </td>
                   <td className="p-4">
-                    <Input
+                    <EditableCell
                       value={client.totalBilling.toFixed(2)}
-                      onChange={(e) => handleChange(client.id, 'totalBilling', parseFloat(e.target.value) || 0)}
-                      className="h-8"
+                      onChange={(value) => handleChange(client.id, 'totalBilling', parseFloat(value) || 0)}
                       type="number"
-                      step="0.01"
                     />
                   </td>
                   <td className="p-4">
-                    <Input
-                      value={client.lastPayment}
-                      onChange={(e) => handleChange(client.id, 'lastPayment', e.target.value)}
-                      className="h-8"
+                    <EditableCell
+                      value={client.lastPayment || ""}
+                      onChange={(value) => handleChange(client.id, 'lastPayment', value)}
                       type="date"
                     />
-                  </td>
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        Editar
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        Ver Faturas
-                      </Button>
-                    </div>
                   </td>
                 </tr>
               ))}

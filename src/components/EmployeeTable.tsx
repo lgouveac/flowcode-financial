@@ -1,11 +1,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { AddEmployeeDialog } from "./AddEmployeeDialog";
+import { EditableCell } from "./EditableCell";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Employee {
   id: string;
@@ -68,10 +68,9 @@ export const EmployeeTable = () => {
               {employees.map((employee) => (
                 <tr key={employee.id} className="border-t hover:bg-muted/50">
                   <td className="p-4">
-                    <Input
+                    <EditableCell
                       value={employee.name}
-                      onChange={(e) => handleChange(employee.id, 'name', e.target.value)}
-                      className="h-8"
+                      onChange={(value) => handleChange(employee.id, 'name', value)}
                     />
                   </td>
                   <td className="p-4">
@@ -96,25 +95,15 @@ export const EmployeeTable = () => {
                     </span>
                   </td>
                   <td className="p-4">
-                    <Select
+                    <EditableCell
                       value={employee.paymentMethod}
-                      onValueChange={(value) => handleChange(employee.id, 'paymentMethod', value)}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PIX">PIX</SelectItem>
-                        <SelectItem value="Transferência">Transferência</SelectItem>
-                        <SelectItem value="Outro">Outro</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => handleChange(employee.id, 'paymentMethod', value)}
+                    />
                   </td>
                   <td className="p-4">
-                    <Input
-                      value={employee.lastInvoice}
-                      onChange={(e) => handleChange(employee.id, 'lastInvoice', e.target.value)}
-                      className="h-8"
+                    <EditableCell
+                      value={employee.lastInvoice || ""}
+                      onChange={(value) => handleChange(employee.id, 'lastInvoice', value)}
                       type="date"
                     />
                   </td>
