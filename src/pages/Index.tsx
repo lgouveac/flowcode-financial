@@ -27,7 +27,7 @@ const Index = () => {
     <div className="min-h-screen bg-background pb-8">
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center">
-          <h1 className="text-2xl font-display font-bold tracking-tight">Sistema Financeiro</h1>
+          <h1 className="text-xl font-display font-bold tracking-tight">Sistema Financeiro</h1>
         </div>
         <nav className="container border-t border-border/40">
           <div className="flex space-x-4 -mb-px">
