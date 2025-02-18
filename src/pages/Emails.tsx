@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { MailIcon, DragHandleDots2Icon } from "lucide-react";
+import { MailIcon, GripVertical } from "lucide-react";
 
 interface EmailTemplate {
   id: string;
@@ -176,7 +175,7 @@ export const Emails = () => {
                         draggable
                         onDragStart={(e) => handleDragStart(e, variable.name)}
                       >
-                        <DragHandleDots2Icon className="h-4 w-4 mt-1 text-muted-foreground" />
+                        <GripVertical className="h-4 w-4 mt-1 text-muted-foreground" />
                         <div className="flex flex-col space-y-1">
                           <code className="text-sm font-mono bg-muted p-1 rounded">
                             {variable.name}
@@ -264,7 +263,7 @@ export const Emails = () => {
                         draggable
                         onDragStart={(e) => handleDragStart(e, variable.name)}
                       >
-                        <DragHandleDots2Icon className="h-4 w-4 mt-1 text-muted-foreground" />
+                        <GripVertical className="h-4 w-4 mt-1 text-muted-foreground" />
                         <div className="flex flex-col space-y-1">
                           <code className="text-sm font-mono bg-muted p-1 rounded">
                             {variable.name}
