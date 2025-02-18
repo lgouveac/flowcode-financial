@@ -8,13 +8,6 @@ const Index = () => {
   const { toast } = useToast();
   const location = useLocation();
 
-  const handleNewInvoice = () => {
-    toast({
-      title: "Nova Fatura",
-      description: "Funcionalidade de criar nova fatura será implementada.",
-    });
-  };
-
   const navigation = [
     { path: "/", icon: BarChartIcon, label: "Visão Geral" },
     { path: "/clients", icon: UserIcon, label: "Clientes" },
@@ -35,10 +28,6 @@ const Index = () => {
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center">
           <h1 className="font-display text-2xl font-bold tracking-tight">Sistema Financeiro</h1>
-          <Button className="ml-auto" size="sm" onClick={handleNewInvoice}>
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Nova Fatura
-          </Button>
         </div>
         <nav className="container border-t border-border/40">
           <div className="flex space-x-4 -mb-px">
