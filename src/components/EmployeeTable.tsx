@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -30,16 +29,14 @@ const mockEmployees: Employee[] = [
     lastInvoice: "05/03/2024",
   },
 ];
+import { AddEmployeeDialog } from "./AddEmployeeDialog";
 
 export const EmployeeTable = () => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xl font-display">Funcionários e Freelancers</CardTitle>
-        <Button size="sm">
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Novo Colaborador
-        </Button>
+        <AddEmployeeDialog />
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { PlusIcon, UserIcon, FileTextIcon, CreditCardIcon, BarChartIcon } from "
 import { AnimatePresence, motion } from "framer-motion";
 import { EmployeeTable } from "@/components/EmployeeTable";
 import { RecurringBilling } from "@/components/RecurringBilling";
+import { InvoiceList } from "@/components/InvoiceList";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -100,14 +100,7 @@ const Index = () => {
                 </p>
               </Card>
             )}
-            {activeTab === "invoices" && (
-              <Card className="p-6">
-                <p className="text-lg font-display">Lista de Faturas</p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Visualize e gerencie todas as faturas emitidas.
-                </p>
-              </Card>
-            )}
+            {activeTab === "invoices" && <InvoiceList />}
             {activeTab === "payments" && (
               <Card className="p-6">
                 <p className="text-lg font-display">Acompanhamento de Pagamentos</p>
