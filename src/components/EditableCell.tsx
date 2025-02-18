@@ -47,10 +47,10 @@ export const EditableCell = ({ value, onChange, type = "text", className = "" }:
           autoFocus
         />
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={handleSave}>
+          <Button variant="ghost" size="sm" onClick={handleSave} className="h-8 w-8 p-0">
             <CheckIcon className="h-4 w-4 text-green-600" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={handleCancel}>
+          <Button variant="ghost" size="sm" onClick={handleCancel} className="h-8 w-8 p-0">
             <XIcon className="h-4 w-4 text-red-600" />
           </Button>
         </div>
@@ -60,12 +60,12 @@ export const EditableCell = ({ value, onChange, type = "text", className = "" }:
 
   return (
     <div className="flex items-center justify-between group">
-      <span>{value}</span>
+      <span className="flex-1">{value}</span>
       <Button
         variant="ghost"
         size="sm"
         onClick={handleEdit}
-        className="opacity-0 group-hover:opacity-100 transition-opacity"
+        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-8 w-8 p-0"
       >
         <PencilIcon className="h-4 w-4 text-muted-foreground" />
       </Button>
