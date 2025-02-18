@@ -4,15 +4,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, UserIcon, FileTextIcon, CreditCardIcon, BarChartIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import { EmployeeTable } from "@/components/EmployeeTable";
+import { RecurringBilling } from "@/components/RecurringBilling";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
 
   const stats = [
-    { title: "Total Revenue", value: "$24,500", change: "+12.5%" },
-    { title: "Outstanding", value: "$4,320", change: "-2.3%" },
-    { title: "Active Clients", value: "45", change: "+5" },
-    { title: "Pending Invoices", value: "12", change: "-3" },
+    { title: "Receita Total", value: "R$ 24.500", change: "+12.5%" },
+    { title: "Em Aberto", value: "R$ 4.320", change: "-2.3%" },
+    { title: "Clientes Ativos", value: "45", change: "+5" },
+    { title: "Faturas Pendentes", value: "12", change: "-3" },
   ];
 
   return (
@@ -20,10 +22,10 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center">
-          <h1 className="font-display text-2xl font-bold tracking-tight">Finance Dashboard</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">Sistema Financeiro</h1>
           <Button className="ml-auto" size="sm">
             <PlusIcon className="mr-2 h-4 w-4" />
-            New Invoice
+            Nova Fatura
           </Button>
         </div>
       </header>
@@ -54,10 +56,10 @@ const Index = () => {
         {/* Navigation Tabs */}
         <nav className="mt-8 flex space-x-4 border-b border-border/40">
           {[
-            { id: "overview", icon: BarChartIcon, label: "Overview" },
-            { id: "clients", icon: UserIcon, label: "Clients" },
-            { id: "invoices", icon: FileTextIcon, label: "Invoices" },
-            { id: "payments", icon: CreditCardIcon, label: "Payments" },
+            { id: "overview", icon: BarChartIcon, label: "Visão Geral" },
+            { id: "clients", icon: UserIcon, label: "Clientes" },
+            { id: "invoices", icon: FileTextIcon, label: "Faturas" },
+            { id: "payments", icon: CreditCardIcon, label: "Pagamentos" },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
@@ -82,19 +84,38 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="mt-8"
+            className="mt-8 space-y-6"
           >
-            <Card className="p-6">
-              <p className="text-lg font-display">
-                {activeTab === "overview" && "Financial Overview"}
-                {activeTab === "clients" && "Client Management"}
-                {activeTab === "invoices" && "Invoice List"}
-                {activeTab === "payments" && "Payment Tracking"}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Select a section above to view detailed information and manage your financial data.
-              </p>
-            </Card>
+            {activeTab === "overview" && (
+              <>
+                <EmployeeTable />
+                <RecurringBilling />
+              </>
+            )}
+            {activeTab === "clients" && (
+              <Card className="p-6">
+                <p className="text-lg font-display">Gestão de Clientes</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Gerencie seus clientes e visualize o histórico de faturamento.
+                </p>
+              </Card>
+            )}
+            {activeTab === "invoices" && (
+              <Card className="p-6">
+                <p className="text-lg font-display">Lista de Faturas</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Visualize e gerencie todas as faturas emitidas.
+                </p>
+              </Card>
+            )}
+            {activeTab === "payments" && (
+              <Card className="p-6">
+                <p className="text-lg font-display">Acompanhamento de Pagamentos</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Acompanhe o status dos pagamentos e cobranças.
+                </p>
+              </Card>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
