@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +59,20 @@ export const Emails = () => {
   const [currentSection, setCurrentSection] = useState("employees");
   const [currentType, setCurrentType] = useState(currentSection === "employees" ? "invoice" : "recurring");
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
+  const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([
+    {
+      id: "1",
+      name: "Template NF Mensal",
+      subject: "Solicitação de Nota Fiscal - {mes_referencia}",
+      content: "Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}..."
+    },
+    {
+      id: "2",
+      name: "Template Cobrança Recorrente",
+      subject: "Fatura {periodo_referencia} - {plano_servico}",
+      content: "Prezado {nome_cliente},\n\nSegue a fatura referente ao período {periodo_referencia}..."
+    }
+  ]);
 
   const handleSectionChange = (section: string) => {
     setCurrentSection(section);
@@ -68,20 +81,6 @@ export const Emails = () => {
 
   const handleTypeChange = (type: string) => {
     setCurrentType(type);
-  };
-
-  const handleSaveTemplate = () => {
-    toast({
-      title: "Template Salvo",
-      description: "O template de e-mail foi salvo com sucesso.",
-    });
-  };
-
-  const handleSendEmail = () => {
-    toast({
-      title: "E-mail Enviado",
-      description: "O e-mail foi enviado com sucesso para o cliente.",
-    });
   };
 
   const handleDragStart = (e: React.DragEvent, variable: string) => {
@@ -109,11 +108,20 @@ export const Emails = () => {
     e.preventDefault();
   };
 
-  const getCurrentVariables = () => {
-    if (currentSection === "employees") {
-      return variablesList.employees[currentType as keyof typeof variablesList.employees] || [];
+  const handleSaveTemplate = () => {
+    if (selectedTemplate) {
+      setSavedTemplates(prev => {
+        const isExisting = prev.find(t => t.id === selectedTemplate.id);
+        if (isExisting) {
+          return prev.map(t => t.id === selectedTemplate.id ? selectedTemplate : t);
+        }
+        return [...prev, { ...selectedTemplate, id: String(prev.length + 1) }];
+      });
     }
-    return variablesList.clients[currentType as keyof typeof variablesList.clients] || [];
+    toast({
+      title: "Template Salvo",
+      description: "O template de e-mail foi salvo com sucesso.",
+    });
   };
 
   return (
@@ -185,7 +193,7 @@ export const Emails = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {getCurrentVariables().map((variable) => (
+                    {variablesList.employees[currentType as keyof typeof variablesList.employees]?.map((variable) => (
                       <div
                         key={variable.name}
                         className="flex items-start space-x-2 p-2 rounded border border-border cursor-move hover:bg-accent"
@@ -225,7 +233,7 @@ export const Emails = () => {
                       Editor de Template - {currentType === "recurring" ? "Cobrança Recorrente" : "Cobrança Pontual"}
                     </CardTitle>
                     {currentType === "oneTime" && (
-                      <Button variant="secondary" onClick={handleSendEmail}>
+                      <Button variant="secondary" onClick={handleSaveTemplate}>
                         <MailIcon className="mr-2 h-4 w-4" />
                         Enviar E-mail
                       </Button>
@@ -273,7 +281,7 @@ export const Emails = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {getCurrentVariables().map((variable) => (
+                    {variablesList.clients[currentType as keyof typeof variablesList.clients]?.map((variable) => (
                       <div
                         key={variable.name}
                         className="flex items-start space-x-2 p-2 rounded border border-border cursor-move hover:bg-accent"
@@ -298,6 +306,40 @@ export const Emails = () => {
           </Tabs>
         </TabsContent>
       </Tabs>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Templates Salvos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <table className="w-full">
+              <thead className="bg-muted">
+                <tr className="text-left">
+                  <th className="p-4 text-sm font-medium text-muted-foreground">Nome</th>
+                  <th className="p-4 text-sm font-medium text-muted-foreground">Assunto</th>
+                  <th className="p-4 text-sm font-medium text-muted-foreground">Última Modificação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {savedTemplates.map((template) => (
+                  <tr key={template.id} className="border-t hover:bg-muted/50">
+                    <td className="p-4">
+                      {template.name}
+                    </td>
+                    <td className="p-4">
+                      {template.subject}
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      Hoje às 15:30
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
