@@ -8,9 +8,11 @@ import { EmployeeTable } from "@/components/EmployeeTable";
 import { RecurringBilling } from "@/components/RecurringBilling";
 import { ClientTable } from "@/components/ClientTable";
 import { CashFlow } from "@/components/CashFlow";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const { toast } = useToast();
 
   const stats = [
     { title: "Receita Total", value: "R$ 24.500", change: "+12.5%", description: "Mês atual" },
@@ -23,13 +25,20 @@ const Index = () => {
     { title: "Folha de Pagamento", value: "R$ 12.500", change: "0%", description: "Mês atual" },
   ];
 
+  const handleNewInvoice = () => {
+    toast({
+      title: "Nova Fatura",
+      description: "Funcionalidade de criar nova fatura será implementada.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background pb-8">
       {/* Header */}
       <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center">
           <h1 className="font-display text-2xl font-bold tracking-tight">Sistema Financeiro</h1>
-          <Button className="ml-auto" size="sm">
+          <Button className="ml-auto" size="sm" onClick={handleNewInvoice}>
             <PlusIcon className="mr-2 h-4 w-4" />
             Nova Fatura
           </Button>
@@ -96,7 +105,7 @@ const Index = () => {
           >
             {activeTab === "overview" && (
               <div className="grid gap-6 grid-cols-1">
-                <CashFlow showChart={true} />
+                {/* O dashboard agora mostra apenas as métricas, que já estão no topo */}
               </div>
             )}
             {activeTab === "clients" && <ClientTable />}
@@ -107,7 +116,15 @@ const Index = () => {
                 <Card className="mt-6">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-xl font-display">Cobranças Pontuais</CardTitle>
-                    <Button size="sm">
+                    <Button 
+                      size="sm"
+                      onClick={() => {
+                        toast({
+                          title: "Nova Cobrança",
+                          description: "Funcionalidade de criar nova cobrança será implementada.",
+                        });
+                      }}
+                    >
                       <PlusIcon className="h-4 w-4 mr-2" />
                       Nova Cobrança
                     </Button>
@@ -118,7 +135,7 @@ const Index = () => {
                 </Card>
               </>
             )}
-            {activeTab === "cashflow" && <CashFlow showChart={false} />}
+            {activeTab === "cashflow" && <CashFlow showChart={true} />}
           </motion.div>
         </AnimatePresence>
       </main>
