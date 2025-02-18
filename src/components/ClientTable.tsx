@@ -36,45 +36,48 @@ const mockClients: Client[] = [
 
 export const ClientTable = () => {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl font-display">Clientes</CardTitle>
-        <Button size="sm">
-          <PlusIcon className="h-4 w-4 mr-2" />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1>Clientes</h1>
+        <Button className="gap-2">
+          <PlusIcon className="h-4 w-4" />
           Novo Cliente
         </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
-          <table className="w-full">
+      </div>
+      
+      <div className="rounded-lg border bg-card">
+        <div className="w-full overflow-auto">
+          <table className="w-full text-sm">
             <thead className="bg-muted">
-              <tr className="text-left">
-                <th className="p-4 text-sm font-medium text-muted-foreground">Nome</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Contato</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Status</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Faturamento Total</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Último Pagamento</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Ações</th>
+              <tr className="border-b">
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Contato</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Faturamento Total</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Último Pagamento</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
             <tbody>
               {mockClients.map((client) => (
-                <tr key={client.id} className="border-t hover:bg-muted/50">
-                  <td className="p-4">{client.name}</td>
+                <tr key={client.id} className="border-b transition-colors hover:bg-muted/50">
                   <td className="p-4">
-                    <div className="flex flex-col space-y-1">
-                      <div className="flex items-center text-sm text-muted-foreground">
+                    <div className="font-medium">{client.name}</div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex flex-col space-y-1 text-sm">
+                      <div className="flex items-center text-muted-foreground">
                         <MailIcon className="h-4 w-4 mr-2" />
                         {client.email}
                       </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
+                      <div className="flex items-center text-muted-foreground">
                         <PhoneIcon className="h-4 w-4 mr-2" />
                         {client.phone}
                       </div>
                     </div>
                   </td>
                   <td className="p-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       client.status === "active" 
                         ? "bg-green-100 text-green-800" 
                         : client.status === "overdue"
@@ -86,10 +89,14 @@ export const ClientTable = () => {
                         : "Inativo"}
                     </span>
                   </td>
-                  <td className="p-4">R$ {client.totalBilling.toFixed(2)}</td>
-                  <td className="p-4">{client.lastPayment}</td>
+                  <td className="p-4 font-medium">
+                    R$ {client.totalBilling.toFixed(2)}
+                  </td>
+                  <td className="p-4 text-muted-foreground">
+                    {client.lastPayment}
+                  </td>
                   <td className="p-4">
-                    <div className="flex space-x-2">
+                    <div className="flex gap-2">
                       <Button variant="outline" size="sm">
                         Editar
                       </Button>
@@ -103,7 +110,7 @@ export const ClientTable = () => {
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
