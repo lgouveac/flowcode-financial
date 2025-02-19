@@ -18,9 +18,42 @@ import {
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { PlusIcon } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+
+interface EmployeeFormData {
+  cnpj: string;
+  pix: string;
+  address: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  position: string;
+  type: "fixed" | "freelancer";
+}
 
 export function AddEmployeeDialog() {
   const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<EmployeeFormData>({
+    cnpj: "",
+    pix: "",
+    address: "",
+    fullName: "",
+    email: "",
+    phone: "",
+    position: "",
+    type: "fixed",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Novo funcionário:", formData);
+    toast({
+      title: "Funcionário cadastrado",
+      description: "O novo funcionário foi adicionado com sucesso.",
+    });
+    setOpen(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -34,14 +67,90 @@ export function AddEmployeeDialog() {
         <DialogHeader>
           <DialogTitle>Adicionar Novo Colaborador</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input id="name" placeholder="Nome completo" />
+            <Label htmlFor="cnpj">CNPJ</Label>
+            <Input
+              id="cnpj"
+              placeholder="00.000.000/0001-00"
+              value={formData.cnpj}
+              onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+              required
+            />
           </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="pix">Chave PIX</Label>
+            <Input
+              id="pix"
+              placeholder="CPF, CNPJ, E-mail ou Celular"
+              value={formData.pix}
+              onChange={(e) => setFormData({ ...formData, pix: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="address">Endereço Completo</Label>
+            <Input
+              id="address"
+              placeholder="Rua, número, complemento, bairro, cidade - UF"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="fullName">Nome Completo</Label>
+            <Input
+              id="fullName"
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="phone">Celular</Label>
+            <Input
+              id="phone"
+              placeholder="(00) 00000-0000"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="position">Cargo</Label>
+            <Input
+              id="position"
+              value={formData.position}
+              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+              required
+            />
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="type">Tipo</Label>
-            <Select>
+            <Select
+              value={formData.type}
+              onValueChange={(value: "fixed" | "freelancer") =>
+                setFormData({ ...formData, type: value })
+              }
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
@@ -51,26 +160,14 @@ export function AddEmployeeDialog() {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="payment">Método de Pagamento</Label>
-            <Select>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o método" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pix">PIX</SelectItem>
-                <SelectItem value="transfer">Transferência</SelectItem>
-                <SelectItem value="other">Outro</SelectItem>
-              </SelectContent>
-            </Select>
+
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit">Salvar</Button>
           </div>
-        </div>
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={() => setOpen(false)}>Salvar</Button>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
