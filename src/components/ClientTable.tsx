@@ -106,6 +106,7 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
+            className="w-full"
           />
         </div>
 
@@ -117,7 +118,7 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
               setClientType(value);
               setFormData({ ...formData, type: value });
             }}
-            className="grid grid-cols-2 gap-4"
+            className="grid sm:grid-cols-2 gap-4"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="pf" id="pf" />
@@ -131,7 +132,7 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
         </div>
 
         {clientType === "pj" ? (
-          <>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="companyName">Razão Social da Empresa</Label>
               <Input
@@ -173,9 +174,9 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
                 placeholder="000.000.000-00"
               />
             </div>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="name">Qual seu nome completo?</Label>
               <Input
@@ -196,34 +197,37 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
                 placeholder="000.000.000-00"
               />
             </div>
-          </>
+          </div>
         )}
 
-        <div className="grid gap-2">
-          <Label htmlFor="address">Endereço completo com CEP</Label>
-          <Input
-            id="address"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            required
-            placeholder="Rua, número, complemento, bairro, cidade - UF, CEP"
-          />
-        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="address">Endereço completo com CEP</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              required
+              placeholder="Rua, número, complemento, bairro, cidade - UF, CEP"
+              className="w-full"
+            />
+          </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="dueDate">
-            {clientType === "pj" 
-              ? "Melhor data de vencimento do pagamento ou data da primeira parcela"
-              : "Melhor data de vencimento do pagamento"
-            }
-          </Label>
-          <Input
-            id="dueDate"
-            type="date"
-            value={formData.dueDate}
-            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-            required
-          />
+          <div className="grid gap-2">
+            <Label htmlFor="dueDate">
+              {clientType === "pj" 
+                ? "Melhor data de vencimento do pagamento ou data da primeira parcela"
+                : "Melhor data de vencimento do pagamento"
+              }
+            </Label>
+            <Input
+              id="dueDate"
+              type="date"
+              value={formData.dueDate}
+              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              required
+            />
+          </div>
         </div>
 
         <div className="grid gap-2">
@@ -233,7 +237,7 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
             onValueChange={(value: "pix" | "boleto" | "credit_card") => 
               setFormData({ ...formData, paymentMethod: value })
             }
-            className="grid gap-2"
+            className="grid sm:grid-cols-3 gap-4"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="pix" id="payment-pix" />
@@ -251,7 +255,7 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
         </div>
       </div>
 
-      <div className="flex justify-end space-x-2">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancelar
         </Button>
@@ -285,23 +289,23 @@ export const ClientTable = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1>Clientes</h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <div className="space-y-4 p-4 sm:p-6 md:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">Clientes</h1>
+        <Dialog>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="w-full sm:w-auto gap-2">
               <PlusIcon className="h-4 w-4" />
               Novo Cliente
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Novo Cliente</DialogTitle>
             </DialogHeader>
             <NewClientForm
               onSubmit={handleNewClient}
-              onClose={() => setDialogOpen(false)}
+              onClose={() => document.querySelector<HTMLButtonElement>('[role="dialog"] button[type="button"]')?.click()}
             />
           </DialogContent>
         </Dialog>
@@ -310,13 +314,13 @@ export const ClientTable = () => {
       <div className="rounded-lg border bg-card">
         <div className="w-full overflow-auto">
           <table className="w-full text-sm">
-            <thead className="bg-muted">
+            <thead className="bg-muted/50">
               <tr className="border-b">
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Nome</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Contato</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:!pr-0">Nome</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Contato</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Faturamento Total</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Último Pagamento</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">Faturamento Total</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">Último Pagamento</th>
               </tr>
             </thead>
             <tbody>
@@ -328,7 +332,7 @@ export const ClientTable = () => {
                       onChange={(value) => handleChange(client.id, 'name', value)}
                     />
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 hidden md:table-cell">
                     <div className="flex flex-col space-y-1">
                       <div className="flex items-center">
                         <MailIcon className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -360,14 +364,14 @@ export const ClientTable = () => {
                         : "Inativo"}
                     </span>
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 hidden sm:table-cell">
                     <EditableCell
                       value={client.totalBilling.toFixed(2)}
                       onChange={(value) => handleChange(client.id, 'totalBilling', parseFloat(value) || 0)}
                       type="number"
                     />
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 hidden lg:table-cell">
                     <EditableCell
                       value={client.lastPayment || ""}
                       onChange={(value) => handleChange(client.id, 'lastPayment', value)}
