@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon, MailIcon, PhoneIcon } from "lucide-react";
 import { useState } from "react";
 import { EditableCell } from "./EditableCell";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Client {
   id: string;
@@ -13,6 +17,10 @@ interface Client {
   status: "active" | "inactive" | "overdue";
   totalBilling: number;
   lastPayment?: string;
+  cnpj?: string;
+  responsibleName?: string;
+  responsibleEmail?: string;
+  responsiblePhone?: string;
 }
 
 const mockClients: Client[] = [
@@ -24,6 +32,10 @@ const mockClients: Client[] = [
     status: "active",
     totalBilling: 15000.00,
     lastPayment: "10/03/2024",
+    cnpj: "12.345.678/0001-90",
+    responsibleName: "João Silva",
+    responsibleEmail: "joao@techsolutions.com",
+    responsiblePhone: "(11) 98765-4321",
   },
   {
     id: "2",
@@ -33,11 +45,108 @@ const mockClients: Client[] = [
     status: "overdue",
     totalBilling: 8500.00,
     lastPayment: "05/02/2024",
+    cnpj: "98.765.432/0001-10",
+    responsibleName: "Maria Santos",
+    responsibleEmail: "maria@digitalmarket.com",
+    responsiblePhone: "(11) 91234-5678",
   },
 ];
 
+interface NewClientFormProps {
+  onSubmit: (client: Partial<Client>) => void;
+  onClose: () => void;
+}
+
+const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
+  const [formData, setFormData] = useState<Partial<Client>>({
+    cnpj: "",
+    name: "",
+    responsibleName: "",
+    responsibleEmail: "",
+    responsiblePhone: "",
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+      id: Math.random().toString(36).substr(2, 9),
+      status: "active",
+      totalBilling: 0,
+      email: formData.responsibleEmail || "",
+      phone: formData.responsiblePhone || "",
+    });
+    onClose();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 py-4">
+      <div className="grid gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="cnpj">CNPJ</Label>
+          <Input
+            id="cnpj"
+            value={formData.cnpj}
+            onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+            required
+            placeholder="00.000.000/0001-00"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="name">Razão Social</Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="responsibleName">Responsável</Label>
+          <Input
+            id="responsibleName"
+            value={formData.responsibleName}
+            onChange={(e) => setFormData({ ...formData, responsibleName: e.target.value })}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="responsibleEmail">E-mail do Responsável</Label>
+          <Input
+            id="responsibleEmail"
+            type="email"
+            value={formData.responsibleEmail}
+            onChange={(e) => setFormData({ ...formData, responsibleEmail: e.target.value })}
+            required
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="responsiblePhone">Celular do Responsável</Label>
+          <Input
+            id="responsiblePhone"
+            value={formData.responsiblePhone}
+            onChange={(e) => setFormData({ ...formData, responsiblePhone: e.target.value })}
+            required
+            placeholder="(00) 00000-0000"
+          />
+        </div>
+      </div>
+      <div className="flex justify-end space-x-2 pt-4">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button type="submit">
+          Salvar
+        </Button>
+      </div>
+    </form>
+  );
+};
+
 export const ClientTable = () => {
   const [clients, setClients] = useState(mockClients);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleChange = (id: string, field: keyof Client, value: string | number) => {
     setClients(prevClients =>
@@ -47,14 +156,35 @@ export const ClientTable = () => {
     );
   };
 
+  const handleNewClient = (client: Partial<Client>) => {
+    setClients(prev => [...prev, client as Client]);
+    toast({
+      title: "Cliente adicionado",
+      description: "O novo cliente foi cadastrado com sucesso.",
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1>Clientes</h1>
-        <Button className="gap-2">
-          <PlusIcon className="h-4 w-4" />
-          Novo Cliente
-        </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <PlusIcon className="h-4 w-4" />
+              Novo Cliente
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Novo Cliente</DialogTitle>
+            </DialogHeader>
+            <NewClientForm
+              onSubmit={handleNewClient}
+              onClose={() => setDialogOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
       
       <div className="rounded-lg border bg-card">
