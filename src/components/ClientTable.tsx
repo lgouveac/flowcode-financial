@@ -17,7 +17,12 @@ interface Client {
   status: "active" | "inactive" | "overdue";
   totalBilling: number;
   lastPayment?: string;
-  cnpj?: string;
+  cnpj: string;
+  pix?: string;
+  address?: string;
+  fullName: string;
+  position?: string;
+  type: "fixed" | "freelancer";
   responsibleName?: string;
   responsibleEmail?: string;
   responsiblePhone?: string;
@@ -60,7 +65,14 @@ interface NewClientFormProps {
 const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
   const [formData, setFormData] = useState<Partial<Client>>({
     cnpj: "",
-    name: "",
+    name: "", // Razão Social
+    pix: "",
+    address: "",
+    fullName: "", // Nome completo
+    email: "",
+    phone: "",
+    position: "",
+    type: "fixed",
     responsibleName: "",
     responsibleEmail: "",
     responsiblePhone: "",
@@ -73,8 +85,6 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
       id: Math.random().toString(36).substr(2, 9),
       status: "active",
       totalBilling: 0,
-      email: formData.responsibleEmail || "",
-      phone: formData.responsiblePhone || "",
     });
     onClose();
   };
@@ -82,16 +92,28 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 py-4">
       <div className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="cnpj">CNPJ</Label>
-          <Input
-            id="cnpj"
-            value={formData.cnpj}
-            onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-            required
-            placeholder="00.000.000/0001-00"
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="cnpj">CNPJ</Label>
+            <Input
+              id="cnpj"
+              value={formData.cnpj}
+              onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+              required
+              placeholder="00.000.000/0001-00"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="pix">Chave PIX</Label>
+            <Input
+              id="pix"
+              value={formData.pix}
+              onChange={(e) => setFormData({ ...formData, pix: e.target.value })}
+              placeholder="CPF, CNPJ, E-mail ou Celular"
+            />
+          </div>
         </div>
+
         <div className="grid gap-2">
           <Label htmlFor="name">Razão Social</Label>
           <Input
@@ -101,6 +123,76 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
             required
           />
         </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="address">Endereço Completo</Label>
+          <Input
+            id="address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            required
+            placeholder="Rua, número, complemento, bairro, cidade - UF"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="fullName">Nome Completo</Label>
+          <Input
+            id="fullName"
+            value={formData.fullName}
+            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="phone">Celular</Label>
+            <Input
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              required
+              placeholder="(00) 00000-0000"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="position">Cargo</Label>
+            <Input
+              id="position"
+              value={formData.position}
+              onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="type">Tipo</Label>
+            <select
+              id="type"
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as "fixed" | "freelancer" })}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              required
+            >
+              <option value="fixed">Fixo</option>
+              <option value="freelancer">Freelancer</option>
+            </select>
+          </div>
+        </div>
+
         <div className="grid gap-2">
           <Label htmlFor="responsibleName">Responsável</Label>
           <Input
@@ -110,27 +202,31 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
             required
           />
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="responsibleEmail">E-mail do Responsável</Label>
-          <Input
-            id="responsibleEmail"
-            type="email"
-            value={formData.responsibleEmail}
-            onChange={(e) => setFormData({ ...formData, responsibleEmail: e.target.value })}
-            required
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="responsiblePhone">Celular do Responsável</Label>
-          <Input
-            id="responsiblePhone"
-            value={formData.responsiblePhone}
-            onChange={(e) => setFormData({ ...formData, responsiblePhone: e.target.value })}
-            required
-            placeholder="(00) 00000-0000"
-          />
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="responsibleEmail">E-mail do Responsável</Label>
+            <Input
+              id="responsibleEmail"
+              type="email"
+              value={formData.responsibleEmail}
+              onChange={(e) => setFormData({ ...formData, responsibleEmail: e.target.value })}
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="responsiblePhone">Celular do Responsável</Label>
+            <Input
+              id="responsiblePhone"
+              value={formData.responsiblePhone}
+              onChange={(e) => setFormData({ ...formData, responsiblePhone: e.target.value })}
+              required
+              placeholder="(00) 00000-0000"
+            />
+          </div>
         </div>
       </div>
+
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancelar
