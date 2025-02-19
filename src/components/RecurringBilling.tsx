@@ -186,101 +186,121 @@ export const RecurringBilling = () => {
   };
 
   const renderTable = (payments: Payment[], isRecurring: boolean) => (
-    <div className="rounded-lg border bg-white">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b bg-gray-50">
-            <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Cliente</th>
-            <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Serviço</th>
-            <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Valor</th>
-            {isRecurring ? (
-              <>
-                <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Frequência</th>
-                <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Último Pagamento</th>
-                <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Próximo Pagamento</th>
-              </>
-            ) : (
-              <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Data de Vencimento</th>
-            )}
-            <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Status</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {payments.map((payment) => (
-            <tr key={payment.id} className="hover:bg-gray-50">
-              <td className="py-4 px-6">
-                <EditableCell
-                  value={payment.clientName}
-                  onChange={(value) => handleChange(payment.id, 'clientName', value, isRecurring)}
-                />
-              </td>
-              <td className="py-4 px-6">
-                <EditableCell
-                  value={payment.service}
-                  onChange={(value) => handleChange(payment.id, 'service', value, isRecurring)}
-                />
-              </td>
-              <td className="py-4 px-6">
-                <EditableCell
-                  value={payment.value}
-                  onChange={(value) => handleChange(payment.id, 'value', value, isRecurring)}
-                  type="number"
-                />
-              </td>
-              {isRecurring ? (
-                <>
-                  <td className="py-4 px-6">
+    <div className="w-full overflow-x-auto">
+      <div className="min-w-full inline-block align-middle">
+        <div className="overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr className="bg-gray-50">
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Cliente
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Serviço
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Valor
+                </th>
+                {isRecurring ? (
+                  <>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Frequência
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Último Pagamento
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                      Próximo Pagamento
+                    </th>
+                  </>
+                ) : (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Data de Vencimento
+                  </th>
+                )}
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {payments.map((payment) => (
+                <tr key={payment.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <EditableCell
-                      value={payment.frequency || ""}
-                      onChange={(value) => handleChange(payment.id, 'frequency', value, isRecurring)}
+                      value={payment.clientName}
+                      onChange={(value) => handleChange(payment.id, 'clientName', value, isRecurring)}
                     />
                   </td>
-                  <td className="py-4 px-6">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <EditableCell
-                      value={payment.lastPayment || ""}
-                      onChange={(value) => handleChange(payment.id, 'lastPayment', value, isRecurring)}
-                      type="date"
+                      value={payment.service}
+                      onChange={(value) => handleChange(payment.id, 'service', value, isRecurring)}
                     />
                   </td>
-                  <td className="py-4 px-6">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <EditableCell
-                      value={payment.nextPayment || ""}
-                      onChange={(value) => handleChange(payment.id, 'nextPayment', value, isRecurring)}
-                      type="date"
+                      value={payment.value}
+                      onChange={(value) => handleChange(payment.id, 'value', value, isRecurring)}
+                      type="number"
                     />
                   </td>
-                </>
-              ) : (
-                <td className="py-4 px-6">
-                  <EditableCell
-                    value={payment.dueDate || ""}
-                    onChange={(value) => handleChange(payment.id, 'dueDate', value, isRecurring)}
-                    type="date"
-                  />
-                </td>
-              )}
-              <td className="py-4 px-6">
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  payment.status === "active" 
-                    ? "bg-green-100 text-green-800" 
-                    : payment.status === "pending"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-red-100 text-red-800"
-                }`}>
-                  {payment.status === "active" ? "Ativo" 
-                    : payment.status === "pending" ? "Pendente" 
-                    : "Inativo"}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  {isRecurring ? (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <EditableCell
+                          value={payment.frequency || ""}
+                          onChange={(value) => handleChange(payment.id, 'frequency', value, isRecurring)}
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <EditableCell
+                          value={payment.lastPayment || ""}
+                          onChange={(value) => handleChange(payment.id, 'lastPayment', value, isRecurring)}
+                          type="date"
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <EditableCell
+                          value={payment.nextPayment || ""}
+                          onChange={(value) => handleChange(payment.id, 'nextPayment', value, isRecurring)}
+                          type="date"
+                        />
+                      </td>
+                    </>
+                  ) : (
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <EditableCell
+                        value={payment.dueDate || ""}
+                        onChange={(value) => handleChange(payment.id, 'dueDate', value, isRecurring)}
+                        type="date"
+                      />
+                    </td>
+                  )}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      payment.status === "active" 
+                        ? "bg-green-100 text-green-800" 
+                        : payment.status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {payment.status === "active" ? "Ativo" 
+                        : payment.status === "pending" ? "Pendente" 
+                        : "Inativo"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm w-full">
       <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
         <CardTitle className="text-xl font-display">Recebimentos</CardTitle>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
