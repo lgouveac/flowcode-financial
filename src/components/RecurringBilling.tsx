@@ -186,41 +186,41 @@ export const RecurringBilling = () => {
   };
 
   const renderTable = (payments: Payment[], isRecurring: boolean) => (
-    <div className="rounded-md border">
+    <div className="rounded-lg border bg-white">
       <table className="w-full">
-        <thead className="bg-muted">
-          <tr className="text-left">
-            <th className="p-4 text-sm font-medium text-muted-foreground">Cliente</th>
-            <th className="p-4 text-sm font-medium text-muted-foreground">Serviço</th>
-            <th className="p-4 text-sm font-medium text-muted-foreground">Valor</th>
+        <thead>
+          <tr className="border-b bg-gray-50">
+            <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Cliente</th>
+            <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Serviço</th>
+            <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Valor</th>
             {isRecurring ? (
               <>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Frequência</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Último Pagamento</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Próximo Pagamento</th>
+                <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Frequência</th>
+                <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Último Pagamento</th>
+                <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Próximo Pagamento</th>
               </>
             ) : (
-              <th className="p-4 text-sm font-medium text-muted-foreground">Data de Vencimento</th>
+              <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Data de Vencimento</th>
             )}
-            <th className="p-4 text-sm font-medium text-muted-foreground">Status</th>
+            <th className="py-4 px-6 text-left text-sm font-medium text-gray-500">Status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-gray-200">
           {payments.map((payment) => (
-            <tr key={payment.id} className="border-t hover:bg-muted/50">
-              <td className="p-4">
+            <tr key={payment.id} className="hover:bg-gray-50">
+              <td className="py-4 px-6">
                 <EditableCell
                   value={payment.clientName}
                   onChange={(value) => handleChange(payment.id, 'clientName', value, isRecurring)}
                 />
               </td>
-              <td className="p-4">
+              <td className="py-4 px-6">
                 <EditableCell
                   value={payment.service}
                   onChange={(value) => handleChange(payment.id, 'service', value, isRecurring)}
                 />
               </td>
-              <td className="p-4">
+              <td className="py-4 px-6">
                 <EditableCell
                   value={payment.value}
                   onChange={(value) => handleChange(payment.id, 'value', value, isRecurring)}
@@ -229,20 +229,20 @@ export const RecurringBilling = () => {
               </td>
               {isRecurring ? (
                 <>
-                  <td className="p-4">
+                  <td className="py-4 px-6">
                     <EditableCell
                       value={payment.frequency || ""}
                       onChange={(value) => handleChange(payment.id, 'frequency', value, isRecurring)}
                     />
                   </td>
-                  <td className="p-4">
+                  <td className="py-4 px-6">
                     <EditableCell
                       value={payment.lastPayment || ""}
                       onChange={(value) => handleChange(payment.id, 'lastPayment', value, isRecurring)}
                       type="date"
                     />
                   </td>
-                  <td className="p-4">
+                  <td className="py-4 px-6">
                     <EditableCell
                       value={payment.nextPayment || ""}
                       onChange={(value) => handleChange(payment.id, 'nextPayment', value, isRecurring)}
@@ -251,7 +251,7 @@ export const RecurringBilling = () => {
                   </td>
                 </>
               ) : (
-                <td className="p-4">
+                <td className="py-4 px-6">
                   <EditableCell
                     value={payment.dueDate || ""}
                     onChange={(value) => handleChange(payment.id, 'dueDate', value, isRecurring)}
@@ -259,8 +259,8 @@ export const RecurringBilling = () => {
                   />
                 </td>
               )}
-              <td className="p-4">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              <td className="py-4 px-6">
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   payment.status === "active" 
                     ? "bg-green-100 text-green-800" 
                     : payment.status === "pending"
@@ -280,12 +280,12 @@ export const RecurringBilling = () => {
   );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
         <CardTitle className="text-xl font-display">Recebimentos</CardTitle>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 bg-blue-500 hover:bg-blue-600">
               <PlusIcon className="h-4 w-4" />
               Novo Recebimento
             </Button>
@@ -303,15 +303,15 @@ export const RecurringBilling = () => {
         </Dialog>
       </CardHeader>
       <CardContent>
-        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
             <TabsTrigger value="onetime">Avulsos</TabsTrigger>
           </TabsList>
-          <TabsContent value="recurring" className="mt-4">
+          <TabsContent value="recurring">
             {renderTable(recurringPayments, true)}
           </TabsContent>
-          <TabsContent value="onetime" className="mt-4">
+          <TabsContent value="onetime">
             {renderTable(oneTimePayments, false)}
           </TabsContent>
         </Tabs>
