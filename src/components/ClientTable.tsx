@@ -41,6 +41,8 @@ const mockClients: Client[] = [
     responsibleName: "João Silva",
     responsibleEmail: "joao@techsolutions.com",
     responsiblePhone: "(11) 98765-4321",
+    fullName: "João Silva Santos", // Campo adicionado
+    type: "fixed", // Campo adicionado
   },
   {
     id: "2",
@@ -54,6 +56,8 @@ const mockClients: Client[] = [
     responsibleName: "Maria Santos",
     responsibleEmail: "maria@digitalmarket.com",
     responsiblePhone: "(11) 91234-5678",
+    fullName: "Maria Santos Silva", // Campo adicionado
+    type: "freelancer", // Campo adicionado
   },
 ];
 
