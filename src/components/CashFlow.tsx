@@ -3,16 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { useState } from "react";
-import { PlusIcon, CalendarIcon } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { PlusIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface CashFlowProps {
@@ -120,12 +114,17 @@ export const CashFlow = ({
   };
 
   return (
-    <div className="space-y-8">
-      <Card className="shadow-sm">
-        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-6 border-b">
-          <CardTitle className="text-2xl font-display">Fluxo de Caixa</CardTitle>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
-            <div className="flex flex-wrap gap-3">
+    <div className="space-y-8 p-6">
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="shadow-sm">
+          <CardHeader className="border-b pb-6">
+            <div className="flex flex-col space-y-1.5">
+              <CardTitle className="text-2xl font-display">Fluxo de Caixa</CardTitle>
+              <p className="text-sm text-muted-foreground">Movimentação de entrada e saída do seu negócio</p>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="mb-6 flex flex-wrap gap-3">
               <Select value={period} onValueChange={setPeriod}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Período" />
@@ -161,171 +160,145 @@ export const CashFlow = ({
                 </Select>
               )}
             </div>
-            <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-              <DialogTrigger asChild>
-                <Button className="font-medium w-full sm:w-auto">
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Nova Movimentação
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle className="text-xl font-display mb-4">Nova Movimentação</DialogTitle>
-                  <DialogDescription>
-                    Preencha os dados abaixo para adicionar uma nova movimentação ao fluxo de caixa.
-                  </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2.5">
-                      <Label className="text-sm font-medium">Tipo</Label>
-                      <Select value={movementType} onValueChange={(value: 'entrada' | 'saida') => setMovementType(value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="entrada">Entrada</SelectItem>
-                          <SelectItem value="saida">Saída</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2.5">
-                      <Label className="text-sm font-medium">Categoria</Label>
-                      <Select value={category} onValueChange={setCategory}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a categoria" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIES[movementType].map(cat => (
-                            <SelectItem key={cat.value} value={cat.value}>
-                              {cat.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2.5">
-                      <Label className="text-sm font-medium">Data</Label>
-                      <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
-                    </div>
-                    <div className="space-y-2.5">
-                      <Label className="text-sm font-medium">Valor</Label>
-                      <Input 
-                        type="number" 
-                        step="0.01" 
-                        placeholder="0,00" 
-                        value={amount} 
-                        onChange={e => setAmount(e.target.value)} 
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2.5">
-                    <Label className="text-sm font-medium">Descrição</Label>
-                    <Input 
-                      placeholder="Descrição da movimentação" 
-                      value={description} 
-                      onChange={e => setDescription(e.target.value)} 
-                    />
-                  </div>
-                  <Button type="submit" className="w-full mt-6">
-                    Adicionar Movimentação
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {showChart && (
-            <div className="h-[400px] w-full mb-8">
+            
+            <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
-                  data={mockData} 
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                <LineChart 
+                  data={mockData}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                  <Bar dataKey="entrada" name="Entradas" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="saida" name="Saídas" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="saldo" name="Saldo" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                </BarChart>
+                  <Legend />
+                  <Line type="monotone" dataKey="entrada" name="Entradas" stroke="#7C3AED" activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="saida" name="Saídas" stroke="#EF4444" />
+                  <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#3B82F6" />
+                </LineChart>
               </ResponsiveContainer>
             </div>
-          )}
+          </CardContent>
+        </Card>
 
-          <div className="rounded-lg border">
-            <div className="overflow-x-auto">
-              <table className="w-full">
+        <Card className="shadow-sm">
+          <CardHeader className="border-b pb-6">
+            <div className="flex flex-col space-y-1.5">
+              <CardTitle className="text-2xl font-display">Movimentações</CardTitle>
+              <p className="text-sm text-muted-foreground">Acompanhe suas últimas movimentações</p>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="flex justify-end mb-6">
+              <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+                <DialogTrigger asChild>
+                  <Button className="bg-primary text-white hover:bg-primary-hover">
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Nova Movimentação
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Nova Movimentação</DialogTitle>
+                    <DialogDescription>
+                      Adicione uma nova movimentação ao fluxo de caixa
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2.5">
+                        <Label className="text-sm font-medium">Tipo</Label>
+                        <Select value={movementType} onValueChange={(value: 'entrada' | 'saida') => setMovementType(value)}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="entrada">Entrada</SelectItem>
+                            <SelectItem value="saida">Saída</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2.5">
+                        <Label className="text-sm font-medium">Categoria</Label>
+                        <Select value={category} onValueChange={setCategory}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a categoria" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORIES[movementType].map(cat => (
+                              <SelectItem key={cat.value} value={cat.value}>
+                                {cat.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2.5">
+                        <Label className="text-sm font-medium">Data</Label>
+                        <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+                      </div>
+                      <div className="space-y-2.5">
+                        <Label className="text-sm font-medium">Valor</Label>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          placeholder="0,00" 
+                          value={amount} 
+                          onChange={e => setAmount(e.target.value)} 
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2.5">
+                      <Label className="text-sm font-medium">Descrição</Label>
+                      <Input 
+                        placeholder="Descrição da movimentação" 
+                        value={description} 
+                        onChange={e => setDescription(e.target.value)} 
+                      />
+                    </div>
+                    <Button type="submit" className="w-full mt-6">
+                      Adicionar Movimentação
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/50 border-b">
-                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Data</th>
-                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Descrição</th>
-                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Categoria</th>
-                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Entrada</th>
-                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Saída</th>
-                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Saldo</th>
+                    <th className="py-3 px-4 text-left font-medium text-muted-foreground">Data</th>
+                    <th className="py-3 px-4 text-left font-medium text-muted-foreground">Descrição</th>
+                    <th className="py-3 px-4 text-left font-medium text-muted-foreground">Valor</th>
+                    <th className="py-3 px-4 text-left font-medium text-muted-foreground">Tipo</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   <tr className="hover:bg-muted/50">
-                    <td className="py-4 px-6 text-sm">10/03/2024</td>
-                    <td className="py-4 px-6">
-                      <Input 
-                        defaultValue="Faturamento Cliente X"
-                        className="h-9"
-                      />
+                    <td className="py-3 px-4">10/03/2024</td>
+                    <td className="py-3 px-4">Faturamento Cliente X</td>
+                    <td className="py-3 px-4 text-green-600">R$ 5.000,00</td>
+                    <td className="py-3 px-4">
+                      <span className="status-badge status-badge-success">Entrada</span>
                     </td>
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Faturamento
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-sm text-green-600">
-                      <Input 
-                        defaultValue="5000.00"
-                        className="h-9 text-green-600"
-                        type="number"
-                        step="0.01"
-                      />
-                    </td>
-                    <td className="py-4 px-6 text-sm">-</td>
-                    <td className="py-4 px-6 text-sm font-medium">R$ 5.000,00</td>
                   </tr>
                   <tr className="hover:bg-muted/50">
-                    <td className="py-4 px-6 text-sm">12/03/2024</td>
-                    <td className="py-4 px-6">
-                      <Input 
-                        defaultValue="Pagamento Funcionário Y"
-                        className="h-9"
-                      />
+                    <td className="py-3 px-4">12/03/2024</td>
+                    <td className="py-3 px-4">Pagamento Funcionário Y</td>
+                    <td className="py-3 px-4 text-red-600">R$ 3.500,00</td>
+                    <td className="py-3 px-4">
+                      <span className="status-badge status-badge-error">Saída</span>
                     </td>
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Funcionário
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-sm">-</td>
-                    <td className="py-4 px-6 text-sm text-red-600">
-                      <Input 
-                        defaultValue="3500.00"
-                        className="h-9 text-red-600"
-                        type="number"
-                        step="0.01"
-                      />
-                    </td>
-                    <td className="py-4 px-6 text-sm font-medium">R$ 1.500,00</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
