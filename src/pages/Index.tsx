@@ -24,32 +24,32 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8">
-      <header className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto">
-          <nav className="border-t border-border/40">
-            <div className="flex -mb-px">
-              {navigation.map(({ path, icon: Icon, label }) => (
-                <Link
-                  key={path}
-                  to={path}
-                  className={`flex-1 flex items-center justify-center px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                    isActive(path)
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                  }`}
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  {label}
-                </Link>
-              ))}
-            </div>
+    <div className="min-h-screen bg-zinc-50">
+      <header className="bg-white border-b border-zinc-200 sticky top-0 z-50">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex -mb-px space-x-8">
+            {navigation.map(({ path, icon: Icon, label }) => (
+              <Link
+                key={path}
+                to={path}
+                className={`flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  isActive(path)
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300'
+                }`}
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {label}
+              </Link>
+            ))}
           </nav>
         </div>
       </header>
 
-      <main className="container pt-8 animate-fade-in">
-        <Outlet />
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 min-h-[calc(100vh-10rem)]">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
