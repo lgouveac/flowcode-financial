@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
@@ -122,14 +120,14 @@ export const CashFlow = ({
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-xl font-display">Fluxo de Caixa</CardTitle>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+    <div className="space-y-8">
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-6 border-b">
+          <CardTitle className="text-2xl font-display">Fluxo de Caixa</CardTitle>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+            <div className="flex flex-wrap gap-3">
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
                 <SelectContent>
@@ -139,7 +137,7 @@ export const CashFlow = ({
                 </SelectContent>
               </Select>
               <Select value={year} onValueChange={setYear}>
-                <SelectTrigger className="w-[100px]">
+                <SelectTrigger className="w-[120px]">
                   <SelectValue placeholder="Ano" />
                 </SelectTrigger>
                 <SelectContent>
@@ -150,7 +148,7 @@ export const CashFlow = ({
               </Select>
               {period === 'month' && (
                 <Select value={month} onValueChange={setMonth}>
-                  <SelectTrigger className="w-[120px]">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="Mês" />
                   </SelectTrigger>
                   <SelectContent>
@@ -165,19 +163,19 @@ export const CashFlow = ({
             </div>
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
               <DialogTrigger asChild>
-                <Button className="font-medium">
+                <Button className="font-medium w-full sm:w-auto">
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Nova Movimentação
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle className="text-xl font-display mb-4">Nova Movimentação</DialogTitle>
                   <DialogDescription>
                     Preencha os dados abaixo para adicionar uma nova movimentação ao fluxo de caixa.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2.5">
                       <Label className="text-sm font-medium">Tipo</Label>
@@ -239,19 +237,19 @@ export const CashFlow = ({
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {showChart && (
-            <div className="h-[300px] w-full mb-6">
+            <div className="h-[400px] w-full mb-8">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart 
                   data={mockData} 
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Legend />
+                  <Legend wrapperStyle={{ paddingTop: "20px" }} />
                   <Bar dataKey="entrada" name="Entradas" fill="#22c55e" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="saida" name="Saídas" fill="#ef4444" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="saldo" name="Saldo" fill="#3b82f6" radius={[4, 4, 0, 0]} />
@@ -260,69 +258,71 @@ export const CashFlow = ({
             </div>
           )}
 
-          <div className="rounded-md border">
-            <table className="w-full">
-              <thead className="bg-muted">
-                <tr className="text-left">
-                  <th className="p-4 text-sm font-medium text-muted-foreground">Data</th>
-                  <th className="p-4 text-sm font-medium text-muted-foreground">Descrição</th>
-                  <th className="p-4 text-sm font-medium text-muted-foreground">Categoria</th>
-                  <th className="p-4 text-sm font-medium text-muted-foreground">Entrada</th>
-                  <th className="p-4 text-sm font-medium text-muted-foreground">Saída</th>
-                  <th className="p-4 text-sm font-medium text-muted-foreground">Saldo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                <tr className="hover:bg-muted/50">
-                  <td className="p-4 text-sm">10/03/2024</td>
-                  <td className="p-4 text-sm">
-                    <Input 
-                      defaultValue="Faturamento Cliente X"
-                      className="h-8 px-2"
-                    />
-                  </td>
-                  <td className="p-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Faturamento
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm text-green-600">
-                    <Input 
-                      defaultValue="5000.00"
-                      className="h-8 px-2 text-green-600"
-                      type="number"
-                      step="0.01"
-                    />
-                  </td>
-                  <td className="p-4 text-sm">-</td>
-                  <td className="p-4 text-sm">R$ 5.000,00</td>
-                </tr>
-                <tr className="hover:bg-muted/50">
-                  <td className="p-4 text-sm">12/03/2024</td>
-                  <td className="p-4 text-sm">
-                    <Input 
-                      defaultValue="Pagamento Funcionário Y"
-                      className="h-8 px-2"
-                    />
-                  </td>
-                  <td className="p-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      Funcionário
-                    </span>
-                  </td>
-                  <td className="p-4 text-sm">-</td>
-                  <td className="p-4 text-sm text-red-600">
-                    <Input 
-                      defaultValue="3500.00"
-                      className="h-8 px-2 text-red-600"
-                      type="number"
-                      step="0.01"
-                    />
-                  </td>
-                  <td className="p-4 text-sm">R$ 1.500,00</td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="rounded-lg border">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/50 border-b">
+                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Data</th>
+                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Descrição</th>
+                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Categoria</th>
+                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Entrada</th>
+                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Saída</th>
+                    <th className="py-4 px-6 text-left text-sm font-medium text-muted-foreground">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr className="hover:bg-muted/50">
+                    <td className="py-4 px-6 text-sm">10/03/2024</td>
+                    <td className="py-4 px-6">
+                      <Input 
+                        defaultValue="Faturamento Cliente X"
+                        className="h-9"
+                      />
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Faturamento
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-sm text-green-600">
+                      <Input 
+                        defaultValue="5000.00"
+                        className="h-9 text-green-600"
+                        type="number"
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="py-4 px-6 text-sm">-</td>
+                    <td className="py-4 px-6 text-sm font-medium">R$ 5.000,00</td>
+                  </tr>
+                  <tr className="hover:bg-muted/50">
+                    <td className="py-4 px-6 text-sm">12/03/2024</td>
+                    <td className="py-4 px-6">
+                      <Input 
+                        defaultValue="Pagamento Funcionário Y"
+                        className="h-9"
+                      />
+                    </td>
+                    <td className="py-4 px-6">
+                      <span className="inline-flex items-center px-2.5 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        Funcionário
+                      </span>
+                    </td>
+                    <td className="py-4 px-6 text-sm">-</td>
+                    <td className="py-4 px-6 text-sm text-red-600">
+                      <Input 
+                        defaultValue="3500.00"
+                        className="h-9 text-red-600"
+                        type="number"
+                        step="0.01"
+                      />
+                    </td>
+                    <td className="py-4 px-6 text-sm font-medium">R$ 1.500,00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </CardContent>
       </Card>
