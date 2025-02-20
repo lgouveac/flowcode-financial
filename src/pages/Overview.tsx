@@ -1,6 +1,5 @@
 
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
 
 const stats = [
   { title: "Receita Total", value: "R$ 24.500", change: "+12.5%", description: "Mês atual" },
@@ -11,11 +10,11 @@ const stats = [
 
 export const Overview = () => {
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8">
       <h1 className="text-2xl font-semibold">Visão Geral</h1>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
-          <Card key={stat.title} className="p-6 transition-shadow hover:shadow-card-hover">
+          <div key={stat.title} className="bg-white rounded-lg border border-zinc-200 p-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -37,7 +36,7 @@ export const Overview = () => {
               </div>
               <p className="text-sm text-muted-foreground">{stat.description}</p>
             </motion.div>
-          </Card>
+          </div>
         ))}
       </div>
     </div>
