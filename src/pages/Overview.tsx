@@ -7,10 +7,6 @@ const stats = [
   { title: "Despesas Totais", value: "R$ 18.200", change: "+5.2%", description: "Mês atual" },
   { title: "Lucro Líquido", value: "R$ 6.300", change: "+7.3%", description: "Mês atual" },
   { title: "Clientes Ativos", value: "45", change: "+5", description: "Últimos 30 dias" },
-  { title: "Faturas Pendentes", value: "12", change: "-3", description: "A vencer" },
-  { title: "Ticket Médio", value: "R$ 2.850", change: "+15%", description: "Últimos 30 dias" },
-  { title: "Impostos a Pagar", value: "R$ 3.420", change: "+2.1%", description: "Mês atual" },
-  { title: "Folha de Pagamento", value: "R$ 12.500", change: "0%", description: "Mês atual" },
 ];
 
 export const Overview = () => {
