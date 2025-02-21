@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -173,19 +174,19 @@ export const RecurringBilling = () => {
                 <td className="px-6 py-4">
                   <EditableCell
                     value={payment.client_name}
-                    onChange={(value) => handleChange(payment.id, 'client_name', value, isRecurring)}
+                    onChange={(value) => handleChange(payment.id, 'client_name', value)}
                   />
                 </td>
                 <td className="px-6 py-4">
                   <EditableCell
                     value={payment.service}
-                    onChange={(value) => handleChange(payment.id, 'service', value, isRecurring)}
+                    onChange={(value) => handleChange(payment.id, 'service', value)}
                   />
                 </td>
                 <td className="px-6 py-4">
                   <EditableCell
                     value={payment.value.toString()}
-                    onChange={(value) => handleChange(payment.id, 'value', parseFloat(value) || 0, isRecurring)}
+                    onChange={(value) => handleChange(payment.id, 'value', parseFloat(value) || 0)}
                     type="number"
                   />
                 </td>
@@ -194,20 +195,20 @@ export const RecurringBilling = () => {
                     <td className="px-6 py-4">
                       <EditableCell
                         value={payment.frequency || ""}
-                        onChange={(value) => handleChange(payment.id, 'frequency', value, isRecurring)}
+                        onChange={(value) => handleChange(payment.id, 'frequency', value)}
                       />
                     </td>
                     <td className="px-6 py-4">
                       <EditableCell
                         value={payment.last_payment || ""}
-                        onChange={(value) => handleChange(payment.id, 'last_payment', value, isRecurring)}
+                        onChange={(value) => handleChange(payment.id, 'last_payment', value)}
                         type="date"
                       />
                     </td>
                     <td className="px-6 py-4">
                       <EditableCell
                         value={payment.next_payment || ""}
-                        onChange={(value) => handleChange(payment.id, 'next_payment', value, isRecurring)}
+                        onChange={(value) => handleChange(payment.id, 'next_payment', value)}
                         type="date"
                       />
                     </td>
@@ -216,7 +217,7 @@ export const RecurringBilling = () => {
                   <td className="px-6 py-4">
                     <EditableCell
                       value={payment.due_date || ""}
-                      onChange={(value) => handleChange(payment.id, 'due_date', value, isRecurring)}
+                      onChange={(value) => handleChange(payment.id, 'due_date', value)}
                       type="date"
                     />
                   </td>
