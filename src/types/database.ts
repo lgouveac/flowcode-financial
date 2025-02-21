@@ -40,3 +40,18 @@ export type Employee = {
   updated_at?: string;
 }
 
+export type Payment = {
+  id: string;
+  client_id: string;
+  client_name: string;
+  service: string;
+  value: number;
+  frequency?: string;
+  last_payment?: string;
+  next_payment?: string;
+  due_date?: string;
+  status: "active" | "inactive" | "pending";
+  type: "recurring" | "onetime";
+  created_at?: string;
+  updated_at?: string;
+}
