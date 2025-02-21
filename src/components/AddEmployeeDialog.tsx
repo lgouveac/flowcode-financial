@@ -22,7 +22,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useEmployees } from "@/hooks/useEmployees";
 import type { Employee } from "@/types/database";
 
-type EmployeeFormData = Omit<Employee, 'id' | 'created_at' | 'updated_at' | 'status'>;
+type EmployeeFormData = Omit<Employee, 'id' | 'created_at' | 'updated_at'>;
 
 export function AddEmployeeDialog() {
   const [open, setOpen] = useState(false);
@@ -40,6 +40,7 @@ export function AddEmployeeDialog() {
     type: "fixed",
     payment_method: "pix",
     status: "active",
+    last_invoice: undefined
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,4 +177,3 @@ export function AddEmployeeDialog() {
     </Dialog>
   );
 }
-
