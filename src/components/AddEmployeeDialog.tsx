@@ -19,40 +19,45 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { PlusIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useEmployees } from "@/hooks/useEmployees";
+import type { Employee } from "@/types/database";
 
-interface EmployeeFormData {
-  cnpj: string;
-  pix: string;
-  address: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  position: string;
-  type: "fixed" | "freelancer";
-}
+type EmployeeFormData = Omit<Employee, 'id' | 'created_at' | 'updated_at' | 'status'>;
 
 export function AddEmployeeDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const { createEmployee } = useEmployees();
+  
   const [formData, setFormData] = useState<EmployeeFormData>({
     cnpj: "",
     pix: "",
     address: "",
-    fullName: "",
+    full_name: "",
     email: "",
     phone: "",
     position: "",
     type: "fixed",
+    payment_method: "pix",
+    status: "active",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Novo funcionário:", formData);
-    toast({
-      title: "Funcionário cadastrado",
-      description: "O novo funcionário foi adicionado com sucesso.",
-    });
-    setOpen(false);
+    try {
+      await createEmployee.mutateAsync(formData);
+      toast({
+        title: "Funcionário cadastrado",
+        description: "O novo funcionário foi adicionado com sucesso.",
+      });
+      setOpen(false);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao cadastrar funcionário.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -75,7 +80,6 @@ export function AddEmployeeDialog() {
               placeholder="00.000.000/0001-00"
               value={formData.cnpj}
               onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-              required
             />
           </div>
 
@@ -105,8 +109,8 @@ export function AddEmployeeDialog() {
             <Label htmlFor="fullName">Nome Completo</Label>
             <Input
               id="fullName"
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
               required
             />
           </div>
@@ -172,3 +176,4 @@ export function AddEmployeeDialog() {
     </Dialog>
   );
 }
+

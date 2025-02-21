@@ -23,3 +23,20 @@ export type Client = {
   updated_at?: string;
 }
 
+export type Employee = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  position: string;
+  cnpj?: string;
+  pix: string;
+  type: "fixed" | "freelancer";
+  status: "active" | "inactive";
+  payment_method: string;
+  last_invoice?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
