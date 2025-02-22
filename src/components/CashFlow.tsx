@@ -1,116 +1,182 @@
+
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { useState } from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { PlusIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { CashFlow as CashFlowType } from "@/types/cashflow";
 
 interface CashFlowProps {
   showChart?: boolean;
 }
 
-interface CashFlowEntry {
-  date: string;
-  type: 'entrada' | 'saida';
-  category: string;
-  description: string;
-  amount: number;
-}
-
 const CATEGORIES = {
-  entrada: [{
-    value: 'faturamento',
-    label: 'Faturamento'
+  income: [{
+    value: 'payment',
+    label: 'Pagamento'
   }, {
-    value: 'investimento',
+    value: 'investment',
     label: 'Investimento'
   }, {
-    value: 'outros_entrada',
+    value: 'other_income',
     label: 'Outros'
   }],
-  saida: [{
-    value: 'funcionario',
+  expense: [{
+    value: 'employee',
     label: 'Funcionário'
   }, {
-    value: 'imposto',
+    value: 'tax',
     label: 'Imposto'
   }, {
-    value: 'prolabore',
+    value: 'pro_labore',
     label: 'Pró-labore'
   }, {
-    value: 'dividendos',
+    value: 'dividend',
     label: 'Dividendos'
   }, {
-    value: 'fornecedor',
+    value: 'supplier',
     label: 'Fornecedor'
   }, {
-    value: 'outros_saida',
+    value: 'other_expense',
     label: 'Outros'
   }]
 };
-
-const mockData = [{
-  name: 'Jan',
-  entrada: 24500,
-  saida: 18200,
-  saldo: 6300
-}, {
-  name: 'Fev',
-  entrada: 28000,
-  saida: 19500,
-  saldo: 8500
-}, {
-  name: 'Mar',
-  entrada: 32000,
-  saida: 21000,
-  saldo: 11000
-}, {
-  name: 'Abr',
-  entrada: 30000,
-  saida: 20000,
-  saldo: 10000
-}, {
-  name: 'Mai',
-  entrada: 35000,
-  saida: 22000,
-  saldo: 13000
-}, {
-  name: 'Jun',
-  entrada: 33000,
-  saida: 21500,
-  saldo: 11500
-}];
 
 export const CashFlow = ({
   showChart = true
 }: CashFlowProps) => {
   const { toast } = useToast();
-  const [movementType, setMovementType] = useState<'entrada' | 'saida'>('entrada');
+  const [movementType, setMovementType] = useState<'income' | 'expense'>('income');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [period, setPeriod] = useState('month');
-  const [year, setYear] = useState('2024');
-  const [month, setMonth] = useState('3');
+  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
+  const [cashFlow, setCashFlow] = useState<CashFlowType[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchCashFlow = async () => {
+    const { data, error } = await supabase
+      .from('cash_flow')
+      .select('*')
+      .order('date', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching cash flow:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar o fluxo de caixa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCashFlow(data || []);
+    processChartData(data || []);
+  };
+
+  const processChartData = (data: CashFlowType[]) => {
+    const groupedData = data.reduce((acc: Record<string, { income: number; expense: number }>, item) => {
+      const monthYear = new Date(item.date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+      
+      if (!acc[monthYear]) {
+        acc[monthYear] = { income: 0, expense: 0 };
+      }
+
+      if (item.type === 'income') {
+        acc[monthYear].income += Number(item.amount);
+      } else {
+        acc[monthYear].expense += Number(item.amount);
+      }
+
+      return acc;
+    }, {});
+
+    const chartData = Object.entries(groupedData).map(([name, values]) => ({
+      name,
+      entrada: values.income,
+      saida: values.expense,
+      saldo: values.income - values.expense
+    }));
+
+    setChartData(chartData);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const newCashFlow = {
+      type: movementType,
+      category,
+      description,
+      amount: Number(amount),
+      date,
+    };
+
+    const { data, error } = await supabase
+      .from('cash_flow')
+      .insert([newCashFlow])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating cash flow:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível registrar a movimentação.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
-      title: "Movimentação Registrada",
-      description: "A nova movimentação foi adicionada com sucesso.",
+      title: "Sucesso",
+      description: "Movimentação registrada com sucesso.",
     });
+
     setOpenDialog(false);
-    setMovementType('entrada');
+    setMovementType('income');
     setCategory('');
     setDescription('');
     setAmount('');
     setDate('');
+    fetchCashFlow();
+  };
+
+  useEffect(() => {
+    fetchCashFlow();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'cash_flow' },
+        () => {
+          fetchCashFlow();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
   return (
@@ -140,9 +206,14 @@ export const CashFlow = ({
                   <SelectValue placeholder="Ano" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="2024">2024</SelectItem>
-                  <SelectItem value="2023">2023</SelectItem>
-                  <SelectItem value="2022">2022</SelectItem>
+                  {Array.from({ length: 3 }, (_, i) => {
+                    const year = new Date().getFullYear() - i;
+                    return (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               {period === 'month' && (
@@ -161,23 +232,25 @@ export const CashFlow = ({
               )}
             </div>
             
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart 
-                  data={mockData}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="entrada" name="Entradas" stroke="#7C3AED" activeDot={{ r: 8 }} />
-                  <Line type="monotone" dataKey="saida" name="Saídas" stroke="#EF4444" />
-                  <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#3B82F6" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {showChart && (
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={chartData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="entrada" name="Entradas" stroke="#7C3AED" activeDot={{ r: 8 }} />
+                    <Line type="monotone" dataKey="saida" name="Saídas" stroke="#EF4444" />
+                    <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#3B82F6" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -208,13 +281,13 @@ export const CashFlow = ({
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2.5">
                         <Label className="text-sm font-medium">Tipo</Label>
-                        <Select value={movementType} onValueChange={(value: 'entrada' | 'saida') => setMovementType(value)}>
+                        <Select value={movementType} onValueChange={(value: 'income' | 'expense') => setMovementType(value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione o tipo" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="entrada">Entrada</SelectItem>
-                            <SelectItem value="saida">Saída</SelectItem>
+                            <SelectItem value="income">Entrada</SelectItem>
+                            <SelectItem value="expense">Saída</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -277,22 +350,26 @@ export const CashFlow = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  <tr className="hover:bg-muted/50">
-                    <td className="py-3 px-4">10/03/2024</td>
-                    <td className="py-3 px-4">Faturamento Cliente X</td>
-                    <td className="py-3 px-4 text-green-600">R$ 5.000,00</td>
-                    <td className="py-3 px-4">
-                      <span className="status-badge status-badge-success">Entrada</span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-muted/50">
-                    <td className="py-3 px-4">12/03/2024</td>
-                    <td className="py-3 px-4">Pagamento Funcionário Y</td>
-                    <td className="py-3 px-4 text-red-600">R$ 3.500,00</td>
-                    <td className="py-3 px-4">
-                      <span className="status-badge status-badge-error">Saída</span>
-                    </td>
-                  </tr>
+                  {cashFlow.map((flow) => (
+                    <tr key={flow.id} className="hover:bg-muted/50">
+                      <td className="py-3 px-4">
+                        {new Date(flow.date).toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="py-3 px-4">{flow.description}</td>
+                      <td className={`py-3 px-4 ${flow.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(flow.amount)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                          flow.type === 'income' 
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {flow.type === 'income' ? 'Entrada' : 'Saída'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

@@ -9,6 +9,50 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cash_flow: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          date: string
+          description: string
+          id: string
+          payment_id: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string | null
+          date: string
+          description: string
+          id?: string
+          payment_id?: string | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          date?: string
+          description?: string
+          id?: string
+          payment_id?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_flow_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -174,7 +218,13 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      billing_status: "pending" | "paid" | "overdue" | "cancelled"
+      billing_status:
+        | "pending"
+        | "billed"
+        | "awaiting_invoice"
+        | "paid"
+        | "overdue"
+        | "cancelled"
       client_status: "active" | "inactive" | "overdue"
       client_type: "pf" | "pj"
       payment_method: "pix" | "boleto" | "credit_card"
