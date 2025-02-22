@@ -14,12 +14,15 @@ interface BillingTableProps {
 export const BillingTable = ({ billings }: BillingTableProps) => {
   const { toast } = useToast();
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
+  // Sort billings by creation date (newest first), then by current installment
+  const sortedBillings = [...billings].sort((a, b) => {
+    // First sort by created_at (newest first)
+    const dateComparison = new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+    if (dateComparison !== 0) return dateComparison;
+    
+    // Then sort by current installment
+    return a.current_installment - b.current_installment;
+  });
 
   const handleUpdateBilling = async (billingId: string, field: string, value: any) => {
     // Prevent changing status to paid directly
@@ -99,8 +102,16 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {billings.map((billing) => (
-            <TableRow key={billing.id} className="group">
+          {sortedBillings.map((billing, index) => (
+            <TableRow 
+              key={billing.id} 
+              className={`group ${
+                // Add a visual separator between different billing groups
+                index > 0 &&
+                sortedBillings[index - 1]?.description !== billing.description &&
+                "border-t-4 border-t-gray-200"
+              }`}
+            >
               <TableCell>{billing.clients?.name}</TableCell>
               <TableCell className="relative">
                 <EditableCell
