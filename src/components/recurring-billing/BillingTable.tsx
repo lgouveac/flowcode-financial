@@ -44,6 +44,33 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
     }
   };
 
+  const getStatusBadgeVariant = (status: RecurringBilling['status']) => {
+    switch (status) {
+      case 'paid':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'overdue':
+        return 'destructive';
+      case 'cancelled':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: RecurringBilling['status']) => {
+    const statusLabels: Record<RecurringBilling['status'], string> = {
+      pending: 'Pendente',
+      billed: 'Faturado',
+      awaiting_invoice: 'Aguardando Fatura',
+      paid: 'Pago',
+      overdue: 'Atrasado',
+      cancelled: 'Cancelado'
+    };
+    return statusLabels[status];
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -52,7 +79,7 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
             <TableHead>Cliente</TableHead>
             <TableHead>Descrição</TableHead>
             <TableHead>Valor</TableHead>
-            <TableHead>Vencimento</TableHead>
+            <TableHead>Dia do Vencimento</TableHead>
             <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
@@ -76,8 +103,9 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
               </TableCell>
               <TableCell className="relative">
                 <EditableCell
-                  value={billing.due_date}
-                  onChange={(value) => handleUpdateBilling(billing.id, 'due_date', value)}
+                  value={billing.due_day.toString()}
+                  onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
+                  type="number"
                 />
               </TableCell>
               <TableCell>
@@ -102,14 +130,18 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue>
-                      <Badge variant={billing.status === 'active' ? 'default' : 'secondary'}>
-                        {billing.status === 'active' ? 'Ativo' : 'Inativo'}
+                      <Badge variant={getStatusBadgeVariant(billing.status)}>
+                        {getStatusLabel(billing.status)}
                       </Badge>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="billed">Faturado</SelectItem>
+                    <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                    <SelectItem value="paid">Pago</SelectItem>
+                    <SelectItem value="overdue">Atrasado</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
               </TableCell>
