@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { AlertCircle } from "lucide-react";
 import { CATEGORIES } from "@/types/cashflow-categories";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import type { Payment } from "@/types/payment";
 
 interface NewCashFlowFormProps {
   onSuccess: () => void;
@@ -23,30 +24,45 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
+  const [selectedPayment, setSelectedPayment] = useState<string>('');
+  const [payments, setPayments] = useState<Payment[]>([]);
 
-  const handleCategoryChange = (value: string) => {
-    if (movementType === 'income' && value === 'payment') {
-      toast({
-        title: "Atenção",
-        description: "Pagamentos de cliente devem ser registrados através da seção de recebimentos, alterando o status para 'Pago'.",
-        variant: "default",
-      });
+  useEffect(() => {
+    if (category === 'payment') {
+      fetchPendingPayments();
+    }
+  }, [category]);
+
+  const fetchPendingPayments = async () => {
+    const { data, error } = await supabase
+      .from('payments')
+      .select(`
+        *,
+        clients (
+          name
+        )
+      `)
+      .in('status', ['pending', 'billed', 'awaiting_invoice']);
+
+    if (error) {
+      console.error('Error fetching payments:', error);
       return;
     }
-    setCategory(value);
+
+    setPayments(data || []);
+  };
+
+  const handlePaymentSelect = (paymentId: string) => {
+    const payment = payments.find(p => p.id === paymentId);
+    if (payment) {
+      setSelectedPayment(paymentId);
+      setAmount(payment.amount.toString());
+      setDescription(payment.description);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (movementType === 'income' && category === 'payment') {
-      toast({
-        title: "Operação não permitida",
-        description: "Pagamentos de cliente devem ser registrados através da seção de recebimentos.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     const newCashFlow = {
       type: movementType,
@@ -54,22 +70,45 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
       description,
       amount: Number(amount),
       date,
+      payment_id: category === 'payment' ? selectedPayment : null,
     };
 
-    const { error } = await supabase
+    // Inserir o cash flow
+    const { error: cashFlowError } = await supabase
       .from('cash_flow')
       .insert([newCashFlow])
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating cash flow:', error);
+    if (cashFlowError) {
+      console.error('Error creating cash flow:', cashFlowError);
       toast({
         title: "Erro",
         description: "Não foi possível registrar a movimentação.",
         variant: "destructive",
       });
       return;
+    }
+
+    // Se for um pagamento, atualizar o status do pagamento para 'paid'
+    if (category === 'payment' && selectedPayment) {
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .update({ 
+          status: 'paid',
+          payment_date: date
+        })
+        .eq('id', selectedPayment);
+
+      if (paymentError) {
+        console.error('Error updating payment:', paymentError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível atualizar o status do pagamento.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     toast({
@@ -89,14 +128,6 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
           Adicione uma nova movimentação ao fluxo de caixa
         </DialogDescription>
       </DialogHeader>
-      {movementType === 'income' && category === 'payment' && (
-        <Alert variant="warning" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Pagamentos de cliente devem ser registrados através da seção de recebimentos, alterando o status para 'Pago'.
-          </AlertDescription>
-        </Alert>
-      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2.5">
@@ -113,7 +144,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
           </div>
           <div className="space-y-2.5">
             <Label className="text-sm font-medium">Categoria</Label>
-            <Select value={category} onValueChange={handleCategoryChange}>
+            <Select value={category} onValueChange={setCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a categoria" />
               </SelectTrigger>
@@ -127,6 +158,25 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
             </Select>
           </div>
         </div>
+
+        {category === 'payment' && (
+          <div className="space-y-2.5">
+            <Label className="text-sm font-medium">Recebimento</Label>
+            <Select value={selectedPayment} onValueChange={handlePaymentSelect}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o recebimento" />
+              </SelectTrigger>
+              <SelectContent>
+                {payments.map(payment => (
+                  <SelectItem key={payment.id} value={payment.id}>
+                    {payment.clients?.name} - {payment.description} - R$ {payment.amount}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2.5">
             <Label className="text-sm font-medium">Data</Label>
@@ -139,7 +189,8 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
               step="0.01" 
               placeholder="0,00" 
               value={amount} 
-              onChange={e => setAmount(e.target.value)} 
+              onChange={e => setAmount(e.target.value)}
+              disabled={category === 'payment'} 
             />
           </div>
         </div>
@@ -148,7 +199,8 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
           <Input 
             placeholder="Descrição da movimentação" 
             value={description} 
-            onChange={e => setDescription(e.target.value)} 
+            onChange={e => setDescription(e.target.value)}
+            disabled={category === 'payment'} 
           />
         </div>
         <Button type="submit" className="w-full mt-6">
@@ -158,4 +210,3 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
     </DialogContent>
   );
 };
-
