@@ -127,9 +127,11 @@ export type Database = {
           description: string
           due_date: string
           id: string
+          installment_number: number | null
           payment_date: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           status: Database["public"]["Enums"]["billing_status"] | null
+          total_installments: number | null
           updated_at: string | null
         }
         Insert: {
@@ -139,9 +141,11 @@ export type Database = {
           description: string
           due_date: string
           id?: string
+          installment_number?: number | null
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["billing_status"] | null
+          total_installments?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -151,9 +155,11 @@ export type Database = {
           description?: string
           due_date?: string
           id?: string
+          installment_number?: number | null
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["billing_status"] | null
+          total_installments?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -171,10 +177,12 @@ export type Database = {
           amount: number
           client_id: string
           created_at: string | null
+          current_installment: number
           description: string
           due_day: number
           end_date: string | null
           id: string
+          installments: number
           payment_date: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           start_date: string
@@ -185,10 +193,12 @@ export type Database = {
           amount: number
           client_id: string
           created_at?: string | null
+          current_installment?: number
           description: string
           due_day: number
           end_date?: string | null
           id?: string
+          installments?: number
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           start_date: string
@@ -199,10 +209,12 @@ export type Database = {
           amount?: number
           client_id?: string
           created_at?: string | null
+          current_installment?: number
           description?: string
           due_day?: number
           end_date?: string | null
           id?: string
+          installments?: number
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           start_date?: string

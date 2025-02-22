@@ -22,16 +22,18 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
   };
 
   const handleUpdateBilling = async (billingId: string, field: string, value: any) => {
-    const updates: any = { [field]: value };
-    
-    // If status is being changed to 'paid' and no payment date is set, set it to today
+    // Prevent changing status to paid directly
     if (field === 'status' && value === 'paid') {
-      const billing = billings.find(b => b.id === billingId);
-      if (!billing?.payment_date) {
-        updates.payment_date = new Date().toISOString().split('T')[0];
-      }
+      toast({
+        title: "Operação não permitida",
+        description: "O status 'Pago' só pode ser definido na seção de Movimentações.",
+        variant: "destructive",
+      });
+      return;
     }
 
+    const updates: any = { [field]: value };
+    
     try {
       const { error } = await supabase
         .from('recurring_billing')
@@ -88,6 +90,7 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
           <TableRow>
             <TableHead>Cliente</TableHead>
             <TableHead>Descrição</TableHead>
+            <TableHead>Parcela</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Dia do Vencimento</TableHead>
             <TableHead>Data Pgto.</TableHead>
@@ -104,6 +107,9 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                   value={billing.description}
                   onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
                 />
+              </TableCell>
+              <TableCell>
+                {billing.current_installment}/{billing.installments}
               </TableCell>
               <TableCell className="relative">
                 <EditableCell
@@ -159,7 +165,6 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                     <SelectItem value="pending">Pendente</SelectItem>
                     <SelectItem value="billed">Faturado</SelectItem>
                     <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                    <SelectItem value="paid">Pago</SelectItem>
                     <SelectItem value="overdue">Atrasado</SelectItem>
                     <SelectItem value="cancelled">Cancelado</SelectItem>
                   </SelectContent>

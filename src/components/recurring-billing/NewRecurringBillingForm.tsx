@@ -16,12 +16,13 @@ interface NewRecurringBillingFormProps {
 export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecurringBillingFormProps) => {
   const [formData, setFormData] = useState<Partial<RecurringBilling>>({
     payment_method: 'pix',
-    status: 'pending'
+    status: 'pending',
+    installments: 1
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.client_id || !formData.description || !formData.amount || !formData.due_day || !formData.start_date) {
+    if (!formData.client_id || !formData.description || !formData.amount || !formData.due_day || !formData.start_date || !formData.installments) {
       return;
     }
     onSubmit(formData as RecurringBilling);
@@ -67,6 +68,19 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
           />
         </div>
 
+        <div className="space-y-2">
+          <Label>Parcelas</Label>
+          <Input
+            type="number"
+            min="1"
+            value={formData.installments || ''}
+            onChange={(e) => setFormData({ ...formData, installments: parseInt(e.target.value) })}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Dia do Vencimento</Label>
           <Input
