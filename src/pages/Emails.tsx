@@ -1,13 +1,14 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { MailIcon, GripVertical } from "lucide-react";
+import { MailIcon, GripVertical, CalendarIcon, RefreshCwIcon } from "lucide-react";
 
 interface EmailTemplate {
   id: string;
@@ -209,6 +210,10 @@ export const Emails = () => {
                     <CardTitle>
                       Editor de Template - {currentType === "invoice" ? "Nota Fiscal" : "Horas"}
                     </CardTitle>
+                    <CardDescription className="flex items-start gap-2 mt-2 text-sm">
+                      <CalendarIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                      Este template será usado para envio único de solicitação, disparado manualmente quando necessário
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -286,17 +291,38 @@ export const Emails = () => {
         <TabsContent value="clients">
           <Tabs defaultValue="recurring" onValueChange={handleTypeChange}>
             <TabsList className="mb-4">
-              <TabsTrigger value="recurring">Cobrança Recorrente</TabsTrigger>
-              <TabsTrigger value="oneTime">Cobrança Pontual</TabsTrigger>
+              <TabsTrigger value="recurring" className="flex items-center gap-2">
+                <RefreshCwIcon className="h-4 w-4" />
+                Cobrança Recorrente
+              </TabsTrigger>
+              <TabsTrigger value="oneTime" className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                Cobrança Pontual
+              </TabsTrigger>
             </TabsList>
 
             <div className="grid grid-cols-3 gap-6">
               <div className="col-span-2">
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>
-                      Editor de Template - {currentType === "recurring" ? "Cobrança Recorrente" : "Cobrança Pontual"}
-                    </CardTitle>
+                  <CardHeader className="flex flex-row items-start justify-between">
+                    <div className="space-y-2">
+                      <CardTitle>
+                        Editor de Template - {currentType === "recurring" ? "Cobrança Recorrente" : "Cobrança Pontual"}
+                      </CardTitle>
+                      <CardDescription className="flex items-start gap-2 mt-2 text-sm">
+                        {currentType === "recurring" ? (
+                          <>
+                            <RefreshCwIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                            Template para cobranças mensais recorrentes. O sistema enviará automaticamente os e-mails todo mês, atualizando os valores e datas conforme o plano contratado.
+                          </>
+                        ) : (
+                          <>
+                            <CalendarIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                            Template para cobranças pontuais/avulsas. O e-mail será enviado uma única vez quando solicitado, ideal para serviços específicos ou cobranças extras.
+                          </>
+                        )}
+                      </CardDescription>
+                    </div>
                     <Button variant="secondary" onClick={handleSaveTemplate}>
                       <MailIcon className="mr-2 h-4 w-4" />
                       Testar E-mail
