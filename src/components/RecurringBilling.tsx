@@ -22,6 +22,7 @@ export const RecurringBilling = () => {
   const { toast } = useToast();
 
   const fetchBillings = async () => {
+    console.log("Fetching billings...");
     const { data, error } = await supabase
       .from('recurring_billing')
       .select(`
@@ -41,10 +42,12 @@ export const RecurringBilling = () => {
       return;
     }
 
+    console.log("Billings fetched:", data);
     setBillings(data || []);
   };
 
   const fetchPayments = async () => {
+    console.log("Fetching payments...");
     const { data, error } = await supabase
       .from('payments')
       .select(`
@@ -52,7 +55,8 @@ export const RecurringBilling = () => {
         clients (
           name
         )
-      `);
+      `)
+      .order('due_date', { ascending: true });
 
     if (error) {
       console.error('Error fetching payments:', error);
@@ -64,6 +68,7 @@ export const RecurringBilling = () => {
       return;
     }
 
+    console.log("Payments fetched:", data);
     setPayments(data || []);
   };
 
@@ -85,33 +90,41 @@ export const RecurringBilling = () => {
     fetchPayments();
     fetchClients();
 
-    // Subscribe to changes
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'payments' },
-        () => {
-          console.log('Payment changes detected, refreshing...');
-          fetchPayments();
-        }
-      )
+    // Subscribe to changes in both tables
+    const billingChannel = supabase
+      .channel('billing-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'recurring_billing' },
-        () => {
-          console.log('Recurring billing changes detected, refreshing...');
+        (payload) => {
+          console.log('Recurring billing changes detected:', payload);
           fetchBillings();
+          // Importante: também buscar os pagamentos quando houver mudanças nos recebimentos recorrentes
+          fetchPayments();
+        }
+      )
+      .subscribe();
+
+    const paymentsChannel = supabase
+      .channel('payment-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments' },
+        (payload) => {
+          console.log('Payment changes detected:', payload);
+          fetchPayments();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(billingChannel);
+      supabase.removeChannel(paymentsChannel);
     };
   }, []);
 
   const handleNewBilling = async (billing: RecurringBillingType) => {
+    console.log("Creating new billing:", billing);
     const { data, error } = await supabase
       .from('recurring_billing')
       .insert([billing])
@@ -128,7 +141,10 @@ export const RecurringBilling = () => {
       return;
     }
 
-    setBillings(prev => [...prev, data]);
+    console.log("New billing created:", data);
+    // Atualizar ambas as listas após criar um novo recebimento recorrente
+    fetchBillings();
+    fetchPayments();
     setDialogOpen(false);
     toast({
       title: "Sucesso",
@@ -137,6 +153,7 @@ export const RecurringBilling = () => {
   };
 
   const handleNewPayment = async (payment: Payment) => {
+    console.log("Creating new payment:", payment);
     const { data, error } = await supabase
       .from('payments')
       .insert([payment])
@@ -153,6 +170,7 @@ export const RecurringBilling = () => {
       return;
     }
 
+    console.log("New payment created:", data);
     setPayments(prev => [...prev, data]);
     setDialogOpen(false);
     toast({
