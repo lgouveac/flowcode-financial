@@ -1,69 +1,34 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, MailIcon, PhoneIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EditableCell } from "./EditableCell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Client {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   status: "active" | "inactive" | "overdue";
-  totalBilling: number;
-  lastPayment?: string;
+  total_billing: number;
+  last_payment?: string;
   type: "pf" | "pj";
-  // Campos PJ
-  companyName?: string;
+  company_name?: string;
   cnpj?: string;
-  partnerName?: string;
-  partnerCpf?: string;
-  // Campos PF
+  partner_name?: string;
+  partner_cpf?: string;
   cpf?: string;
-  // Campos comuns
   address: string;
-  dueDate: string;
-  paymentMethod: "pix" | "boleto" | "credit_card";
+  due_date: string;
+  payment_method: "pix" | "boleto" | "credit_card";
 }
-
-const mockClients: Client[] = [
-  {
-    id: "1",
-    name: "Tech Solutions Ltda",
-    email: "contato@techsolutions.com",
-    phone: "(11) 99999-9999",
-    status: "active",
-    totalBilling: 15000.00,
-    lastPayment: "10/03/2024",
-    cnpj: "12.345.678/0001-90",
-    companyName: "Tech Solutions Ltda",
-    partnerName: "João Silva",
-    partnerCpf: "123.456.789-00",
-    address: "Rua A, 123, Centro, São Paulo - SP",
-    dueDate: "2024-04-10",
-    paymentMethod: "pix",
-    type: "pj",
-  },
-  {
-    id: "2",
-    name: "Digital Marketing Co",
-    email: "financeiro@digitalmarket.com",
-    phone: "(11) 98888-8888",
-    status: "overdue",
-    totalBilling: 8500.00,
-    lastPayment: "05/02/2024",
-    cpf: "987.654.321-10",
-    address: "Rua B, 456, Vila, Rio de Janeiro - RJ",
-    dueDate: "2024-03-05",
-    paymentMethod: "boleto",
-    type: "pf",
-  },
-];
 
 interface NewClientFormProps {
   onSubmit: (client: Partial<Client>) => void;
@@ -75,22 +40,21 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
   const [formData, setFormData] = useState<Partial<Client>>({
     email: "",
     type: "pj",
-    companyName: "",
+    company_name: "",
     cnpj: "",
-    partnerName: "",
-    partnerCpf: "",
+    partner_name: "",
+    partner_cpf: "",
     address: "",
-    dueDate: "",
-    paymentMethod: "pix",
+    due_date: "",
+    payment_method: "pix",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
       ...formData,
-      id: Math.random().toString(36).substr(2, 9),
       status: "active",
-      totalBilling: 0,
+      total_billing: 0,
     });
     onClose();
   };
@@ -268,20 +232,78 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
 };
 
 export const ClientTable = () => {
-  const [clients, setClients] = useState(mockClients);
+  const [clients, setClients] = useState<Client[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleChange = (id: string, field: keyof Client, value: string | number) => {
+  const fetchClients = async () => {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os clientes.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setClients(data || []);
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const handleChange = async (id: string, field: keyof Client, value: string | number) => {
+    const { error } = await supabase
+      .from('clients')
+      .update({ [field]: value })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o cliente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setClients(prevClients =>
       prevClients.map(client =>
         client.id === id ? { ...client, [field]: value } : client
       )
     );
+    
+    toast({
+      title: "Sucesso",
+      description: "Cliente atualizado com sucesso.",
+    });
   };
 
-  const handleNewClient = (client: Partial<Client>) => {
-    setClients(prev => [...prev, client as Client]);
+  const handleNewClient = async (client: Partial<Client>) => {
+    const { data, error } = await supabase
+      .from('clients')
+      .insert([client])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating client:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar o cliente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setClients(prev => [...prev, data]);
     toast({
       title: "Cliente adicionado",
       description: "O novo cliente foi cadastrado com sucesso.",

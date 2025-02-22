@@ -9,7 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          address: string | null
+          cnpj: string | null
+          company_name: string | null
+          cpf: string | null
+          created_at: string | null
+          due_date: string | null
+          email: string
+          id: string
+          last_payment: string | null
+          name: string
+          partner_cpf: string | null
+          partner_name: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          phone: string | null
+          status: Database["public"]["Enums"]["client_status"] | null
+          total_billing: number | null
+          type: Database["public"]["Enums"]["client_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          email: string
+          id?: string
+          last_payment?: string | null
+          name: string
+          partner_cpf?: string | null
+          partner_name?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          total_billing?: number | null
+          type: Database["public"]["Enums"]["client_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          cpf?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          email?: string
+          id?: string
+          last_payment?: string | null
+          name?: string
+          partner_cpf?: string | null
+          partner_name?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          total_billing?: number | null
+          type?: Database["public"]["Enums"]["client_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +80,9 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      client_status: "active" | "inactive" | "overdue"
+      client_type: "pf" | "pj"
+      payment_method: "pix" | "boleto" | "credit_card"
     }
     CompositeTypes: {
       [_ in never]: never
