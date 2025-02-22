@@ -1,19 +1,19 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Client } from "@/types/client";
+import { NewClient } from "@/types/client";
 
 interface NewClientFormProps {
-  onSubmit: (client: Partial<Client>) => void;
+  onSubmit: (client: NewClient) => void;
   onClose: () => void;
 }
 
 export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
   const [clientType, setClientType] = useState<"pf" | "pj">("pj");
-  const [formData, setFormData] = useState<Partial<Client>>({
+  const [formData, setFormData] = useState<NewClient>({
+    name: "",
     email: "",
     type: "pj",
     company_name: "",
@@ -27,11 +27,7 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      ...formData,
-      status: "active",
-      total_billing: 0,
-    });
+    onSubmit(formData);
     onClose();
   };
 

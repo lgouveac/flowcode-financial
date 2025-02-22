@@ -7,7 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { NewClientForm } from "./client/NewClientForm";
 import { ClientRow } from "./client/ClientRow";
-import type { Client } from "@/types/client";
+import type { Client, NewClient } from "@/types/client";
 
 export const ClientTable = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -63,10 +63,14 @@ export const ClientTable = () => {
     });
   };
 
-  const handleNewClient = async (client: Partial<Client>) => {
+  const handleNewClient = async (client: NewClient) => {
     const { data, error } = await supabase
       .from('clients')
-      .insert([client])
+      .insert([{
+        ...client,
+        status: client.status || 'active',
+        total_billing: client.total_billing || 0
+      }])
       .select()
       .single();
 
@@ -137,3 +141,4 @@ export const ClientTable = () => {
     </div>
   );
 };
+
