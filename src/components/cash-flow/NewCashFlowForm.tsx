@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { CATEGORIES } from "@/types/cashflow-categories";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -22,8 +24,29 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
 
+  const handleCategoryChange = (value: string) => {
+    if (movementType === 'income' && value === 'payment') {
+      toast({
+        title: "Atenção",
+        description: "Pagamentos de cliente devem ser registrados através da seção de recebimentos, alterando o status para 'Pago'.",
+        variant: "default",
+      });
+      return;
+    }
+    setCategory(value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (movementType === 'income' && category === 'payment') {
+      toast({
+        title: "Operação não permitida",
+        description: "Pagamentos de cliente devem ser registrados através da seção de recebimentos.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const newCashFlow = {
       type: movementType,
@@ -66,6 +89,14 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
           Adicione uma nova movimentação ao fluxo de caixa
         </DialogDescription>
       </DialogHeader>
+      {movementType === 'income' && category === 'payment' && (
+        <Alert variant="warning" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Pagamentos de cliente devem ser registrados através da seção de recebimentos, alterando o status para 'Pago'.
+          </AlertDescription>
+        </Alert>
+      )}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2.5">
@@ -82,7 +113,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
           </div>
           <div className="space-y-2.5">
             <Label className="text-sm font-medium">Categoria</Label>
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={category} onValueChange={handleCategoryChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a categoria" />
               </SelectTrigger>
