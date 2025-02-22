@@ -84,6 +84,31 @@ export const RecurringBilling = () => {
     fetchBillings();
     fetchPayments();
     fetchClients();
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments' },
+        () => {
+          console.log('Payment changes detected, refreshing...');
+          fetchPayments();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'recurring_billing' },
+        () => {
+          console.log('Recurring billing changes detected, refreshing...');
+          fetchBillings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleNewBilling = async (billing: RecurringBillingType) => {
