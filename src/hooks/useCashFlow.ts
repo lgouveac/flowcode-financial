@@ -11,10 +11,7 @@ export const useCashFlow = () => {
   const [chartData, setChartData] = useState<any[]>([]);
 
   const processChartData = (data: CashFlowType[]) => {
-    // Only include approved cash flow entries in the chart
-    const approvedData = data.filter(item => item.status === 'approved');
-    
-    const groupedData = approvedData.reduce((acc: Record<string, { income: number; expense: number }>, item) => {
+    const groupedData = data.reduce((acc: Record<string, { income: number; expense: number }>, item) => {
       const monthYear = new Date(item.date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
       
       if (!acc[monthYear]) {
@@ -58,9 +55,7 @@ export const useCashFlow = () => {
 
     const typeSafeCashFlow = data?.map(item => ({
       ...item,
-      type: validateCashFlowType(item.type),
-      // Ensure status is set, default to 'pending' if not present
-      status: item.status || 'pending'
+      type: validateCashFlowType(item.type)
     })) || [];
 
     setCashFlow(typeSafeCashFlow);
