@@ -92,6 +92,19 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
     }
   };
 
+  // Sort payments by creation date (newest first), then by installment number
+  const sortedPayments = [...payments].sort((a, b) => {
+    // First sort by created_at (newest first)
+    const dateComparison = new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+    if (dateComparison !== 0) return dateComparison;
+    
+    // Then sort by installment number if they're from the same batch
+    if (a.total_installments && b.total_installments) {
+      return (a.installment_number || 0) - (b.installment_number || 0);
+    }
+    return 0;
+  });
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -106,8 +119,16 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {payments.map((payment) => (
-            <TableRow key={payment.id} className="group">
+          {sortedPayments.map((payment, index) => (
+            <TableRow 
+              key={payment.id}
+              className={`group ${
+                // Add a visual separator between different payment groups
+                index > 0 &&
+                sortedPayments[index - 1]?.total_installments !== payment.total_installments &&
+                "border-t-4 border-t-gray-200"
+              }`}
+            >
               <TableCell>{payment.clients?.name}</TableCell>
               <TableCell className="relative">
                 <EditableCell
