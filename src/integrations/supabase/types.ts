@@ -18,6 +18,7 @@ export type Database = {
           description: string
           id: string
           payment_id: string | null
+          status: Database["public"]["Enums"]["cash_flow_status"] | null
           type: string
           updated_at: string | null
         }
@@ -29,6 +30,7 @@ export type Database = {
           description: string
           id?: string
           payment_id?: string | null
+          status?: Database["public"]["Enums"]["cash_flow_status"] | null
           type: string
           updated_at?: string | null
         }
@@ -40,6 +42,7 @@ export type Database = {
           description?: string
           id?: string
           payment_id?: string | null
+          status?: Database["public"]["Enums"]["cash_flow_status"] | null
           type?: string
           updated_at?: string | null
         }
@@ -231,6 +234,7 @@ export type Database = {
         | "paid"
         | "overdue"
         | "cancelled"
+      cash_flow_status: "pending" | "approved" | "rejected"
       client_status: "active" | "inactive" | "overdue"
       client_type: "pf" | "pj"
       payment_method: "pix" | "boleto" | "credit_card"

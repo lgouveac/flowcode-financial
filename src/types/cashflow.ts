@@ -7,6 +7,7 @@ export interface CashFlow {
   date: string;
   category: string;
   payment_id?: string;
+  status: 'pending' | 'approved' | 'rejected';
   created_at?: string;
   updated_at?: string;
 }
