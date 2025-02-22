@@ -1,39 +1,49 @@
 
 import { Button } from "@/components/ui/button";
+import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { AddEmployeeDialog } from "./AddEmployeeDialog";
 import { EditableCell } from "./EditableCell";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEmployees } from "@/hooks/useEmployees";
-import type { Employee } from "@/types/database";
-import { useToast } from "./ui/use-toast";
+
+interface Employee {
+  id: string;
+  name: string;
+  type: "fixed" | "freelancer";
+  status: "active" | "inactive";
+  paymentMethod: string;
+  lastInvoice?: string;
+}
+
+const mockEmployees: Employee[] = [
+  {
+    id: "1",
+    name: "João Silva",
+    type: "fixed",
+    status: "active",
+    paymentMethod: "PIX",
+    lastInvoice: "10/03/2024",
+  },
+  {
+    id: "2",
+    name: "Maria Santos",
+    type: "freelancer",
+    status: "active",
+    paymentMethod: "Transferência",
+    lastInvoice: "05/03/2024",
+  },
+];
 
 export const EmployeeTable = () => {
-  const { employees = [], isLoading, updateEmployee } = useEmployees();
-  const { toast } = useToast();
+  const [employees, setEmployees] = useState(mockEmployees);
 
-  const handleChange = async (id: string, field: keyof Employee, value: string) => {
-    try {
-      await updateEmployee.mutateAsync({ 
-        id, 
-        [field]: value 
-      });
-      toast({
-        title: "Sucesso",
-        description: "Funcionário atualizado com sucesso.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar funcionário.",
-        variant: "destructive",
-      });
-    }
+  const handleChange = (id: string, field: keyof Employee, value: string) => {
+    setEmployees(prevEmployees =>
+      prevEmployees.map(employee =>
+        employee.id === id ? { ...employee, [field]: value } : employee
+      )
+    );
   };
-
-  if (isLoading) {
-    return <div className="p-8 text-center">Carregando...</div>;
-  }
 
   return (
     <div className="space-y-8">
@@ -60,8 +70,8 @@ export const EmployeeTable = () => {
                   <td className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <EditableCell
-                        value={employee.full_name}
-                        onChange={(value) => handleChange(employee.id, 'full_name', value)}
+                        value={employee.name}
+                        onChange={(value) => handleChange(employee.id, 'name', value)}
                       />
                       <div className="sm:hidden">
                         <Select
@@ -102,14 +112,14 @@ export const EmployeeTable = () => {
                   </td>
                   <td className="p-4 hidden md:table-cell">
                     <EditableCell
-                      value={employee.payment_method}
-                      onChange={(value) => handleChange(employee.id, 'payment_method', value)}
+                      value={employee.paymentMethod}
+                      onChange={(value) => handleChange(employee.id, 'paymentMethod', value)}
                     />
                   </td>
                   <td className="p-4 hidden lg:table-cell">
                     <EditableCell
-                      value={employee.last_invoice || ""}
-                      onChange={(value) => handleChange(employee.id, 'last_invoice', value)}
+                      value={employee.lastInvoice || ""}
+                      onChange={(value) => handleChange(employee.id, 'lastInvoice', value)}
                       type="date"
                     />
                   </td>
@@ -128,15 +138,15 @@ export const EmployeeTable = () => {
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Método de Pagamento</label>
                 <EditableCell
-                  value={employee.payment_method}
-                  onChange={(value) => handleChange(employee.id, 'payment_method', value)}
+                  value={employee.paymentMethod}
+                  onChange={(value) => handleChange(employee.id, 'paymentMethod', value)}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Última NF</label>
                 <EditableCell
-                  value={employee.last_invoice || ""}
-                  onChange={(value) => handleChange(employee.id, 'last_invoice', value)}
+                  value={employee.lastInvoice || ""}
+                  onChange={(value) => handleChange(employee.id, 'lastInvoice', value)}
                   type="date"
                 />
               </div>
@@ -147,4 +157,3 @@ export const EmployeeTable = () => {
     </div>
   );
 };
-

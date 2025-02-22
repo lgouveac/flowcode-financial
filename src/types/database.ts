@@ -23,35 +23,3 @@ export type Client = {
   updated_at?: string;
 }
 
-export type Employee = {
-  id: string;
-  full_name: string;
-  email: string;
-  phone: string;
-  address: string;
-  position: string;
-  cnpj?: string;
-  pix: string;
-  type: "fixed" | "freelancer";
-  status: "active" | "inactive";
-  payment_method: string;
-  last_invoice?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export type Payment = {
-  id: string;
-  client_id: string;
-  client_name: string;
-  service: string;
-  value: number;
-  frequency?: string;
-  last_payment?: string;
-  next_payment?: string;
-  due_date?: string;
-  status: "active" | "inactive" | "pending";
-  type: "recurring" | "onetime";
-  created_at?: string;
-  updated_at?: string;
-}

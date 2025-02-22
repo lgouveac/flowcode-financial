@@ -8,11 +8,65 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useClients } from "@/hooks/useClients";
-import type { Client } from "@/types/database";
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: "active" | "inactive" | "overdue";
+  totalBilling: number;
+  lastPayment?: string;
+  type: "pf" | "pj";
+  // Campos PJ
+  companyName?: string;
+  cnpj?: string;
+  partnerName?: string;
+  partnerCpf?: string;
+  // Campos PF
+  cpf?: string;
+  // Campos comuns
+  address: string;
+  dueDate: string;
+  paymentMethod: "pix" | "boleto" | "credit_card";
+}
+
+const mockClients: Client[] = [
+  {
+    id: "1",
+    name: "Tech Solutions Ltda",
+    email: "contato@techsolutions.com",
+    phone: "(11) 99999-9999",
+    status: "active",
+    totalBilling: 15000.00,
+    lastPayment: "10/03/2024",
+    cnpj: "12.345.678/0001-90",
+    companyName: "Tech Solutions Ltda",
+    partnerName: "João Silva",
+    partnerCpf: "123.456.789-00",
+    address: "Rua A, 123, Centro, São Paulo - SP",
+    dueDate: "2024-04-10",
+    paymentMethod: "pix",
+    type: "pj",
+  },
+  {
+    id: "2",
+    name: "Digital Marketing Co",
+    email: "financeiro@digitalmarket.com",
+    phone: "(11) 98888-8888",
+    status: "overdue",
+    totalBilling: 8500.00,
+    lastPayment: "05/02/2024",
+    cpf: "987.654.321-10",
+    address: "Rua B, 456, Vila, Rio de Janeiro - RJ",
+    dueDate: "2024-03-05",
+    paymentMethod: "boleto",
+    type: "pf",
+  },
+];
 
 interface NewClientFormProps {
-  onSubmit: (client: Omit<Client, 'id' | 'created_at' | 'updated_at'>) => void;
+  onSubmit: (client: Partial<Client>) => void;
   onClose: () => void;
 }
 
@@ -21,20 +75,23 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
   const [formData, setFormData] = useState<Partial<Client>>({
     email: "",
     type: "pj",
-    company_name: "",
+    companyName: "",
     cnpj: "",
-    partner_name: "",
-    partner_cpf: "",
+    partnerName: "",
+    partnerCpf: "",
     address: "",
-    due_date: "",
-    payment_method: "pix",
-    status: "active",
-    total_billing: 0,
+    dueDate: "",
+    paymentMethod: "pix",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData as Omit<Client, 'id' | 'created_at' | 'updated_at'>);
+    onSubmit({
+      ...formData,
+      id: Math.random().toString(36).substr(2, 9),
+      status: "active",
+      totalBilling: 0,
+    });
     onClose();
   };
 
@@ -80,8 +137,8 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
               <Label htmlFor="companyName">Razão Social da Empresa</Label>
               <Input
                 id="companyName"
-                value={formData.company_name}
-                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                value={formData.companyName}
+                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                 required
               />
             </div>
@@ -101,8 +158,8 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
               <Label htmlFor="partnerName">Nome completo do sócio</Label>
               <Input
                 id="partnerName"
-                value={formData.partner_name}
-                onChange={(e) => setFormData({ ...formData, partner_name: e.target.value })}
+                value={formData.partnerName}
+                onChange={(e) => setFormData({ ...formData, partnerName: e.target.value })}
                 required
               />
             </div>
@@ -111,8 +168,8 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
               <Label htmlFor="partnerCpf">CPF do sócio</Label>
               <Input
                 id="partnerCpf"
-                value={formData.partner_cpf}
-                onChange={(e) => setFormData({ ...formData, partner_cpf: e.target.value })}
+                value={formData.partnerCpf}
+                onChange={(e) => setFormData({ ...formData, partnerCpf: e.target.value })}
                 required
                 placeholder="000.000.000-00"
               />
@@ -166,8 +223,8 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
             <Input
               id="dueDate"
               type="date"
-              value={formData.due_date}
-              onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+              value={formData.dueDate}
+              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
               required
             />
           </div>
@@ -176,9 +233,9 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
         <div className="grid gap-2">
           <Label>Qual a melhor maneira de pagamento?</Label>
           <RadioGroup
-            value={formData.payment_method}
+            value={formData.paymentMethod}
             onValueChange={(value: "pix" | "boleto" | "credit_card") => 
-              setFormData({ ...formData, payment_method: value })
+              setFormData({ ...formData, paymentMethod: value })
             }
             className="grid sm:grid-cols-3 gap-4"
           >
@@ -211,60 +268,31 @@ const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
 };
 
 export const ClientTable = () => {
-  const { clients, isLoading, error, createClient, updateClient } = useClients();
+  const [clients, setClients] = useState(mockClients);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleChange = async (id: string, field: keyof Client, value: string | number) => {
-    try {
-      await updateClient.mutateAsync({ id, [field]: value });
-      toast({
-        title: "Cliente atualizado",
-        description: "As alterações foram salvas com sucesso.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o cliente. Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleNewClient = async (clientData: Omit<Client, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      await createClient.mutateAsync(clientData);
-      setDialogOpen(false);
-      toast({
-        title: "Cliente adicionado",
-        description: "O novo cliente foi cadastrado com sucesso.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível cadastrar o cliente. Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (isLoading) {
-    return <div className="p-8 text-center">Carregando...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center text-red-500">
-        Erro ao carregar os clientes. Por favor, tente novamente.
-      </div>
+  const handleChange = (id: string, field: keyof Client, value: string | number) => {
+    setClients(prevClients =>
+      prevClients.map(client =>
+        client.id === id ? { ...client, [field]: value } : client
+      )
     );
-  }
+  };
+
+  const handleNewClient = (client: Partial<Client>) => {
+    setClients(prev => [...prev, client as Client]);
+    toast({
+      title: "Cliente adicionado",
+      description: "O novo cliente foi cadastrado com sucesso.",
+    });
+  };
 
   return (
     <div className="space-y-4 p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Clientes</h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto gap-2">
               <PlusIcon className="h-4 w-4" />
@@ -277,7 +305,7 @@ export const ClientTable = () => {
             </DialogHeader>
             <NewClientForm
               onSubmit={handleNewClient}
-              onClose={() => setDialogOpen(false)}
+              onClose={() => document.querySelector<HTMLButtonElement>('[role="dialog"] button[type="button"]')?.click()}
             />
           </DialogContent>
         </Dialog>
@@ -338,15 +366,15 @@ export const ClientTable = () => {
                   </td>
                   <td className="p-4 hidden sm:table-cell">
                     <EditableCell
-                      value={client.total_billing.toFixed(2)}
-                      onChange={(value) => handleChange(client.id, 'total_billing', parseFloat(value) || 0)}
+                      value={client.totalBilling.toFixed(2)}
+                      onChange={(value) => handleChange(client.id, 'totalBilling', parseFloat(value) || 0)}
                       type="number"
                     />
                   </td>
                   <td className="p-4 hidden lg:table-cell">
                     <EditableCell
-                      value={client.last_payment || ""}
-                      onChange={(value) => handleChange(client.id, 'last_payment', value)}
+                      value={client.lastPayment || ""}
+                      onChange={(value) => handleChange(client.id, 'lastPayment', value)}
                       type="date"
                     />
                   </td>

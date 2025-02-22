@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -7,27 +6,78 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { usePayments } from "@/hooks/usePayments";
-import type { Payment } from "@/types/database";
+
+interface Payment {
+  id: string;
+  clientName: string;
+  service: string;
+  value: string;
+  frequency?: string;
+  lastPayment?: string;
+  nextPayment?: string;
+  dueDate?: string;
+  status: "active" | "inactive" | "pending";
+}
+
+const mockRecurringPayments: Payment[] = [
+  {
+    id: "1",
+    clientName: "Tech Solutions Ltda",
+    service: "Consultoria Mensal",
+    value: "5000.00",
+    frequency: "Mensal",
+    lastPayment: "2024-02-15",
+    nextPayment: "2024-03-15",
+    status: "active"
+  },
+  {
+    id: "2",
+    clientName: "Digital Marketing Co",
+    service: "Manutenção de Sistema",
+    value: "3500.00",
+    frequency: "Mensal",
+    lastPayment: "2024-02-10",
+    nextPayment: "2024-03-10",
+    status: "pending"
+  }
+];
+
+const mockOneTimePayments: Payment[] = [
+  {
+    id: "3",
+    clientName: "Startup XYZ",
+    service: "Projeto Especial",
+    value: "12000.00",
+    dueDate: "2024-03-30",
+    status: "pending"
+  },
+  {
+    id: "4",
+    clientName: "Construtora ABC",
+    service: "Consultoria Pontual",
+    value: "8000.00",
+    dueDate: "2024-04-15",
+    status: "active"
+  }
+];
 
 interface NewPaymentFormProps {
   isRecurring: boolean;
-  onSubmit: (payment: Omit<Payment, 'id' | 'created_at' | 'updated_at'>) => void;
+  onSubmit: (payment: Partial<Payment>) => void;
   onClose: () => void;
 }
 
 const NewPaymentForm = ({ isRecurring, onSubmit, onClose }: NewPaymentFormProps) => {
   const [formData, setFormData] = useState<Partial<Payment>>({
-    client_name: "",
+    clientName: "",
     service: "",
-    value: 0,
-    status: "pending",
-    type: isRecurring ? "recurring" : "onetime"
+    value: "",
+    status: "pending"
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData as Omit<Payment, 'id' | 'created_at' | 'updated_at'>);
+    onSubmit(formData);
     onClose();
   };
 
@@ -37,8 +87,8 @@ const NewPaymentForm = ({ isRecurring, onSubmit, onClose }: NewPaymentFormProps)
         <label htmlFor="clientName" className="text-sm font-medium">Nome do Cliente</label>
         <Input
           id="clientName"
-          value={formData.client_name}
-          onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+          value={formData.clientName}
+          onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
           required
         />
       </div>
@@ -57,7 +107,7 @@ const NewPaymentForm = ({ isRecurring, onSubmit, onClose }: NewPaymentFormProps)
           id="value"
           type="number"
           value={formData.value}
-          onChange={(e) => setFormData({ ...formData, value: Number(e.target.value) })}
+          onChange={(e) => setFormData({ ...formData, value: e.target.value })}
           required
         />
       </div>
@@ -78,8 +128,8 @@ const NewPaymentForm = ({ isRecurring, onSubmit, onClose }: NewPaymentFormProps)
           <Input
             id="dueDate"
             type="date"
-            value={formData.due_date}
-            onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+            value={formData.dueDate}
+            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
             required
           />
         </div>
@@ -97,55 +147,41 @@ const NewPaymentForm = ({ isRecurring, onSubmit, onClose }: NewPaymentFormProps)
 };
 
 export const RecurringBilling = () => {
-  const { recurringPayments, oneTimePayments, isLoading, error, createPayment, updatePayment } = usePayments();
+  const [recurringPayments, setRecurringPayments] = useState(mockRecurringPayments);
+  const [oneTimePayments, setOneTimePayments] = useState(mockOneTimePayments);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("recurring");
   const { toast } = useToast();
 
-  const handleChange = async (id: string, field: keyof Payment, value: string | number) => {
-    try {
-      await updatePayment.mutateAsync({ id, [field]: value });
-      toast({
-        title: "Recebimento atualizado",
-        description: "As alterações foram salvas com sucesso."
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o recebimento. Tente novamente.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleNewPayment = async (payment: Omit<Payment, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      await createPayment.mutateAsync(payment);
-      setDialogOpen(false);
-      toast({
-        title: "Recebimento criado",
-        description: "O novo recebimento foi adicionado com sucesso."
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível criar o recebimento. Tente novamente.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  if (isLoading) {
-    return <div className="p-8 text-center">Carregando...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="p-8 text-center text-red-500">
-        Erro ao carregar os recebimentos. Por favor, tente novamente.
-      </div>
+  const handleChange = (id: string, field: keyof Payment, value: string, isRecurring: boolean) => {
+    const updatePayments = isRecurring ? setRecurringPayments : setOneTimePayments;
+    const payments = isRecurring ? recurringPayments : oneTimePayments;
+    
+    updatePayments(prevPayments =>
+      prevPayments.map(payment =>
+        payment.id === id ? { ...payment, [field]: value } : payment
+      )
     );
-  }
+  };
+
+  const handleNewPayment = (payment: Partial<Payment>) => {
+    const newPayment = {
+      ...payment,
+      id: Math.random().toString(36).substr(2, 9),
+      status: "pending"
+    } as Payment;
+
+    if (selectedTab === "recurring") {
+      setRecurringPayments(prev => [...prev, newPayment]);
+    } else {
+      setOneTimePayments(prev => [...prev, newPayment]);
+    }
+
+    toast({
+      title: "Recebimento criado",
+      description: "O novo recebimento foi adicionado com sucesso."
+    });
+  };
 
   const renderTable = (payments: Payment[], isRecurring: boolean) => (
     <div className="rounded-lg border border-zinc-200 bg-white">
@@ -173,20 +209,20 @@ export const RecurringBilling = () => {
               <tr key={payment.id} className="hover:bg-zinc-50">
                 <td className="px-6 py-4">
                   <EditableCell
-                    value={payment.client_name}
-                    onChange={(value) => handleChange(payment.id, 'client_name', value)}
+                    value={payment.clientName}
+                    onChange={(value) => handleChange(payment.id, 'clientName', value, isRecurring)}
                   />
                 </td>
                 <td className="px-6 py-4">
                   <EditableCell
                     value={payment.service}
-                    onChange={(value) => handleChange(payment.id, 'service', value)}
+                    onChange={(value) => handleChange(payment.id, 'service', value, isRecurring)}
                   />
                 </td>
                 <td className="px-6 py-4">
                   <EditableCell
-                    value={payment.value.toString()}
-                    onChange={(value) => handleChange(payment.id, 'value', parseFloat(value) || 0)}
+                    value={payment.value}
+                    onChange={(value) => handleChange(payment.id, 'value', value, isRecurring)}
                     type="number"
                   />
                 </td>
@@ -195,20 +231,20 @@ export const RecurringBilling = () => {
                     <td className="px-6 py-4">
                       <EditableCell
                         value={payment.frequency || ""}
-                        onChange={(value) => handleChange(payment.id, 'frequency', value)}
+                        onChange={(value) => handleChange(payment.id, 'frequency', value, isRecurring)}
                       />
                     </td>
                     <td className="px-6 py-4">
                       <EditableCell
-                        value={payment.last_payment || ""}
-                        onChange={(value) => handleChange(payment.id, 'last_payment', value)}
+                        value={payment.lastPayment || ""}
+                        onChange={(value) => handleChange(payment.id, 'lastPayment', value, isRecurring)}
                         type="date"
                       />
                     </td>
                     <td className="px-6 py-4">
                       <EditableCell
-                        value={payment.next_payment || ""}
-                        onChange={(value) => handleChange(payment.id, 'next_payment', value)}
+                        value={payment.nextPayment || ""}
+                        onChange={(value) => handleChange(payment.id, 'nextPayment', value, isRecurring)}
                         type="date"
                       />
                     </td>
@@ -216,8 +252,8 @@ export const RecurringBilling = () => {
                 ) : (
                   <td className="px-6 py-4">
                     <EditableCell
-                      value={payment.due_date || ""}
-                      onChange={(value) => handleChange(payment.id, 'due_date', value)}
+                      value={payment.dueDate || ""}
+                      onChange={(value) => handleChange(payment.id, 'dueDate', value, isRecurring)}
                       type="date"
                     />
                   </td>
