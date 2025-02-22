@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { CATEGORIES } from "@/types/cashflow-categories";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -17,6 +19,12 @@ interface NewCashFlowFormProps {
   onClose: () => void;
 }
 
+interface PaymentWithClient extends Payment {
+  clients: {
+    name: string;
+  };
+}
+
 export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) => {
   const { toast } = useToast();
   const [movementType, setMovementType] = useState<'income' | 'expense'>('income');
@@ -25,7 +33,9 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<string>('');
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<PaymentWithClient[]>([]);
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
     if (category === 'payment') {
@@ -58,7 +68,15 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
       setSelectedPayment(paymentId);
       setAmount(payment.amount.toString());
       setDescription(payment.description);
+      setOpen(false);
     }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,6 +138,15 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
     onClose();
   };
 
+  const filteredPayments = payments.filter(payment => {
+    const searchLower = searchValue.toLowerCase();
+    return (
+      payment.clients.name.toLowerCase().includes(searchLower) ||
+      payment.description.toLowerCase().includes(searchLower) ||
+      payment.amount.toString().includes(searchLower)
+    );
+  });
+
   return (
     <DialogContent>
       <DialogHeader>
@@ -162,18 +189,55 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
         {category === 'payment' && (
           <div className="space-y-2.5">
             <Label className="text-sm font-medium">Recebimento</Label>
-            <Select value={selectedPayment} onValueChange={handlePaymentSelect}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o recebimento" />
-              </SelectTrigger>
-              <SelectContent>
-                {payments.map(payment => (
-                  <SelectItem key={payment.id} value={payment.id}>
-                    {payment.clients?.name} - {payment.description} - R$ {payment.amount}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full justify-between"
+                >
+                  {selectedPayment ? (
+                    payments.find((payment) => payment.id === selectedPayment)?.description
+                  ) : (
+                    "Selecione um recebimento..."
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput 
+                    placeholder="Busque por cliente, descrição ou valor..." 
+                    value={searchValue}
+                    onValueChange={setSearchValue}
+                  />
+                  <CommandEmpty>Nenhum recebimento encontrado.</CommandEmpty>
+                  <CommandGroup className="max-h-[300px] overflow-auto">
+                    {filteredPayments.map(payment => (
+                      <CommandItem
+                        key={payment.id}
+                        value={payment.id}
+                        onSelect={() => handlePaymentSelect(payment.id)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedPayment === payment.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex flex-col">
+                          <span>{payment.clients.name}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {payment.description} - {formatCurrency(payment.amount)}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         )}
 
