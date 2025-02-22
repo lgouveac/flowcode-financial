@@ -99,22 +99,22 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
         </TableHeader>
         <TableBody>
           {payments.map((payment) => (
-            <TableRow key={payment.id}>
+            <TableRow key={payment.id} className="group">
               <TableCell>{payment.clients?.name}</TableCell>
-              <TableCell>
+              <TableCell className="relative">
                 <EditableCell
                   value={payment.description}
                   onChange={(value) => handleUpdatePayment(payment.id, 'description', value)}
                 />
               </TableCell>
-              <TableCell>
+              <TableCell className="relative">
                 <EditableCell
                   value={payment.amount.toString()}
                   onChange={(value) => handleUpdatePayment(payment.id, 'amount', parseFloat(value))}
                   type="number"
                 />
               </TableCell>
-              <TableCell>
+              <TableCell className="relative">
                 <EditableCell
                   value={payment.due_date}
                   onChange={(value) => handleUpdatePayment(payment.id, 'due_date', value)}

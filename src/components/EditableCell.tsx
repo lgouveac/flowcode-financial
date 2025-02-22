@@ -59,13 +59,13 @@ export const EditableCell = ({ value, onChange, type = "text", className = "" }:
   }
 
   return (
-    <div className="flex items-center justify-between group">
+    <div className="flex items-center justify-between gap-2">
       <span className="flex-1">{value}</span>
       <Button
         variant="ghost"
         size="sm"
         onClick={handleEdit}
-        className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-8 w-8 p-0"
+        className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <PencilIcon className="h-4 w-4 text-muted-foreground" />
       </Button>
