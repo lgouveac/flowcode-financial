@@ -12,3 +12,12 @@ export interface CashFlow {
 }
 
 export type NewCashFlow = Omit<CashFlow, 'id' | 'created_at' | 'updated_at'>;
+
+// Helper function to ensure type safety when converting database string to union type
+export function validateCashFlowType(type: string): 'income' | 'expense' {
+  if (type !== 'income' && type !== 'expense') {
+    throw new Error('Invalid cash flow type');
+  }
+  return type;
+}
+

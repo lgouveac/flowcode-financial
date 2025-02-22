@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { PlusIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { CashFlow as CashFlowType } from "@/types/cashflow";
+import { validateCashFlowType } from "@/types/cashflow";
 
 interface CashFlowProps {
   showChart?: boolean;
@@ -80,8 +80,13 @@ export const CashFlow = ({
       return;
     }
 
-    setCashFlow(data || []);
-    processChartData(data || []);
+    const typeSafeCashFlow = data?.map(item => ({
+      ...item,
+      type: validateCashFlowType(item.type)
+    })) || [];
+
+    setCashFlow(typeSafeCashFlow);
+    processChartData(typeSafeCashFlow);
   };
 
   const processChartData = (data: CashFlowType[]) => {

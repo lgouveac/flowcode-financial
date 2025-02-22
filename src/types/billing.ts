@@ -5,7 +5,7 @@ export interface RecurringBilling {
   description: string;
   amount: number;
   due_day: number;
-  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  status: 'pending' | 'billed' | 'awaiting_invoice' | 'paid' | 'overdue' | 'cancelled';
   payment_method: 'pix' | 'boleto' | 'credit_card';
   start_date: string;
   end_date?: string;
@@ -14,3 +14,4 @@ export interface RecurringBilling {
 }
 
 export type NewRecurringBilling = Omit<RecurringBilling, 'id' | 'created_at' | 'updated_at'>;
+
