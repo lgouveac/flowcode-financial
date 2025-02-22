@@ -72,6 +72,56 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_billing: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string | null
+          description: string
+          due_day: number
+          end_date: string | null
+          id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          start_date: string
+          status: Database["public"]["Enums"]["billing_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string | null
+          description: string
+          due_day: number
+          end_date?: string | null
+          id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          start_date: string
+          status?: Database["public"]["Enums"]["billing_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string | null
+          description?: string
+          due_day?: number
+          end_date?: string | null
+          id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["billing_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_billing_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -80,6 +130,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      billing_status: "pending" | "paid" | "overdue" | "cancelled"
       client_status: "active" | "inactive" | "overdue"
       client_type: "pf" | "pj"
       payment_method: "pix" | "boleto" | "credit_card"

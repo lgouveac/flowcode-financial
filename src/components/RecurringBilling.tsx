@@ -1,139 +1,127 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
-import { EditableCell } from "./EditableCell";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { RecurringBilling as RecurringBillingType } from "@/types/billing";
 
-interface Payment {
-  id: string;
-  clientName: string;
-  service: string;
-  value: string;
-  frequency?: string;
-  lastPayment?: string;
-  nextPayment?: string;
-  dueDate?: string;
-  status: "active" | "inactive" | "pending";
-}
-
-const mockRecurringPayments: Payment[] = [
-  {
-    id: "1",
-    clientName: "Tech Solutions Ltda",
-    service: "Consultoria Mensal",
-    value: "5000.00",
-    frequency: "Mensal",
-    lastPayment: "2024-02-15",
-    nextPayment: "2024-03-15",
-    status: "active"
-  },
-  {
-    id: "2",
-    clientName: "Digital Marketing Co",
-    service: "Manutenção de Sistema",
-    value: "3500.00",
-    frequency: "Mensal",
-    lastPayment: "2024-02-10",
-    nextPayment: "2024-03-10",
-    status: "pending"
-  }
-];
-
-const mockOneTimePayments: Payment[] = [
-  {
-    id: "3",
-    clientName: "Startup XYZ",
-    service: "Projeto Especial",
-    value: "12000.00",
-    dueDate: "2024-03-30",
-    status: "pending"
-  },
-  {
-    id: "4",
-    clientName: "Construtora ABC",
-    service: "Consultoria Pontual",
-    value: "8000.00",
-    dueDate: "2024-04-15",
-    status: "active"
-  }
-];
-
-interface NewPaymentFormProps {
-  isRecurring: boolean;
-  onSubmit: (payment: Partial<Payment>) => void;
+interface NewRecurringBillingFormProps {
+  onSubmit: (billing: RecurringBillingType) => void;
   onClose: () => void;
+  clients: Array<{ id: string; name: string }>;
 }
 
-const NewPaymentForm = ({ isRecurring, onSubmit, onClose }: NewPaymentFormProps) => {
-  const [formData, setFormData] = useState<Partial<Payment>>({
-    clientName: "",
-    service: "",
-    value: "",
-    status: "pending"
+const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecurringBillingFormProps) => {
+  const [formData, setFormData] = useState<Partial<RecurringBillingType>>({
+    payment_method: 'pix',
+    status: 'pending'
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (!formData.client_id || !formData.description || !formData.amount || !formData.due_day || !formData.start_date) {
+      return;
+    }
+    onSubmit(formData as RecurringBillingType);
     onClose();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <label htmlFor="clientName" className="text-sm font-medium">Nome do Cliente</label>
-        <Input
-          id="clientName"
-          value={formData.clientName}
-          onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-          required
-        />
+        <Label>Cliente</Label>
+        <Select onValueChange={(value) => setFormData({ ...formData, client_id: value })} required>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o cliente" />
+          </SelectTrigger>
+          <SelectContent>
+            {clients.map((client) => (
+              <SelectItem key={client.id} value={client.id}>
+                {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
       <div className="space-y-2">
-        <label htmlFor="service" className="text-sm font-medium">Serviço</label>
+        <Label>Descrição</Label>
         <Input
-          id="service"
-          value={formData.service}
-          onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+          value={formData.description || ''}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           required
         />
       </div>
-      <div className="space-y-2">
-        <label htmlFor="value" className="text-sm font-medium">Valor</label>
-        <Input
-          id="value"
-          type="number"
-          value={formData.value}
-          onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-          required
-        />
-      </div>
-      {isRecurring && (
+
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label htmlFor="frequency" className="text-sm font-medium">Frequência</label>
+          <Label>Valor</Label>
           <Input
-            id="frequency"
-            value={formData.frequency}
-            onChange={(e) => setFormData({ ...formData, frequency: e.target.value })}
+            type="number"
+            step="0.01"
+            value={formData.amount || ''}
+            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
             required
           />
         </div>
-      )}
-      {!isRecurring && (
+
         <div className="space-y-2">
-          <label htmlFor="dueDate" className="text-sm font-medium">Data de Vencimento</label>
+          <Label>Dia do Vencimento</Label>
           <Input
-            id="dueDate"
+            type="number"
+            min="1"
+            max="31"
+            value={formData.due_day || ''}
+            onChange={(e) => setFormData({ ...formData, due_day: parseInt(e.target.value) })}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Data de Início</Label>
+          <Input
             type="date"
-            value={formData.dueDate}
-            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+            value={formData.start_date || ''}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
             required
           />
         </div>
-      )}
+
+        <div className="space-y-2">
+          <Label>Data Final (opcional)</Label>
+          <Input
+            type="date"
+            value={formData.end_date || ''}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Método de Pagamento</Label>
+        <Select 
+          defaultValue="pix"
+          onValueChange={(value: 'pix' | 'boleto' | 'credit_card') => 
+            setFormData({ ...formData, payment_method: value })}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pix">PIX</SelectItem>
+            <SelectItem value="boleto">Boleto</SelectItem>
+            <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancelar
@@ -147,174 +135,146 @@ const NewPaymentForm = ({ isRecurring, onSubmit, onClose }: NewPaymentFormProps)
 };
 
 export const RecurringBilling = () => {
-  const [recurringPayments, setRecurringPayments] = useState(mockRecurringPayments);
-  const [oneTimePayments, setOneTimePayments] = useState(mockOneTimePayments);
+  const [billings, setBillings] = useState<RecurringBillingType[]>([]);
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("recurring");
   const { toast } = useToast();
 
-  const handleChange = (id: string, field: keyof Payment, value: string, isRecurring: boolean) => {
-    const updatePayments = isRecurring ? setRecurringPayments : setOneTimePayments;
-    const payments = isRecurring ? recurringPayments : oneTimePayments;
-    
-    updatePayments(prevPayments =>
-      prevPayments.map(payment =>
-        payment.id === id ? { ...payment, [field]: value } : payment
-      )
-    );
-  };
+  const fetchBillings = async () => {
+    const { data, error } = await supabase
+      .from('recurring_billing')
+      .select(`
+        *,
+        clients (
+          name
+        )
+      `);
 
-  const handleNewPayment = (payment: Partial<Payment>) => {
-    const newPayment = {
-      ...payment,
-      id: Math.random().toString(36).substr(2, 9),
-      status: "pending"
-    } as Payment;
-
-    if (selectedTab === "recurring") {
-      setRecurringPayments(prev => [...prev, newPayment]);
-    } else {
-      setOneTimePayments(prev => [...prev, newPayment]);
+    if (error) {
+      console.error('Error fetching billings:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os recebimentos recorrentes.",
+        variant: "destructive",
+      });
+      return;
     }
 
+    setBillings(data || []);
+  };
+
+  const fetchClients = async () => {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, name');
+
+    if (error) {
+      console.error('Error fetching clients:', error);
+      return;
+    }
+
+    setClients(data || []);
+  };
+
+  useEffect(() => {
+    fetchBillings();
+    fetchClients();
+  }, []);
+
+  const handleNewBilling = async (billing: RecurringBillingType) => {
+    const { data, error } = await supabase
+      .from('recurring_billing')
+      .insert([billing])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating billing:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar o recebimento recorrente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBillings(prev => [...prev, data]);
+    setDialogOpen(false);
     toast({
-      title: "Recebimento criado",
-      description: "O novo recebimento foi adicionado com sucesso."
+      title: "Sucesso",
+      description: "Recebimento recorrente criado com sucesso.",
     });
   };
 
-  const renderTable = (payments: Payment[], isRecurring: boolean) => (
-    <div className="rounded-lg border border-zinc-200 bg-white">
-      <div className="w-full overflow-auto">
-        <table className="w-full min-w-[640px]">
-          <thead className="bg-zinc-50">
-            <tr className="text-left">
-              <th className="px-6 py-3 text-sm font-medium text-muted-foreground">Cliente</th>
-              <th className="px-6 py-3 text-sm font-medium text-muted-foreground">Serviço</th>
-              <th className="px-6 py-3 text-sm font-medium text-muted-foreground">Valor</th>
-              {isRecurring ? (
-                <>
-                  <th className="px-6 py-3 text-sm font-medium text-muted-foreground">Frequência</th>
-                  <th className="px-6 py-3 text-sm font-medium text-muted-foreground">Último Pagamento</th>
-                  <th className="px-6 py-3 text-sm font-medium text-muted-foreground">Próximo Pagamento</th>
-                </>
-              ) : (
-                <th className="px-6 py-3 text-sm font-medium text-muted-foreground">Data de Vencimento</th>
-              )}
-              <th className="px-6 py-3 text-sm font-medium text-muted-foreground">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200">
-            {payments.map((payment) => (
-              <tr key={payment.id} className="hover:bg-zinc-50">
-                <td className="px-6 py-4">
-                  <EditableCell
-                    value={payment.clientName}
-                    onChange={(value) => handleChange(payment.id, 'clientName', value, isRecurring)}
-                  />
-                </td>
-                <td className="px-6 py-4">
-                  <EditableCell
-                    value={payment.service}
-                    onChange={(value) => handleChange(payment.id, 'service', value, isRecurring)}
-                  />
-                </td>
-                <td className="px-6 py-4">
-                  <EditableCell
-                    value={payment.value}
-                    onChange={(value) => handleChange(payment.id, 'value', value, isRecurring)}
-                    type="number"
-                  />
-                </td>
-                {isRecurring ? (
-                  <>
-                    <td className="px-6 py-4">
-                      <EditableCell
-                        value={payment.frequency || ""}
-                        onChange={(value) => handleChange(payment.id, 'frequency', value, isRecurring)}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <EditableCell
-                        value={payment.lastPayment || ""}
-                        onChange={(value) => handleChange(payment.id, 'lastPayment', value, isRecurring)}
-                        type="date"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <EditableCell
-                        value={payment.nextPayment || ""}
-                        onChange={(value) => handleChange(payment.id, 'nextPayment', value, isRecurring)}
-                        type="date"
-                      />
-                    </td>
-                  </>
-                ) : (
-                  <td className="px-6 py-4">
-                    <EditableCell
-                      value={payment.dueDate || ""}
-                      onChange={(value) => handleChange(payment.id, 'dueDate', value, isRecurring)}
-                      type="date"
-                    />
-                  </td>
-                )}
-                <td className="px-6 py-4">
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    payment.status === "active" 
-                      ? "bg-green-100 text-green-800" 
-                      : payment.status === "pending"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                  }`}>
-                    {payment.status === "active" ? "Ativo" 
-                      : payment.status === "pending" ? "Pendente" 
-                      : "Inativo"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Recebimentos</h1>
+    <div className="space-y-8 p-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-semibold">Recebimentos Recorrentes</h1>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm">
+            <Button>
               <PlusIcon className="h-4 w-4 mr-2" />
               Novo Recebimento
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo Recebimento {selectedTab === "recurring" ? "Recorrente" : "Avulso"}</DialogTitle>
+              <DialogTitle>Novo Recebimento Recorrente</DialogTitle>
             </DialogHeader>
-            <NewPaymentForm
-              isRecurring={selectedTab === "recurring"}
-              onSubmit={handleNewPayment}
+            <NewRecurringBillingForm
+              clients={clients}
+              onSubmit={handleNewBilling}
               onClose={() => setDialogOpen(false)}
             />
           </DialogContent>
         </Dialog>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
-          <TabsTrigger value="onetime">Avulsos</TabsTrigger>
-        </TabsList>
-        <TabsContent value="recurring">
-          {renderTable(recurringPayments, true)}
-        </TabsContent>
-        <TabsContent value="onetime">
-          {renderTable(oneTimePayments, false)}
-        </TabsContent>
-      </Tabs>
+      <div className="rounded-lg border">
+        <table className="w-full">
+          <thead className="bg-muted/50">
+            <tr className="text-left">
+              <th className="p-4 font-medium">Cliente</th>
+              <th className="p-4 font-medium">Descrição</th>
+              <th className="p-4 font-medium">Valor</th>
+              <th className="p-4 font-medium">Vencimento</th>
+              <th className="p-4 font-medium">Status</th>
+              <th className="p-4 font-medium">Método</th>
+            </tr>
+          </thead>
+          <tbody>
+            {billings.map((billing) => (
+              <tr key={billing.id} className="border-t">
+                <td className="p-4">{(billing as any).clients?.name}</td>
+                <td className="p-4">{billing.description}</td>
+                <td className="p-4">R$ {billing.amount.toFixed(2)}</td>
+                <td className="p-4">Dia {billing.due_day}</td>
+                <td className="p-4">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    billing.status === 'paid' 
+                      ? 'bg-green-100 text-green-800'
+                      : billing.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : billing.status === 'overdue'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {billing.status === 'paid' ? 'Pago'
+                      : billing.status === 'pending' ? 'Pendente'
+                      : billing.status === 'overdue' ? 'Atrasado'
+                      : 'Cancelado'}
+                  </span>
+                </td>
+                <td className="p-4">
+                  {billing.payment_method === 'pix' ? 'PIX'
+                    : billing.payment_method === 'boleto' ? 'Boleto'
+                    : 'Cartão de Crédito'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
