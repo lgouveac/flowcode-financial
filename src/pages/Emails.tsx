@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ interface EmailTemplate {
   name: string;
   subject: string;
   content: string;
+  type: 'clients' | 'employees';
+  subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours';
 }
 
 interface Variable {
@@ -42,6 +45,8 @@ const variablesList = {
       { name: "{data_vencimento}", description: "Data de vencimento" },
       { name: "{plano_servico}", description: "Plano/Serviço contratado" },
       { name: "{periodo_referencia}", description: "Período de referência" },
+      { name: "{numero_parcela}", description: "Número da parcela atual" },
+      { name: "{total_parcelas}", description: "Total de parcelas" },
     ],
     oneTime: [
       { name: "{nome_cliente}", description: "Nome do cliente" },
@@ -59,28 +64,48 @@ export const Emails = () => {
   const [currentSection, setCurrentSection] = useState("employees");
   const [currentType, setCurrentType] = useState(currentSection === "employees" ? "invoice" : "recurring");
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
+  const [newTemplate, setNewTemplate] = useState<Partial<EmailTemplate>>({
+    type: 'clients',
+    subtype: 'recurring',
+    name: '',
+    subject: '',
+    content: '',
+  });
   const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([
     {
       id: "1",
       name: "Template NF Mensal",
       subject: "Solicitação de Nota Fiscal - {mes_referencia}",
-      content: "Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}..."
+      content: "Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}...",
+      type: 'employees',
+      subtype: 'invoice',
     },
     {
       id: "2",
       name: "Template Cobrança Recorrente",
-      subject: "Fatura {periodo_referencia} - {plano_servico}",
-      content: "Prezado {nome_cliente},\n\nSegue a fatura referente ao período {periodo_referencia}..."
+      subject: "Fatura {periodo_referencia} - {plano_servico} ({numero_parcela}/{total_parcelas})",
+      content: "Prezado {nome_cliente},\n\nSegue a fatura referente ao período {periodo_referencia}...",
+      type: 'clients',
+      subtype: 'recurring',
     }
   ]);
 
   const handleSectionChange = (section: string) => {
     setCurrentSection(section);
     setCurrentType(section === "employees" ? "invoice" : "recurring");
+    setNewTemplate(prev => ({
+      ...prev,
+      type: section as 'clients' | 'employees',
+      subtype: section === "employees" ? "invoice" : "recurring",
+    }));
   };
 
   const handleTypeChange = (type: string) => {
     setCurrentType(type);
+    setNewTemplate(prev => ({
+      ...prev,
+      subtype: type as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+    }));
   };
 
   const handleDragStart = (e: React.DragEvent, variable: string) => {
@@ -97,6 +122,16 @@ export const Emails = () => {
       const end = target.selectionEnd || 0;
       const currentValue = target.value;
       const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
+      
+      // Update the form state based on the target field
+      if (targetId === "template-name") {
+        setNewTemplate(prev => ({ ...prev, name: newValue }));
+      } else if (targetId === "subject") {
+        setNewTemplate(prev => ({ ...prev, subject: newValue }));
+      } else if (targetId === "content") {
+        setNewTemplate(prev => ({ ...prev, content: newValue }));
+      }
+      
       target.value = newValue;
       target.focus();
       target.setSelectionRange(start + variable.length, start + variable.length);
@@ -109,19 +144,43 @@ export const Emails = () => {
   };
 
   const handleSaveTemplate = () => {
-    if (selectedTemplate) {
-      setSavedTemplates(prev => {
-        const isExisting = prev.find(t => t.id === selectedTemplate.id);
-        if (isExisting) {
-          return prev.map(t => t.id === selectedTemplate.id ? selectedTemplate : t);
-        }
-        return [...prev, { ...selectedTemplate, id: String(prev.length + 1) }];
+    if (!newTemplate.name || !newTemplate.subject || !newTemplate.content) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos do template.",
+        variant: "destructive",
       });
+      return;
     }
+
+    const templateToSave: EmailTemplate = {
+      id: String(savedTemplates.length + 1),
+      name: newTemplate.name,
+      subject: newTemplate.subject,
+      content: newTemplate.content,
+      type: newTemplate.type as 'clients' | 'employees',
+      subtype: newTemplate.subtype as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+    };
+
+    setSavedTemplates(prev => [...prev, templateToSave]);
+    
+    // Reset form
+    setNewTemplate({
+      type: currentSection as 'clients' | 'employees',
+      subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+      name: '',
+      subject: '',
+      content: '',
+    });
+
     toast({
       title: "Template Salvo",
       description: "O template de e-mail foi salvo com sucesso.",
     });
+  };
+
+  const handleInputChange = (field: keyof EmailTemplate, value: string) => {
+    setNewTemplate(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -157,6 +216,8 @@ export const Emails = () => {
                       <Input
                         id="template-name"
                         placeholder="Ex: Template padrão de NF"
+                        value={newTemplate.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, "template-name")}
                       />
@@ -166,6 +227,8 @@ export const Emails = () => {
                       <Input
                         id="subject"
                         placeholder="Ex: Solicitação de Nota Fiscal - {mes_referencia}"
+                        value={newTemplate.subject}
+                        onChange={(e) => handleInputChange('subject', e.target.value)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, "subject")}
                       />
@@ -176,6 +239,8 @@ export const Emails = () => {
                         id="content"
                         className="min-h-[300px]"
                         placeholder={`Ex: Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}...`}
+                        value={newTemplate.content}
+                        onChange={(e) => handleInputChange('content', e.target.value)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, "content")}
                       />
@@ -232,12 +297,10 @@ export const Emails = () => {
                     <CardTitle>
                       Editor de Template - {currentType === "recurring" ? "Cobrança Recorrente" : "Cobrança Pontual"}
                     </CardTitle>
-                    {currentType === "oneTime" && (
-                      <Button variant="secondary" onClick={handleSaveTemplate}>
-                        <MailIcon className="mr-2 h-4 w-4" />
-                        Enviar E-mail
-                      </Button>
-                    )}
+                    <Button variant="secondary" onClick={handleSaveTemplate}>
+                      <MailIcon className="mr-2 h-4 w-4" />
+                      Testar E-mail
+                    </Button>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -245,6 +308,8 @@ export const Emails = () => {
                       <Input
                         id="template-name"
                         placeholder="Ex: Template de cobrança mensal"
+                        value={newTemplate.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, "template-name")}
                       />
@@ -254,6 +319,8 @@ export const Emails = () => {
                       <Input
                         id="subject"
                         placeholder="Ex: Fatura {numero_pedido} - {descricao_servico}"
+                        value={newTemplate.subject}
+                        onChange={(e) => handleInputChange('subject', e.target.value)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, "subject")}
                       />
@@ -264,6 +331,8 @@ export const Emails = () => {
                         id="content"
                         className="min-h-[300px]"
                         placeholder={`Ex: Prezado {nome_cliente},\n\nSegue a fatura referente ao serviço...`}
+                        value={newTemplate.content}
+                        onChange={(e) => handleInputChange('content', e.target.value)}
                         onDragOver={handleDragOver}
                         onDrop={(e) => handleDrop(e, "content")}
                       />
@@ -317,6 +386,7 @@ export const Emails = () => {
               <thead className="bg-muted">
                 <tr className="text-left">
                   <th className="p-4 text-sm font-medium text-muted-foreground">Nome</th>
+                  <th className="p-4 text-sm font-medium text-muted-foreground">Tipo</th>
                   <th className="p-4 text-sm font-medium text-muted-foreground">Assunto</th>
                   <th className="p-4 text-sm font-medium text-muted-foreground">Última Modificação</th>
                 </tr>
@@ -326,6 +396,11 @@ export const Emails = () => {
                   <tr key={template.id} className="border-t hover:bg-muted/50">
                     <td className="p-4">
                       {template.name}
+                    </td>
+                    <td className="p-4">
+                      {template.type === 'clients' 
+                        ? (template.subtype === 'recurring' ? 'Cobrança Recorrente' : 'Cobrança Pontual')
+                        : (template.subtype === 'invoice' ? 'Nota Fiscal' : 'Horas')}
                     </td>
                     <td className="p-4">
                       {template.subject}
@@ -343,3 +418,4 @@ export const Emails = () => {
     </div>
   );
 };
+
