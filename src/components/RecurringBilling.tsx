@@ -56,7 +56,7 @@ export const RecurringBilling = () => {
           name
         )
       `)
-      .order('due_date', { ascending: true });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching payments:', error);
@@ -96,10 +96,10 @@ export const RecurringBilling = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'recurring_billing' },
-        (payload) => {
-          console.log('Recurring billing changes detected:', payload);
+        () => {
+          console.log('Recurring billing changes detected, refreshing data...');
+          // Quando houver mudança nos recebimentos recorrentes, atualizar ambas as listas
           fetchBillings();
-          // Importante: também buscar os pagamentos quando houver mudanças nos recebimentos recorrentes
           fetchPayments();
         }
       )
@@ -110,8 +110,8 @@ export const RecurringBilling = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'payments' },
-        (payload) => {
-          console.log('Payment changes detected:', payload);
+        () => {
+          console.log('Payment changes detected, refreshing data...');
           fetchPayments();
         }
       )
@@ -142,10 +142,15 @@ export const RecurringBilling = () => {
     }
 
     console.log("New billing created:", data);
-    // Atualizar ambas as listas após criar um novo recebimento recorrente
-    fetchBillings();
-    fetchPayments();
+    // Fechar o diálogo antes de atualizar os dados
     setDialogOpen(false);
+    
+    // Dar um pequeno delay para garantir que os pagamentos foram criados
+    setTimeout(() => {
+      fetchBillings();
+      fetchPayments();
+    }, 500);
+    
     toast({
       title: "Sucesso",
       description: "Recebimento recorrente criado com sucesso.",
@@ -171,8 +176,9 @@ export const RecurringBilling = () => {
     }
 
     console.log("New payment created:", data);
-    setPayments(prev => [...prev, data]);
     setDialogOpen(false);
+    fetchPayments(); // Atualiza a lista de pagamentos
+    
     toast({
       title: "Sucesso",
       description: "Recebimento pontual criado com sucesso.",
