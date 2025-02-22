@@ -124,6 +124,7 @@ export type Database = {
           description: string
           due_date: string
           id: string
+          payment_date: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           status: Database["public"]["Enums"]["billing_status"] | null
           updated_at: string | null
@@ -135,6 +136,7 @@ export type Database = {
           description: string
           due_date: string
           id?: string
+          payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["billing_status"] | null
           updated_at?: string | null
@@ -146,6 +148,7 @@ export type Database = {
           description?: string
           due_date?: string
           id?: string
+          payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["billing_status"] | null
           updated_at?: string | null
@@ -169,6 +172,7 @@ export type Database = {
           due_day: number
           end_date: string | null
           id: string
+          payment_date: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           start_date: string
           status: Database["public"]["Enums"]["billing_status"] | null
@@ -182,6 +186,7 @@ export type Database = {
           due_day: number
           end_date?: string | null
           id?: string
+          payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           start_date: string
           status?: Database["public"]["Enums"]["billing_status"] | null
@@ -195,6 +200,7 @@ export type Database = {
           due_day?: number
           end_date?: string | null
           id?: string
+          payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           start_date?: string
           status?: Database["public"]["Enums"]["billing_status"] | null

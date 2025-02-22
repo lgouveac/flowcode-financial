@@ -8,6 +8,7 @@ import { EditableCell } from "@/components/EditableCell";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
 
 interface PaymentTableProps {
   payments: Array<Payment & { clients?: { name: string } }>;
@@ -43,10 +44,20 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
   };
 
   const handleUpdatePayment = async (paymentId: string, field: string, value: any) => {
+    const updates: any = { [field]: value };
+    
+    // If status is being changed to 'paid' and no payment date is set, set it to today
+    if (field === 'status' && value === 'paid') {
+      const payment = payments.find(p => p.id === paymentId);
+      if (!payment?.payment_date) {
+        updates.payment_date = new Date().toISOString().split('T')[0];
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('payments')
-        .update({ [field]: value })
+        .update(updates)
         .eq('id', paymentId);
 
       if (error) throw error;
@@ -93,6 +104,7 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
             <TableHead>Descrição</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Vencimento</TableHead>
+            <TableHead>Data Pgto.</TableHead>
             <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
@@ -119,6 +131,15 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
                   value={payment.due_date}
                   onChange={(value) => handleUpdatePayment(payment.id, 'due_date', value)}
                   type="date"
+                />
+              </TableCell>
+              <TableCell className="relative">
+                <input
+                  type="date"
+                  value={payment.payment_date || ''}
+                  onChange={(e) => handleUpdatePayment(payment.id, 'payment_date', e.target.value)}
+                  className={`w-full bg-transparent ${payment.status === 'paid' ? '' : 'opacity-50'}`}
+                  disabled={payment.status !== 'paid'}
                 />
               </TableCell>
               <TableCell>

@@ -22,10 +22,20 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
   };
 
   const handleUpdateBilling = async (billingId: string, field: string, value: any) => {
+    const updates: any = { [field]: value };
+    
+    // If status is being changed to 'paid' and no payment date is set, set it to today
+    if (field === 'status' && value === 'paid') {
+      const billing = billings.find(b => b.id === billingId);
+      if (!billing?.payment_date) {
+        updates.payment_date = new Date().toISOString().split('T')[0];
+      }
+    }
+
     try {
       const { error } = await supabase
         .from('recurring_billing')
-        .update({ [field]: value })
+        .update(updates)
         .eq('id', billingId);
 
       if (error) throw error;
@@ -80,6 +90,7 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
             <TableHead>Descrição</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Dia do Vencimento</TableHead>
+            <TableHead>Data Pgto.</TableHead>
             <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
@@ -106,6 +117,15 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                   value={billing.due_day.toString()}
                   onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
                   type="number"
+                />
+              </TableCell>
+              <TableCell className="relative">
+                <input
+                  type="date"
+                  value={billing.payment_date || ''}
+                  onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
+                  className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
+                  disabled={billing.status !== 'paid'}
                 />
               </TableCell>
               <TableCell>

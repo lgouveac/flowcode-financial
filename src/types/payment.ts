@@ -5,6 +5,7 @@ export interface Payment {
   description: string;
   amount: number;
   due_date: string;
+  payment_date?: string;
   payment_method: 'pix' | 'boleto' | 'credit_card';
   status: 'pending' | 'billed' | 'awaiting_invoice' | 'paid' | 'overdue' | 'cancelled';
   created_at?: string;
@@ -12,4 +13,3 @@ export interface Payment {
 }
 
 export type NewPayment = Omit<Payment, 'id' | 'created_at' | 'updated_at'>;
-
