@@ -35,7 +35,7 @@ export const OneTimePayment = () => {
       return;
     }
 
-    setPayments(data || []);
+    setPayments(data as Payment[]);
   };
 
   const fetchClients = async () => {
@@ -73,7 +73,7 @@ export const OneTimePayment = () => {
       return;
     }
 
-    setPayments(prev => [...prev, data]);
+    setPayments(prev => [...prev, data as Payment]);
     setDialogOpen(false);
     toast({
       title: "Sucesso",
