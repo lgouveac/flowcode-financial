@@ -10,6 +10,8 @@ export interface Payment {
   status: 'pending' | 'billed' | 'awaiting_invoice' | 'paid' | 'overdue' | 'cancelled';
   created_at?: string;
   updated_at?: string;
+  installment_number?: number;
+  total_installments?: number;
 }
 
 export type NewPayment = Omit<Payment, 'id' | 'created_at' | 'updated_at'>;
