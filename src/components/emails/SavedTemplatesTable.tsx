@@ -1,12 +1,29 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { EditTemplateDialog } from "./EditTemplateDialog";
+import { useState } from "react";
 import { EmailTemplate } from "@/types/email";
+import { useToast } from "@/components/ui/use-toast";
 
 interface SavedTemplatesTableProps {
   templates: EmailTemplate[];
+  onTemplateUpdate?: (updatedTemplate: EmailTemplate) => void;
 }
 
-export const SavedTemplatesTable = ({ templates }: SavedTemplatesTableProps) => {
+export const SavedTemplatesTable = ({ templates, onTemplateUpdate }: SavedTemplatesTableProps) => {
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const { toast } = useToast();
+
+  const handleSave = (updatedTemplate: EmailTemplate) => {
+    onTemplateUpdate?.(updatedTemplate);
+    toast({
+      title: "Template atualizado",
+      description: "O template foi atualizado com sucesso.",
+    });
+    setEditingTemplate(null);
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -20,7 +37,7 @@ export const SavedTemplatesTable = ({ templates }: SavedTemplatesTableProps) => 
                 <th className="p-4 text-sm font-medium text-muted-foreground">Nome</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Tipo</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Assunto</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Última Modificação</th>
+                <th className="p-4 text-sm font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -37,8 +54,14 @@ export const SavedTemplatesTable = ({ templates }: SavedTemplatesTableProps) => 
                   <td className="p-4">
                     {template.subject}
                   </td>
-                  <td className="p-4 text-sm text-muted-foreground">
-                    Hoje às 15:30
+                  <td className="p-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingTemplate(template)}
+                    >
+                      Editar
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -46,6 +69,15 @@ export const SavedTemplatesTable = ({ templates }: SavedTemplatesTableProps) => 
           </table>
         </div>
       </CardContent>
+
+      {editingTemplate && (
+        <EditTemplateDialog
+          template={editingTemplate}
+          open={true}
+          onClose={() => setEditingTemplate(null)}
+          onSave={handleSave}
+        />
+      )}
     </Card>
   );
 };

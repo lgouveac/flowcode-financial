@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +48,13 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
     return content;
   };
 
+  const templateOptions = Object.entries(variablesList.clients.recurring)
+    .filter(([key]) => key === 'recurring') // Filtra apenas templates recorrentes
+    .map(([key, variables]) => ({
+      key,
+      label: "Template de Cobrança Recorrente"
+    }));
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
@@ -77,9 +83,9 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
             <SelectValue placeholder="Selecione o template" />
           </SelectTrigger>
           <SelectContent>
-            {Object.entries(variablesList.clients.recurring).map(([key, variables]) => (
+            {templateOptions.map(({ key, label }) => (
               <SelectItem key={key} value={key}>
-                Template de Cobrança Recorrente
+                {label}
               </SelectItem>
             ))}
           </SelectContent>

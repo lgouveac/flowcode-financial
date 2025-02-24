@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -38,6 +37,17 @@ export const Emails = () => {
       subtype: 'recurring',
     }
   ]);
+
+  const handleTemplateUpdate = (updatedTemplate: EmailTemplate) => {
+    setSavedTemplates(prev => prev.map(template => 
+      template.id === updatedTemplate.id ? updatedTemplate : template
+    ));
+
+    toast({
+      title: "Template atualizado",
+      description: "O template foi atualizado com sucesso.",
+    });
+  };
 
   const handleSectionChange = (section: string) => {
     setCurrentSection(section);
@@ -205,7 +215,10 @@ export const Emails = () => {
         </TabsContent>
       </Tabs>
 
-      <SavedTemplatesTable templates={savedTemplates} />
+      <SavedTemplatesTable 
+        templates={savedTemplates} 
+        onTemplateUpdate={handleTemplateUpdate}
+      />
     </div>
   );
 };
