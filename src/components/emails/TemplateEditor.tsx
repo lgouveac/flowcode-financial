@@ -73,7 +73,7 @@ export const TemplateEditor = ({
           type: template.type,
           subtype: template.subtype,
           templateId: template.id,
-          to: 'test@example.com', // You would typically get this from user input or configuration
+          to: 'test@example.com',
           data: previewData,
         },
       });
@@ -94,6 +94,8 @@ export const TemplateEditor = ({
     }
   };
 
+  const hasRequiredFields = template.name && template.subject && template.content;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -111,7 +113,7 @@ export const TemplateEditor = ({
               {getDescription()}
             </CardDescription>
           </div>
-          {template.name && (
+          {hasRequiredFields && (
             <Button variant="secondary" onClick={handleTestEmail}>
               <MailIcon className="mr-2 h-4 w-4" />
               Testar E-mail
@@ -188,4 +190,3 @@ export const TemplateEditor = ({
     </div>
   );
 };
-
