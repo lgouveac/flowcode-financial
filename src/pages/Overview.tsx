@@ -1,18 +1,48 @@
 
 import { motion } from "framer-motion";
 import { CashFlow } from "@/components/CashFlow";
-import { Line } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const stats = [
-  { title: "Receita Total", value: "R$ 24.500", change: "+12.5%", description: "Mês atual" },
-  { title: "Despesas Totais", value: "R$ 18.200", change: "+5.2%", description: "Mês atual" },
-  { title: "Lucro Líquido", value: "R$ 6.300", change: "+7.3%", description: "Mês atual" },
-  { title: "Clientes Ativos", value: "45", change: "+5", description: "Últimos 30 dias" },
-];
+import { useMetrics } from "@/hooks/useMetrics";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Overview = () => {
+  const { metrics, isLoading } = useMetrics();
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const stats = [
+    { 
+      title: "Receita Total", 
+      value: formatCurrency(metrics.totalRevenue), 
+      change: metrics.revenueChange, 
+      description: "Mês atual" 
+    },
+    { 
+      title: "Despesas Totais", 
+      value: formatCurrency(metrics.totalExpenses), 
+      change: metrics.expensesChange, 
+      description: "Mês atual" 
+    },
+    { 
+      title: "Lucro Líquido", 
+      value: formatCurrency(metrics.netProfit), 
+      change: metrics.profitChange, 
+      description: "Mês atual" 
+    },
+    { 
+      title: "Clientes Ativos", 
+      value: metrics.activeClients.toString(), 
+      change: metrics.clientsChange, 
+      description: "Últimos 30 dias" 
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -34,19 +64,28 @@ export const Overview = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
-                  <span className={`text-sm ${
-                    stat.change.startsWith('+') 
-                      ? 'text-green-500' 
-                      : stat.change === '0%' 
-                      ? 'text-gray-500' 
-                      : 'text-red-500'
-                  }`}>
-                    {stat.change}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-[100px]" />
+                    <Skeleton className="h-4 w-[60px]" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
+                      <span className={`text-sm ${
+                        stat.change.startsWith('+') 
+                          ? 'text-green-500' 
+                          : stat.change === '0%' 
+                          ? 'text-gray-500' 
+                          : 'text-red-500'
+                      }`}>
+                        {stat.change}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -82,4 +121,3 @@ export const Overview = () => {
     </div>
   );
 };
-
