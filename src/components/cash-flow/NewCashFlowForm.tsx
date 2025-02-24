@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,7 +91,6 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
       payment_id: category === 'payment' ? selectedPayment : null,
     };
 
-    // Inserir o cash flow
     const { error: cashFlowError } = await supabase
       .from('cash_flow')
       .insert([newCashFlow])
@@ -107,7 +107,6 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
       return;
     }
 
-    // Se for um pagamento, atualizar o status do pagamento para 'paid'
     if (category === 'payment' && selectedPayment) {
       const { error: paymentError } = await supabase
         .from('payments')
@@ -212,7 +211,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
                     onValueChange={setSearchValue}
                   />
                   <CommandEmpty>
-                    <div className="py-6 text-center">
+                    <div className="py-6 text-center bg-white">
                       <p className="text-base text-muted-foreground">
                         Nenhum recebimento encontrado
                       </p>
@@ -282,3 +281,4 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
     </DialogContent>
   );
 };
+
