@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { CashFlow } from "@/types/cashflow";
+import { CashFlow, validateCashFlowType } from "@/types/cashflow";
 import { useToast } from "@/components/ui/use-toast";
 
 export const useCashFlow = (period: string = 'current') => {
@@ -66,12 +66,26 @@ export const useCashFlow = (period: string = 'current') => {
 
       if (error) throw error;
 
-      setCashFlow(data || []);
+      // Transform the data to ensure type safety
+      const transformedData: CashFlow[] = (data || []).map(item => ({
+        ...item,
+        type: validateCashFlowType(item.type), // This ensures type is either 'income' or 'expense'
+        id: item.id,
+        description: item.description,
+        amount: item.amount,
+        date: item.date,
+        category: item.category,
+        payment_id: item.payment_id || undefined,
+        created_at: item.created_at || undefined,
+        updated_at: item.updated_at || undefined
+      }));
 
-      // Processa dados para o gráfico
+      setCashFlow(transformedData);
+
+      // Process data for the chart
       const chartDataMap = new Map();
       
-      data?.forEach((flow) => {
+      transformedData.forEach((flow) => {
         const date = new Date(flow.date).toLocaleDateString('pt-BR');
         const currentData = chartDataMap.get(date) || {
           name: date,
@@ -112,3 +126,4 @@ export const useCashFlow = (period: string = 'current') => {
     onNewCashFlow: fetchCashFlow,
   };
 };
+
