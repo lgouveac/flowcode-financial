@@ -8,7 +8,7 @@ export interface EmailTemplate {
   subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours';
   created_at: string;
   updated_at: string;
-  send_day?: number | null;
+  send_day: number | null;
 }
 
 export interface Variable {

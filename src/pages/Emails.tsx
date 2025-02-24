@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,8 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 export const Emails = () => {
   const { toast } = useToast();
-  const [currentSection, setCurrentSection] = useState("employees");
-  const [currentType, setCurrentType] = useState(currentSection === "employees" ? "invoice" : "recurring");
+  const [currentSection, setCurrentSection] = useState<'employees' | 'clients'>('employees');
+  const [currentType, setCurrentType] = useState(currentSection === 'employees' ? 'invoice' : 'recurring');
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState<Partial<EmailTemplate>>({
     type: 'clients',
@@ -21,24 +20,35 @@ export const Emails = () => {
     name: '',
     subject: '',
     content: '',
-    send_day: 1,
+    send_day: null,
   });
   const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
-
   const fetchTemplates = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from('email_templates')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setSavedTemplates(data || []);
+
+      const validTemplates = (rawData || []).reduce<EmailTemplate[]>((acc, template) => {
+        if (template.type === 'clients' || template.type === 'employees') {
+          if (['recurring', 'oneTime', 'invoice', 'hours'].includes(template.subtype)) {
+            acc.push({
+              ...template,
+              type: template.type as 'clients' | 'employees',
+              subtype: template.subtype as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+              send_day: template.send_day || null,
+            });
+          }
+        }
+        return acc;
+      }, []);
+
+      setSavedTemplates(validTemplates);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast({
@@ -50,6 +60,10 @@ export const Emails = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
   const handleTemplateUpdate = async (updatedTemplate: EmailTemplate) => {
     try {
@@ -109,7 +123,7 @@ export const Emails = () => {
   };
 
   const handleSectionChange = (section: string) => {
-    setCurrentSection(section);
+    setCurrentSection(section as 'clients' | 'employees');
     setCurrentType(section === "employees" ? "invoice" : "recurring");
     setNewTemplate(prev => ({
       ...prev,
