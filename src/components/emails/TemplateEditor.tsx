@@ -204,12 +204,6 @@ export const TemplateEditor = ({
               {getDescription()}
             </CardDescription>
           </div>
-          {hasRequiredFields && (
-            <Button variant="secondary" onClick={() => setTestEmailOpen(true)} className="flex items-center gap-2">
-              <MailIcon className="h-4 w-4" />
-              Testar E-mail
-            </Button>
-          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -266,7 +260,13 @@ export const TemplateEditor = ({
               onDrop={(e) => onDrop(e, "content")}
             />
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {hasRequiredFields && (
+              <Button variant="secondary" onClick={() => setTestEmailOpen(true)} className="flex items-center gap-2">
+                <MailIcon className="h-4 w-4" />
+                Testar E-mail
+              </Button>
+            )}
             <Button onClick={onSave}>Salvar Template</Button>
           </div>
         </CardContent>
@@ -331,3 +331,4 @@ export const TemplateEditor = ({
     </div>
   );
 };
+
