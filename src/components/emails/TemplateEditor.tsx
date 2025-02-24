@@ -94,7 +94,14 @@ export const TemplateEditor = ({
     }
   };
 
-  const hasRequiredFields = template.name && template.subject && template.content;
+  const hasRequiredFields = Boolean(template.name?.trim() && template.subject?.trim() && template.content?.trim());
+
+  console.log('Template state:', {
+    name: template.name,
+    subject: template.subject,
+    content: template.content,
+    hasRequiredFields
+  });
 
   return (
     <div className="space-y-6">
@@ -126,7 +133,7 @@ export const TemplateEditor = ({
             <Input
               id="template-name"
               placeholder="Ex: Template padrão de NF"
-              value={template.name}
+              value={template.name || ''}
               onChange={(e) => onInputChange('name', e.target.value)}
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, "template-name")}
@@ -137,7 +144,7 @@ export const TemplateEditor = ({
             <Input
               id="subject"
               placeholder="Ex: Solicitação de Nota Fiscal - {mes_referencia}"
-              value={template.subject}
+              value={template.subject || ''}
               onChange={(e) => onInputChange('subject', e.target.value)}
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, "subject")}
@@ -169,7 +176,7 @@ export const TemplateEditor = ({
               id="content"
               className="min-h-[300px]"
               placeholder={`Ex: Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}...`}
-              value={template.content}
+              value={template.content || ''}
               onChange={(e) => onInputChange('content', e.target.value)}
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, "content")}
