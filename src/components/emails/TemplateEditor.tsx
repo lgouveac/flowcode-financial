@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { EmailTemplate } from "@/types/email";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TemplatePreview } from "./TemplatePreview";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
@@ -134,7 +135,7 @@ export const TemplateEditor = ({
       }
 
       const previewData = getTestData(selectedId);
-      const toastId = toast({
+      const loadingToast = toast({
         title: "Enviando e-mail de teste...",
         description: "Aguarde um momento.",
       });
@@ -165,7 +166,6 @@ export const TemplateEditor = ({
       console.log('Email function response:', data);
 
       toast({
-        id: toastId,
         title: "Email de teste enviado",
         description: "O email de teste foi enviado com sucesso!",
       });
