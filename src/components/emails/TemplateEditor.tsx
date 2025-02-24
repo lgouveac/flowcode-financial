@@ -94,12 +94,16 @@ export const TemplateEditor = ({
     }
   };
 
-  const hasRequiredFields = Boolean(template.name?.trim() && template.subject?.trim() && template.content?.trim());
+  const hasRequiredFields = Boolean(
+    template?.name?.trim() && 
+    template?.subject?.trim() && 
+    template?.content?.trim()
+  );
 
   console.log('Template state:', {
-    name: template.name,
-    subject: template.subject,
-    content: template.content,
+    name: template?.name,
+    subject: template?.subject,
+    content: template?.content,
     hasRequiredFields
   });
 
@@ -121,8 +125,8 @@ export const TemplateEditor = ({
             </CardDescription>
           </div>
           {hasRequiredFields && (
-            <Button variant="secondary" onClick={handleTestEmail}>
-              <MailIcon className="mr-2 h-4 w-4" />
+            <Button variant="secondary" onClick={handleTestEmail} className="flex items-center gap-2">
+              <MailIcon className="h-4 w-4" />
               Testar E-mail
             </Button>
           )}
@@ -133,7 +137,7 @@ export const TemplateEditor = ({
             <Input
               id="template-name"
               placeholder="Ex: Template padrão de NF"
-              value={template.name || ''}
+              value={template?.name || ''}
               onChange={(e) => onInputChange('name', e.target.value)}
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, "template-name")}
@@ -144,7 +148,7 @@ export const TemplateEditor = ({
             <Input
               id="subject"
               placeholder="Ex: Solicitação de Nota Fiscal - {mes_referencia}"
-              value={template.subject || ''}
+              value={template?.subject || ''}
               onChange={(e) => onInputChange('subject', e.target.value)}
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, "subject")}
@@ -154,7 +158,7 @@ export const TemplateEditor = ({
             <div className="space-y-2">
               <Label htmlFor="send-day">Dia do Envio</Label>
               <Select
-                value={String(template.send_day || 1)}
+                value={String(template?.send_day || 1)}
                 onValueChange={(value) => onInputChange('send_day', parseInt(value, 10))}
               >
                 <SelectTrigger>
@@ -176,7 +180,7 @@ export const TemplateEditor = ({
               id="content"
               className="min-h-[300px]"
               placeholder={`Ex: Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}...`}
-              value={template.content || ''}
+              value={template?.content || ''}
               onChange={(e) => onInputChange('content', e.target.value)}
               onDragOver={onDragOver}
               onDrop={(e) => onDrop(e, "content")}
@@ -188,7 +192,7 @@ export const TemplateEditor = ({
         </CardContent>
       </Card>
 
-      {template.content && (
+      {template?.content && (
         <TemplatePreview 
           template={template as EmailTemplate} 
           previewData={previewData}
