@@ -6,15 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MailIcon, CalendarIcon, RefreshCwIcon } from "lucide-react";
 import { EmailTemplate } from "@/types/email";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface TemplateEditorProps {
   type: 'clients' | 'employees';
   currentType: string;
   template: Partial<EmailTemplate>;
-  onInputChange: (field: keyof EmailTemplate, value: string) => void;
+  onInputChange: (field: keyof EmailTemplate, value: string | number) => void;
   onSave: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, id: string) => void;
+  showSendDay?: boolean;
 }
 
 export const TemplateEditor = ({
@@ -25,6 +27,7 @@ export const TemplateEditor = ({
   onSave,
   onDragOver,
   onDrop,
+  showSendDay = false,
 }: TemplateEditorProps) => {
   const isClient = type === 'clients';
   const isRecurring = currentType === 'recurring';
@@ -93,6 +96,26 @@ export const TemplateEditor = ({
             onDrop={(e) => onDrop(e, "subject")}
           />
         </div>
+        {showSendDay && (
+          <div className="space-y-2">
+            <Label htmlFor="send-day">Dia do Envio</Label>
+            <Select
+              value={String(template.send_day || 1)}
+              onValueChange={(value) => onInputChange('send_day', parseInt(value, 10))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o dia do envio" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                  <SelectItem key={day} value={String(day)}>
+                    Dia {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="content">Conteúdo</Label>
           <Textarea
@@ -112,3 +135,4 @@ export const TemplateEditor = ({
     </Card>
   );
 };
+

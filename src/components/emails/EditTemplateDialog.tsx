@@ -10,13 +10,14 @@ interface EditTemplateDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (template: EmailTemplate) => void;
+  showSendDay?: boolean;
 }
 
-export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemplateDialogProps) => {
+export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDay }: EditTemplateDialogProps) => {
   const [editedTemplate, setEditedTemplate] = useState<EmailTemplate>(template);
   const { toast } = useToast();
 
-  const handleInputChange = (field: keyof EmailTemplate, value: string) => {
+  const handleInputChange = (field: keyof EmailTemplate, value: string | number) => {
     setEditedTemplate(prev => ({ ...prev, [field]: value }));
   };
 
@@ -59,8 +60,10 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemp
               handleInputChange(id === "template-name" ? "name" : id === "subject" ? "subject" : "content", newValue);
             }
           }}
+          showSendDay={showSendDay}
         />
       </DialogContent>
     </Dialog>
   );
 };
+

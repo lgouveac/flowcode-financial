@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { RefreshCwIcon, CalendarIcon } from "lucide-react";
@@ -7,6 +7,8 @@ import { TemplateEditor } from "@/components/emails/TemplateEditor";
 import { VariablesList } from "@/components/emails/VariablesList";
 import { SavedTemplatesTable } from "@/components/emails/SavedTemplatesTable";
 import { EmailTemplate, variablesList } from "@/types/email";
+import { supabase } from "@/integrations/supabase/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Emails = () => {
   const { toast } = useToast();
@@ -19,39 +21,91 @@ export const Emails = () => {
     name: '',
     subject: '',
     content: '',
+    send_day: 1,
   });
-  const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([
-    {
-      id: "1",
-      name: "Template NF Mensal",
-      subject: "Solicitação de Nota Fiscal - {mes_referencia}",
-      content: "Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}...",
-      type: 'employees',
-      subtype: 'invoice',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: "2",
-      name: "Template Cobrança Recorrente",
-      subject: "Fatura {periodo_referencia} - {plano_servico} ({numero_parcela}/{total_parcelas})",
-      content: "Prezado {nome_cliente},\n\nSegue a fatura referente ao período {periodo_referencia}...",
-      type: 'clients',
-      subtype: 'recurring',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+  const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
+
+  const fetchTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSavedTemplates(data || []);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      toast({
+        title: "Erro ao carregar templates",
+        description: "Não foi possível carregar os templates. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
-  const handleTemplateUpdate = (updatedTemplate: EmailTemplate) => {
-    setSavedTemplates(prev => prev.map(template => 
-      template.id === updatedTemplate.id ? updatedTemplate : template
-    ));
+  const handleTemplateUpdate = async (updatedTemplate: EmailTemplate) => {
+    try {
+      const { error } = await supabase
+        .from('email_templates')
+        .update({
+          name: updatedTemplate.name,
+          subject: updatedTemplate.subject,
+          content: updatedTemplate.content,
+          send_day: updatedTemplate.send_day,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', updatedTemplate.id);
 
-    toast({
-      title: "Template atualizado",
-      description: "O template foi atualizado com sucesso.",
-    });
+      if (error) throw error;
+
+      setSavedTemplates(prev => prev.map(template => 
+        template.id === updatedTemplate.id ? updatedTemplate : template
+      ));
+
+      toast({
+        title: "Template atualizado",
+        description: "O template foi atualizado com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error updating template:', error);
+      toast({
+        title: "Erro ao atualizar template",
+        description: "Não foi possível atualizar o template. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTemplateDelete = async (templateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('email_templates')
+        .delete()
+        .eq('id', templateId);
+
+      if (error) throw error;
+
+      setSavedTemplates(prev => prev.filter(template => template.id !== templateId));
+      toast({
+        title: "Template excluído",
+        description: "O template foi excluído com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast({
+        title: "Erro ao excluir template",
+        description: "Não foi possível excluir o template. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSectionChange = (section: string) => {
@@ -106,7 +160,7 @@ export const Emails = () => {
     e.preventDefault();
   };
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!newTemplate.name || !newTemplate.subject || !newTemplate.content) {
       toast({
         title: "Campos obrigatórios",
@@ -116,34 +170,48 @@ export const Emails = () => {
       return;
     }
 
-    const templateToSave: EmailTemplate = {
-      id: String(savedTemplates.length + 1),
-      name: newTemplate.name,
-      subject: newTemplate.subject,
-      content: newTemplate.content,
-      type: newTemplate.type as 'clients' | 'employees',
-      subtype: newTemplate.subtype as 'recurring' | 'oneTime' | 'invoice' | 'hours',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    try {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .insert({
+          name: newTemplate.name,
+          subject: newTemplate.subject,
+          content: newTemplate.content,
+          type: newTemplate.type,
+          subtype: newTemplate.subtype,
+          send_day: newTemplate.type === 'employees' ? newTemplate.send_day : null
+        })
+        .select()
+        .single();
 
-    setSavedTemplates(prev => [...prev, templateToSave]);
-    
-    setNewTemplate({
-      type: currentSection as 'clients' | 'employees',
-      subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours',
-      name: '',
-      subject: '',
-      content: '',
-    });
+      if (error) throw error;
 
-    toast({
-      title: "Template Salvo",
-      description: "O template de e-mail foi salvo com sucesso.",
-    });
+      setSavedTemplates(prev => [data, ...prev]);
+      
+      setNewTemplate({
+        type: currentSection as 'clients' | 'employees',
+        subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+        name: '',
+        subject: '',
+        content: '',
+        send_day: 1,
+      });
+
+      toast({
+        title: "Template Salvo",
+        description: "O template de e-mail foi salvo com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast({
+        title: "Erro ao salvar template",
+        description: "Não foi possível salvar o template. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleInputChange = (field: keyof EmailTemplate, value: string) => {
+  const handleInputChange = (field: keyof EmailTemplate, value: string | number) => {
     setNewTemplate(prev => ({ ...prev, [field]: value }));
   };
 
@@ -178,6 +246,7 @@ export const Emails = () => {
                   onSave={handleSaveTemplate}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
+                  showSendDay={true}
                 />
               </div>
               <VariablesList
@@ -211,6 +280,7 @@ export const Emails = () => {
                   onSave={handleSaveTemplate}
                   onDragOver={handleDragOver}
                   onDrop={handleDrop}
+                  showSendDay={false}
                 />
               </div>
               <VariablesList
@@ -225,6 +295,8 @@ export const Emails = () => {
       <SavedTemplatesTable 
         templates={savedTemplates} 
         onTemplateUpdate={handleTemplateUpdate}
+        onTemplateDelete={handleTemplateDelete}
+        isLoading={isLoading}
       />
     </div>
   );

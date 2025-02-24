@@ -125,6 +125,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          send_day: number | null
           subject: string
           subtype: string
           type: string
@@ -135,6 +136,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          send_day?: number | null
           subject: string
           subtype: string
           type: string
@@ -145,6 +147,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          send_day?: number | null
           subject?: string
           subtype?: string
           type?: string
