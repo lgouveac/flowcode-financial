@@ -33,6 +33,18 @@ export const variablesList = {
       { name: "{numero_pedido}", description: "Número do pedido" },
       { name: "{forma_pagamento}", description: "Forma de pagamento" }
     ]
+  },
+  employees: {
+    invoice: [
+      { name: "{nome_funcionario}", description: "Nome do funcionário" },
+      { name: "{mes_referencia}", description: "Mês de referência" },
+      { name: "{valor_nota}", description: "Valor da nota fiscal" }
+    ],
+    hours: [
+      { name: "{nome_funcionario}", description: "Nome do funcionário" },
+      { name: "{mes_referencia}", description: "Mês de referência" },
+      { name: "{total_horas}", description: "Total de horas" }
+    ]
   }
 };
 

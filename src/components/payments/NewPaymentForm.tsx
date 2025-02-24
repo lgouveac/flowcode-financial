@@ -1,19 +1,20 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { NewPayment } from "@/types/payment";
+import type { EmailTemplate } from "@/types/email";
+import type { NewPayment } from "@/types/payment";
 import { variablesList } from "@/types/email";
 
 interface NewPaymentFormProps {
   clients: Array<{ id: string; name: string }>;
   onSubmit: (payment: NewPayment & { email_template?: string }) => void;
   onClose: () => void;
+  templates?: EmailTemplate[];
 }
 
-export const NewPaymentForm = ({ clients, onSubmit, onClose }: NewPaymentFormProps) => {
+export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: NewPaymentFormProps) => {
   const [formData, setFormData] = useState<NewPayment & { email_template?: string }>({
     client_id: '',
     description: '',
