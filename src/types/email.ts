@@ -14,20 +14,6 @@ export interface Variable {
 }
 
 export const variablesList = {
-  employees: {
-    invoice: [
-      { name: "{nome_funcionario}", description: "Nome do funcionário" },
-      { name: "{mes_referencia}", description: "Mês de referência" },
-      { name: "{valor_nf}", description: "Valor da NF" },
-      { name: "{data_limite}", description: "Data limite para envio" },
-    ],
-    hours: [
-      { name: "{nome_funcionario}", description: "Nome do funcionário" },
-      { name: "{mes_referencia}", description: "Mês de referência" },
-      { name: "{total_horas}", description: "Total de horas" },
-      { name: "{data_limite}", description: "Data limite para envio" },
-    ],
-  },
   clients: {
     recurring: [
       { name: "{nome_cliente}", description: "Nome do cliente" },
@@ -37,6 +23,7 @@ export const variablesList = {
       { name: "{periodo_referencia}", description: "Período de referência" },
       { name: "{numero_parcela}", description: "Número da parcela atual" },
       { name: "{total_parcelas}", description: "Total de parcelas" },
+      { name: "{forma_pagamento}", description: "Forma de pagamento" }
     ],
     oneTime: [
       { name: "{nome_cliente}", description: "Nome do cliente" },
@@ -44,6 +31,8 @@ export const variablesList = {
       { name: "{data_vencimento}", description: "Data de vencimento" },
       { name: "{descricao_servico}", description: "Descrição do serviço" },
       { name: "{numero_pedido}", description: "Número do pedido" },
-    ],
-  },
+      { name: "{forma_pagamento}", description: "Forma de pagamento" }
+    ]
+  }
 };
+

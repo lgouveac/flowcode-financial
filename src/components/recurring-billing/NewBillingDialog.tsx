@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -10,13 +9,15 @@ import type { RecurringBilling } from "@/types/billing";
 import type { Payment } from "@/types/payment";
 import { NewRecurringBillingForm } from "./NewRecurringBillingForm";
 import { NewPaymentForm } from "../payments/NewPaymentForm";
+import { EmailTemplate } from "@/types/email";
 
 interface NewBillingDialogProps {
   clients: Array<{ id: string; name: string }>;
   onSuccess: () => void;
+  templates?: EmailTemplate[];
 }
 
-export const NewBillingDialog = ({ clients, onSuccess }: NewBillingDialogProps) => {
+export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBillingDialogProps) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [paymentType, setPaymentType] = useState<'recurring' | 'onetime'>('recurring');
   const { toast } = useToast();
@@ -106,6 +107,7 @@ export const NewBillingDialog = ({ clients, onSuccess }: NewBillingDialogProps) 
               clients={clients}
               onSubmit={handleNewBilling}
               onClose={() => setDialogOpen(false)}
+              templates={templates}
             />
           </TabsContent>
           <TabsContent value="onetime">
@@ -113,6 +115,7 @@ export const NewBillingDialog = ({ clients, onSuccess }: NewBillingDialogProps) 
               clients={clients}
               onSubmit={handleNewPayment}
               onClose={() => setDialogOpen(false)}
+              templates={templates}
             />
           </TabsContent>
         </Tabs>

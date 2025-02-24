@@ -5,13 +5,15 @@ import { EditTemplateDialog } from "./EditTemplateDialog";
 import { useState } from "react";
 import { EmailTemplate } from "@/types/email";
 import { useToast } from "@/components/ui/use-toast";
+import { Trash2 } from "lucide-react";
 
 interface SavedTemplatesTableProps {
   templates: EmailTemplate[];
   onTemplateUpdate?: (updatedTemplate: EmailTemplate) => void;
+  onTemplateDelete?: (templateId: string) => void;
 }
 
-export const SavedTemplatesTable = ({ templates, onTemplateUpdate }: SavedTemplatesTableProps) => {
+export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDelete }: SavedTemplatesTableProps) => {
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const { toast } = useToast();
 
@@ -22,6 +24,16 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate }: SavedTempla
       description: "O template foi atualizado com sucesso.",
     });
     setEditingTemplate(null);
+  };
+
+  const handleDelete = (templateId: string) => {
+    if (confirm("Tem certeza que deseja excluir este template?")) {
+      onTemplateDelete?.(templateId);
+      toast({
+        title: "Template excluído",
+        description: "O template foi excluído com sucesso.",
+      });
+    }
   };
 
   return (
@@ -54,13 +66,20 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate }: SavedTempla
                   <td className="p-4">
                     {template.subject}
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setEditingTemplate(template)}
                     >
                       Editar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(template.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </td>
                 </tr>
@@ -81,3 +100,4 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate }: SavedTempla
     </Card>
   );
 };
+

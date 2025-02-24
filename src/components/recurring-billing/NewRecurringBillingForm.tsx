@@ -4,15 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { RecurringBilling } from "@/types/billing";
-import { variablesList } from "@/types/email";
+import { EmailTemplate } from "@/types/email";
 
 interface NewRecurringBillingFormProps {
   onSubmit: (billing: RecurringBilling & { email_template?: string }) => void;
   onClose: () => void;
   clients: Array<{ id: string; name: string }>;
+  templates?: EmailTemplate[];
 }
 
-export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecurringBillingFormProps) => {
+export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates = [] }: NewRecurringBillingFormProps) => {
   const [formData, setFormData] = useState<Partial<RecurringBilling> & { email_template?: string }>({
     payment_method: 'pix',
     status: 'pending',
@@ -33,27 +34,29 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
   const previewEmail = () => {
     if (!formData.email_template) return null;
 
-    const template = Object.entries(variablesList.clients.recurring)[0][1];
-    let content = "Prezado {nome_cliente},\n\nSegue a cobrança no valor de R$ {valor_cobranca} referente ao serviço: {plano_servico}.\nVencimento todo dia {data_vencimento} do mês.\n\nParcela {numero_parcela} de {total_parcelas}.\n\nAtenciosamente.";
+    // Find the selected template
+    const selectedTemplate = templates.find(t => t.id === formData.email_template);
+    if (!selectedTemplate) return null;
+
+    let content = selectedTemplate.content;
 
     // Replace variables with actual values
-    content = content
-      .replace("{nome_cliente}", selectedClient?.name || "Cliente")
-      .replace("{valor_cobranca}", (formData.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }))
-      .replace("{plano_servico}", formData.description || "")
-      .replace("{data_vencimento}", String(formData.due_day || ""))
-      .replace("{numero_parcela}", "1")
-      .replace("{total_parcelas}", String(formData.installments || ""));
+    const replacements = {
+      "{nome_cliente}": selectedClient?.name || "Cliente",
+      "{valor_cobranca}": (formData.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
+      "{data_vencimento}": String(formData.due_day || ""),
+      "{plano_servico}": formData.description || "",
+      "{numero_parcela}": "1",
+      "{total_parcelas}": String(formData.installments || ""),
+      "{forma_pagamento}": formData.payment_method === 'pix' ? 'PIX' : formData.payment_method === 'boleto' ? 'Boleto' : 'Cartão de Crédito'
+    };
+
+    Object.entries(replacements).forEach(([key, value]) => {
+      content = content.replace(new RegExp(key, 'g'), value);
+    });
 
     return content;
   };
-
-  const templateOptions = Object.entries(variablesList.clients.recurring)
-    .filter(([key]) => key === 'recurring') // Filtra apenas templates recorrentes
-    .map(([key, variables]) => ({
-      key,
-      label: "Template de Cobrança Recorrente"
-    }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,10 +86,12 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
             <SelectValue placeholder="Selecione o template" />
           </SelectTrigger>
           <SelectContent>
-            {templateOptions.map(({ key, label }) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
+            {templates
+              .filter(template => template.type === 'clients' && template.subtype === 'recurring')
+              .map((template) => (
+                <SelectItem key={template.id} value={template.id}>
+                  {template.name}
+                </SelectItem>
             ))}
           </SelectContent>
         </Select>
