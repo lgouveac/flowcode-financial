@@ -30,11 +30,9 @@ export const TemplateForm = ({
   showSendDay = false,
   onTestEmail,
 }: TemplateFormProps) => {
-  const hasRequiredFields = Boolean(
-    template?.name?.trim() && 
-    template?.subject?.trim() && 
-    template?.content?.trim()
-  );
+  const hasRequiredFields = template?.name?.trim() && 
+                          template?.subject?.trim() && 
+                          template?.content?.trim();
 
   return (
     <div className="space-y-4">
@@ -93,14 +91,15 @@ export const TemplateForm = ({
         />
       </div>
       <div className="flex justify-end gap-2">
+        <Button onClick={onSave}>Salvar Template</Button>
         {hasRequiredFields && (
           <Button variant="secondary" onClick={onTestEmail} className="flex items-center gap-2">
             <MailIcon className="h-4 w-4" />
             Testar E-mail
           </Button>
         )}
-        <Button onClick={onSave}>Salvar Template</Button>
       </div>
     </div>
   );
 };
+
