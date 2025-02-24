@@ -212,7 +212,14 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
                     value={searchValue}
                     onValueChange={setSearchValue}
                   />
-                  <CommandEmpty>Nenhum recebimento encontrado.</CommandEmpty>
+                  <CommandEmpty className="p-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Nenhum recebimento encontrado
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Tente buscar usando outros termos ou verifique se existem recebimentos pendentes
+                    </p>
+                  </CommandEmpty>
                   <CommandGroup className="max-h-[300px] overflow-auto">
                     {filteredPayments.map(payment => (
                       <CommandItem

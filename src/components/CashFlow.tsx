@@ -19,7 +19,7 @@ export const CashFlow = ({
   return (
     <div className="space-y-8 p-6">
       <div className="flex flex-col space-y-8">
-        {showChart && (
+        {showChart && chartData.length > 0 ? (
           <CashFlowChart
             chartData={chartData}
             period={period}
@@ -29,6 +29,12 @@ export const CashFlow = ({
             month={month}
             setMonth={setMonth}
           />
+        ) : showChart && (
+          <div className="bg-white rounded-lg p-6 text-center">
+            <p className="text-muted-foreground">
+              O gráfico será exibido quando houver movimentações registradas
+            </p>
+          </div>
         )}
         <CashFlowTable 
           cashFlow={cashFlow}
@@ -38,4 +44,3 @@ export const CashFlow = ({
     </div>
   );
 };
-

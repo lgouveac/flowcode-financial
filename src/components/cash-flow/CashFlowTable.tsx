@@ -1,79 +1,89 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { PlusIcon } from "lucide-react";
-import type { CashFlow as CashFlowType } from "@/types/cashflow";
 import { NewCashFlowForm } from "./NewCashFlowForm";
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
+import type { CashFlow } from "@/types/cashflow";
 
 interface CashFlowTableProps {
-  cashFlow: CashFlowType[];
+  cashFlow: CashFlow[];
   onNewCashFlow: () => void;
 }
 
-export const CashFlowTable = ({ cashFlow, onNewCashFlow }: CashFlowTableProps) => {
-  const [openDialog, setOpenDialog] = useState(false);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
+export const CashFlowTable = ({
+  cashFlow,
+  onNewCashFlow
+}: CashFlowTableProps) => {
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="border-b pb-6">
-        <div className="flex flex-col space-y-1.5">
-          <CardTitle className="text-2xl font-display">Movimentações</CardTitle>
-          <p className="text-sm text-muted-foreground">Acompanhe suas últimas movimentações</p>
-        </div>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="flex justify-end mb-6">
-          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+    <Card className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold">Fluxo de Caixa</h2>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Nova Movimentação
+            </Button>
+          </DialogTrigger>
+          <NewCashFlowForm 
+            onSuccess={onNewCashFlow}
+            onClose={() => {}}
+          />
+        </Dialog>
+      </div>
+
+      {cashFlow.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="text-muted-foreground mb-4">
+            Nenhuma movimentação registrada
+          </div>
+          <Dialog>
             <DialogTrigger asChild>
-              <Button className="bg-primary text-white hover:bg-primary-hover">
+              <Button>
                 <PlusIcon className="h-4 w-4 mr-2" />
-                Nova Movimentação
+                Adicionar Primeira Movimentação
               </Button>
             </DialogTrigger>
             <NewCashFlowForm 
               onSuccess={onNewCashFlow}
-              onClose={() => setOpenDialog(false)}
+              onClose={() => {}}
             />
           </Dialog>
         </div>
-
-        <div className="rounded-lg border overflow-hidden">
-          <table className="w-full text-sm">
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
             <thead>
-              <tr className="bg-muted/50 border-b">
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Data</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Descrição</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Valor</th>
-                <th className="py-3 px-4 text-left font-medium text-muted-foreground">Tipo</th>
+              <tr className="border-b">
+                <th className="text-left py-2">Data</th>
+                <th className="text-left py-2">Tipo</th>
+                <th className="text-left py-2">Categoria</th>
+                <th className="text-left py-2">Descrição</th>
+                <th className="text-right py-2">Valor</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody>
               {cashFlow.map((flow) => (
-                <tr key={flow.id} className="hover:bg-muted/50">
-                  <td className="py-3 px-4">
+                <tr key={flow.id} className="border-b">
+                  <td className="py-2">
                     {new Date(flow.date).toLocaleDateString('pt-BR')}
                   </td>
-                  <td className="py-3 px-4">{flow.description}</td>
-                  <td className={`py-3 px-4 ${flow.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(flow.amount)}
+                  <td className="py-2">
+                    {flow.type === 'income' ? 'Entrada' : 'Saída'}
                   </td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      flow.type === 'income' 
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {flow.type === 'income' ? 'Entrada' : 'Saída'}
+                  <td className="py-2 capitalize">
+                    {flow.category}
+                  </td>
+                  <td className="py-2">
+                    {flow.description}
+                  </td>
+                  <td className="py-2 text-right">
+                    <span className={flow.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(flow.amount)}
                     </span>
                   </td>
                 </tr>
@@ -81,7 +91,7 @@ export const CashFlowTable = ({ cashFlow, onNewCashFlow }: CashFlowTableProps) =
             </tbody>
           </table>
         </div>
-      </CardContent>
+      )}
     </Card>
   );
 };
