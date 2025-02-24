@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -7,7 +8,6 @@ import { VariablesList } from "@/components/emails/VariablesList";
 import { SavedTemplatesTable } from "@/components/emails/SavedTemplatesTable";
 import { EmailTemplate, variablesList } from "@/types/email";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export const Emails = () => {
   const { toast } = useToast();
@@ -25,6 +25,14 @@ export const Emails = () => {
   const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const validateTemplateType = (type: string): type is 'clients' | 'employees' => {
+    return type === 'clients' || type === 'employees';
+  };
+
+  const validateTemplateSubtype = (subtype: string): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' => {
+    return ['recurring', 'oneTime', 'invoice', 'hours'].includes(subtype);
+  };
+
   const fetchTemplates = async () => {
     try {
       const { data: rawData, error } = await supabase
@@ -35,15 +43,13 @@ export const Emails = () => {
       if (error) throw error;
 
       const validTemplates = (rawData || []).reduce<EmailTemplate[]>((acc, template) => {
-        if (template.type === 'clients' || template.type === 'employees') {
-          if (['recurring', 'oneTime', 'invoice', 'hours'].includes(template.subtype)) {
-            acc.push({
-              ...template,
-              type: template.type as 'clients' | 'employees',
-              subtype: template.subtype as 'recurring' | 'oneTime' | 'invoice' | 'hours',
-              send_day: template.send_day || null,
-            });
-          }
+        if (validateTemplateType(template.type) && validateTemplateSubtype(template.subtype)) {
+          acc.push({
+            ...template,
+            type: template.type,
+            subtype: template.subtype,
+            send_day: template.send_day || null,
+          });
         }
         return acc;
       }, []);
@@ -200,7 +206,14 @@ export const Emails = () => {
 
       if (error) throw error;
 
-      setSavedTemplates(prev => [data, ...prev]);
+      if (validateTemplateType(data.type) && validateTemplateSubtype(data.subtype)) {
+        setSavedTemplates(prev => [{
+          ...data,
+          type: data.type as 'clients' | 'employees',
+          subtype: data.subtype as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+          send_day: data.send_day || null
+        }, ...prev]);
+      }
       
       setNewTemplate({
         type: currentSection as 'clients' | 'employees',
