@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { RecurringBilling } from "@/types/billing";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EditableCell } from "@/components/EditableCell";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string } }>;
@@ -13,18 +15,33 @@ interface BillingTableProps {
 
 export const BillingTable = ({ billings }: BillingTableProps) => {
   const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<RecurringBilling['status'] | 'all'>('all');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    billingId: string;
+    field: string;
+    value: any;
+  } | null>(null);
 
-  // Sort billings by creation date (newest first), then by current installment
-  const sortedBillings = [...billings].sort((a, b) => {
-    // First sort by created_at (newest first)
-    const dateComparison = new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
-    if (dateComparison !== 0) return dateComparison;
+  const filteredBillings = billings.filter(billing => {
+    const matchesSearch = search.toLowerCase() === '' || 
+      billing.clients?.name.toLowerCase().includes(search.toLowerCase()) ||
+      billing.description.toLowerCase().includes(search.toLowerCase());
     
-    // Then sort by current installment
-    return a.current_installment - b.current_installment;
+    const matchesStatus = statusFilter === 'all' || billing.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
   });
 
   const handleUpdateBilling = async (billingId: string, field: string, value: any) => {
+    // If it's a status change that needs confirmation
+    if (field === 'status' && (value === 'cancelled' || value === 'overdue')) {
+      setPendingAction({ billingId, field, value });
+      setShowConfirmDialog(true);
+      return;
+    }
+
     // Prevent changing status to paid directly
     if (field === 'status' && value === 'paid') {
       toast({
@@ -59,6 +76,19 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
     }
   };
 
+  const confirmUpdate = async () => {
+    if (!pendingAction) return;
+    
+    await handleUpdateBilling(
+      pendingAction.billingId,
+      pendingAction.field,
+      pendingAction.value
+    );
+    
+    setShowConfirmDialog(false);
+    setPendingAction(null);
+  };
+
   const getStatusBadgeVariant = (status: RecurringBilling['status']) => {
     switch (status) {
       case 'paid':
@@ -87,104 +117,149 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
   };
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead>Parcela</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Dia do Vencimento</TableHead>
-            <TableHead>Data Pgto.</TableHead>
-            <TableHead>Método</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedBillings.map((billing, index) => (
-            <TableRow 
-              key={billing.id} 
-              className={`group ${
-                // Add a visual separator between different billing groups
-                index > 0 &&
-                sortedBillings[index - 1]?.description !== billing.description &&
-                "border-t-4 border-t-gray-200"
-              }`}
-            >
-              <TableCell>{billing.clients?.name}</TableCell>
-              <TableCell className="relative">
-                <EditableCell
-                  value={billing.description}
-                  onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
-                />
-              </TableCell>
-              <TableCell>
-                {billing.current_installment}/{billing.installments}
-              </TableCell>
-              <TableCell className="relative">
-                <EditableCell
-                  value={billing.amount.toString()}
-                  onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
-                  type="number"
-                />
-              </TableCell>
-              <TableCell className="relative">
-                <EditableCell
-                  value={billing.due_day.toString()}
-                  onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
-                  type="number"
-                />
-              </TableCell>
-              <TableCell className="relative">
-                <input
-                  type="date"
-                  value={billing.payment_date || ''}
-                  onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
-                  className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
-                  disabled={billing.status !== 'paid'}
-                />
-              </TableCell>
-              <TableCell>
-                <Select
-                  value={billing.payment_method}
-                  onValueChange={(value) => handleUpdateBilling(billing.id, 'payment_method', value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="boleto">Boleto</SelectItem>
-                    <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell>
-                <Select
-                  value={billing.status}
-                  onValueChange={(value) => handleUpdateBilling(billing.id, 'status', value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      <Badge variant={getStatusBadgeVariant(billing.status)}>
-                        {getStatusLabel(billing.status)}
-                      </Badge>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="billed">Faturado</SelectItem>
-                    <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                    <SelectItem value="overdue">Atrasado</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Input
+          placeholder="Buscar por cliente ou descrição..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="sm:max-w-[300px]"
+        />
+        <Select
+          value={statusFilter}
+          onValueChange={(value: RecurringBilling['status'] | 'all') => setStatusFilter(value)}
+        >
+          <SelectTrigger className="sm:max-w-[200px]">
+            <SelectValue placeholder="Filtrar por status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="pending">Pendente</SelectItem>
+            <SelectItem value="paid">Pago</SelectItem>
+            <SelectItem value="overdue">Atrasado</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
+            <SelectItem value="billed">Faturado</SelectItem>
+            <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Parcela</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Dia do Vencimento</TableHead>
+              <TableHead>Data Pgto.</TableHead>
+              <TableHead>Método</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredBillings.map((billing, index) => (
+              <TableRow 
+                key={billing.id} 
+                className={`group ${
+                  // Add a visual separator between different billing groups
+                  index > 0 &&
+                  filteredBillings[index - 1]?.description !== billing.description &&
+                  "border-t-4 border-t-gray-200"
+                }`}
+              >
+                <TableCell>{billing.clients?.name}</TableCell>
+                <TableCell className="relative">
+                  <EditableCell
+                    value={billing.description}
+                    onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
+                  />
+                </TableCell>
+                <TableCell>
+                  {billing.current_installment}/{billing.installments}
+                </TableCell>
+                <TableCell className="relative">
+                  <EditableCell
+                    value={billing.amount.toString()}
+                    onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
+                    type="number"
+                  />
+                </TableCell>
+                <TableCell className="relative">
+                  <EditableCell
+                    value={billing.due_day.toString()}
+                    onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
+                    type="number"
+                  />
+                </TableCell>
+                <TableCell className="relative">
+                  <input
+                    type="date"
+                    value={billing.payment_date || ''}
+                    onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
+                    className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
+                    disabled={billing.status !== 'paid'}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={billing.payment_method}
+                    onValueChange={(value) => handleUpdateBilling(billing.id, 'payment_method', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pix">PIX</SelectItem>
+                      <SelectItem value="boleto">Boleto</SelectItem>
+                      <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={billing.status}
+                    onValueChange={(value) => handleUpdateBilling(billing.id, 'status', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        <Badge variant={getStatusBadgeVariant(billing.status)}>
+                          {getStatusLabel(billing.status)}
+                        </Badge>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="billed">Faturado</SelectItem>
+                      <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                      <SelectItem value="overdue">Atrasado</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar alteração</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja alterar o status desta cobrança para 
+              {pendingAction?.value === 'cancelled' ? ' cancelada' : ' atrasada'}?
+              Esta ação pode ter implicações importantes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingAction(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUpdate}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
