@@ -46,14 +46,25 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDa
     e.preventDefault();
     const variable = e.dataTransfer.getData('text/plain');
     const target = document.getElementById(targetId) as HTMLTextAreaElement | HTMLInputElement;
+    
     if (target) {
       const start = target.selectionStart || target.value.length;
       const end = target.selectionEnd || target.value.length;
       const currentValue = target.value;
-      const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
-      handleInputChange(targetId === "template-name" ? "name" : targetId === "subject" ? "subject" : "content", newValue);
       
-      // Mantem o foco e posiciona o cursor após a variável inserida
+      // Preparar o novo valor mantendo o texto existente e adicionando a variável na posição correta
+      const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
+      
+      // Atualizar o campo com o novo valor
+      const fieldToUpdate = targetId === "template-name" 
+        ? "name" 
+        : targetId === "subject" 
+          ? "subject" 
+          : "content";
+      
+      handleInputChange(fieldToUpdate, newValue);
+      
+      // Garantir que o foco seja mantido e o cursor seja posicionado após a variável inserida
       requestAnimationFrame(() => {
         target.focus();
         const newPosition = start + variable.length;
@@ -97,4 +108,3 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDa
     </Dialog>
   );
 };
-
