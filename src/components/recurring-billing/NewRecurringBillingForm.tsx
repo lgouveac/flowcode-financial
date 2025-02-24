@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +27,26 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
     }
     onSubmit(formData as RecurringBilling & { email_template?: string });
     onClose();
+  };
+
+  const selectedClient = clients.find(client => client.id === formData.client_id);
+
+  const previewEmail = () => {
+    if (!formData.email_template) return null;
+
+    const template = Object.entries(variablesList.clients.recurring)[0][1];
+    let content = "Prezado {nome_cliente},\n\nSegue a cobrança no valor de R$ {valor_cobranca} referente ao serviço: {plano_servico}.\nVencimento todo dia {data_vencimento} do mês.\n\nParcela {numero_parcela} de {total_parcelas}.\n\nAtenciosamente.";
+
+    // Replace variables with actual values
+    content = content
+      .replace("{nome_cliente}", selectedClient?.name || "Cliente")
+      .replace("{valor_cobranca}", (formData.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }))
+      .replace("{plano_servico}", formData.description || "")
+      .replace("{data_vencimento}", String(formData.due_day || ""))
+      .replace("{numero_parcela}", "1")
+      .replace("{total_parcelas}", String(formData.installments || ""));
+
+    return content;
   };
 
   return (
@@ -152,6 +171,15 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
           </SelectContent>
         </Select>
       </div>
+
+      {formData.email_template && (
+        <div className="space-y-2">
+          <Label>Prévia do Email</Label>
+          <div className="bg-gray-50 p-4 rounded-md whitespace-pre-wrap text-sm">
+            {previewEmail()}
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onClose}>
