@@ -155,6 +155,42 @@ export type Database = {
         }
         Relationships: []
       }
+      employees: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          last_invoice: string | null
+          name: string
+          payment_method: string | null
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          last_invoice?: string | null
+          name: string
+          payment_method?: string | null
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          last_invoice?: string | null
+          name?: string
+          payment_method?: string | null
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number

@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,16 +45,28 @@ export const TemplateEditor = ({
     queryKey: ['test-data', type],
     queryFn: async () => {
       if (type === 'clients') {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('clients')
           .select('id, name, email')
           .order('name');
+          
+        if (error) {
+          console.error('Error fetching clients:', error);
+          throw error;
+        }
+        
         return data || [];
       } else {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('employees')
           .select('id, name, email')
           .order('name');
+          
+        if (error) {
+          console.error('Error fetching employees:', error);
+          throw error;
+        }
+        
         return data || [];
       }
     },
@@ -123,11 +134,16 @@ export const TemplateEditor = ({
       }
 
       const previewData = getTestData(selectedId);
+      const toastId = toast({
+        title: "Enviando e-mail de teste...",
+        description: "Aguarde um momento.",
+      });
 
       console.log("Sending test email with data:", {
         type: template.type,
         subtype: template.subtype,
         templateId: template.id,
+        to: testEmail,
         data: previewData
       });
 
@@ -149,6 +165,7 @@ export const TemplateEditor = ({
       console.log('Email function response:', data);
 
       toast({
+        id: toastId,
         title: "Email de teste enviado",
         description: "O email de teste foi enviado com sucesso!",
       });
