@@ -1,46 +1,26 @@
 
-import { useState } from "react";
-import { useCashFlow } from "@/hooks/useCashFlow";
 import { CashFlowChart } from "./cash-flow/CashFlowChart";
 import { CashFlowTable } from "./cash-flow/CashFlowTable";
+import { useCashFlow } from "@/hooks/useCashFlow";
 
 interface CashFlowProps {
   showChart?: boolean;
+  period?: string;
 }
 
-export const CashFlow = ({
-  showChart = true
-}: CashFlowProps) => {
-  const [period, setPeriod] = useState('month');
-  const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [month, setMonth] = useState((new Date().getMonth() + 1).toString());
-  const { cashFlow, chartData, fetchCashFlow } = useCashFlow();
+export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps) => {
+  const { cashFlow, onNewCashFlow, chartData } = useCashFlow(period);
 
   return (
-    <div className="space-y-8 p-6">
-      <div className="flex flex-col space-y-8">
-        {showChart && chartData.length > 0 ? (
-          <CashFlowChart
-            chartData={chartData}
-            period={period}
-            setPeriod={setPeriod}
-            year={year}
-            setYear={setYear}
-            month={month}
-            setMonth={setMonth}
-          />
-        ) : showChart && (
-          <div className="bg-white rounded-lg p-6 text-center">
-            <p className="text-muted-foreground">
-              O gráfico será exibido quando houver movimentações registradas
-            </p>
-          </div>
-        )}
+    <div className="space-y-8">
+      {showChart ? (
+        <CashFlowChart chartData={chartData} />
+      ) : (
         <CashFlowTable 
           cashFlow={cashFlow}
-          onNewCashFlow={fetchCashFlow}
+          onNewCashFlow={onNewCashFlow}
         />
-      </div>
+      )}
     </div>
   );
 };

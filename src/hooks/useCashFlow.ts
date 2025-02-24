@@ -1,91 +1,114 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { CashFlow as CashFlowType } from "@/types/cashflow";
-import { validateCashFlowType } from "@/types/cashflow";
+import { CashFlow } from "@/types/cashflow";
 import { useToast } from "@/components/ui/use-toast";
 
-export const useCashFlow = () => {
-  const { toast } = useToast();
-  const [cashFlow, setCashFlow] = useState<CashFlowType[]>([]);
+export const useCashFlow = (period: string = 'current') => {
+  const [cashFlow, setCashFlow] = useState<CashFlow[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
+  const { toast } = useToast();
 
-  const processChartData = (data: CashFlowType[]) => {
-    const groupedData = data.reduce((acc: Record<string, { income: number; expense: number }>, item) => {
-      const monthYear = new Date(item.date).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
-      
-      if (!acc[monthYear]) {
-        acc[monthYear] = { income: 0, expense: 0 };
-      }
+  const getPeriodDates = (selectedPeriod: string) => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
 
-      if (item.type === 'income') {
-        acc[monthYear].income += Number(item.amount);
-      } else {
-        acc[monthYear].expense += Number(item.amount);
-      }
-
-      return acc;
-    }, {});
-
-    const chartData = Object.entries(groupedData).map(([name, values]) => ({
-      name,
-      entrada: values.income,
-      saida: values.expense,
-      saldo: values.income - values.expense
-    }));
-
-    setChartData(chartData);
+    switch (selectedPeriod) {
+      case 'current':
+        return {
+          start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
+        };
+      case 'last_month':
+        const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+        return {
+          start: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`,
+          end: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+        };
+      case 'last_3_months':
+        const threeMonthsAgo = new Date(now.setMonth(now.getMonth() - 3));
+        return {
+          start: threeMonthsAgo.toISOString().split('T')[0],
+          end: new Date().toISOString().split('T')[0],
+        };
+      case 'last_6_months':
+        const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
+        return {
+          start: sixMonthsAgo.toISOString().split('T')[0],
+          end: new Date().toISOString().split('T')[0],
+        };
+      case 'last_year':
+        const lastYear = new Date(now.setFullYear(now.getFullYear() - 1));
+        return {
+          start: lastYear.toISOString().split('T')[0],
+          end: new Date().toISOString().split('T')[0],
+        };
+      default:
+        return {
+          start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
+        };
+    }
   };
 
   const fetchCashFlow = async () => {
-    const { data, error } = await supabase
-      .from('cash_flow')
-      .select('*')
-      .order('date', { ascending: true });
+    try {
+      const dates = getPeriodDates(period);
+      
+      const { data, error } = await supabase
+        .from('cash_flow')
+        .select('*')
+        .gte('date', dates.start)
+        .lt('date', dates.end)
+        .order('date', { ascending: true });
 
-    if (error) {
+      if (error) throw error;
+
+      setCashFlow(data || []);
+
+      // Processa dados para o gráfico
+      const chartDataMap = new Map();
+      
+      data?.forEach((flow) => {
+        const date = new Date(flow.date).toLocaleDateString('pt-BR');
+        const currentData = chartDataMap.get(date) || {
+          name: date,
+          entrada: 0,
+          saida: 0,
+          saldo: 0,
+        };
+
+        if (flow.type === 'income') {
+          currentData.entrada += Number(flow.amount);
+        } else {
+          currentData.saida += Number(flow.amount);
+        }
+
+        currentData.saldo = currentData.entrada - currentData.saida;
+        chartDataMap.set(date, currentData);
+      });
+
+      setChartData(Array.from(chartDataMap.values()));
+
+    } catch (error) {
       console.error('Error fetching cash flow:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar o fluxo de caixa.",
+        title: "Erro ao carregar fluxo de caixa",
+        description: "Não foi possível carregar os dados do fluxo de caixa.",
         variant: "destructive",
       });
-      return;
     }
-
-    const typeSafeCashFlow = data?.map(item => ({
-      ...item,
-      type: validateCashFlowType(item.type)
-    })) || [];
-
-    setCashFlow(typeSafeCashFlow);
-    processChartData(typeSafeCashFlow);
   };
 
   useEffect(() => {
     fetchCashFlow();
-
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'cash_flow' },
-        () => {
-          console.log('Cash flow changes detected, refreshing...');
-          fetchCashFlow();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  }, [period]);
 
   return {
     cashFlow,
     chartData,
-    fetchCashFlow
+    onNewCashFlow: fetchCashFlow,
   };
 };
-
