@@ -47,29 +47,28 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDa
     if (!draggingVariable) return;
 
     const target = document.getElementById(targetId) as HTMLTextAreaElement | HTMLInputElement;
-    if (target) {
-      const start = target.selectionStart ?? target.value.length;
-      const end = target.selectionEnd ?? target.value.length;
-      const currentValue = target.value;
-      const newValue = currentValue.substring(0, start) + draggingVariable + currentValue.substring(end);
+    if (!target) return;
 
-      const fieldToUpdate = targetId === "template-name" 
-        ? "name" 
-        : targetId === "subject" 
-          ? "subject" 
-          : "content";
-      
-      setEditedTemplate(prev => ({
-        ...prev,
-        [fieldToUpdate]: newValue
-      }));
+    const start = target.selectionStart || target.value.length;
+    const end = target.selectionEnd || target.value.length;
 
-      requestAnimationFrame(() => {
-        target.focus();
-        const newPosition = start + draggingVariable.length;
-        target.setSelectionRange(newPosition, newPosition);
-      });
-    }
+    const fieldToUpdate = targetId === "template-name" 
+      ? "name" 
+      : targetId === "subject" 
+        ? "subject" 
+        : "content";
+
+    const currentValue = editedTemplate[fieldToUpdate] as string;
+    const newValue = currentValue.substring(0, start) + draggingVariable + currentValue.substring(end);
+
+    handleInputChange(fieldToUpdate as keyof EmailTemplate, newValue);
+
+    requestAnimationFrame(() => {
+      target.focus();
+      const newPosition = start + draggingVariable.length;
+      target.setSelectionRange(newPosition, newPosition);
+    });
+
     setDraggingVariable(null);
   };
 
