@@ -68,6 +68,13 @@ export const TemplateEditor = ({
 
   const handleTestEmail = async () => {
     try {
+      console.log("Sending test email with data:", {
+        type: template.type,
+        subtype: template.subtype,
+        templateId: template.id,
+        data: previewData
+      });
+
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           type: template.type,
@@ -78,7 +85,12 @@ export const TemplateEditor = ({
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error from edge function:', error);
+        throw error;
+      }
+
+      console.log('Email function response:', data);
 
       toast({
         title: "Email de teste enviado",

@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -10,6 +11,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -18,24 +24,18 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const { type, subtype, templateId, to, data } = await req.json();
-
-    // Log the received data
+    
     console.log("Received request:", { type, subtype, templateId, to, data });
 
     // Fetch the template from the database
-    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/email_templates?id=eq.${templateId}`,
-      {
-        headers: {
-          "apikey": SUPABASE_SERVICE_ROLE_KEY,
-          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-      }
-    );
+    const { data: template, error: templateError } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('id', templateId)
+      .single();
 
-    const [template] = await response.json();
-    if (!template) {
+    if (templateError || !template) {
+      console.error("Error fetching template:", templateError);
       throw new Error("Template not found");
     }
 
@@ -49,9 +49,11 @@ const handler = async (req: Request): Promise<Response> => {
       content = content.replace(regex, String(value));
     });
 
+    console.log("Sending email with:", { to, subject, content });
+
     // Send the email using Resend
     const emailResponse = await resend.emails.send({
-      from: "test@resend.dev",
+      from: "Lovable <onboarding@resend.dev>",
       to: [to],
       subject: subject,
       html: content,
@@ -79,4 +81,3 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 serve(handler);
-
