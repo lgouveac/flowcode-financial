@@ -6,6 +6,8 @@ export interface EmailTemplate {
   content: string;
   type: 'clients' | 'employees';
   subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Variable {

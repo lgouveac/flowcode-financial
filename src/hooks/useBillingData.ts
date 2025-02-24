@@ -89,14 +89,27 @@ export const useBillingData = () => {
 
     // Validate and transform the data to ensure it matches the EmailTemplate type
     const validTemplates = (data || []).filter((template): template is EmailTemplate => {
+      // Check if template has all required fields
+      if (!template.id || !template.name || !template.subject || !template.content || 
+          !template.type || !template.subtype || !template.created_at || !template.updated_at) {
+        console.warn('Template missing required fields:', template);
+        return false;
+      }
+
       // Check if the type is valid
       const validType = template.type === 'clients' || template.type === 'employees';
-      
       if (!validType) {
         console.warn(`Invalid template type found: ${template.type}`);
         return false;
       }
-      
+
+      // Check if the subtype is valid
+      const validSubtype = ['recurring', 'oneTime', 'invoice', 'hours'].includes(template.subtype);
+      if (!validSubtype) {
+        console.warn(`Invalid template subtype found: ${template.subtype}`);
+        return false;
+      }
+
       return true;
     });
 
