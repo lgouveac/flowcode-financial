@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -213,11 +212,11 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
                     onValueChange={setSearchValue}
                   />
                   <CommandEmpty>
-                    <div className="p-4 text-center">
-                      <p className="text-sm text-muted-foreground mb-2">
+                    <div className="py-6 text-center">
+                      <p className="text-base text-muted-foreground">
                         Nenhum recebimento encontrado
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="mt-2 text-sm text-muted-foreground">
                         Tente buscar usando outros termos ou verifique se existem recebimentos pendentes
                       </p>
                     </div>
@@ -283,4 +282,3 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
     </DialogContent>
   );
 };
-
