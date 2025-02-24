@@ -2,8 +2,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 import { TemplateEditor } from "./TemplateEditor";
-import { EmailTemplate } from "@/types/email";
+import { EmailTemplate, variablesList } from "@/types/email";
 import { useToast } from "@/components/ui/use-toast";
+import { VariablesList } from "./VariablesList";
 
 interface EditTemplateDialogProps {
   template: EmailTemplate;
@@ -16,6 +17,7 @@ interface EditTemplateDialogProps {
 export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDay }: EditTemplateDialogProps) => {
   const [editedTemplate, setEditedTemplate] = useState<EmailTemplate>(template);
   const { toast } = useToast();
+  const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
 
   const handleInputChange = (field: keyof EmailTemplate, value: string | number) => {
     setEditedTemplate(prev => ({ ...prev, [field]: value }));
@@ -35,35 +37,56 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDa
     onClose();
   };
 
+  const handleDragStart = (e: React.DragEvent, variable: string) => {
+    setDraggingVariable(variable);
+    e.dataTransfer.setData('text/plain', variable);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const variable = e.dataTransfer.getData('text/plain');
+    const target = document.getElementById(targetId) as HTMLTextAreaElement | HTMLInputElement;
+    if (target) {
+      const start = target.selectionStart || 0;
+      const end = target.selectionEnd || 0;
+      const currentValue = target.value;
+      const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
+      handleInputChange(targetId === "template-name" ? "name" : targetId === "subject" ? "subject" : "content", newValue);
+    }
+    setDraggingVariable(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const currentVariables = variablesList[template.type]?.[template.subtype as keyof (typeof variablesList.clients | typeof variablesList.employees)] || [];
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Editar Template</DialogTitle>
         </DialogHeader>
-        <TemplateEditor
-          type={template.type}
-          currentType={template.subtype}
-          template={editedTemplate}
-          onInputChange={handleInputChange}
-          onSave={handleSave}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e, id) => {
-            e.preventDefault();
-            const variable = e.dataTransfer.getData('text/plain');
-            const target = document.getElementById(id) as HTMLTextAreaElement | HTMLInputElement;
-            if (target) {
-              const start = target.selectionStart || 0;
-              const end = target.selectionEnd || 0;
-              const currentValue = target.value;
-              const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
-              handleInputChange(id === "template-name" ? "name" : id === "subject" ? "subject" : "content", newValue);
-            }
-          }}
-          showSendDay={showSendDay}
-        />
+        <div className="grid grid-cols-3 gap-6">
+          <div className="col-span-2">
+            <TemplateEditor
+              type={template.type}
+              currentType={template.subtype}
+              template={editedTemplate}
+              onInputChange={handleInputChange}
+              onSave={handleSave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              showSendDay={showSendDay}
+            />
+          </div>
+          <VariablesList
+            variables={currentVariables}
+            onDragStart={handleDragStart}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
-

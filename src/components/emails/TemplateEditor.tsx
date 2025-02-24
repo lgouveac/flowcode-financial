@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MailIcon, CalendarIcon, RefreshCwIcon } from "lucide-react";
 import { EmailTemplate } from "@/types/email";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TemplatePreview } from "./TemplatePreview";
 
 interface TemplateEditorProps {
   type: 'clients' | 'employees';
@@ -50,89 +51,109 @@ export const TemplateEditor = ({
 
   const Icon = getIcon();
 
+  // Dados de exemplo para preview
+  const previewData = {
+    nome_cliente: "João Silva",
+    valor_cobranca: "R$ 1.500,00",
+    data_vencimento: "15/04/2024",
+    plano_servico: "Plano Premium",
+    nome_funcionario: "Maria Santos",
+    valor_nota: "R$ 3.000,00",
+    mes_referencia: "Março/2024",
+    total_horas: "160"
+  };
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between">
-        <div className="space-y-2">
-          <CardTitle>
-            Editor de Template - {
-              isClient 
-                ? (isRecurring ? "Cobrança Recorrente" : "Cobrança Pontual")
-                : (currentType === "invoice" ? "Nota Fiscal" : "Horas")
-            }
-          </CardTitle>
-          <CardDescription className="flex items-start gap-2 mt-2 text-sm">
-            <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
-            {getDescription()}
-          </CardDescription>
-        </div>
-        {isClient && (
-          <Button variant="secondary" onClick={onSave}>
-            <MailIcon className="mr-2 h-4 w-4" />
-            Testar E-mail
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="template-name">Nome do Template</Label>
-          <Input
-            id="template-name"
-            placeholder="Ex: Template padrão de NF"
-            value={template.name}
-            onChange={(e) => onInputChange('name', e.target.value)}
-            onDragOver={onDragOver}
-            onDrop={(e) => onDrop(e, "template-name")}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="subject">Assunto</Label>
-          <Input
-            id="subject"
-            placeholder="Ex: Solicitação de Nota Fiscal - {mes_referencia}"
-            value={template.subject}
-            onChange={(e) => onInputChange('subject', e.target.value)}
-            onDragOver={onDragOver}
-            onDrop={(e) => onDrop(e, "subject")}
-          />
-        </div>
-        {showSendDay && (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between">
           <div className="space-y-2">
-            <Label htmlFor="send-day">Dia do Envio</Label>
-            <Select
-              value={String(template.send_day || 1)}
-              onValueChange={(value) => onInputChange('send_day', parseInt(value, 10))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o dia do envio" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                  <SelectItem key={day} value={String(day)}>
-                    Dia {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CardTitle>
+              Editor de Template - {
+                isClient 
+                  ? (isRecurring ? "Cobrança Recorrente" : "Cobrança Pontual")
+                  : (currentType === "invoice" ? "Nota Fiscal" : "Horas")
+              }
+            </CardTitle>
+            <CardDescription className="flex items-start gap-2 mt-2 text-sm">
+              <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
+              {getDescription()}
+            </CardDescription>
           </div>
-        )}
-        <div className="space-y-2">
-          <Label htmlFor="content">Conteúdo</Label>
-          <Textarea
-            id="content"
-            className="min-h-[300px]"
-            placeholder={`Ex: Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}...`}
-            value={template.content}
-            onChange={(e) => onInputChange('content', e.target.value)}
-            onDragOver={onDragOver}
-            onDrop={(e) => onDrop(e, "content")}
-          />
-        </div>
-        <div className="flex justify-end">
-          <Button onClick={onSave}>Salvar Template</Button>
-        </div>
-      </CardContent>
-    </Card>
+          {isClient && (
+            <Button variant="secondary" onClick={onSave}>
+              <MailIcon className="mr-2 h-4 w-4" />
+              Testar E-mail
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="template-name">Nome do Template</Label>
+            <Input
+              id="template-name"
+              placeholder="Ex: Template padrão de NF"
+              value={template.name}
+              onChange={(e) => onInputChange('name', e.target.value)}
+              onDragOver={onDragOver}
+              onDrop={(e) => onDrop(e, "template-name")}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="subject">Assunto</Label>
+            <Input
+              id="subject"
+              placeholder="Ex: Solicitação de Nota Fiscal - {mes_referencia}"
+              value={template.subject}
+              onChange={(e) => onInputChange('subject', e.target.value)}
+              onDragOver={onDragOver}
+              onDrop={(e) => onDrop(e, "subject")}
+            />
+          </div>
+          {showSendDay && (
+            <div className="space-y-2">
+              <Label htmlFor="send-day">Dia do Envio</Label>
+              <Select
+                value={String(template.send_day || 1)}
+                onValueChange={(value) => onInputChange('send_day', parseInt(value, 10))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o dia do envio" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <SelectItem key={day} value={String(day)}>
+                      Dia {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="content">Conteúdo</Label>
+            <Textarea
+              id="content"
+              className="min-h-[300px]"
+              placeholder={`Ex: Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}...`}
+              value={template.content}
+              onChange={(e) => onInputChange('content', e.target.value)}
+              onDragOver={onDragOver}
+              onDrop={(e) => onDrop(e, "content")}
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={onSave}>Salvar Template</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {template.content && (
+        <TemplatePreview 
+          template={template as EmailTemplate} 
+          previewData={previewData}
+        />
+      )}
+    </div>
   );
 };
-
