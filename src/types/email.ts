@@ -33,7 +33,6 @@ export const variablesList = {
       { name: "{valor_cobranca}", description: "Valor da cobrança" },
       { name: "{data_vencimento}", description: "Data de vencimento" },
       { name: "{descricao_servico}", description: "Descrição do serviço" },
-      { name: "{numero_pedido}", description: "Número do pedido" },
       { name: "{forma_pagamento}", description: "Forma de pagamento" }
     ]
   },
