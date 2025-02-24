@@ -8,6 +8,8 @@ import { MailIcon, CalendarIcon, RefreshCwIcon } from "lucide-react";
 import { EmailTemplate } from "@/types/email";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TemplatePreview } from "./TemplatePreview";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TemplateEditorProps {
   type: 'clients' | 'employees';
@@ -30,6 +32,7 @@ export const TemplateEditor = ({
   onDrop,
   showSendDay = false,
 }: TemplateEditorProps) => {
+  const { toast } = useToast();
   const isClient = type === 'clients';
   const isRecurring = currentType === 'recurring';
 
@@ -63,6 +66,43 @@ export const TemplateEditor = ({
     total_horas: "160"
   };
 
+  const handleTestEmail = async () => {
+    if (!template.id) {
+      toast({
+        title: "Template não salvo",
+        description: "Por favor, salve o template antes de enviar um email de teste.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          type: template.type,
+          subtype: template.subtype,
+          templateId: template.id,
+          to: 'test@example.com', // You would typically get this from user input or configuration
+          data: previewData,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email de teste enviado",
+        description: "O email de teste foi enviado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      toast({
+        title: "Erro ao enviar email",
+        description: "Não foi possível enviar o email de teste. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -80,8 +120,8 @@ export const TemplateEditor = ({
               {getDescription()}
             </CardDescription>
           </div>
-          {isClient && (
-            <Button variant="secondary" onClick={onSave}>
+          {template.id && (
+            <Button variant="secondary" onClick={handleTestEmail}>
               <MailIcon className="mr-2 h-4 w-4" />
               Testar E-mail
             </Button>
