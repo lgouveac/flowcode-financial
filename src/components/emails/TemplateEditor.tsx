@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TemplatePreview } from "./TemplatePreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useQuery } from "@tanstack/react-query";
 
 interface TemplateEditorProps {
   type: 'clients' | 'employees';
@@ -35,6 +38,29 @@ export const TemplateEditor = ({
   const { toast } = useToast();
   const isClient = type === 'clients';
   const isRecurring = currentType === 'recurring';
+  const [testEmailOpen, setTestEmailOpen] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [selectedId, setSelectedId] = useState<string>("");
+
+  const { data: testData } = useQuery({
+    queryKey: ['test-data', type],
+    queryFn: async () => {
+      if (type === 'clients') {
+        const { data } = await supabase
+          .from('clients')
+          .select('id, name, email')
+          .order('name');
+        return data || [];
+      } else {
+        const { data } = await supabase
+          .from('employees')
+          .select('id, name, email')
+          .order('name');
+        return data || [];
+      }
+    },
+    enabled: testEmailOpen,
+  });
 
   const getDescription = () => {
     if (!isClient) {
@@ -55,19 +81,49 @@ export const TemplateEditor = ({
   const Icon = getIcon();
 
   // Dados de exemplo para preview
-  const previewData = {
-    nome_cliente: "João Silva",
-    valor_cobranca: "R$ 1.500,00",
-    data_vencimento: "15/04/2024",
-    plano_servico: "Plano Premium",
-    nome_funcionario: "Maria Santos",
-    valor_nota: "R$ 3.000,00",
-    mes_referencia: "Março/2024",
-    total_horas: "160"
+  const getTestData = (id?: string) => {
+    const baseData = {
+      nome_cliente: "João Silva",
+      valor_cobranca: "R$ 1.500,00",
+      data_vencimento: "15/04/2024",
+      plano_servico: "Plano Premium",
+      nome_funcionario: "Maria Santos",
+      valor_nota: "R$ 3.000,00",
+      mes_referencia: "Março/2024",
+      total_horas: "160"
+    };
+
+    if (!id || !testData) return baseData;
+
+    const selected = testData.find(item => item.id === id);
+    if (!selected) return baseData;
+
+    if (isClient) {
+      return {
+        ...baseData,
+        nome_cliente: selected.name,
+      };
+    } else {
+      return {
+        ...baseData,
+        nome_funcionario: selected.name,
+      };
+    }
   };
 
   const handleTestEmail = async () => {
     try {
+      if (!testEmail) {
+        toast({
+          title: "E-mail necessário",
+          description: "Por favor, informe um e-mail para teste.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const previewData = getTestData(selectedId);
+
       console.log("Sending test email with data:", {
         type: template.type,
         subtype: template.subtype,
@@ -80,7 +136,7 @@ export const TemplateEditor = ({
           type: template.type,
           subtype: template.subtype,
           templateId: template.id,
-          to: 'test@example.com',
+          to: testEmail,
           data: previewData,
         },
       });
@@ -96,7 +152,9 @@ export const TemplateEditor = ({
         title: "Email de teste enviado",
         description: "O email de teste foi enviado com sucesso!",
       });
-    } catch (error) {
+
+      setTestEmailOpen(false);
+    } catch (error: any) {
       console.error('Error sending test email:', error);
       toast({
         title: "Erro ao enviar email",
@@ -111,13 +169,6 @@ export const TemplateEditor = ({
     template?.subject?.trim() && 
     template?.content?.trim()
   );
-
-  console.log('Template state:', {
-    name: template?.name,
-    subject: template?.subject,
-    content: template?.content,
-    hasRequiredFields
-  });
 
   return (
     <div className="space-y-6">
@@ -137,7 +188,7 @@ export const TemplateEditor = ({
             </CardDescription>
           </div>
           {hasRequiredFields && (
-            <Button variant="secondary" onClick={handleTestEmail} className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setTestEmailOpen(true)} className="flex items-center gap-2">
               <MailIcon className="h-4 w-4" />
               Testar E-mail
             </Button>
@@ -207,9 +258,59 @@ export const TemplateEditor = ({
       {template?.content && (
         <TemplatePreview 
           template={template as EmailTemplate} 
-          previewData={previewData}
+          previewData={getTestData(selectedId)}
         />
       )}
+
+      <Dialog open={testEmailOpen} onOpenChange={setTestEmailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enviar E-mail de Teste</DialogTitle>
+            <DialogDescription>
+              Durante o período de testes, o Resend só permite enviar e-mails para endereços verificados.
+              Certifique-se de usar um e-mail que você tenha acesso.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-email">E-mail para Teste</Label>
+              <Input
+                id="test-email"
+                placeholder="seu.email@exemplo.com"
+                type="email"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>
+                Selecionar {isClient ? "Cliente" : "Funcionário"} para Dados de Teste
+              </Label>
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={`Selecione um ${isClient ? "cliente" : "funcionário"}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Usar dados de exemplo</SelectItem>
+                  {testData?.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestEmailOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleTestEmail}>
+              Enviar Teste
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
