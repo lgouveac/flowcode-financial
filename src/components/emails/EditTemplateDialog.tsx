@@ -44,30 +44,29 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDa
 
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-    const variable = e.dataTransfer.getData('text/plain');
+    if (!draggingVariable) return;
+
     const target = document.getElementById(targetId) as HTMLTextAreaElement | HTMLInputElement;
-    
     if (target) {
-      const start = target.selectionStart || target.value.length;
-      const end = target.selectionEnd || target.value.length;
+      const start = target.selectionStart ?? target.value.length;
+      const end = target.selectionEnd ?? target.value.length;
       const currentValue = target.value;
-      
-      // Preparar o novo valor mantendo o texto existente e adicionando a variável na posição correta
-      const newValue = currentValue.substring(0, start) + variable + currentValue.substring(end);
-      
-      // Atualizar o campo com o novo valor
+      const newValue = currentValue.substring(0, start) + draggingVariable + currentValue.substring(end);
+
       const fieldToUpdate = targetId === "template-name" 
         ? "name" 
         : targetId === "subject" 
           ? "subject" 
           : "content";
       
-      handleInputChange(fieldToUpdate, newValue);
-      
-      // Garantir que o foco seja mantido e o cursor seja posicionado após a variável inserida
+      setEditedTemplate(prev => ({
+        ...prev,
+        [fieldToUpdate]: newValue
+      }));
+
       requestAnimationFrame(() => {
         target.focus();
-        const newPosition = start + variable.length;
+        const newPosition = start + draggingVariable.length;
         target.setSelectionRange(newPosition, newPosition);
       });
     }
