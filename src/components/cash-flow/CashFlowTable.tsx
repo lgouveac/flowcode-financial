@@ -16,7 +16,7 @@ export const CashFlowTable = ({
   onNewCashFlow
 }: CashFlowTableProps) => {
   return (
-    <Card className="p-6">
+    <Card className="relative z-10 p-6 bg-background shadow-md">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Fluxo de Caixa</h2>
         <Dialog>
@@ -34,7 +34,7 @@ export const CashFlowTable = ({
       </div>
 
       {cashFlow.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-background">
           <div className="text-muted-foreground mb-4">
             Nenhuma movimentação registrada
           </div>
@@ -52,7 +52,7 @@ export const CashFlowTable = ({
           </Dialog>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto bg-background">
           <table className="w-full">
             <thead>
               <tr className="border-b">
