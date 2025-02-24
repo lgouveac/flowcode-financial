@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
@@ -27,6 +28,8 @@ export const Emails = () => {
       content: "Olá {nome_funcionario},\n\nPor favor, envie sua nota fiscal referente ao mês de {mes_referencia}...",
       type: 'employees',
       subtype: 'invoice',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     },
     {
       id: "2",
@@ -35,6 +38,8 @@ export const Emails = () => {
       content: "Prezado {nome_cliente},\n\nSegue a fatura referente ao período {periodo_referencia}...",
       type: 'clients',
       subtype: 'recurring',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ]);
 
@@ -118,6 +123,8 @@ export const Emails = () => {
       content: newTemplate.content,
       type: newTemplate.type as 'clients' | 'employees',
       subtype: newTemplate.subtype as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     setSavedTemplates(prev => [...prev, templateToSave]);
@@ -222,3 +229,4 @@ export const Emails = () => {
     </div>
   );
 };
+
