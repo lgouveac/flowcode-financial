@@ -204,14 +204,15 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
-                <Command className="rounded-lg border shadow-md">
+                <Command className="rounded-lg border bg-white shadow-md">
                   <CommandInput 
                     placeholder="Busque por cliente, descrição ou valor..." 
                     value={searchValue}
                     onValueChange={setSearchValue}
+                    className="bg-white"
                   />
-                  <CommandEmpty>
-                    <div className="p-6 text-center bg-white rounded-lg">
+                  <CommandEmpty className="border-t bg-white">
+                    <div className="p-6 text-center">
                       <p className="text-base text-muted-foreground">
                         Nenhum recebimento encontrado
                       </p>
@@ -220,12 +221,13 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
                       </p>
                     </div>
                   </CommandEmpty>
-                  <CommandGroup className="max-h-[300px] overflow-auto">
+                  <CommandGroup className="max-h-[300px] overflow-auto bg-white">
                     {filteredPayments.map(payment => (
                       <CommandItem
                         key={payment.id}
                         value={payment.id}
                         onSelect={() => handlePaymentSelect(payment.id)}
+                        className="bg-white hover:bg-accent"
                       >
                         <Check
                           className={cn(
@@ -281,4 +283,3 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
     </DialogContent>
   );
 };
-
