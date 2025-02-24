@@ -18,7 +18,7 @@ export const CashFlow = ({
 
   return (
     <div className="space-y-8 p-6">
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="flex flex-col space-y-8">
         {showChart && (
           <CashFlowChart
             chartData={chartData}
