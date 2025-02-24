@@ -6,7 +6,7 @@ import { NewBillingDialog } from "./recurring-billing/NewBillingDialog";
 import { useBillingData } from "@/hooks/useBillingData";
 
 export const RecurringBilling = () => {
-  const { billings, payments, clients, fetchBillings, fetchPayments } = useBillingData();
+  const { billings, payments, clients, templates, fetchBillings, fetchPayments } = useBillingData();
 
   const handleSuccess = () => {
     fetchBillings();
@@ -17,7 +17,11 @@ export const RecurringBilling = () => {
     <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
-        <NewBillingDialog clients={clients} onSuccess={handleSuccess} />
+        <NewBillingDialog 
+          clients={clients} 
+          onSuccess={handleSuccess}
+          templates={templates} 
+        />
       </div>
 
       <Tabs defaultValue="recurring" className="w-full">
@@ -35,3 +39,4 @@ export const RecurringBilling = () => {
     </div>
   );
 };
+
