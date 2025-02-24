@@ -122,9 +122,22 @@ export const useBillingData = () => {
       )
       .subscribe();
 
+    const templatesChannel = supabase
+      .channel('template-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'email_templates' },
+        () => {
+          console.log('Template changes detected, refreshing data...');
+          fetchTemplates();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(billingChannel);
       supabase.removeChannel(paymentsChannel);
+      supabase.removeChannel(templatesChannel);
     };
   }, []);
 
