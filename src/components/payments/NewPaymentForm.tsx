@@ -5,15 +5,16 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { NewPayment } from "@/types/payment";
+import { variablesList } from "@/types/email";
 
 interface NewPaymentFormProps {
   clients: Array<{ id: string; name: string }>;
-  onSubmit: (payment: NewPayment) => void;
+  onSubmit: (payment: NewPayment & { email_template?: string }) => void;
   onClose: () => void;
 }
 
 export const NewPaymentForm = ({ clients, onSubmit, onClose }: NewPaymentFormProps) => {
-  const [formData, setFormData] = useState<NewPayment>({
+  const [formData, setFormData] = useState<NewPayment & { email_template?: string }>({
     client_id: '',
     description: '',
     amount: 0,
@@ -43,6 +44,25 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose }: NewPaymentFormPro
               {clients.map((client) => (
                 <SelectItem key={client.id} value={client.id}>
                   {client.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label>Template de Email</Label>
+          <Select 
+            onValueChange={(value) => setFormData({ ...formData, email_template: value })}
+            defaultValue=""
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o template" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(variablesList.clients.oneTime).map(([key, variables]) => (
+                <SelectItem key={key} value={key}>
+                  Template de Cobrança Pontual
                 </SelectItem>
               ))}
             </SelectContent>

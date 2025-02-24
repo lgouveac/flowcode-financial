@@ -6,15 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { RecurringBilling } from "@/types/billing";
+import { variablesList } from "@/types/email";
 
 interface NewRecurringBillingFormProps {
-  onSubmit: (billing: RecurringBilling) => void;
+  onSubmit: (billing: RecurringBilling & { email_template?: string }) => void;
   onClose: () => void;
   clients: Array<{ id: string; name: string }>;
 }
 
 export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecurringBillingFormProps) => {
-  const [formData, setFormData] = useState<Partial<RecurringBilling>>({
+  const [formData, setFormData] = useState<Partial<RecurringBilling> & { email_template?: string }>({
     payment_method: 'pix',
     status: 'pending',
     installments: 1
@@ -25,7 +26,7 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
     if (!formData.client_id || !formData.description || !formData.amount || !formData.due_day || !formData.start_date || !formData.installments) {
       return;
     }
-    onSubmit(formData as RecurringBilling);
+    onSubmit(formData as RecurringBilling & { email_template?: string });
     onClose();
   };
 
@@ -41,6 +42,25 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients }: NewRecur
             {clients.map((client) => (
               <SelectItem key={client.id} value={client.id}>
                 {client.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Template de Email</Label>
+        <Select 
+          onValueChange={(value) => setFormData({ ...formData, email_template: value })}
+          defaultValue=""
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o template" />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(variablesList.clients.recurring).map(([key, variables]) => (
+              <SelectItem key={key} value={key}>
+                Template de Cobrança Recorrente
               </SelectItem>
             ))}
           </SelectContent>
