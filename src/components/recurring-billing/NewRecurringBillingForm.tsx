@@ -58,6 +58,8 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
     return content;
   };
 
+  const filteredTemplates = templates.filter(template => template.type === 'clients' && template.subtype === 'recurring');
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
@@ -86,13 +88,17 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
             <SelectValue placeholder="Selecione o template" />
           </SelectTrigger>
           <SelectContent>
-            {templates
-              .filter(template => template.type === 'clients' && template.subtype === 'recurring')
-              .map((template) => (
+            {filteredTemplates.length > 0 ? (
+              filteredTemplates.map((template) => (
                 <SelectItem key={template.id} value={template.id}>
                   {template.name}
                 </SelectItem>
-            ))}
+              ))
+            ) : (
+              <div className="p-4 text-center text-muted-foreground">
+                Nenhum template disponível
+              </div>
+            )}
           </SelectContent>
         </Select>
       </div>
