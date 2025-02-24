@@ -110,6 +110,10 @@ export const useEmailTemplates = () => {
 
   const saveNewTemplate = async (newTemplate: Partial<EmailTemplate>) => {
     try {
+      if (!validateTemplateType(newTemplate.type!) || !validateTemplateSubtype(newTemplate.subtype!)) {
+        throw new Error('Invalid template type or subtype');
+      }
+
       const { data, error } = await supabase
         .from('email_templates')
         .insert({
@@ -126,20 +130,23 @@ export const useEmailTemplates = () => {
       if (error) throw error;
 
       if (validateTemplateType(data.type) && validateTemplateSubtype(data.subtype)) {
-        setSavedTemplates(prev => [{
+        const validTemplate: EmailTemplate = {
           ...data,
           type: data.type,
           subtype: data.subtype,
           send_day: data.send_day || null
-        }, ...prev]);
+        };
+
+        setSavedTemplates(prev => [validTemplate, ...prev]);
+
+        toast({
+          title: "Template Salvo",
+          description: "O template de e-mail foi salvo com sucesso.",
+        });
+
+        return true;
       }
-
-      toast({
-        title: "Template Salvo",
-        description: "O template de e-mail foi salvo com sucesso.",
-      });
-
-      return true;
+      return false;
     } catch (error) {
       console.error('Error saving template:', error);
       toast({
