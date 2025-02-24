@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { RecurringBilling } from "@/types/billing";
 import type { Payment } from "@/types/payment";
+import type { EmailTemplate } from "@/types/email";
 
 export const useBillingData = () => {
   const [billings, setBillings] = useState<RecurringBilling[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const { toast } = useToast();
 
   const fetchBillings = async () => {
@@ -75,10 +77,24 @@ export const useBillingData = () => {
     setClients(data || []);
   };
 
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from('email_templates')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching templates:', error);
+      return;
+    }
+
+    setTemplates(data || []);
+  };
+
   useEffect(() => {
     fetchBillings();
     fetchPayments();
     fetchClients();
+    fetchTemplates();
 
     // Subscribe to changes in both tables
     const billingChannel = supabase
@@ -116,7 +132,9 @@ export const useBillingData = () => {
     billings,
     payments,
     clients,
+    templates,
     fetchBillings,
     fetchPayments
   };
 };
+
