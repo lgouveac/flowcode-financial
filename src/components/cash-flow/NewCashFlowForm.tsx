@@ -204,14 +204,14 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
-                <Command>
+                <Command className="rounded-lg border shadow-md">
                   <CommandInput 
                     placeholder="Busque por cliente, descrição ou valor..." 
                     value={searchValue}
                     onValueChange={setSearchValue}
                   />
                   <CommandEmpty>
-                    <div className="py-6 text-center bg-white">
+                    <div className="p-6 text-center bg-white rounded-lg">
                       <p className="text-base text-muted-foreground">
                         Nenhum recebimento encontrado
                       </p>
