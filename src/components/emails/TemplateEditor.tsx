@@ -67,15 +67,6 @@ export const TemplateEditor = ({
   };
 
   const handleTestEmail = async () => {
-    if (!template.id) {
-      toast({
-        title: "Template não salvo",
-        description: "Por favor, salve o template antes de enviar um email de teste.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
@@ -120,7 +111,7 @@ export const TemplateEditor = ({
               {getDescription()}
             </CardDescription>
           </div>
-          {template.id && (
+          {template.name && (
             <Button variant="secondary" onClick={handleTestEmail}>
               <MailIcon className="mr-2 h-4 w-4" />
               Testar E-mail
@@ -197,3 +188,4 @@ export const TemplateEditor = ({
     </div>
   );
 };
+
