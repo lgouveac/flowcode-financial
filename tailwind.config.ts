@@ -51,6 +51,7 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+          hover: "0 8px 16px 0 rgba(0, 0, 0, 0.15)",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -98,3 +99,4 @@ export default {
   },
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;
+
