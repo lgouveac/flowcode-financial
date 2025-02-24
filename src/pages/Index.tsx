@@ -24,8 +24,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <header className="bg-white border-b border-zinc-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-background">
+      <header className="bg-secondary border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex -mb-px space-x-8">
             {navigation.map(({ path, icon: Icon, label }) => (
@@ -34,8 +34,8 @@ const Index = () => {
                 to={path}
                 className={`flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors ${
                   isActive(path)
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:border-zinc-300'
+                    ? 'border-primary text-primary-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-primary/30'
                 }`}
               >
                 <Icon className="mr-2 h-4 w-4" />
@@ -46,7 +46,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
         <Outlet />
       </main>
     </div>

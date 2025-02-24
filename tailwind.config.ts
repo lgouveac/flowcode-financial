@@ -26,28 +26,35 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#007AFF",
+          DEFAULT: "#9b87f5",
+          hover: "#7E69AB",
+          dark: "#7c3aed",
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#F5F5F7",
-          foreground: "#1D1D1F",
+          DEFAULT: "#1A1F2C",
+          foreground: "#FFFFFF",
+          hover: "#2A2F3C",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "#F5F5F7",
+          DEFAULT: "#222222",
           foreground: "#86868B",
         },
         accent: {
-          DEFAULT: "#E8E8ED",
-          foreground: "#1D1D1F",
+          DEFAULT: "#333333",
+          foreground: "#FFFFFF",
         },
         card: {
-          DEFAULT: "#FFFFFF",
-          foreground: "#1D1D1F",
+          DEFAULT: "#1A1F2C",
+          foreground: "#FFFFFF",
+        },
+        popover: {
+          DEFAULT: "#1A1F2C",
+          foreground: "#FFFFFF",
         },
       },
       borderRadius: {
@@ -60,8 +67,8 @@ export default {
         display: ["SF Pro Display", "Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        'card': '0 2px 8px 0 rgba(0, 0, 0, 0.1)',
-        'card-hover': '0 4px 12px 0 rgba(0, 0, 0, 0.12)',
+        'card': '0 4px 12px 0 rgba(0, 0, 0, 0.2)',
+        'card-hover': '0 8px 16px 0 rgba(0, 0, 0, 0.3)',
       },
       keyframes: {
         "accordion-down": {
