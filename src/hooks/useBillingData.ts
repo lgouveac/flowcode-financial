@@ -87,7 +87,21 @@ export const useBillingData = () => {
       return;
     }
 
-    setTemplates(data || []);
+    // Validate and transform the data to ensure it matches the EmailTemplate type
+    const validTemplates = (data || []).filter((template): template is EmailTemplate => {
+      // Check if the type is valid
+      const validType = template.type === 'clients' || template.type === 'employees';
+      
+      if (!validType) {
+        console.warn(`Invalid template type found: ${template.type}`);
+        return false;
+      }
+      
+      return true;
+    });
+
+    console.log("Templates fetched and validated:", validTemplates);
+    setTemplates(validTemplates);
   };
 
   useEffect(() => {
@@ -150,4 +164,3 @@ export const useBillingData = () => {
     fetchPayments
   };
 };
-
