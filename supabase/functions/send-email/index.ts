@@ -5,80 +5,78 @@ import { Resend } from "npm:resend@2.0.0";
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
-
-interface EmailRequest {
-  type: 'clients' | 'employees';
-  subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours';
-  templateId: string;
-  to: string;
-  data: Record<string, string | number>;
-}
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { type, subtype, templateId, to, data }: EmailRequest = await req.json();
+    const { type, subtype, templateId, to, data } = await req.json();
 
-    // Get template from database
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    // Log the received data
+    console.log("Received request:", { type, subtype, templateId, to, data });
+
+    // Fetch the template from the database
+    const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env;
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/email_templates?id=eq.${templateId}`,
+      {
+        headers: {
+          "apikey": SUPABASE_SERVICE_ROLE_KEY,
+          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      }
     );
 
-    const { data: template, error: templateError } = await supabaseClient
-      .from('email_templates')
-      .select('*')
-      .eq('id', templateId)
-      .single();
-
-    if (templateError) {
-      throw new Error(`Error fetching template: ${templateError.message}`);
+    const [template] = await response.json();
+    if (!template) {
+      throw new Error("Template not found");
     }
 
-    // Replace variables in template
+    // Replace variables in subject and content
     let subject = template.subject;
     let content = template.content;
 
-    // Replace all variables in both subject and content
     Object.entries(data).forEach(([key, value]) => {
-      const regex = new RegExp(`{${key}}`, 'g');
+      const regex = new RegExp(`{${key}}`, "g");
       subject = subject.replace(regex, String(value));
       content = content.replace(regex, String(value));
     });
 
+    // Send the email using Resend
     const emailResponse = await resend.emails.send({
-      from: 'Lovable <onboarding@resend.dev>',
+      from: "test@resend.dev",
       to: [to],
       subject: subject,
       html: content,
     });
 
-    console.log('Email sent successfully:', emailResponse);
+    console.log("Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...corsHeaders,
       },
     });
   } catch (error: any) {
-    console.error('Error in send-email function:', error);
+    console.error("Error in send-email function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }
 };
 
 serve(handler);
+
