@@ -55,7 +55,7 @@ serve(async (req) => {
     });
 
     const emailResponse = await resend.emails.send({
-      from: "Flowcode <noreply@seudominio.com>", // Substitua por seu domínio verificado
+      from: "Flowcode <noreply@flowcode.cc>", // Use seu domínio verificado
       to: [to],
       subject: subject,
       html: content,
@@ -78,3 +78,4 @@ serve(async (req) => {
     );
   }
 });
+
