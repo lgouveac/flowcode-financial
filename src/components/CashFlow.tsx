@@ -18,15 +18,21 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   return (
     <div className="space-y-8">
       {showChart ? (
-        <CashFlowChart 
-          chartData={chartData}
-          period={selectedPeriod}
-          setPeriod={setSelectedPeriod}
-          year={selectedYear}
-          setYear={setSelectedYear}
-          month={selectedMonth}
-          setMonth={setSelectedMonth}
-        />
+        <>
+          <CashFlowChart 
+            chartData={chartData}
+            period={selectedPeriod}
+            setPeriod={setSelectedPeriod}
+            year={selectedYear}
+            setYear={setSelectedYear}
+            month={selectedMonth}
+            setMonth={setSelectedMonth}
+          />
+          <CashFlowTable 
+            cashFlow={cashFlow}
+            onNewCashFlow={onNewCashFlow}
+          />
+        </>
       ) : (
         <CashFlowTable 
           cashFlow={cashFlow}
