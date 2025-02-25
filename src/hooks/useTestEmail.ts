@@ -66,10 +66,37 @@ export const useTestEmail = ({ type, template }: UseTestEmailProps) => {
 
   const handleTestEmail = async () => {
     try {
+      // Validate required data
       if (!testEmail) {
         toast({
           title: "E-mail necessário",
           description: "Por favor, informe um e-mail para teste.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!template.id) {
+        toast({
+          title: "Template não encontrado",
+          description: "Por favor, selecione um template válido.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verify template exists before sending
+      const { data: templateCheck, error: templateError } = await supabase
+        .from('email_templates')
+        .select('id')
+        .eq('id', template.id)
+        .maybeSingle();
+
+      if (templateError || !templateCheck) {
+        console.error("Template verification error:", templateError);
+        toast({
+          title: "Template não encontrado",
+          description: "O template selecionado não foi encontrado no banco de dados.",
           variant: "destructive",
         });
         return;
