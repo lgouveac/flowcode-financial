@@ -52,11 +52,11 @@ export const EmployeeTable = () => {
         <AddEmployeeDialog />
       </div>
 
-      <div className="rounded-lg border border-zinc-200 bg-white">
+      <div className="rounded-lg border bg-card/50 backdrop-blur-sm">
         <div className="w-full overflow-auto">
           <table className="w-full min-w-[640px]">
-            <thead className="bg-zinc-50">
-              <tr className="text-left">
+            <thead>
+              <tr className="border-b border-border/50">
                 <th className="py-3 px-4 text-sm font-medium text-muted-foreground">Nome</th>
                 <th className="py-3 px-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Tipo</th>
                 <th className="py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
@@ -66,7 +66,7 @@ export const EmployeeTable = () => {
             </thead>
             <tbody>
               {employees.map((employee) => (
-                <tr key={employee.id} className="border-t hover:bg-zinc-50">
+                <tr key={employee.id} className="border-t border-border/50 hover:bg-muted/50 transition-colors">
                   <td className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <EditableCell
@@ -105,7 +105,7 @@ export const EmployeeTable = () => {
                   </td>
                   <td className="p-4">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      employee.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                      employee.status === "active" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100"
                     }`}>
                       {employee.status === "active" ? "Ativo" : "Inativo"}
                     </span>
@@ -133,7 +133,7 @@ export const EmployeeTable = () => {
       {/* Visão mobile para informações ocultas */}
       <div className="block md:hidden mt-4 space-y-4">
         {employees.map((employee) => (
-          <div key={`mobile-${employee.id}`} className="p-4 rounded-lg border border-zinc-200 bg-white space-y-3">
+          <div key={`mobile-${employee.id}`} className="p-4 rounded-lg border bg-card/50 backdrop-blur-sm space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Método de Pagamento</label>
@@ -157,3 +157,4 @@ export const EmployeeTable = () => {
     </div>
   );
 };
+
