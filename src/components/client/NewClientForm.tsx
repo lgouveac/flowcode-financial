@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
   const [formData, setFormData] = useState<NewClient>({
     name: "",
     email: "",
+    phone: "",
     type: "pj",
     company_name: "",
     cnpj: "",
@@ -27,7 +29,15 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Se for PJ, o nome deve ser a razão social
+    const finalFormData = {
+      ...formData,
+      name: clientType === 'pj' ? formData.company_name : formData.name,
+    };
+    
+    console.log("Submitting client form with data:", finalFormData);
+    onSubmit(finalFormData);
     onClose();
   };
 
@@ -43,6 +53,18 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
             className="w-full"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="phone">Telefone</Label>
+          <Input
+            id="phone"
+            type="tel"
+            value={formData.phone || ''}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            className="w-full"
+            placeholder="(00) 00000-0000"
           />
         </div>
 
