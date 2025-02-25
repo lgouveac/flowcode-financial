@@ -29,14 +29,10 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Se for PJ, o nome deve ser a razão social
     const finalFormData = {
       ...formData,
       name: clientType === 'pj' ? formData.company_name : formData.name,
     };
-    
-    console.log("Submitting client form with data:", finalFormData);
     onSubmit(finalFormData);
     onClose();
   };
@@ -44,30 +40,6 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 py-4">
       <div className="space-y-4">
-        <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-            className="w-full"
-          />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="phone">Telefone</Label>
-          <Input
-            id="phone"
-            type="tel"
-            value={formData.phone || ''}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="w-full"
-            placeholder="(00) 00000-0000"
-          />
-        </div>
-
         <div className="grid gap-2">
           <Label>Você contratará como pessoa física ou jurídica?</Label>
           <RadioGroup
@@ -102,7 +74,7 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="cnpj">Qual seu CNPJ?</Label>
+              <Label htmlFor="cnpj">CNPJ</Label>
               <Input
                 id="cnpj"
                 value={formData.cnpj}
@@ -136,7 +108,7 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="name">Qual seu nome completo?</Label>
+              <Label htmlFor="name">Nome completo</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -159,6 +131,29 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="phone">Telefone</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="(00) 00000-0000"
+              required
+            />
+          </div>
+
           <div className="grid gap-2">
             <Label htmlFor="address">Endereço completo com CEP</Label>
             <Input
