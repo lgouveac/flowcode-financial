@@ -1,23 +1,23 @@
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmployeeTable } from "@/components/EmployeeTable";
 import { EmployeeSettings } from "@/components/EmployeeSettings";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export const Employees = () => {
+export default function EmployeesPage() {
   return (
-    <Tabs defaultValue="list" className="space-y-6">
-      <TabsList>
-        <TabsTrigger value="list">Lista de Funcionários</TabsTrigger>
-        <TabsTrigger value="settings">Configurações</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="list">
-        <EmployeeTable />
-      </TabsContent>
-
-      <TabsContent value="settings">
-        <EmployeeSettings />
-      </TabsContent>
-    </Tabs>
+    <div className="container py-10 space-y-8">
+      <Tabs defaultValue="list">
+        <TabsList>
+          <TabsTrigger value="list">Lista</TabsTrigger>
+          <TabsTrigger value="settings">Configurações</TabsTrigger>
+        </TabsList>
+        <TabsContent value="list">
+          <EmployeeTable />
+        </TabsContent>
+        <TabsContent value="settings">
+          <EmployeeSettings />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
-};
+}
