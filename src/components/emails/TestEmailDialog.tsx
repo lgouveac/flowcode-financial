@@ -58,7 +58,7 @@ export const TestEmailDialog = ({
                 <SelectValue placeholder={`Selecione um ${isClient ? "cliente" : "funcionário"}`} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Usar dados de exemplo</SelectItem>
+                <SelectItem value="_example">Usar dados de exemplo</SelectItem>
                 {testData?.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.name} ({item.email})
