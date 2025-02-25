@@ -32,7 +32,6 @@ export const useEmailTemplates = () => {
             ...template,
             type: template.type,
             subtype: template.subtype,
-            send_day: template.send_day || null,
           });
         }
         return acc;
@@ -59,7 +58,6 @@ export const useEmailTemplates = () => {
           name: updatedTemplate.name,
           subject: updatedTemplate.subject,
           content: updatedTemplate.content,
-          send_day: updatedTemplate.send_day,
           updated_at: new Date().toISOString()
         })
         .eq('id', updatedTemplate.id);
@@ -122,7 +120,6 @@ export const useEmailTemplates = () => {
           content: newTemplate.content,
           type: newTemplate.type,
           subtype: newTemplate.subtype,
-          send_day: newTemplate.type === 'employees' ? newTemplate.send_day : null
         })
         .select()
         .single();
@@ -134,7 +131,6 @@ export const useEmailTemplates = () => {
           ...data,
           type: data.type,
           subtype: data.subtype,
-          send_day: data.send_day || null
         };
 
         setSavedTemplates(prev => [validTemplate, ...prev]);

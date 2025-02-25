@@ -125,7 +125,6 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          send_day: number | null
           subject: string
           subtype: string
           type: string
@@ -136,7 +135,6 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
-          send_day?: number | null
           subject: string
           subtype: string
           type: string
@@ -147,7 +145,6 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
-          send_day?: number | null
           subject?: string
           subtype?: string
           type?: string
@@ -202,6 +199,27 @@ export type Database = {
           position?: string | null
           status?: string
           type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      global_settings: {
+        Row: {
+          created_at: string | null
+          employee_emails_send_day: number
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          employee_emails_send_day: number
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          employee_emails_send_day?: number
+          id?: string
           updated_at?: string | null
         }
         Relationships: []

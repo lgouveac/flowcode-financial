@@ -21,7 +21,6 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
     name: '',
     subject: '',
     content: '',
-    send_day: type === 'employees' ? 1 : null,
   });
 
   const handleTypeChange = (type: string) => {
@@ -89,7 +88,6 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
         name: '',
         subject: '',
         content: '',
-        send_day: type === 'employees' ? 1 : null,
       });
     }
   };
@@ -128,7 +126,6 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
             onSave={handleSaveTemplate}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            showSendDay={type === 'employees'}
           />
         </div>
         <VariablesList

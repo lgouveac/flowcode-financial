@@ -11,10 +11,9 @@ interface EditTemplateDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (template: EmailTemplate) => void;
-  showSendDay?: boolean;
 }
 
-export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDay }: EditTemplateDialogProps) => {
+export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemplateDialogProps) => {
   const [editedTemplate, setEditedTemplate] = useState<EmailTemplate>(template);
   const { toast } = useToast();
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
@@ -94,7 +93,6 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave, showSendDa
               onSave={handleSave}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
-              showSendDay={showSendDay}
             />
           </div>
           <VariablesList

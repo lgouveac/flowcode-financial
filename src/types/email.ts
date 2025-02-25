@@ -1,4 +1,3 @@
-
 export interface EmailTemplate {
   id: string;
   name: string;
@@ -8,7 +7,6 @@ export interface EmailTemplate {
   subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours';
   created_at: string;
   updated_at: string;
-  send_day: number | null;
 }
 
 export interface Variable {
@@ -49,4 +47,3 @@ export const variablesList = {
     ]
   }
 };
-
