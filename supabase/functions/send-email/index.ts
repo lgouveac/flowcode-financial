@@ -44,6 +44,8 @@ serve(async (req) => {
       throw new Error('Template not found');
     }
 
+    console.log("Found template:", template);
+
     // Replace variables in subject and content
     let subject = template.subject;
     let content = template.content;
@@ -54,8 +56,10 @@ serve(async (req) => {
       content = content.replace(regex, String(value));
     });
 
+    console.log("Prepared email content:", { subject, to });
+
     const emailResponse = await resend.emails.send({
-      from: "Flowcode <noreply@flowcode.cc>", // Use seu domínio verificado
+      from: "Flowcode <noreply@flowcode.cc>",
       to: [to],
       subject: subject,
       html: content,
@@ -69,13 +73,20 @@ serve(async (req) => {
     });
   } catch (error: any) {
     console.error("Error sending email:", error);
+    
+    const errorMessage = error.message || "Unknown error occurred while sending email";
+    const statusCode = error.status || 500;
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: errorMessage,
+        details: error.details || null,
+        code: error.code || null
+      }),
       {
-        status: 500,
+        status: statusCode,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   }
 });
-
