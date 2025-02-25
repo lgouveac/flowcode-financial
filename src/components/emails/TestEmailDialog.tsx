@@ -30,6 +30,14 @@ export const TestEmailDialog = ({
 }: TestEmailDialogProps) => {
   const isClient = type === 'clients';
 
+  const handleSelectChange = (value: string) => {
+    onSelectedIdChange(value);
+    const selected = testData?.find(item => item.id === value);
+    if (selected) {
+      onTestEmailChange(selected.email);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -42,6 +50,24 @@ export const TestEmailDialog = ({
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
+            <Label>
+              Selecionar {isClient ? "Cliente" : "Funcionário"} para Dados de Teste
+            </Label>
+            <Select value={selectedId} onValueChange={handleSelectChange}>
+              <SelectTrigger>
+                <SelectValue placeholder={`Selecione um ${isClient ? "cliente" : "funcionário"}`} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Usar dados de exemplo</SelectItem>
+                {testData?.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.name} ({item.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="test-email">E-mail para Teste</Label>
             <Input
               id="test-email"
@@ -50,24 +76,6 @@ export const TestEmailDialog = ({
               value={testEmail}
               onChange={(e) => onTestEmailChange(e.target.value)}
             />
-          </div>
-          <div className="space-y-2">
-            <Label>
-              Selecionar {isClient ? "Cliente" : "Funcionário"} para Dados de Teste
-            </Label>
-            <Select value={selectedId} onValueChange={onSelectedIdChange}>
-              <SelectTrigger>
-                <SelectValue placeholder={`Selecione um ${isClient ? "cliente" : "funcionário"}`} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Usar dados de exemplo</SelectItem>
-                {testData?.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <DialogFooter>

@@ -5,6 +5,7 @@ import { CalendarIcon, RefreshCwIcon } from "lucide-react";
 import { TemplateEditor } from "./TemplateEditor";
 import { VariablesList } from "./VariablesList";
 import { EmailTemplate, variablesList } from "@/types/email";
+import { useToast } from "@/hooks/use-toast";
 
 interface TemplateSectionProps {
   type: 'clients' | 'employees';
@@ -12,6 +13,7 @@ interface TemplateSectionProps {
 }
 
 export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) => {
+  const { toast } = useToast();
   const [currentType, setCurrentType] = useState(type === 'employees' ? 'invoice' : 'recurring');
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState<Partial<EmailTemplate>>({
@@ -20,7 +22,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
     name: '',
     subject: '',
     content: '',
-    send_day: null,
+    send_day: type === 'employees' ? 1 : null,
   });
 
   const handleTypeChange = (type: string) => {
@@ -67,6 +69,11 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
 
   const handleSaveTemplate = async () => {
     if (!newTemplate.name || !newTemplate.subject || !newTemplate.content) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos do template.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -79,7 +86,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
         name: '',
         subject: '',
         content: '',
-        send_day: null,
+        send_day: type === 'employees' ? 1 : null,
       });
     }
   };
