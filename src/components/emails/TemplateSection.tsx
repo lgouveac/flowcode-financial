@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarIcon, RefreshCwIcon } from "lucide-react";
@@ -67,6 +66,10 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
     e.preventDefault();
   };
 
+  const handleInputChange = (field: keyof EmailTemplate, value: string | number) => {
+    setNewTemplate(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleSaveTemplate = async () => {
     if (!newTemplate.name || !newTemplate.subject || !newTemplate.content) {
       toast({
@@ -89,10 +92,6 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
         send_day: type === 'employees' ? 1 : null,
       });
     }
-  };
-
-  const handleInputChange = (field: keyof EmailTemplate, value: string | number) => {
-    setNewTemplate(prev => ({ ...prev, [field]: value }));
   };
 
   const currentVariables = variablesList[type]?.[currentType as keyof (typeof variablesList.clients | typeof variablesList.employees)] || [];
