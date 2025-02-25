@@ -57,11 +57,11 @@ export const EmployeeTable = () => {
           <table className="w-full min-w-[640px]">
             <thead>
               <tr className="border-b border-border/50">
-                <th className="py-3 px-4 text-sm font-medium text-muted-foreground">Nome</th>
-                <th className="py-3 px-4 text-sm font-medium text-muted-foreground hidden sm:table-cell">Tipo</th>
-                <th className="py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                <th className="py-3 px-4 text-sm font-medium text-muted-foreground hidden md:table-cell">Método de Pagamento</th>
-                <th className="py-3 px-4 text-sm font-medium text-muted-foreground hidden lg:table-cell">Última NF</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Nome</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground hidden sm:table-cell">Tipo</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Status</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground hidden md:table-cell">Método de Pagamento</th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground hidden lg:table-cell">Última NF</th>
               </tr>
             </thead>
             <tbody>
