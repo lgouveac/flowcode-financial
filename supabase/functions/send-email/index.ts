@@ -1,6 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.1';
 import { Resend } from "npm:resend@2.0.0";
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -27,32 +32,16 @@ serve(async (req) => {
     const { type, subtype, templateId, to, data }: EmailRequest = await req.json();
     console.log("Received email request:", { type, subtype, templateId, to, data });
 
-    const { error: templateError, data: template } = await supabase
+    // Get the template from the database
+    const { data: template, error: templateError } = await supabase
       .from('email_templates')
       .select('*')
       .eq('id', templateId)
       .single();
 
-    if (templateError) throw templateError;
-
-    // Se é um email para funcionário, verifica se hoje é o dia configurado
-    if (type === 'employees' && template.send_day) {
-      const today = new Date();
-      const dayOfMonth = today.getDate();
-      
-      console.log("Checking send day:", { configuredDay: template.send_day, currentDay: dayOfMonth });
-      
-      if (dayOfMonth !== template.send_day) {
-        return new Response(
-          JSON.stringify({ 
-            error: "Este email está configurado para ser enviado apenas no dia " + template.send_day 
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
+    if (templateError) {
+      console.error("Error fetching template:", templateError);
+      throw new Error('Template not found');
     }
 
     // Replace variables in subject and content
@@ -78,7 +67,7 @@ serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error sending email:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
