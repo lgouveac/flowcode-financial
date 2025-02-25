@@ -36,6 +36,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
   const [payments, setPayments] = useState<PaymentWithClient[]>([]);
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (category === 'payment') {
@@ -81,59 +82,71 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    const newCashFlow = {
-      type: movementType,
-      category,
-      description,
-      amount: Number(amount),
-      date,
-      payment_id: category === 'payment' ? selectedPayment : null,
-    };
+    try {
+      const newCashFlow = {
+        type: movementType,
+        category,
+        description,
+        amount: Number(amount),
+        date,
+        payment_id: category === 'payment' ? selectedPayment : null,
+      };
 
-    const { error: cashFlowError } = await supabase
-      .from('cash_flow')
-      .insert([newCashFlow])
-      .select()
-      .single();
+      console.log("Saving cash flow:", newCashFlow);
 
-    if (cashFlowError) {
-      console.error('Error creating cash flow:', cashFlowError);
-      toast({
-        title: "Erro",
-        description: "Não foi possível registrar a movimentação.",
-        variant: "destructive",
-      });
-      return;
-    }
+      const { error: cashFlowError } = await supabase
+        .from('cash_flow')
+        .insert([newCashFlow]);
 
-    if (category === 'payment' && selectedPayment) {
-      const { error: paymentError } = await supabase
-        .from('payments')
-        .update({ 
-          status: 'paid',
-          payment_date: date
-        })
-        .eq('id', selectedPayment);
-
-      if (paymentError) {
-        console.error('Error updating payment:', paymentError);
+      if (cashFlowError) {
+        console.error('Error creating cash flow:', cashFlowError);
         toast({
           title: "Erro",
-          description: "Não foi possível atualizar o status do pagamento.",
+          description: "Não foi possível registrar a movimentação.",
           variant: "destructive",
         });
         return;
       }
+
+      if (category === 'payment' && selectedPayment) {
+        const { error: paymentError } = await supabase
+          .from('payments')
+          .update({ 
+            status: 'paid',
+            payment_date: date
+          })
+          .eq('id', selectedPayment);
+
+        if (paymentError) {
+          console.error('Error updating payment:', paymentError);
+          toast({
+            title: "Erro",
+            description: "Não foi possível atualizar o status do pagamento.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Movimentação registrada com sucesso.",
+      });
+
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('Error in form submission:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao salvar a movimentação.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast({
-      title: "Sucesso",
-      description: "Movimentação registrada com sucesso.",
-    });
-
-    onSuccess();
-    onClose();
   };
 
   const filteredPayments = payments.filter(payment => {
@@ -253,7 +266,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2.5">
             <Label className="text-sm font-medium">Data</Label>
-            <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+            <Input type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div className="space-y-2.5">
             <Label className="text-sm font-medium">Valor</Label>
@@ -263,6 +276,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
               placeholder="0,00" 
               value={amount} 
               onChange={e => setAmount(e.target.value)}
+              required
               disabled={category === 'payment'} 
             />
           </div>
@@ -273,13 +287,15 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
             placeholder="Descrição da movimentação" 
             value={description} 
             onChange={e => setDescription(e.target.value)}
+            required
             disabled={category === 'payment'} 
           />
         </div>
-        <Button type="submit" className="w-full mt-6">
-          Adicionar Movimentação
+        <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
+          {isSubmitting ? "Salvando..." : "Adicionar Movimentação"}
         </Button>
       </form>
     </DialogContent>
   );
 };
+
