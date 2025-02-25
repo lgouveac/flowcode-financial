@@ -52,12 +52,24 @@
   }
   
   body {
-    @apply bg-background text-foreground antialiased overflow-x-hidden min-h-screen;
+    @apply bg-background text-foreground antialiased min-h-screen;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
+  }
+
+  h1 {
+    @apply text-3xl font-semibold sm:text-4xl;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold sm:text-3xl;
+  }
+
+  h3 {
+    @apply text-xl font-semibold sm:text-2xl;
   }
 
   p {

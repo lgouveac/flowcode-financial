@@ -46,8 +46,16 @@ export function ThemeProvider({
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  const value = {
+    theme,
+    setTheme: (newTheme: Theme) => {
+      setTheme(newTheme);
+      localStorage.setItem("theme", newTheme);
+    },
+  };
+
   return (
-    <ThemeProviderContext.Provider value={{ theme, setTheme }}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   );
@@ -61,4 +69,3 @@ export const useTheme = () => {
 
   return context;
 };
-
