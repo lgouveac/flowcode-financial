@@ -1,48 +1,95 @@
+
 import { Button } from "@/components/ui/button";
-import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { AddEmployeeDialog } from "./AddEmployeeDialog";
 import { EditableCell } from "./EditableCell";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Employee {
   id: string;
   name: string;
   type: "fixed" | "freelancer";
   status: "active" | "inactive";
-  paymentMethod: string;
-  lastInvoice?: string;
+  payment_method: string;
+  last_invoice?: string;
 }
 
-const mockEmployees: Employee[] = [
-  {
-    id: "1",
-    name: "João Silva",
-    type: "fixed",
-    status: "active",
-    paymentMethod: "PIX",
-    lastInvoice: "10/03/2024",
-  },
-  {
-    id: "2",
-    name: "Maria Santos",
-    type: "freelancer",
-    status: "active",
-    paymentMethod: "Transferência",
-    lastInvoice: "05/03/2024",
-  },
-];
-
 export const EmployeeTable = () => {
-  const [employees, setEmployees] = useState(mockEmployees);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const handleChange = (id: string, field: keyof Employee, value: string) => {
-    setEmployees(prevEmployees =>
-      prevEmployees.map(employee =>
-        employee.id === id ? { ...employee, [field]: value } : employee
-      )
-    );
+  const { data: employees = [], isLoading, error } = useQuery({
+    queryKey: ["employees"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("*")
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching employees:", error);
+        throw error;
+      }
+
+      return data || [];
+    },
+  });
+
+  const handleChange = async (id: string, field: keyof Employee, value: string) => {
+    try {
+      const { error } = await supabase
+        .from("employees")
+        .update({ [field]: value })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+
+      toast({
+        title: "Alteração salva",
+        description: "O funcionário foi atualizado com sucesso.",
+      });
+    } catch (error: any) {
+      console.error("Error updating employee:", error);
+      toast({
+        title: "Erro ao atualizar",
+        description: error.message || "Ocorreu um erro ao atualizar o funcionário.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
+          <AddEmployeeDialog />
+        </div>
+        <div className="rounded-lg border bg-card/50 backdrop-blur-sm p-8">
+          <p className="text-center text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
+          <AddEmployeeDialog />
+        </div>
+        <div className="rounded-lg border bg-destructive/10 p-8">
+          <p className="text-center text-destructive">Erro ao carregar funcionários</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -108,22 +155,29 @@ export const EmployeeTable = () => {
                       </Select>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        employee.status === "active" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100"
-                      }`}>
-                        {employee.status === "active" ? "Ativo" : "Inativo"}
-                      </span>
+                      <Select
+                        value={employee.status}
+                        onValueChange={(value: "active" | "inactive") => handleChange(employee.id, 'status', value)}
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Ativo</SelectItem>
+                          <SelectItem value="inactive">Inativo</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="p-4 hidden md:table-cell">
                       <EditableCell
-                        value={employee.paymentMethod}
-                        onChange={(value) => handleChange(employee.id, 'paymentMethod', value)}
+                        value={employee.payment_method || ""}
+                        onChange={(value) => handleChange(employee.id, 'payment_method', value)}
                       />
                     </td>
                     <td className="p-4 hidden lg:table-cell">
                       <EditableCell
-                        value={employee.lastInvoice || ""}
-                        onChange={(value) => handleChange(employee.id, 'lastInvoice', value)}
+                        value={employee.last_invoice || ""}
+                        onChange={(value) => handleChange(employee.id, 'last_invoice', value)}
                         type="date"
                       />
                     </td>

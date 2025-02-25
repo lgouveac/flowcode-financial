@@ -157,34 +157,49 @@ export type Database = {
       }
       employees: {
         Row: {
+          address: string | null
+          cnpj: string | null
           created_at: string | null
           email: string
           id: string
           last_invoice: string | null
           name: string
           payment_method: string | null
+          phone: string | null
+          pix: string | null
+          position: string | null
           status: string
           type: string
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
+          cnpj?: string | null
           created_at?: string | null
           email: string
           id?: string
           last_invoice?: string | null
           name: string
           payment_method?: string | null
+          phone?: string | null
+          pix?: string | null
+          position?: string | null
           status?: string
           type?: string
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
+          cnpj?: string | null
           created_at?: string | null
           email?: string
           id?: string
           last_invoice?: string | null
           name?: string
           payment_method?: string | null
+          phone?: string | null
+          pix?: string | null
+          position?: string | null
           status?: string
           type?: string
           updated_at?: string | null

@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { PlusIcon } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface EmployeeFormData {
   cnpj: string;
@@ -34,6 +36,7 @@ interface EmployeeFormData {
 export function AddEmployeeDialog() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<EmployeeFormData>({
     cnpj: "",
     pix: "",
@@ -45,14 +48,64 @@ export function AddEmployeeDialog() {
     type: "fixed",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Novo funcionário:", formData);
-    toast({
-      title: "Funcionário cadastrado",
-      description: "O novo funcionário foi adicionado com sucesso.",
-    });
-    setOpen(false);
+    try {
+      console.log("Submitting employee data:", formData);
+      
+      const { data: employee, error } = await supabase
+        .from("employees")
+        .insert([
+          {
+            name: formData.fullName,
+            email: formData.email,
+            type: formData.type,
+            cnpj: formData.cnpj,
+            pix: formData.pix,
+            address: formData.address,
+            position: formData.position,
+            phone: formData.phone,
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating employee:", error);
+        throw error;
+      }
+
+      console.log("Employee created successfully:", employee);
+      
+      toast({
+        title: "Funcionário cadastrado",
+        description: "O novo funcionário foi adicionado com sucesso.",
+      });
+      
+      // Invalidate employees query to refresh the list
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
+      
+      setOpen(false);
+      
+      // Reset form
+      setFormData({
+        cnpj: "",
+        pix: "",
+        address: "",
+        fullName: "",
+        email: "",
+        phone: "",
+        position: "",
+        type: "fixed",
+      });
+    } catch (error: any) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Erro ao cadastrar funcionário",
+        description: error.message || "Ocorreu um erro ao adicionar o funcionário.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
