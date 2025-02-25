@@ -64,7 +64,6 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
                 <th className="p-4 text-sm font-medium text-muted-foreground">Nome</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Tipo</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Assunto</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Dia de Envio</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
@@ -81,11 +80,6 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
                   </td>
                   <td className="p-4">
                     {template.subject}
-                  </td>
-                  <td className="p-4">
-                    {template.type === 'employees' && template.send_day 
-                      ? `Dia ${template.send_day}` 
-                      : '-'}
                   </td>
                   <td className="p-4 space-x-2">
                     <Button
@@ -116,7 +110,6 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
           open={true}
           onClose={() => setEditingTemplate(null)}
           onSave={handleSave}
-          showSendDay={editingTemplate.type === 'employees'}
         />
       )}
 
@@ -137,4 +130,3 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
     </Card>
   );
 };
-

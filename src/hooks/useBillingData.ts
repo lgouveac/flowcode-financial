@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -112,10 +113,14 @@ export const useBillingData = () => {
       }
 
       acc.push({
-        ...template,
-        type: template.type as 'clients' | 'employees',
-        subtype: template.subtype as 'recurring' | 'oneTime' | 'invoice' | 'hours',
-        send_day: template.send_day || null,
+        id: template.id,
+        name: template.name,
+        subject: template.subject,
+        content: template.content,
+        type: template.type,
+        subtype: template.subtype,
+        created_at: template.created_at,
+        updated_at: template.updated_at
       });
 
       return acc;
