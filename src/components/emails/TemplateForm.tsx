@@ -4,47 +4,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MailIcon } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmailTemplate } from "@/types/email";
 
 interface TemplateFormProps {
   type: 'clients' | 'employees';
   currentType: string;
   template: Partial<EmailTemplate>;
-  onInputChange: (field: keyof EmailTemplate, value: string | number) => void;
+  onInputChange: (field: keyof EmailTemplate, value: string) => void;
   onSave: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, id: string) => void;
-  showSendDay?: boolean;
   onTestEmail: () => void;
 }
 
 export const TemplateForm = ({
-  type,
-  currentType,
   template,
   onInputChange,
   onSave,
   onDragOver,
   onDrop,
-  showSendDay = false,
   onTestEmail,
 }: TemplateFormProps) => {
-  // Log the template values to debug visibility conditions
-  console.log("Template values:", {
-    name: template?.name,
-    subject: template?.subject,
-    content: template?.content
-  });
-
   const hasRequiredFields = Boolean(
     template?.name && 
     template?.subject && 
     template?.content
   );
-
-  // Log the result of hasRequiredFields check
-  console.log("Has required fields:", hasRequiredFields);
 
   return (
     <div className="space-y-4">
@@ -70,26 +55,6 @@ export const TemplateForm = ({
           onDrop={(e) => onDrop(e, "subject")}
         />
       </div>
-      {showSendDay && (
-        <div className="space-y-2">
-          <Label htmlFor="send-day">Dia do Envio</Label>
-          <Select
-            value={String(template?.send_day || 1)}
-            onValueChange={(value) => onInputChange('send_day', parseInt(value, 10))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o dia do envio" />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
-                <SelectItem key={day} value={String(day)}>
-                  Dia {day}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
       <div className="space-y-2">
         <Label htmlFor="content">Conteúdo</Label>
         <Textarea
@@ -103,11 +68,12 @@ export const TemplateForm = ({
         />
       </div>
       <div className="flex justify-end gap-2">
-        <Button onClick={onSave}>Salvar Template</Button>
+        <Button onClick={onSave} disabled={!hasRequiredFields}>Salvar Template</Button>
         <Button 
           variant="secondary" 
           onClick={onTestEmail} 
           className="flex items-center gap-2"
+          disabled={!hasRequiredFields}
         >
           <MailIcon className="h-4 w-4" />
           Testar E-mail
@@ -116,3 +82,4 @@ export const TemplateForm = ({
     </div>
   );
 };
+
