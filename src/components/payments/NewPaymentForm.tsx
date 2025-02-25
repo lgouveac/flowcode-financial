@@ -26,35 +26,16 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.client_id || !formData.description || !formData.amount || !formData.due_date) {
+      return;
+    }
     onSubmit(formData);
   };
 
   const selectedClient = clients.find(client => client.id === formData.client_id);
-  
-  const previewEmail = () => {
-    if (!formData.email_template) return null;
-
-    // Find the selected template
-    const selectedTemplate = templates.find(t => t.id === formData.email_template);
-    if (!selectedTemplate) return null;
-
-    let content = selectedTemplate.content;
-
-    // Replace variables with actual values
-    const replacements = {
-      "{nome_cliente}": selectedClient?.name || "Cliente",
-      "{valor_cobranca}": formData.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-      "{data_vencimento}": new Date(formData.due_date).toLocaleDateString('pt-BR'),
-      "{descricao_servico}": formData.description || "",
-      "{forma_pagamento}": formData.payment_method === 'pix' ? 'PIX' : formData.payment_method === 'boleto' ? 'Boleto' : 'Cartão de Crédito'
-    };
-
-    Object.entries(replacements).forEach(([key, value]) => {
-      content = content.replace(new RegExp(key, 'g'), value);
-    });
-
-    return content;
-  };
+  const filteredTemplates = templates.filter(template => 
+    template.type === 'clients' && template.subtype === 'oneTime'
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 py-4">
@@ -81,20 +62,24 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
         <div className="grid gap-2">
           <Label>Template de Email</Label>
           <Select 
+            value={formData.email_template}
             onValueChange={(value) => setFormData({ ...formData, email_template: value })}
-            defaultValue=""
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o template" />
             </SelectTrigger>
             <SelectContent>
-              {templates
-                .filter(template => template.type === 'clients' && template.subtype === 'oneTime')
-                .map((template) => (
+              {filteredTemplates.length > 0 ? (
+                filteredTemplates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     {template.name}
                   </SelectItem>
-              ))}
+                ))
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  Nenhum template disponível
+                </div>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -152,11 +137,18 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
           </Select>
         </div>
 
-        {formData.email_template && (
+        {formData.email_template && selectedClient && (
           <div className="grid gap-2">
             <Label>Prévia do Email</Label>
             <div className="bg-background border rounded-md p-4 whitespace-pre-wrap text-sm">
-              {previewEmail()}
+              {/* Preview template content with replaced variables */}
+              {templates.find(t => t.id === formData.email_template)?.content
+                .replace('{nome_cliente}', selectedClient.name)
+                .replace('{valor_cobranca}', formData.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }))
+                .replace('{data_vencimento}', new Date(formData.due_date).toLocaleDateString('pt-BR'))
+                .replace('{descricao_servico}', formData.description)
+                .replace('{forma_pagamento}', formData.payment_method === 'pix' ? 'PIX' : formData.payment_method === 'boleto' ? 'Boleto' : 'Cartão de Crédito')
+              }
             </div>
           </div>
         )}
@@ -173,4 +165,3 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
     </form>
   );
 };
-

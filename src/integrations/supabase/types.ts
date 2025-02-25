@@ -198,6 +198,7 @@ export type Database = {
           created_at: string | null
           description: string
           due_date: string
+          email_template: string | null
           id: string
           installment_number: number | null
           payment_date: string | null
@@ -212,6 +213,7 @@ export type Database = {
           created_at?: string | null
           description: string
           due_date: string
+          email_template?: string | null
           id?: string
           installment_number?: number | null
           payment_date?: string | null
@@ -226,6 +228,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           due_date?: string
+          email_template?: string | null
           id?: string
           installment_number?: number | null
           payment_date?: string | null
@@ -242,6 +245,13 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "payments_email_template_fkey"
+            columns: ["email_template"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
         ]
       }
       recurring_billing: {
@@ -252,6 +262,7 @@ export type Database = {
           current_installment: number
           description: string
           due_day: number
+          email_template: string | null
           end_date: string | null
           id: string
           installments: number
@@ -268,6 +279,7 @@ export type Database = {
           current_installment?: number
           description: string
           due_day: number
+          email_template?: string | null
           end_date?: string | null
           id?: string
           installments?: number
@@ -284,6 +296,7 @@ export type Database = {
           current_installment?: number
           description?: string
           due_day?: number
+          email_template?: string | null
           end_date?: string | null
           id?: string
           installments?: number
@@ -299,6 +312,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_billing_email_template_fkey"
+            columns: ["email_template"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
         ]

@@ -49,7 +49,7 @@ export const NewRecurringBillingForm = ({
         <Label>Template de Email</Label>
         <Select 
           onValueChange={(value) => updateFormData({ email_template: value })}
-          defaultValue=""
+          value={formData.email_template}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecione o template" />
