@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,16 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submitting recurring billing form with data:", formData);
     if (!formData.client_id || !formData.description || !formData.amount || !formData.due_day || !formData.start_date || !formData.installments) {
+      console.error("Missing required fields:", {
+        client_id: !formData.client_id,
+        description: !formData.description,
+        amount: !formData.amount,
+        due_day: !formData.due_day,
+        start_date: !formData.start_date,
+        installments: !formData.installments
+      });
       return;
     }
     onSubmit(formData as RecurringBilling & { email_template?: string });
@@ -34,13 +44,11 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
   const previewEmail = () => {
     if (!formData.email_template) return null;
 
-    // Find the selected template
     const selectedTemplate = templates.find(t => t.id === formData.email_template);
     if (!selectedTemplate) return null;
 
     let content = selectedTemplate.content;
 
-    // Replace variables with actual values
     const replacements = {
       "{nome_cliente}": selectedClient?.name || "Cliente",
       "{valor_cobranca}": (formData.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
@@ -64,7 +72,13 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>Cliente</Label>
-        <Select onValueChange={(value) => setFormData({ ...formData, client_id: value })} required>
+        <Select 
+          onValueChange={(value) => {
+            console.log("Selected client:", value);
+            setFormData({ ...formData, client_id: value });
+          }} 
+          required
+        >
           <SelectTrigger>
             <SelectValue placeholder="Selecione o cliente" />
           </SelectTrigger>
@@ -107,7 +121,10 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
         <Label>Descrição</Label>
         <Input
           value={formData.description || ''}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) => {
+            console.log("Description changed:", e.target.value);
+            setFormData({ ...formData, description: e.target.value });
+          }}
           required
         />
       </div>
@@ -119,7 +136,10 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
             type="number"
             step="0.01"
             value={formData.amount || ''}
-            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+            onChange={(e) => {
+              console.log("Amount changed:", e.target.value);
+              setFormData({ ...formData, amount: parseFloat(e.target.value) });
+            }}
             required
           />
         </div>
@@ -130,7 +150,10 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
             type="number"
             min="1"
             value={formData.installments || ''}
-            onChange={(e) => setFormData({ ...formData, installments: parseInt(e.target.value) })}
+            onChange={(e) => {
+              console.log("Installments changed:", e.target.value);
+              setFormData({ ...formData, installments: parseInt(e.target.value) });
+            }}
             required
           />
         </div>
@@ -144,7 +167,10 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
             min="1"
             max="31"
             value={formData.due_day || ''}
-            onChange={(e) => setFormData({ ...formData, due_day: parseInt(e.target.value) })}
+            onChange={(e) => {
+              console.log("Due day changed:", e.target.value);
+              setFormData({ ...formData, due_day: parseInt(e.target.value) });
+            }}
             required
           />
         </div>
@@ -156,7 +182,10 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
           <Input
             type="date"
             value={formData.start_date || ''}
-            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+            onChange={(e) => {
+              console.log("Start date changed:", e.target.value);
+              setFormData({ ...formData, start_date: e.target.value });
+            }}
             required
           />
         </div>
@@ -175,8 +204,10 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
         <Label>Método de Pagamento</Label>
         <Select 
           defaultValue="pix"
-          onValueChange={(value: 'pix' | 'boleto' | 'credit_card') => 
-            setFormData({ ...formData, payment_method: value })}
+          onValueChange={(value: 'pix' | 'boleto' | 'credit_card') => {
+            console.log("Payment method changed:", value);
+            setFormData({ ...formData, payment_method: value });
+          }}
         >
           <SelectTrigger>
             <SelectValue />
@@ -192,7 +223,7 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
       {formData.email_template && (
         <div className="space-y-2">
           <Label>Prévia do Email</Label>
-          <div className="bg-gray-50 p-4 rounded-md whitespace-pre-wrap text-sm">
+          <div className="bg-background border rounded-md p-4 whitespace-pre-wrap text-sm">
             {previewEmail()}
           </div>
         </div>
@@ -209,3 +240,4 @@ export const NewRecurringBillingForm = ({ onSubmit, onClose, clients, templates 
     </form>
   );
 };
+

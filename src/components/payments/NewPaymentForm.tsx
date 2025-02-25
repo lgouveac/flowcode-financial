@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { EmailTemplate } from "@/types/email";
 import type { NewPayment } from "@/types/payment";
-import { variablesList } from "@/types/email";
 
 interface NewPaymentFormProps {
   clients: Array<{ id: string; name: string }>;
@@ -156,7 +155,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
         {formData.email_template && (
           <div className="grid gap-2">
             <Label>Prévia do Email</Label>
-            <div className="bg-gray-50 p-4 rounded-md whitespace-pre-wrap text-sm">
+            <div className="bg-background border rounded-md p-4 whitespace-pre-wrap text-sm">
               {previewEmail()}
             </div>
           </div>
