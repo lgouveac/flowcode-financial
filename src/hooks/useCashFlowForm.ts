@@ -33,6 +33,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
   }, [category]);
 
   const fetchPendingPayments = async () => {
+    console.log('Fetching pending payments...');
     const { data, error } = await supabase
       .from('payments')
       .select(`
@@ -45,9 +46,15 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
 
     if (error) {
       console.error('Error fetching payments:', error);
+      toast({
+        title: "Erro ao carregar pagamentos",
+        description: "Não foi possível carregar os pagamentos pendentes.",
+        variant: "destructive",
+      });
       return;
     }
 
+    console.log('Fetched payments:', data);
     setPayments(data || []);
   };
 

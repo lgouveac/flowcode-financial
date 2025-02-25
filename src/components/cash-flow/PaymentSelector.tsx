@@ -56,25 +56,19 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
-        <Command className="rounded-lg border bg-white shadow-md">
+      <PopoverContent className="w-full p-0" align="start">
+        <Command className="w-full">
           <CommandInput 
             placeholder="Busque por cliente, descrição ou valor..." 
             value={searchValue}
             onValueChange={setSearchValue}
-            className="bg-white"
           />
-          <CommandEmpty className="border-t bg-white">
-            <div className="p-6 text-center">
-              <p className="text-base text-muted-foreground">
-                Nenhum recebimento encontrado
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Tente buscar usando outros termos ou verifique se existem recebimentos pendentes
-              </p>
-            </div>
+          <CommandEmpty className="py-6 text-center text-sm">
+            <p className="text-muted-foreground">
+              Nenhum recebimento encontrado
+            </p>
           </CommandEmpty>
-          <CommandGroup className="max-h-[300px] overflow-auto bg-white">
+          <CommandGroup className="max-h-[300px] overflow-auto">
             {filteredPayments.map(payment => (
               <CommandItem
                 key={payment.id}
@@ -83,19 +77,21 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
                   onSelect(payment.id);
                   setOpen(false);
                 }}
-                className="bg-white hover:bg-accent"
+                className="flex flex-col items-start"
               >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    selectedPayment === payment.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <div className="flex flex-col">
-                  <span>{payment.clients.name}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {payment.description} - {formatCurrency(payment.amount)}
-                  </span>
+                <div className="flex items-center w-full">
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4 flex-shrink-0",
+                      selectedPayment === payment.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex flex-col flex-grow">
+                    <span className="font-medium">{payment.clients.name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {payment.description} - {formatCurrency(payment.amount)}
+                    </span>
+                  </div>
                 </div>
               </CommandItem>
             ))}

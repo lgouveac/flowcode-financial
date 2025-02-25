@@ -35,7 +35,7 @@ export const FormFields = ({
     <>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2.5">
-          <Label className="text-sm font-medium">Tipo</Label>
+          <Label>Tipo</Label>
           <Select value={movementType} onValueChange={onMovementTypeChange}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione o tipo" />
@@ -47,7 +47,7 @@ export const FormFields = ({
           </Select>
         </div>
         <div className="space-y-2.5">
-          <Label className="text-sm font-medium">Categoria</Label>
+          <Label>Categoria</Label>
           <Select value={category} onValueChange={onCategoryChange}>
             <SelectTrigger>
               <SelectValue placeholder="Selecione a categoria" />
@@ -65,16 +65,17 @@ export const FormFields = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2.5">
-          <Label className="text-sm font-medium">Data</Label>
+          <Label>Data</Label>
           <Input 
             type="date" 
             value={date} 
             onChange={e => onDateChange(e.target.value)} 
             required 
+            className="bg-background"
           />
         </div>
         <div className="space-y-2.5">
-          <Label className="text-sm font-medium">Valor</Label>
+          <Label>Valor</Label>
           <Input 
             type="number" 
             step="0.01" 
@@ -82,18 +83,20 @@ export const FormFields = ({
             value={amount} 
             onChange={e => onAmountChange(e.target.value)}
             required
-            disabled={isPaymentCategory} 
+            disabled={isPaymentCategory}
+            className="bg-background" 
           />
         </div>
       </div>
       <div className="space-y-2.5">
-        <Label className="text-sm font-medium">Descrição</Label>
+        <Label>Descrição</Label>
         <Input 
           placeholder="Descrição da movimentação" 
           value={description} 
           onChange={e => onDescriptionChange(e.target.value)}
           required
-          disabled={isPaymentCategory} 
+          disabled={isPaymentCategory}
+          className="bg-background"
         />
       </div>
     </>
