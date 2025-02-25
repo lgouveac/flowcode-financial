@@ -32,13 +32,13 @@ export const CashFlowTable = ({
       </div>
 
       {cashFlow.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center bg-background">
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-background/50">
           <div className="text-muted-foreground">
             Nenhuma movimentação registrada
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto bg-background">
+        <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b">
