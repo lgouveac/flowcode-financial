@@ -10,13 +10,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface EmailRequest {
-  to: string;
-  subject: string;
-  content: string;
-  recipientName: string;
-}
-
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -24,31 +17,80 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, subject, content, recipientName }: EmailRequest = await req.json();
+    const {
+      to,
+      subject,
+      content,
+      nome_cliente,
+      valor_cobranca,
+      data_vencimento,
+      plano_servico,
+      descricao_servico,
+      numero_parcela,
+      total_parcelas,
+      forma_pagamento,
+      nome_funcionario,
+      valor_nota,
+      mes_referencia,
+      total_horas
+    } = await req.json();
 
-    // Replace variables in the content
+    // Format date
+    const formattedDate = data_vencimento ? new Date(data_vencimento).toLocaleDateString('pt-BR') : '';
+    
+    // Format payment method
+    const getFormattedPaymentMethod = (method: string) => {
+      switch (method?.toLowerCase()) {
+        case 'pix': return 'PIX';
+        case 'boleto': return 'Boleto';
+        case 'credit_card': return 'Cartão de Crédito';
+        default: return method || '';
+      }
+    };
+
+    // Format currency
+    const formatCurrency = (value: number) => {
+      return value ? value.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }) : '';
+    };
+
+    // Replace variables in content
     let processedContent = content
-      .replace(/{nome_cliente}|{nome_funcionario}/g, recipientName);
+      .replace(/{nome_cliente}/g, nome_cliente || '')
+      .replace(/{valor_cobranca}/g, formatCurrency(valor_cobranca))
+      .replace(/{data_vencimento}/g, formattedDate)
+      .replace(/{plano_servico}/g, plano_servico || '')
+      .replace(/{descricao_servico}/g, descricao_servico || '')
+      .replace(/{numero_parcela}/g, numero_parcela?.toString() || '')
+      .replace(/{total_parcelas}/g, total_parcelas?.toString() || '')
+      .replace(/{forma_pagamento}/g, getFormattedPaymentMethod(forma_pagamento))
+      .replace(/{nome_funcionario}/g, nome_funcionario || '')
+      .replace(/{valor_nota}/g, formatCurrency(valor_nota))
+      .replace(/{mes_referencia}/g, mes_referencia || '')
+      .replace(/{total_horas}/g, total_horas?.toString() || '');
 
-    // Add default styles and wrapping
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${subject}</title>
-        </head>
-        <body style="font-family: sans-serif; line-height: 1.5; color: #333;">
-          ${processedContent}
-        </body>
-      </html>
-    `;
+    console.log("Sending email with processed content:", {
+      to,
+      subject,
+      processedContent,
+      originalVariables: {
+        nome_cliente,
+        valor_cobranca,
+        data_vencimento,
+        plano_servico,
+        numero_parcela,
+        total_parcelas,
+        forma_pagamento
+      }
+    });
 
     const emailResponse = await resend.emails.send({
       from: "Finance App <financeiro@flowcode.cc>",
       to: [to],
       subject: subject,
-      html: htmlContent,
+      html: processedContent,
     });
 
     console.log("Email sent successfully:", emailResponse);

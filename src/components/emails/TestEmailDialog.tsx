@@ -127,42 +127,46 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
       const record = records.find(r => r.id === selectedRecordId);
       if (!record) throw new Error("Registro não encontrado");
 
-      let emailData;
+      let emailData: any = {
+        to: 'client' in record ? record.client.email : record.email,
+        subject: template.subject,
+        content: template.content,
+      };
+
       if (template.type === "employees") {
         const employee = record as Employee;
         emailData = {
-          to: employee.email,
-          subject: template.subject,
-          content: template.content,
-          recipientName: employee.name
+          ...emailData,
+          nome_funcionario: employee.name,
         };
       } else if (template.subtype === "recurring") {
         const billing = record as RecurringBilling;
+        const dueDate = new Date();
+        dueDate.setDate(billing.due_day);
+
         emailData = {
-          to: billing.client.email,
-          subject: template.subject,
-          content: template.content,
-          recipientName: billing.client.name,
-          amount: billing.amount,
-          description: billing.description,
-          dueDay: billing.due_day,
-          installments: billing.installments,
-          currentInstallment: billing.current_installment,
-          paymentMethod: billing.payment_method
+          ...emailData,
+          nome_cliente: billing.client.name,
+          valor_cobranca: billing.amount,
+          data_vencimento: dueDate.toISOString(),
+          plano_servico: billing.description,
+          numero_parcela: billing.current_installment,
+          total_parcelas: billing.installments,
+          forma_pagamento: billing.payment_method,
         };
       } else {
         const payment = record as Payment;
         emailData = {
-          to: payment.client.email,
-          subject: template.subject,
-          content: template.content,
-          recipientName: payment.client.name,
-          amount: payment.amount,
-          description: payment.description,
-          dueDate: payment.due_date,
-          paymentMethod: payment.payment_method
+          ...emailData,
+          nome_cliente: payment.client.name,
+          valor_cobranca: payment.amount,
+          data_vencimento: payment.due_date,
+          descricao_servico: payment.description,
+          forma_pagamento: payment.payment_method,
         };
       }
+
+      console.log("Sending email with data:", emailData);
 
       const { error } = await supabase.functions.invoke('send-email', {
         body: emailData
@@ -241,4 +245,3 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
     </Dialog>
   );
 };
-
