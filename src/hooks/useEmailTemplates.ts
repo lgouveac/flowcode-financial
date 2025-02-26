@@ -64,12 +64,19 @@ export const useEmailTemplates = () => {
 
   const handleTemplateUpdate = async (updatedTemplate: EmailTemplate) => {
     try {
-      await updateTemplate(updatedTemplate);
+      const response = await updateTemplate(updatedTemplate);
+      console.log('Template update response:', response);
       
-      // Atualiza apenas os templates que são do mesmo tipo e subtipo que o template atualizado
-      setSavedTemplates(prev => prev.map(template => 
-        template.id === updatedTemplate.id ? updatedTemplate : template
-      ));
+      // Atualiza o template na lista
+      setSavedTemplates(prev => prev.map(template => {
+        if (template.id === updatedTemplate.id) {
+          return updatedTemplate;
+        }
+        return template;
+      }));
+
+      // Recarrega os templates para garantir que temos o estado mais atualizado
+      fetchAndSetTemplates();
 
       toast({
         title: "Template atualizado",
