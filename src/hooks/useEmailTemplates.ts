@@ -9,6 +9,13 @@ export const useEmailTemplates = () => {
   const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const getTemplateTypeLabel = (type: string, subtype: string) => {
+    if (type === 'clients') {
+      return subtype === 'recurring' ? 'Cobrança Recorrente' : 'Cobrança Pontual';
+    }
+    return subtype === 'invoice' ? 'Nota Fiscal' : 'Horas';
+  };
+
   const fetchAndSetTemplates = async () => {
     try {
       const templates = await fetchTemplates();
@@ -39,13 +46,13 @@ export const useEmailTemplates = () => {
 
       toast({
         title: "Template atualizado",
-        description: "O template foi atualizado com sucesso.",
+        description: `O template "${updatedTemplate.name}" (${getTemplateTypeLabel(updatedTemplate.type, updatedTemplate.subtype)}) foi atualizado com sucesso.`,
       });
     } catch (error) {
       console.error('Error updating template:', error);
       toast({
         title: "Erro ao atualizar template",
-        description: "Não foi possível atualizar o template. Por favor, tente novamente.",
+        description: `Não foi possível atualizar o template "${updatedTemplate.name}". Por favor, tente novamente.`,
         variant: "destructive",
       });
     }
@@ -53,11 +60,14 @@ export const useEmailTemplates = () => {
 
   const handleTemplateDelete = async (templateId: string, type: string, subtype: string) => {
     try {
+      const template = savedTemplates.find(t => t.id === templateId);
+      if (!template) return;
+
       await deleteTemplate(templateId, type, subtype);
       setSavedTemplates(prev => prev.filter(template => template.id !== templateId));
       toast({
         title: "Template excluído",
-        description: "O template foi excluído com sucesso.",
+        description: `O template "${template.name}" (${getTemplateTypeLabel(type, subtype)}) foi excluído com sucesso.`,
       });
     } catch (error: any) {
       console.error('Error deleting template:', error);
@@ -81,7 +91,7 @@ export const useEmailTemplates = () => {
 
       toast({
         title: "Template Salvo",
-        description: "O template de e-mail foi salvo com sucesso.",
+        description: `O template "${savedTemplate.name}" (${getTemplateTypeLabel(savedTemplate.type, savedTemplate.subtype)}) foi salvo com sucesso.`,
       });
 
       return true;
@@ -108,3 +118,4 @@ export const useEmailTemplates = () => {
     saveNewTemplate
   };
 };
+

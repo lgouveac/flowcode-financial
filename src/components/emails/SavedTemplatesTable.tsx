@@ -20,9 +20,20 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
   const [deletingTemplate, setDeletingTemplate] = useState<EmailTemplate | null>(null);
   const { toast } = useToast();
 
+  const getTemplateTypeLabel = (type: string, subtype: string) => {
+    if (type === 'clients') {
+      return subtype === 'recurring' ? 'Cobrança Recorrente' : 'Cobrança Pontual';
+    }
+    return subtype === 'invoice' ? 'Nota Fiscal' : 'Horas';
+  };
+
   const handleSave = (updatedTemplate: EmailTemplate) => {
     onTemplateUpdate?.(updatedTemplate);
     setEditingTemplate(null);
+    toast({
+      title: "Template atualizado",
+      description: `O template "${updatedTemplate.name}" (${getTemplateTypeLabel(updatedTemplate.type, updatedTemplate.subtype)}) foi atualizado com sucesso.`,
+    });
   };
 
   const handleDeleteClick = (template: EmailTemplate) => {
@@ -75,9 +86,7 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
                     {template.name}
                   </td>
                   <td className="p-4">
-                    {template.type === 'clients' 
-                      ? (template.subtype === 'recurring' ? 'Cobrança Recorrente' : 'Cobrança Pontual')
-                      : (template.subtype === 'invoice' ? 'Nota Fiscal' : 'Horas')}
+                    {getTemplateTypeLabel(template.type, template.subtype)}
                   </td>
                   <td className="p-4">
                     {template.subject}
@@ -121,13 +130,24 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este template? Esta ação não pode ser desfeita.
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Você está prestes a excluir o template:
+              </p>
+              <p className="font-medium">
+                Nome: {deletingTemplate?.name}
+              </p>
+              <p className="font-medium">
+                Tipo: {deletingTemplate ? getTemplateTypeLabel(deletingTemplate.type, deletingTemplate.subtype) : ''}
+              </p>
               {deletingTemplate?.is_default && (
-                <p className="mt-2 text-destructive">
-                  Atenção: Este é um template padrão. A exclusão pode afetar o funcionamento do sistema.
+                <p className="mt-2 text-destructive font-medium">
+                  Atenção: Este é o template padrão atual. Ao excluí-lo, outro template do mesmo tipo será definido como padrão.
                 </p>
               )}
+              <p className="mt-2">
+                Esta ação não pode ser desfeita.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -139,3 +159,4 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
     </Card>
   );
 };
+
