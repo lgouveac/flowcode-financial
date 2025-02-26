@@ -22,7 +22,7 @@ interface EmployeeTableRowProps {
 export const EmployeeTableRow = ({ employee, onClick }: EmployeeTableRowProps) => {
   return (
     <tr
-      className="border-t border-border/50 hover:bg-muted/50 transition-colors cursor-pointer"
+      className="border-t border-border/50 hover:bg-muted/50 transition-colors cursor-pointer text-sm"
       onClick={() => onClick(employee)}
     >
       <td className="p-4">{employee.name}</td>
