@@ -1,5 +1,5 @@
 
-import { EmailTemplate } from "@/types/email";
+import type { EmailTemplate } from "@/types/email";
 
 export interface TestEmailDialogProps {
   template: EmailTemplate;
