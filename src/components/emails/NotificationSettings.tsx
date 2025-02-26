@@ -14,6 +14,7 @@ interface NotificationSettingsProps {
 
 export const NotificationSettings = ({ open, onClose }: NotificationSettingsProps) => {
   const [daysBeforeNotification, setDaysBeforeNotification] = useState<number>(7);
+  const [notificationTime, setNotificationTime] = useState<string>("09:00");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -22,7 +23,10 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsProp
     try {
       const { error } = await supabase
         .from('email_notification_settings')
-        .update({ notification_days_before: daysBeforeNotification })
+        .update({ 
+          notification_days_before: daysBeforeNotification,
+          notification_time: notificationTime
+        })
         .eq('id', '1');
 
       if (error) throw error;
@@ -50,13 +54,14 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsProp
       try {
         const { data, error } = await supabase
           .from('email_notification_settings')
-          .select('notification_days_before')
+          .select('notification_days_before, notification_time')
           .limit(1)
           .single();
 
         if (error) throw error;
         if (data) {
           setDaysBeforeNotification(data.notification_days_before);
+          setNotificationTime(data.notification_time || "09:00");
         }
       } catch (error) {
         console.error('Error fetching notification settings:', error);
@@ -74,7 +79,7 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsProp
         <DialogHeader>
           <DialogTitle>Configurações de Notificação</DialogTitle>
           <DialogDescription>
-            Configure quantos dias antes do vencimento as notificações serão enviadas.
+            Configure quantos dias antes do vencimento e em qual horário as notificações serão enviadas.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -87,6 +92,15 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsProp
               max="30"
               value={daysBeforeNotification}
               onChange={(e) => setDaysBeforeNotification(parseInt(e.target.value))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="notificationTime">Horário de envio</Label>
+            <Input
+              id="notificationTime"
+              type="time"
+              value={notificationTime}
+              onChange={(e) => setNotificationTime(e.target.value)}
             />
           </div>
           <div className="flex justify-end space-x-2">
@@ -102,4 +116,3 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsProp
     </Dialog>
   );
 };
-
