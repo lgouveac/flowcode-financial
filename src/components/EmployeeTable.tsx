@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Settings } from "lucide-react";
+import { EmployeeEmailSettings } from "./emails/EmployeeEmailSettings";
 
 interface Employee {
   id: string;
@@ -20,6 +22,24 @@ interface Employee {
 export const EmployeeTable = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const { data: settings } = useQuery({
+    queryKey: ["global-settings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("global_settings")
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error("Error fetching settings:", error);
+        throw error;
+      }
+
+      return data;
+    },
+  });
 
   const { data: employees = [], isLoading, error } = useQuery({
     queryKey: ["employees"],
@@ -68,7 +88,16 @@ export const EmployeeTable = () => {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
-          <AddEmployeeDialog />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <AddEmployeeDialog />
+          </div>
         </div>
         <div className="rounded-lg border bg-card/50 backdrop-blur-sm p-8">
           <p className="text-center text-muted-foreground">Carregando...</p>
@@ -82,7 +111,16 @@ export const EmployeeTable = () => {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
-          <AddEmployeeDialog />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <AddEmployeeDialog />
+          </div>
         </div>
         <div className="rounded-lg border bg-destructive/10 p-8">
           <p className="text-center text-destructive">Erro ao carregar funcionários</p>
@@ -95,7 +133,17 @@ export const EmployeeTable = () => {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
-        <AddEmployeeDialog />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+            title="Configurações de email"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+          <AddEmployeeDialog />
+        </div>
       </div>
 
       {employees.length === 0 ? (
@@ -188,6 +236,12 @@ export const EmployeeTable = () => {
           </div>
         </div>
       )}
+
+      <EmployeeEmailSettings
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        currentDay={settings?.employee_emails_send_day}
+      />
     </div>
   );
 };
