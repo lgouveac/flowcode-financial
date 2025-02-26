@@ -119,6 +119,27 @@ export type Database = {
         }
         Relationships: []
       }
+      email_notification_intervals: {
+        Row: {
+          created_at: string | null
+          days_before: number
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          days_before: number
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          days_before?: number
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_notification_settings: {
         Row: {
           created_at: string | null

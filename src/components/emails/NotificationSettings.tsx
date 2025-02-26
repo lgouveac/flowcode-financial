@@ -1,115 +1,213 @@
 
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { Plus, Trash2 } from "lucide-react";
 
-interface NotificationSettingsProps {
+interface NotificationInterval {
+  id: string;
+  days_before: number;
+}
+
+interface NotificationSettings {
+  id: string;
+  notification_time: string;
+}
+
+interface NotificationSettingsDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-export const NotificationSettings = ({ open, onClose }: NotificationSettingsProps) => {
-  const [daysBeforeNotification, setDaysBeforeNotification] = useState<number>(7);
-  const [notificationTime, setNotificationTime] = useState<string>("09:00");
-  const [isLoading, setIsLoading] = useState(false);
+export const NotificationSettings = ({ open, onClose }: NotificationSettingsDialogProps) => {
   const { toast } = useToast();
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase
-        .from('email_notification_settings')
-        .update({ 
-          notification_days_before: daysBeforeNotification,
-          notification_time: notificationTime
-        })
-        .eq('id', '1');
-
-      if (error) throw error;
-
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações de notificação foram atualizadas com sucesso.",
-      });
-      
-      onClose();
-    } catch (error) {
-      console.error('Error saving notification settings:', error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Ocorreu um erro ao salvar as configurações.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [settings, setSettings] = useState<NotificationSettings | null>(null);
+  const [intervals, setIntervals] = useState<NotificationInterval[]>([]);
+  const [newInterval, setNewInterval] = useState<string>("");
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('email_notification_settings')
-          .select('notification_days_before, notification_time')
-          .limit(1)
-          .single();
-
-        if (error) throw error;
-        if (data) {
-          setDaysBeforeNotification(data.notification_days_before);
-          setNotificationTime(data.notification_time || "09:00");
-        }
-      } catch (error) {
-        console.error('Error fetching notification settings:', error);
-      }
-    };
-
     if (open) {
       fetchSettings();
+      fetchIntervals();
     }
   }, [open]);
 
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_notification_settings')
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      setSettings(data);
+    } catch (error) {
+      console.error('Error fetching notification settings:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as configurações de notificação.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchIntervals = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('email_notification_intervals')
+        .select('*')
+        .order('days_before', { ascending: false });
+
+      if (error) throw error;
+      setIntervals(data || []);
+    } catch (error) {
+      console.error('Error fetching notification intervals:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os intervalos de notificação.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleTimeChange = async (time: string) => {
+    try {
+      const { error } = await supabase
+        .from('email_notification_settings')
+        .update({ notification_time: time })
+        .eq('id', settings?.id);
+
+      if (error) throw error;
+
+      setSettings(prev => prev ? { ...prev, notification_time: time } : null);
+      toast({
+        title: "Sucesso",
+        description: "Horário de notificação atualizado com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error updating notification time:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o horário de notificação.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddInterval = async () => {
+    const days = parseInt(newInterval);
+    if (isNaN(days) || days <= 0) {
+      toast({
+        title: "Erro",
+        description: "Por favor, insira um número válido de dias.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('email_notification_intervals')
+        .insert({ days_before: days })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setIntervals(prev => [...prev, data]);
+      setNewInterval("");
+      toast({
+        title: "Sucesso",
+        description: "Intervalo de notificação adicionado com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error adding notification interval:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o intervalo de notificação.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteInterval = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('email_notification_intervals')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setIntervals(prev => prev.filter(interval => interval.id !== id));
+      toast({
+        title: "Sucesso",
+        description: "Intervalo de notificação removido com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error deleting notification interval:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o intervalo de notificação.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Configurações de Notificação</DialogTitle>
-          <DialogDescription>
-            Configure quantos dias antes do vencimento e em qual horário as notificações serão enviadas.
-          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="daysBeforeNotification">Dias antes do vencimento</Label>
+            <Label>Horário de Envio</Label>
             <Input
-              id="daysBeforeNotification"
-              type="number"
-              min="1"
-              max="30"
-              value={daysBeforeNotification}
-              onChange={(e) => setDaysBeforeNotification(parseInt(e.target.value))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="notificationTime">Horário de envio</Label>
-            <Input
-              id="notificationTime"
               type="time"
-              value={notificationTime}
-              onChange={(e) => setNotificationTime(e.target.value)}
+              value={settings?.notification_time?.slice(0, 5) || ""}
+              onChange={(e) => handleTimeChange(e.target.value)}
             />
           </div>
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={isLoading}>
-              {isLoading ? "Salvando..." : "Salvar"}
-            </Button>
+
+          <div className="space-y-4">
+            <Label>Intervalos de Notificação</Label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min="1"
+                placeholder="Dias antes"
+                value={newInterval}
+                onChange={(e) => setNewInterval(e.target.value)}
+              />
+              <Button onClick={handleAddInterval} size="icon">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {intervals.map((interval) => (
+                <div key={interval.id} className="flex items-center justify-between p-2 border rounded">
+                  <span>{interval.days_before} dias antes</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteInterval(interval.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {intervals.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center">
+                  Nenhum intervalo configurado
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>
