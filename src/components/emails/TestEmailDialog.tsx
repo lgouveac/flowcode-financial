@@ -41,6 +41,14 @@ interface Payment {
   };
 }
 
+type Employee = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+type Record = RecurringBilling | Payment | Employee;
+
 export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProps) => {
   const { toast } = useToast();
   const [selectedRecordId, setSelectedRecordId] = useState<string>("");
@@ -56,7 +64,7 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
           .eq("status", "active")
           .order("name");
         if (error) throw error;
-        return data || [];
+        return data as Employee[];
       } else if (template.subtype === "recurring") {
         const { data, error } = await supabase
           .from("recurring_billing")
@@ -121,11 +129,12 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
 
       let emailData;
       if (template.type === "employees") {
+        const employee = record as Employee;
         emailData = {
-          to: record.email,
+          to: employee.email,
           subject: template.subject,
           content: template.content,
-          recipientName: record.name
+          recipientName: employee.name
         };
       } else if (template.subtype === "recurring") {
         const billing = record as RecurringBilling;
@@ -177,11 +186,11 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
     }
   };
 
-  const getRecordLabel = (record: any) => {
-    if (template.type === "employees") {
-      return record.name;
-    } else {
+  const getRecordLabel = (record: Record) => {
+    if ('client' in record) {
       return `${record.client.name} - ${record.description}`;
+    } else {
+      return record.name;
     }
   };
 
@@ -232,3 +241,4 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
     </Dialog>
   );
 };
+
