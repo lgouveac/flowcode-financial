@@ -79,7 +79,11 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
                     {template.subject}
                   </td>
                   <td className="p-4">
-                    {template.is_default ? 'Sim' : 'Não'}
+                    {template.is_default ? (
+                      <span className="font-medium text-primary">Sim</span>
+                    ) : (
+                      <span className="text-muted-foreground">Não</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -99,4 +103,3 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
     </Card>
   );
 };
-
