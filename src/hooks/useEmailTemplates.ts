@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { EmailTemplate } from "@/types/email";
-import { fetchTemplates, updateTemplate, deleteTemplate, createTemplate } from "@/services/templateService";
+import { fetchTemplates, updateTemplate, deleteTemplate } from "@/services/templateService";
 
 export const useEmailTemplates = () => {
   const { toast } = useToast();
@@ -79,33 +79,6 @@ export const useEmailTemplates = () => {
     }
   };
 
-  const saveNewTemplate = async (newTemplate: Partial<EmailTemplate>) => {
-    try {
-      const savedTemplate = await createTemplate(newTemplate);
-      
-      setSavedTemplates(prev => [savedTemplate, ...prev.map(t => 
-        t.type === savedTemplate.type && 
-        t.subtype === savedTemplate.subtype && 
-        savedTemplate.is_default ? { ...t, is_default: false } : t
-      )]);
-
-      toast({
-        title: "Template Salvo",
-        description: `O template "${savedTemplate.name}" (${getTemplateTypeLabel(savedTemplate.type, savedTemplate.subtype)}) foi salvo com sucesso.`,
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Error saving template:', error);
-      toast({
-        title: "Erro ao salvar template",
-        description: "Não foi possível salvar o template. Por favor, tente novamente.",
-        variant: "destructive",
-      });
-      return false;
-    }
-  };
-
   useEffect(() => {
     fetchAndSetTemplates();
   }, []);
@@ -114,8 +87,6 @@ export const useEmailTemplates = () => {
     savedTemplates,
     isLoading,
     handleTemplateUpdate,
-    handleTemplateDelete,
-    saveNewTemplate
+    handleTemplateDelete
   };
 };
-

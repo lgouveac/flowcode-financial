@@ -2,20 +2,17 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SavedTemplatesTable } from "@/components/emails/SavedTemplatesTable";
-import { TemplateSection } from "@/components/emails/TemplateSection";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 
 export const Emails = () => {
   const [currentSection, setCurrentSection] = useState<'employees' | 'clients'>('employees');
-  const { savedTemplates, isLoading, handleTemplateUpdate, handleTemplateDelete, saveNewTemplate } = useEmailTemplates();
+  const { savedTemplates, isLoading, handleTemplateUpdate, handleTemplateDelete } = useEmailTemplates();
 
-  const handleSectionChange = (section: string) => {
-    setCurrentSection(section as 'clients' | 'employees');
-  };
+  const filteredTemplates = savedTemplates.filter(template => template.type === currentSection);
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="employees" className="w-full" onValueChange={handleSectionChange}>
+      <Tabs defaultValue="employees" className="w-full" onValueChange={(value) => setCurrentSection(value as 'employees' | 'clients')}>
         <TabsList className="mb-4">
           <TabsTrigger value="employees" className="flex items-center gap-2">
             Funcionários
@@ -26,26 +23,23 @@ export const Emails = () => {
         </TabsList>
 
         <TabsContent value="employees">
-          <TemplateSection
-            type="employees"
-            onSaveTemplate={saveNewTemplate}
+          <SavedTemplatesTable 
+            templates={filteredTemplates} 
+            onTemplateUpdate={handleTemplateUpdate}
+            onTemplateDelete={handleTemplateDelete}
+            isLoading={isLoading}
           />
         </TabsContent>
 
         <TabsContent value="clients">
-          <TemplateSection
-            type="clients"
-            onSaveTemplate={saveNewTemplate}
+          <SavedTemplatesTable 
+            templates={filteredTemplates} 
+            onTemplateUpdate={handleTemplateUpdate}
+            onTemplateDelete={handleTemplateDelete}
+            isLoading={isLoading}
           />
         </TabsContent>
       </Tabs>
-
-      <SavedTemplatesTable 
-        templates={savedTemplates} 
-        onTemplateUpdate={handleTemplateUpdate}
-        onTemplateDelete={handleTemplateDelete}
-        isLoading={isLoading}
-      />
     </div>
   );
 };
