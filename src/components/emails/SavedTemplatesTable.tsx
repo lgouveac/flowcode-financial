@@ -4,6 +4,7 @@ import { EditTemplateDialog } from "./EditTemplateDialog";
 import { useState } from "react";
 import { EmailTemplate } from "@/types/email";
 import { useToast } from "@/hooks/use-toast";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 interface SavedTemplatesTableProps {
   templates: EmailTemplate[];
@@ -53,38 +54,38 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <table className="w-full">
-            <thead className="bg-muted">
-              <tr className="text-left">
-                <th className="p-4 text-base font-medium text-muted-foreground">Nome</th>
-                <th className="p-4 text-base font-medium text-muted-foreground">Tipo</th>
-                <th className="p-4 text-base font-medium text-muted-foreground">Assunto</th>
-                <th className="p-4 text-base font-medium text-muted-foreground">Padrão</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Assunto</TableHead>
+                <TableHead>Padrão</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {templates.map((template) => (
-                <tr 
-                  key={template.id} 
-                  className="border-t hover:bg-muted/50 cursor-pointer transition-colors text-base"
+                <TableRow 
+                  key={template.id}
+                  className="cursor-pointer"
                   onClick={() => setEditingTemplate(template)}
                 >
-                  <td className="p-4">
+                  <TableCell>
                     {template.name}
-                  </td>
-                  <td className="p-4">
+                  </TableCell>
+                  <TableCell>
                     {getTemplateTypeLabel(template.type, template.subtype)}
-                  </td>
-                  <td className="p-4">
+                  </TableCell>
+                  <TableCell>
                     {template.subject}
-                  </td>
-                  <td className="p-4">
+                  </TableCell>
+                  <TableCell>
                     {template.is_default ? 'Sim' : 'Não'}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
 
@@ -99,4 +100,3 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
     </Card>
   );
 };
-
