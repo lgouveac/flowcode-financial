@@ -124,18 +124,21 @@ export type Database = {
           created_at: string | null
           id: string
           notification_days_before: number
+          notification_time: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           notification_days_before?: number
+          notification_time?: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           notification_days_before?: number
+          notification_time?: string
           updated_at?: string | null
         }
         Relationships: []
