@@ -16,10 +16,40 @@ export const useEmailTemplates = () => {
     return subtype === 'invoice' ? 'Nota Fiscal' : 'Horas';
   };
 
+  const validateTemplates = (templates: EmailTemplate[]) => {
+    const requiredTemplates = [
+      { type: 'employees', subtype: 'invoice' },
+      { type: 'employees', subtype: 'hours' },
+      { type: 'clients', subtype: 'recurring' },
+      { type: 'clients', subtype: 'oneTime' }
+    ];
+
+    const missingTemplates = requiredTemplates.filter(required => {
+      return !templates.some(template => 
+        template.type === required.type && template.subtype === required.subtype
+      );
+    });
+
+    if (missingTemplates.length > 0) {
+      const missingTypes = missingTemplates.map(t => 
+        `${getTemplateTypeLabel(t.type, t.subtype)}`
+      ).join(', ');
+
+      toast({
+        title: "Templates obrigatórios faltando",
+        description: `É necessário ter um template para cada tipo. Faltando: ${missingTypes}`,
+        variant: "destructive",
+      });
+    }
+
+    return missingTemplates.length === 0;
+  };
+
   const fetchAndSetTemplates = async () => {
     try {
       const templates = await fetchTemplates();
       setSavedTemplates(templates);
+      validateTemplates(templates);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast({
@@ -60,6 +90,20 @@ export const useEmailTemplates = () => {
 
   const handleTemplateDelete = async (templateId: string, type: string, subtype: string) => {
     try {
+      // Check if this is the only template of its type
+      const templatesOfSameType = savedTemplates.filter(t => 
+        t.type === type && t.subtype === subtype
+      );
+
+      if (templatesOfSameType.length <= 1) {
+        toast({
+          title: "Não é possível excluir",
+          description: `É necessário manter pelo menos um template para ${getTemplateTypeLabel(type, subtype)}.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const template = savedTemplates.find(t => t.id === templateId);
       if (!template) return;
 
