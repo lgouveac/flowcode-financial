@@ -45,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: "Finance App <onboarding@resend.dev>",
+      from: "Finance App <financeiro@flowcode.cc>",
       to: [to],
       subject: subject,
       html: htmlContent,
