@@ -1,14 +1,13 @@
 
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { AddEmployeeDialog } from "./AddEmployeeDialog";
 import { EditEmployeeDialog } from "./EditEmployeeDialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { Settings } from "lucide-react";
 import { EmployeeEmailSettings } from "./emails/EmployeeEmailSettings";
+import { LoadingState } from "./employees/LoadingState";
+import { ErrorState } from "./employees/ErrorState";
+import { TableHeader } from "./employees/TableHeader";
+import { EmployeeTableRow } from "./employees/EmployeeTableRow";
 
 interface Employee {
   id: string;
@@ -26,7 +25,6 @@ interface Employee {
 }
 
 export const EmployeeTable = () => {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -61,97 +59,26 @@ export const EmployeeTable = () => {
         throw error;
       }
 
-      return data || [];
+      // Ensure type field is correctly typed
+      return (data || []).map(employee => ({
+        ...employee,
+        type: employee.type as "fixed" | "freelancer",
+        status: employee.status as "active" | "inactive"
+      }));
     },
   });
 
-  const handleChange = async (id: string, field: keyof Employee, value: string) => {
-    try {
-      const { error } = await supabase
-        .from("employees")
-        .update({ [field]: value })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
-
-      toast({
-        title: "Alteração salva",
-        description: "O funcionário foi atualizado com sucesso.",
-      });
-    } catch (error: any) {
-      console.error("Error updating employee:", error);
-      toast({
-        title: "Erro ao atualizar",
-        description: error.message || "Ocorreu um erro ao atualizar o funcionário.",
-        variant: "destructive",
-      });
-    }
-  };
-
   if (isLoading) {
-    return (
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <AddEmployeeDialog />
-          </div>
-        </div>
-        <div className="rounded-lg border bg-card/50 backdrop-blur-sm p-8">
-          <p className="text-center text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState onSettingsClick={() => setSettingsOpen(true)} />;
   }
 
   if (error) {
-    return (
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <AddEmployeeDialog />
-          </div>
-        </div>
-        <div className="rounded-lg border bg-destructive/10 p-8">
-          <p className="text-center text-destructive">Erro ao carregar funcionários</p>
-        </div>
-      </div>
-    );
+    return <ErrorState onSettingsClick={() => setSettingsOpen(true)} />;
   }
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setSettingsOpen(true)}
-            title="Configurações de email"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-          <AddEmployeeDialog />
-        </div>
-      </div>
+      <TableHeader onSettingsClick={() => setSettingsOpen(true)} />
 
       {employees.length === 0 ? (
         <div className="rounded-lg border bg-background/50 p-8 text-center">
@@ -172,25 +99,11 @@ export const EmployeeTable = () => {
               </thead>
               <tbody>
                 {employees.map((employee) => (
-                  <tr
+                  <EmployeeTableRow
                     key={employee.id}
-                    className="border-t border-border/50 hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedEmployee(employee)}
-                  >
-                    <td className="p-4">{employee.name}</td>
-                    <td className="p-4 hidden sm:table-cell">
-                      {employee.type === "fixed" ? "Funcionário Fixo" : "Freelancer"}
-                    </td>
-                    <td className="p-4">
-                      {employee.status === "active" ? "Ativo" : "Inativo"}
-                    </td>
-                    <td className="p-4 hidden md:table-cell">
-                      {employee.payment_method || "-"}
-                    </td>
-                    <td className="p-4 hidden lg:table-cell">
-                      {employee.last_invoice || "-"}
-                    </td>
-                  </tr>
+                    employee={employee}
+                    onClick={setSelectedEmployee}
+                  />
                 ))}
               </tbody>
             </table>
