@@ -15,14 +15,14 @@ export const ClientRow = ({ client, onUpdate, onClick }: ClientRowProps) => {
       className="border-b transition-colors hover:bg-muted/50 cursor-pointer" 
       onClick={onClick}
     >
-      <td className="p-4">
+      <td className="py-2 px-4">
         <EditableCell
           value={client.name}
           onChange={(value) => onUpdate(client.id, 'name', value)}
         />
       </td>
-      <td className="p-4 hidden md:table-cell">
-        <div className="flex flex-col space-y-1">
+      <td className="py-2 px-4 hidden md:table-cell">
+        <div className="flex flex-col gap-1">
           <div className="flex items-center">
             <MailIcon className="h-4 w-4 mr-2 text-muted-foreground" />
             <EditableCell
@@ -40,7 +40,7 @@ export const ClientRow = ({ client, onUpdate, onClick }: ClientRowProps) => {
           </div>
         </div>
       </td>
-      <td className="p-4">
+      <td className="py-2 px-4">
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
           client.status === "active" 
             ? "bg-green-100 text-green-800" 
@@ -53,14 +53,14 @@ export const ClientRow = ({ client, onUpdate, onClick }: ClientRowProps) => {
             : "Inativo"}
         </span>
       </td>
-      <td className="p-4 hidden sm:table-cell">
+      <td className="py-2 px-4 hidden sm:table-cell">
         <EditableCell
           value={client.total_billing?.toString() || "0"}
           onChange={(value) => onUpdate(client.id, 'total_billing', parseFloat(value) || 0)}
           type="number"
         />
       </td>
-      <td className="p-4 hidden lg:table-cell">
+      <td className="py-2 px-4 hidden lg:table-cell">
         <EditableCell
           value={client.last_payment || ""}
           onChange={(value) => onUpdate(client.id, 'last_payment', value)}
@@ -70,3 +70,4 @@ export const ClientRow = ({ client, onUpdate, onClick }: ClientRowProps) => {
     </tr>
   );
 };
+
