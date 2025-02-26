@@ -4,20 +4,20 @@ import { Button } from "@/components/ui/button";
 import { EditTemplateDialog } from "./EditTemplateDialog";
 import { useState } from "react";
 import { EmailTemplate } from "@/types/email";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface SavedTemplatesTableProps {
   templates: EmailTemplate[];
   onTemplateUpdate?: (updatedTemplate: EmailTemplate) => void;
-  onTemplateDelete?: (templateId: string) => void;
+  onTemplateDelete?: (templateId: string, type: string, subtype: string) => void;
   isLoading?: boolean;
 }
 
 export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDelete, isLoading }: SavedTemplatesTableProps) => {
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
-  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState<EmailTemplate | null>(null);
   const { toast } = useToast();
 
   const handleSave = (updatedTemplate: EmailTemplate) => {
@@ -25,14 +25,14 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
     setEditingTemplate(null);
   };
 
-  const handleDeleteClick = (templateId: string) => {
-    setDeletingTemplateId(templateId);
+  const handleDeleteClick = (template: EmailTemplate) => {
+    setDeletingTemplate(template);
   };
 
   const handleConfirmDelete = () => {
-    if (deletingTemplateId) {
-      onTemplateDelete?.(deletingTemplateId);
-      setDeletingTemplateId(null);
+    if (deletingTemplate) {
+      onTemplateDelete?.(deletingTemplate.id, deletingTemplate.type, deletingTemplate.subtype);
+      setDeletingTemplate(null);
     }
   };
 
@@ -64,6 +64,7 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
                 <th className="p-4 text-sm font-medium text-muted-foreground">Nome</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Tipo</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Assunto</th>
+                <th className="p-4 text-sm font-medium text-muted-foreground">Padrão</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
@@ -81,6 +82,9 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
                   <td className="p-4">
                     {template.subject}
                   </td>
+                  <td className="p-4">
+                    {template.is_default ? 'Sim' : 'Não'}
+                  </td>
                   <td className="p-4 space-x-2">
                     <Button
                       variant="outline"
@@ -92,7 +96,7 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleDeleteClick(template.id)}
+                      onClick={() => handleDeleteClick(template)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -113,12 +117,17 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
         />
       )}
 
-      <AlertDialog open={!!deletingTemplateId} onOpenChange={() => setDeletingTemplateId(null)}>
+      <AlertDialog open={!!deletingTemplate} onOpenChange={() => setDeletingTemplate(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir este template? Esta ação não pode ser desfeita.
+              {deletingTemplate?.is_default && (
+                <p className="mt-2 text-destructive">
+                  Atenção: Este é um template padrão. A exclusão pode afetar o funcionamento do sistema.
+                </p>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

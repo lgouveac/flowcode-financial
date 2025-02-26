@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { EmailTemplate } from "@/types/email";
 import { fetchTemplates, updateTemplate, deleteTemplate, createTemplate } from "@/services/templateService";
 
@@ -51,19 +51,19 @@ export const useEmailTemplates = () => {
     }
   };
 
-  const handleTemplateDelete = async (templateId: string) => {
+  const handleTemplateDelete = async (templateId: string, type: string, subtype: string) => {
     try {
-      await deleteTemplate(templateId);
+      await deleteTemplate(templateId, type, subtype);
       setSavedTemplates(prev => prev.filter(template => template.id !== templateId));
       toast({
         title: "Template excluído",
         description: "O template foi excluído com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting template:', error);
       toast({
         title: "Erro ao excluir template",
-        description: "Não foi possível excluir o template. Por favor, tente novamente.",
+        description: error.message || "Não foi possível excluir o template. Por favor, tente novamente.",
         variant: "destructive",
       });
     }
@@ -108,4 +108,3 @@ export const useEmailTemplates = () => {
     saveNewTemplate
   };
 };
-
