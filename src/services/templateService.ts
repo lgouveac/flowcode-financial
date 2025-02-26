@@ -50,17 +50,38 @@ export const updateTemplate = async (updatedTemplate: EmailTemplate) => {
 };
 
 export const deleteTemplate = async (templateId: string, type: string, subtype: string) => {
-  // First, check if this is the last template of this type/subtype
+  // Get all templates of this type/subtype
   const { data: templates, error: countError } = await supabase
     .from('email_templates')
-    .select('id')
+    .select('id, is_default')
     .eq('type', type)
     .eq('subtype', subtype);
 
   if (countError) throw countError;
 
+  // Check if this is the last template
   if (templates.length <= 1) {
-    throw new Error('Cannot delete the last template of this type. At least one template must remain.');
+    throw new Error('Cannot delete the last template of this type. You must keep at least one template for each type to ensure email functionality.');
+  }
+
+  // Get template being deleted
+  const templateToDelete = templates.find(t => t.id === templateId);
+  
+  if (!templateToDelete) {
+    throw new Error('Template not found');
+  }
+
+  // If this is the only default template, we need to ensure another one becomes default
+  if (templateToDelete.is_default) {
+    const { error: updateError } = await supabase
+      .from('email_templates')
+      .update({ is_default: true })
+      .eq('type', type)
+      .eq('subtype', subtype)
+      .neq('id', templateId)
+      .limit(1);
+
+    if (updateError) throw updateError;
   }
 
   const { error } = await supabase
@@ -68,10 +89,7 @@ export const deleteTemplate = async (templateId: string, type: string, subtype: 
     .delete()
     .eq('id', templateId);
 
-  if (error) {
-    console.error('Error deleting template:', error);
-    throw new Error('Failed to delete template. Make sure it\'s not the last one of its type.');
-  }
+  if (error) throw error;
 };
 
 export const createTemplate = async (newTemplate: Partial<EmailTemplate>) => {
