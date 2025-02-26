@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,8 +45,7 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsProp
     }
   };
 
-  // Fetch initial settings
-  useState(() => {
+  useEffect(() => {
     const fetchSettings = async () => {
       try {
         const { data, error } = await supabase
@@ -64,8 +63,10 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsProp
       }
     };
 
-    fetchSettings();
-  }, []);
+    if (open) {
+      fetchSettings();
+    }
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -101,3 +102,4 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsProp
     </Dialog>
   );
 };
+
