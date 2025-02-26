@@ -2,42 +2,17 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { EmailTemplate } from "@/types/email";
-import { supabase } from "@/integrations/supabase/client";
-
-const validateTemplateType = (type: string): type is 'clients' | 'employees' => {
-  return type === 'clients' || type === 'employees';
-};
-
-const validateTemplateSubtype = (subtype: string): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' => {
-  return ['recurring', 'oneTime', 'invoice', 'hours'].includes(subtype);
-};
+import { fetchTemplates, updateTemplate, deleteTemplate, createTemplate } from "@/services/templateService";
 
 export const useEmailTemplates = () => {
   const { toast } = useToast();
   const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchTemplates = async () => {
+  const fetchAndSetTemplates = async () => {
     try {
-      const { data: rawData, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const validTemplates = (rawData || []).reduce<EmailTemplate[]>((acc, template) => {
-        if (validateTemplateType(template.type) && validateTemplateSubtype(template.subtype)) {
-          acc.push({
-            ...template,
-            type: template.type,
-            subtype: template.subtype,
-          });
-        }
-        return acc;
-      }, []);
-
-      setSavedTemplates(validTemplates);
+      const templates = await fetchTemplates();
+      setSavedTemplates(templates);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast({
@@ -52,30 +27,8 @@ export const useEmailTemplates = () => {
 
   const handleTemplateUpdate = async (updatedTemplate: EmailTemplate) => {
     try {
-      if (updatedTemplate.is_default) {
-        // If setting as default, first remove default status from other templates of same type/subtype
-        const { error: updateError } = await supabase
-          .from('email_templates')
-          .update({ is_default: false })
-          .eq('type', updatedTemplate.type)
-          .eq('subtype', updatedTemplate.subtype);
-
-        if (updateError) throw updateError;
-      }
-
-      const { error } = await supabase
-        .from('email_templates')
-        .update({
-          name: updatedTemplate.name,
-          subject: updatedTemplate.subject,
-          content: updatedTemplate.content,
-          is_default: updatedTemplate.is_default,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', updatedTemplate.id);
-
-      if (error) throw error;
-
+      await updateTemplate(updatedTemplate);
+      
       setSavedTemplates(prev => prev.map(template => 
         template.id === updatedTemplate.id ? updatedTemplate : 
         (template.type === updatedTemplate.type && 
@@ -100,13 +53,7 @@ export const useEmailTemplates = () => {
 
   const handleTemplateDelete = async (templateId: string) => {
     try {
-      const { error } = await supabase
-        .from('email_templates')
-        .delete()
-        .eq('id', templateId);
-
-      if (error) throw error;
-
+      await deleteTemplate(templateId);
       setSavedTemplates(prev => prev.filter(template => template.id !== templateId));
       toast({
         title: "Template excluído",
@@ -124,57 +71,20 @@ export const useEmailTemplates = () => {
 
   const saveNewTemplate = async (newTemplate: Partial<EmailTemplate>) => {
     try {
-      if (!validateTemplateType(newTemplate.type!) || !validateTemplateSubtype(newTemplate.subtype!)) {
-        throw new Error('Invalid template type or subtype');
-      }
+      const savedTemplate = await createTemplate(newTemplate);
+      
+      setSavedTemplates(prev => [savedTemplate, ...prev.map(t => 
+        t.type === savedTemplate.type && 
+        t.subtype === savedTemplate.subtype && 
+        savedTemplate.is_default ? { ...t, is_default: false } : t
+      )]);
 
-      if (newTemplate.is_default) {
-        // If setting as default, first remove default status from other templates of same type/subtype
-        const { error: updateError } = await supabase
-          .from('email_templates')
-          .update({ is_default: false })
-          .eq('type', newTemplate.type)
-          .eq('subtype', newTemplate.subtype);
+      toast({
+        title: "Template Salvo",
+        description: "O template de e-mail foi salvo com sucesso.",
+      });
 
-        if (updateError) throw updateError;
-      }
-
-      const { data, error } = await supabase
-        .from('email_templates')
-        .insert({
-          name: newTemplate.name,
-          subject: newTemplate.subject,
-          content: newTemplate.content,
-          type: newTemplate.type,
-          subtype: newTemplate.subtype,
-          is_default: newTemplate.is_default || false,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      if (validateTemplateType(data.type) && validateTemplateSubtype(data.subtype)) {
-        const validTemplate: EmailTemplate = {
-          ...data,
-          type: data.type,
-          subtype: data.subtype,
-        };
-
-        setSavedTemplates(prev => [validTemplate, ...prev.map(t => 
-          t.type === validTemplate.type && 
-          t.subtype === validTemplate.subtype && 
-          validTemplate.is_default ? { ...t, is_default: false } : t
-        )]);
-
-        toast({
-          title: "Template Salvo",
-          description: "O template de e-mail foi salvo com sucesso.",
-        });
-
-        return true;
-      }
-      return false;
+      return true;
     } catch (error) {
       console.error('Error saving template:', error);
       toast({
@@ -187,7 +97,7 @@ export const useEmailTemplates = () => {
   };
 
   useEffect(() => {
-    fetchTemplates();
+    fetchAndSetTemplates();
   }, []);
 
   return {
@@ -198,3 +108,4 @@ export const useEmailTemplates = () => {
     saveNewTemplate
   };
 };
+

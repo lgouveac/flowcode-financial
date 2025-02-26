@@ -15,6 +15,26 @@ interface TestEmailDialogProps {
   onClose: () => void;
 }
 
+interface Recipient {
+  id: string;
+  name: string;
+  email: string;
+  recurring_billing?: Array<{
+    amount: number;
+    description: string;
+    due_day: number;
+    installments: number;
+    current_installment: number;
+    payment_method: string;
+  }>;
+  payments?: Array<{
+    amount: number;
+    description: string;
+    due_date: string;
+    payment_method: string;
+  }>;
+}
+
 export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProps) => {
   const { toast } = useToast();
   const [selectedRecipient, setSelectedRecipient] = useState<string>("");
@@ -39,7 +59,7 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
             id, 
             name, 
             email,
-            recurring_billing!inner(
+            recurring_billing(
               amount,
               description,
               due_day,
@@ -47,7 +67,7 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
               current_installment,
               payment_method
             ),
-            payments!inner(
+            payments(
               amount,
               description,
               due_date,
@@ -57,7 +77,7 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
           .eq("status", "active")
           .order("name");
         if (error) throw error;
-        return data || [];
+        return data as Recipient[] || [];
       }
     },
   });
@@ -168,3 +188,4 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
     </Dialog>
   );
 };
+
