@@ -15,24 +15,28 @@ interface TestEmailDialogProps {
   onClose: () => void;
 }
 
+interface RecurringBilling {
+  amount: number;
+  description: string;
+  due_day: number;
+  installments: number;
+  current_installment: number;
+  payment_method: string;
+}
+
+interface Payment {
+  amount: number;
+  description: string;
+  due_date: string;
+  payment_method: string;
+}
+
 interface Recipient {
   id: string;
   name: string;
   email: string;
-  recurring_billing?: Array<{
-    amount: number;
-    description: string;
-    due_day: number;
-    installments: number;
-    current_installment: number;
-    payment_method: string;
-  }>;
-  payments?: Array<{
-    amount: number;
-    description: string;
-    due_date: string;
-    payment_method: string;
-  }>;
+  recurring_billing?: RecurringBilling[];
+  payments?: Payment[];
 }
 
 export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProps) => {
