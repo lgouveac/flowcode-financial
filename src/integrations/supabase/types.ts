@@ -413,6 +413,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      insert_template_if_not_exists: {
+        Args: {
+          p_type: string
+          p_subtype: string
+          p_name: string
+          p_subject: string
+          p_content: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       billing_status:
