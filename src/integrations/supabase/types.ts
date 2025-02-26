@@ -119,6 +119,27 @@ export type Database = {
         }
         Relationships: []
       }
+      email_notification_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          notification_days_before: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notification_days_before?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notification_days_before?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           content: string
@@ -364,7 +385,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_billing_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       billing_status:

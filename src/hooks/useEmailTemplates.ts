@@ -52,12 +52,24 @@ export const useEmailTemplates = () => {
 
   const handleTemplateUpdate = async (updatedTemplate: EmailTemplate) => {
     try {
+      if (updatedTemplate.is_default) {
+        // If setting as default, first remove default status from other templates of same type/subtype
+        const { error: updateError } = await supabase
+          .from('email_templates')
+          .update({ is_default: false })
+          .eq('type', updatedTemplate.type)
+          .eq('subtype', updatedTemplate.subtype);
+
+        if (updateError) throw updateError;
+      }
+
       const { error } = await supabase
         .from('email_templates')
         .update({
           name: updatedTemplate.name,
           subject: updatedTemplate.subject,
           content: updatedTemplate.content,
+          is_default: updatedTemplate.is_default,
           updated_at: new Date().toISOString()
         })
         .eq('id', updatedTemplate.id);
@@ -65,7 +77,11 @@ export const useEmailTemplates = () => {
       if (error) throw error;
 
       setSavedTemplates(prev => prev.map(template => 
-        template.id === updatedTemplate.id ? updatedTemplate : template
+        template.id === updatedTemplate.id ? updatedTemplate : 
+        (template.type === updatedTemplate.type && 
+         template.subtype === updatedTemplate.subtype && 
+         updatedTemplate.is_default) ? { ...template, is_default: false } : 
+        template
       ));
 
       toast({
@@ -112,6 +128,17 @@ export const useEmailTemplates = () => {
         throw new Error('Invalid template type or subtype');
       }
 
+      if (newTemplate.is_default) {
+        // If setting as default, first remove default status from other templates of same type/subtype
+        const { error: updateError } = await supabase
+          .from('email_templates')
+          .update({ is_default: false })
+          .eq('type', newTemplate.type)
+          .eq('subtype', newTemplate.subtype);
+
+        if (updateError) throw updateError;
+      }
+
       const { data, error } = await supabase
         .from('email_templates')
         .insert({
@@ -120,6 +147,7 @@ export const useEmailTemplates = () => {
           content: newTemplate.content,
           type: newTemplate.type,
           subtype: newTemplate.subtype,
+          is_default: newTemplate.is_default || false,
         })
         .select()
         .single();
@@ -133,7 +161,11 @@ export const useEmailTemplates = () => {
           subtype: data.subtype,
         };
 
-        setSavedTemplates(prev => [validTemplate, ...prev]);
+        setSavedTemplates(prev => [validTemplate, ...prev.map(t => 
+          t.type === validTemplate.type && 
+          t.subtype === validTemplate.subtype && 
+          validTemplate.is_default ? { ...t, is_default: false } : t
+        )]);
 
         toast({
           title: "Template Salvo",

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SavedTemplatesTable } from "@/components/emails/SavedTemplatesTable";
 import { TemplateSection } from "@/components/emails/TemplateSection";
+import { NotificationSettings } from "@/components/emails/NotificationSettings";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 
 export const Emails = () => {
@@ -15,6 +16,8 @@ export const Emails = () => {
 
   return (
     <div className="space-y-6">
+      <NotificationSettings />
+      
       <Tabs defaultValue="employees" className="w-full" onValueChange={handleSectionChange}>
         <TabsList className="mb-4">
           <TabsTrigger value="employees" className="flex items-center gap-2">
