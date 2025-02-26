@@ -5,6 +5,9 @@ import { TemplateEditor } from "./TemplateEditor";
 import { EmailTemplate, variablesList } from "@/types/email";
 import { useToast } from "@/components/ui/use-toast";
 import { VariablesList } from "./VariablesList";
+import { TestEmailDialog } from "./TestEmailDialog";
+import { Button } from "@/components/ui/button";
+import { Send } from "lucide-react";
 
 interface EditTemplateDialogProps {
   template: EmailTemplate;
@@ -15,6 +18,7 @@ interface EditTemplateDialogProps {
 
 export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemplateDialogProps) => {
   const [editedTemplate, setEditedTemplate] = useState<EmailTemplate>(template);
+  const [testEmailOpen, setTestEmailOpen] = useState(false);
   const { toast } = useToast();
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
 
@@ -78,29 +82,45 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemp
   const currentVariables = variablesList[template.type]?.[template.subtype as keyof (typeof variablesList.clients | typeof variablesList.employees)] || [];
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Editar Template</DialogTitle>
-        </DialogHeader>
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2">
-            <TemplateEditor
-              type={template.type}
-              currentType={template.subtype}
-              template={editedTemplate}
-              onInputChange={handleInputChange}
-              onSave={handleSave}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
+    <>
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader className="flex flex-row items-center justify-between">
+            <DialogTitle>Editar Template</DialogTitle>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setTestEmailOpen(true)}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Testar Template
+            </Button>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-2">
+              <TemplateEditor
+                type={template.type}
+                currentType={template.subtype}
+                template={editedTemplate}
+                onInputChange={handleInputChange}
+                onSave={handleSave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              />
+            </div>
+            <VariablesList
+              variables={currentVariables}
+              onDragStart={handleDragStart}
             />
           </div>
-          <VariablesList
-            variables={currentVariables}
-            onDragStart={handleDragStart}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <TestEmailDialog 
+        template={editedTemplate}
+        open={testEmailOpen}
+        onClose={() => setTestEmailOpen(false)}
+      />
+    </>
   );
 };

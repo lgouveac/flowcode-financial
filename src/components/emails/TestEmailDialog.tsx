@@ -1,91 +1,119 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { EmailTemplate } from "@/types/email";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TestEmailDialogProps {
+  template: EmailTemplate;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  testEmail: string;
-  onTestEmailChange: (email: string) => void;
-  selectedId: string;
-  onSelectedIdChange: (id: string) => void;
-  testData?: Array<{ id: string; name: string; email: string }>;
-  onSendTest: () => void;
-  type: 'clients' | 'employees';
+  onClose: () => void;
 }
 
-export const TestEmailDialog = ({
-  open,
-  onOpenChange,
-  testEmail,
-  onTestEmailChange,
-  selectedId,
-  onSelectedIdChange,
-  testData,
-  onSendTest,
-  type,
-}: TestEmailDialogProps) => {
-  const isClient = type === 'clients';
+export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProps) => {
+  const { toast } = useToast();
+  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
 
-  const handleSelectChange = (value: string) => {
-    onSelectedIdChange(value);
-    const selected = testData?.find(item => item.id === value);
-    if (selected) {
-      onTestEmailChange(selected.email);
+  // Fetch recipients based on template type
+  const { data: recipients = [], isLoading } = useQuery({
+    queryKey: ["recipients", template.type],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from(template.type === "employees" ? "employees" : "clients")
+        .select("id, name, email")
+        .eq("status", "active")
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const handleTestEmail = async () => {
+    if (!selectedRecipient) {
+      toast({
+        title: "Selecione um destinatário",
+        description: "Por favor, selecione um destinatário para o email de teste.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const recipient = recipients.find(r => r.id === selectedRecipient);
+      if (!recipient) throw new Error("Destinatário não encontrado");
+
+      const { error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: recipient.email,
+          subject: template.subject,
+          content: template.content,
+          recipientName: recipient.name,
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email enviado",
+        description: "O email de teste foi enviado com sucesso.",
+      });
+
+      onClose();
+    } catch (error: any) {
+      console.error('Error sending test email:', error);
+      toast({
+        title: "Erro ao enviar email",
+        description: error.message || "Não foi possível enviar o email de teste.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Enviar E-mail de Teste</DialogTitle>
-          <DialogDescription>
-            Durante o período de testes, o Resend só permite enviar e-mails para endereços verificados.
-            Certifique-se de usar um e-mail que você tenha acesso.
-          </DialogDescription>
+          <DialogTitle>Enviar Email de Teste</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>
-              Selecionar {isClient ? "Cliente" : "Funcionário"} para Dados de Teste
-            </Label>
-            <Select value={selectedId} onValueChange={handleSelectChange}>
+            <Label>Selecione o destinatário</Label>
+            <Select
+              value={selectedRecipient}
+              onValueChange={setSelectedRecipient}
+            >
               <SelectTrigger>
-                <SelectValue placeholder={`Selecione um ${isClient ? "cliente" : "funcionário"}`} />
+                <SelectValue placeholder={
+                  isLoading 
+                    ? "Carregando..." 
+                    : `Selecione ${template.type === "employees" ? "um funcionário" : "um cliente"}`
+                } />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_example">Usar dados de exemplo</SelectItem>
-                {testData?.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.name} ({item.email})
+                {recipients.map((recipient) => (
+                  <SelectItem key={recipient.id} value={recipient.id}>
+                    {recipient.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="test-email">E-mail para Teste</Label>
-            <Input
-              id="test-email"
-              placeholder="seu.email@exemplo.com"
-              type="email"
-              value={testEmail}
-              onChange={(e) => onTestEmailChange(e.target.value)}
-            />
+
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button onClick={handleTestEmail}>
+              Enviar Teste
+            </Button>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={onSendTest}>
-            Enviar Teste
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

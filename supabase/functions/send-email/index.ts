@@ -1,92 +1,75 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.1';
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 interface EmailRequest {
-  type: 'clients' | 'employees';
-  subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours';
-  templateId: string;
   to: string;
-  data: Record<string, string | number>;
+  subject: string;
+  content: string;
+  recipientName: string;
 }
 
-serve(async (req) => {
+const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { type, subtype, templateId, to, data }: EmailRequest = await req.json();
-    console.log("Received email request:", { type, subtype, templateId, to, data });
+    const { to, subject, content, recipientName }: EmailRequest = await req.json();
 
-    // Get the template from the database
-    const { data: template, error: templateError } = await supabase
-      .from('email_templates')
-      .select('*')
-      .eq('id', templateId)
-      .single();
+    // Replace variables in the content
+    let processedContent = content
+      .replace(/{nome_cliente}|{nome_funcionario}/g, recipientName);
 
-    if (templateError) {
-      console.error("Error fetching template:", templateError);
-      throw new Error('Template not found');
-    }
-
-    console.log("Found template:", template);
-
-    // Replace variables in subject and content
-    let subject = template.subject;
-    let content = template.content;
-
-    Object.entries(data).forEach(([key, value]) => {
-      const regex = new RegExp(`{${key}}`, 'g');
-      subject = subject.replace(regex, String(value));
-      content = content.replace(regex, String(value));
-    });
-
-    console.log("Prepared email content:", { subject, to });
+    // Add default styles and wrapping
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${subject}</title>
+        </head>
+        <body style="font-family: sans-serif; line-height: 1.5; color: #333;">
+          ${processedContent}
+        </body>
+      </html>
+    `;
 
     const emailResponse = await resend.emails.send({
-      from: "Flowcode <noreply@flowcode.cc>",
+      from: "Finance App <onboarding@resend.dev>",
       to: [to],
       subject: subject,
-      html: content,
+      html: htmlContent,
     });
 
     console.log("Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
     });
   } catch (error: any) {
-    console.error("Error sending email:", error);
-    
-    const errorMessage = error.message || "Unknown error occurred while sending email";
-    const statusCode = error.status || 500;
-    
+    console.error("Error in send-email function:", error);
     return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        details: error.details || null,
-        code: error.code || null
-      }),
+      JSON.stringify({ error: error.message }),
       {
-        status: statusCode,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   }
-});
+};
+
+serve(handler);
