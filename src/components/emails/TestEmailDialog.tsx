@@ -16,36 +16,38 @@ interface TestEmailDialogProps {
 }
 
 interface RecurringBilling {
+  id: string;
   amount: number;
   description: string;
   due_day: number;
   installments: number;
   current_installment: number;
   payment_method: string;
+  client: {
+    name: string;
+    email: string;
+  };
 }
 
 interface Payment {
+  id: string;
   amount: number;
   description: string;
   due_date: string;
   payment_method: string;
-}
-
-interface Recipient {
-  id: string;
-  name: string;
-  email: string;
-  recurring_billing?: RecurringBilling[];
-  payments?: Payment[];
+  client: {
+    name: string;
+    email: string;
+  };
 }
 
 export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProps) => {
   const { toast } = useToast();
-  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
+  const [selectedRecordId, setSelectedRecordId] = useState<string>("");
 
-  // Fetch recipients and their billing data
-  const { data: recipients = [], isLoading } = useQuery({
-    queryKey: ["recipients", template.type],
+  // Fetch billing records based on template type and subtype
+  const { data: records = [], isLoading } = useQuery({
+    queryKey: ["billing-records", template.type, template.subtype],
     queryFn: async () => {
       if (template.type === "employees") {
         const { data, error } = await supabase
@@ -55,55 +57,83 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
           .order("name");
         if (error) throw error;
         return data || [];
-      } else {
-        // For clients, also fetch their latest billing information
+      } else if (template.subtype === "recurring") {
         const { data, error } = await supabase
-          .from("clients")
+          .from("recurring_billing")
           .select(`
-            id, 
-            name, 
-            email,
-            recurring_billing(
-              amount,
-              description,
-              due_day,
-              installments,
-              current_installment,
-              payment_method
-            ),
-            payments(
-              amount,
-              description,
-              due_date,
-              payment_method
+            id,
+            amount,
+            description,
+            due_day,
+            installments,
+            current_installment,
+            payment_method,
+            clients (
+              name,
+              email
             )
           `)
-          .eq("status", "active")
-          .order("name");
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
         if (error) throw error;
-        return data as Recipient[] || [];
+        return (data || []).map(record => ({
+          ...record,
+          client: record.clients
+        })) as RecurringBilling[];
+      } else {
+        const { data, error } = await supabase
+          .from("payments")
+          .select(`
+            id,
+            amount,
+            description,
+            due_date,
+            payment_method,
+            clients (
+              name,
+              email
+            )
+          `)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return (data || []).map(record => ({
+          ...record,
+          client: record.clients
+        })) as Payment[];
       }
     },
   });
 
   const handleTestEmail = async () => {
-    if (!selectedRecipient) {
+    if (!selectedRecordId) {
       toast({
-        title: "Selecione um destinatário",
-        description: "Por favor, selecione um destinatário para o email de teste.",
+        title: "Selecione um registro",
+        description: "Por favor, selecione um registro para enviar o email de teste.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      const recipient = recipients.find(r => r.id === selectedRecipient);
-      if (!recipient) throw new Error("Destinatário não encontrado");
+      const record = records.find(r => r.id === selectedRecordId);
+      if (!record) throw new Error("Registro não encontrado");
 
-      let billingData;
-      if (template.subtype === 'recurring' && recipient.recurring_billing?.[0]) {
-        const billing = recipient.recurring_billing[0];
-        billingData = {
+      let emailData;
+      if (template.type === "employees") {
+        emailData = {
+          to: record.email,
+          subject: template.subject,
+          content: template.content,
+          recipientName: record.name
+        };
+      } else if (template.subtype === "recurring") {
+        const billing = record as RecurringBilling;
+        emailData = {
+          to: billing.client.email,
+          subject: template.subject,
+          content: template.content,
+          recipientName: billing.client.name,
           amount: billing.amount,
           description: billing.description,
           dueDay: billing.due_day,
@@ -111,9 +141,13 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
           currentInstallment: billing.current_installment,
           paymentMethod: billing.payment_method
         };
-      } else if (template.subtype === 'oneTime' && recipient.payments?.[0]) {
-        const payment = recipient.payments[0];
-        billingData = {
+      } else {
+        const payment = record as Payment;
+        emailData = {
+          to: payment.client.email,
+          subject: template.subject,
+          content: template.content,
+          recipientName: payment.client.name,
           amount: payment.amount,
           description: payment.description,
           dueDate: payment.due_date,
@@ -122,13 +156,7 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
       }
 
       const { error } = await supabase.functions.invoke('send-email', {
-        body: {
-          to: recipient.email,
-          subject: template.subject,
-          content: template.content,
-          recipientName: recipient.name,
-          ...billingData
-        }
+        body: emailData
       });
 
       if (error) throw error;
@@ -149,6 +177,14 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
     }
   };
 
+  const getRecordLabel = (record: any) => {
+    if (template.type === "employees") {
+      return record.name;
+    } else {
+      return `${record.client.name} - ${record.description}`;
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
@@ -157,22 +193,26 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Selecione o destinatário</Label>
+            <Label>Selecione o registro</Label>
             <Select
-              value={selectedRecipient}
-              onValueChange={setSelectedRecipient}
+              value={selectedRecordId}
+              onValueChange={setSelectedRecordId}
             >
               <SelectTrigger>
                 <SelectValue placeholder={
                   isLoading 
                     ? "Carregando..." 
-                    : `Selecione ${template.type === "employees" ? "um funcionário" : "um cliente"}`
+                    : template.type === "employees" 
+                      ? "Selecione um funcionário"
+                      : template.subtype === "recurring"
+                        ? "Selecione uma cobrança recorrente"
+                        : "Selecione uma cobrança pontual"
                 } />
               </SelectTrigger>
               <SelectContent>
-                {recipients.map((recipient) => (
-                  <SelectItem key={recipient.id} value={recipient.id}>
-                    {recipient.name}
+                {records.map((record) => (
+                  <SelectItem key={record.id} value={record.id}>
+                    {getRecordLabel(record)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -192,4 +232,3 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
     </Dialog>
   );
 };
-
