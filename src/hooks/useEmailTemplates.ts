@@ -66,12 +66,9 @@ export const useEmailTemplates = () => {
     try {
       await updateTemplate(updatedTemplate);
       
+      // Atualiza apenas os templates que são do mesmo tipo e subtipo que o template atualizado
       setSavedTemplates(prev => prev.map(template => 
-        template.id === updatedTemplate.id ? updatedTemplate : 
-        (template.type === updatedTemplate.type && 
-         template.subtype === updatedTemplate.subtype && 
-         updatedTemplate.is_default) ? { ...template, is_default: false } : 
-        template
+        template.id === updatedTemplate.id ? updatedTemplate : template
       ));
 
       toast({
@@ -98,4 +95,3 @@ export const useEmailTemplates = () => {
     handleTemplateUpdate
   };
 };
-
