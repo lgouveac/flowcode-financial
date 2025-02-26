@@ -7,11 +7,14 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { NewClientForm } from "./client/NewClientForm";
 import { ClientRow } from "./client/ClientRow";
+import { EditClientDialog } from "./EditClientDialog";
 import type { Client, NewClient } from "@/types/client";
 
 export const ClientTable = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const { toast } = useToast();
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const fetchClients = async () => {
     const { data, error } = await supabase
@@ -91,6 +94,11 @@ export const ClientTable = () => {
     });
   };
 
+  const handleClientClick = (client: Client) => {
+    setSelectedClient(client);
+    setShowEditDialog(true);
+  };
+
   return (
     <div className="space-y-4 p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -132,13 +140,20 @@ export const ClientTable = () => {
                   key={client.id}
                   client={client}
                   onUpdate={handleChange}
+                  onClick={() => handleClientClick(client)}
                 />
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      <EditClientDialog
+        client={selectedClient}
+        open={showEditDialog}
+        onClose={() => setShowEditDialog(false)}
+        onSuccess={fetchClients}
+      />
     </div>
   );
 };
-

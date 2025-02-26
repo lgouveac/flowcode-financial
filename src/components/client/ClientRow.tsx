@@ -6,11 +6,15 @@ import { MailIcon, PhoneIcon } from "lucide-react";
 interface ClientRowProps {
   client: Client;
   onUpdate: (id: string, field: keyof Client, value: string | number) => void;
+  onClick: () => void;
 }
 
-export const ClientRow = ({ client, onUpdate }: ClientRowProps) => {
+export const ClientRow = ({ client, onUpdate, onClick }: ClientRowProps) => {
   return (
-    <tr className="border-b transition-colors hover:bg-muted/50">
+    <tr 
+      className="border-b transition-colors hover:bg-muted/50 cursor-pointer" 
+      onClick={onClick}
+    >
       <td className="p-4">
         <EditableCell
           value={client.name}
