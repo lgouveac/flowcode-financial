@@ -124,6 +124,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_default: boolean | null
           name: string
           subject: string
           subtype: string
@@ -134,6 +135,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_default?: boolean | null
           name: string
           subject: string
           subtype: string
@@ -144,6 +146,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_default?: boolean | null
           name?: string
           subject?: string
           subtype?: string
