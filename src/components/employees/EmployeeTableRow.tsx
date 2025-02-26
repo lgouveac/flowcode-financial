@@ -6,6 +6,12 @@ interface Employee {
   status: "active" | "inactive";
   payment_method: string;
   last_invoice?: string;
+  cnpj?: string;
+  pix?: string;
+  address?: string;
+  position?: string;
+  phone?: string;
+  email: string;
 }
 
 interface EmployeeTableRowProps {
