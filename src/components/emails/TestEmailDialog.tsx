@@ -19,18 +19,46 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
   const { toast } = useToast();
   const [selectedRecipient, setSelectedRecipient] = useState<string>("");
 
-  // Fetch recipients based on template type
+  // Fetch recipients and their billing data
   const { data: recipients = [], isLoading } = useQuery({
     queryKey: ["recipients", template.type],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from(template.type === "employees" ? "employees" : "clients")
-        .select("id, name, email")
-        .eq("status", "active")
-        .order("name");
-
-      if (error) throw error;
-      return data || [];
+      if (template.type === "employees") {
+        const { data, error } = await supabase
+          .from("employees")
+          .select("id, name, email")
+          .eq("status", "active")
+          .order("name");
+        if (error) throw error;
+        return data || [];
+      } else {
+        // For clients, also fetch their latest billing information
+        const { data, error } = await supabase
+          .from("clients")
+          .select(`
+            id, 
+            name, 
+            email,
+            recurring_billing!inner(
+              amount,
+              description,
+              due_day,
+              installments,
+              current_installment,
+              payment_method
+            ),
+            payments!inner(
+              amount,
+              description,
+              due_date,
+              payment_method
+            )
+          `)
+          .eq("status", "active")
+          .order("name");
+        if (error) throw error;
+        return data || [];
+      }
     },
   });
 
@@ -48,12 +76,34 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
       const recipient = recipients.find(r => r.id === selectedRecipient);
       if (!recipient) throw new Error("Destinatário não encontrado");
 
+      let billingData;
+      if (template.subtype === 'recurring' && recipient.recurring_billing?.[0]) {
+        const billing = recipient.recurring_billing[0];
+        billingData = {
+          amount: billing.amount,
+          description: billing.description,
+          dueDay: billing.due_day,
+          installments: billing.installments,
+          currentInstallment: billing.current_installment,
+          paymentMethod: billing.payment_method
+        };
+      } else if (template.subtype === 'oneTime' && recipient.payments?.[0]) {
+        const payment = recipient.payments[0];
+        billingData = {
+          amount: payment.amount,
+          description: payment.description,
+          dueDate: payment.due_date,
+          paymentMethod: payment.payment_method
+        };
+      }
+
       const { error } = await supabase.functions.invoke('send-email', {
         body: {
           to: recipient.email,
           subject: template.subject,
           content: template.content,
           recipientName: recipient.name,
+          ...billingData
         }
       });
 

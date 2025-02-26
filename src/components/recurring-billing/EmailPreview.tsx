@@ -10,6 +10,8 @@ interface EmailPreviewProps {
   dueDay?: number;
   description?: string;
   installments?: number;
+  currentInstallment?: number;
+  dueDate?: string;
   paymentMethod?: 'pix' | 'boleto' | 'credit_card';
 }
 
@@ -19,8 +21,10 @@ export const EmailPreview = ({
   clientName,
   amount,
   dueDay,
+  dueDate,
   description,
   installments,
+  currentInstallment,
   paymentMethod
 }: EmailPreviewProps) => {
   if (!selectedTemplate) return null;
@@ -32,11 +36,12 @@ export const EmailPreview = ({
 
   const replacements = {
     "{nome_cliente}": clientName || "Cliente",
-    "{valor_cobranca}": (amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }),
-    "{data_vencimento}": String(dueDay || ""),
+    "{valor_cobranca}": (amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+    "{data_vencimento}": dueDate ? new Date(dueDate).toLocaleDateString('pt-BR') : dueDay ? String(dueDay) : "",
     "{plano_servico}": description || "",
-    "{numero_parcela}": "1",
-    "{total_parcelas}": String(installments || ""),
+    "{descricao_servico}": description || "",
+    "{numero_parcela}": String(currentInstallment || 1),
+    "{total_parcelas}": String(installments || 1),
     "{forma_pagamento}": paymentMethod === 'pix' ? 'PIX' : paymentMethod === 'boleto' ? 'Boleto' : 'Cartão de Crédito'
   };
 

@@ -28,28 +28,32 @@ export type VariablesType = {
 export const variablesList: VariablesType = {
   clients: {
     recurring: [
-      { name: '{client_name}', description: 'Nome do cliente' },
-      { name: '{billing_value}', description: 'Valor da cobrança' },
-      { name: '{due_date}', description: 'Data de vencimento' },
-      { name: '{invoice_number}', description: 'Número da fatura' }
+      { name: '{nome_cliente}', description: 'Nome do cliente' },
+      { name: '{valor_cobranca}', description: 'Valor da cobrança' },
+      { name: '{data_vencimento}', description: 'Data de vencimento' },
+      { name: '{plano_servico}', description: 'Descrição do serviço' },
+      { name: '{numero_parcela}', description: 'Número da parcela atual' },
+      { name: '{total_parcelas}', description: 'Total de parcelas' },
+      { name: '{forma_pagamento}', description: 'Forma de pagamento' }
     ],
     oneTime: [
-      { name: '{client_name}', description: 'Nome do cliente' },
-      { name: '{payment_value}', description: 'Valor do pagamento' },
-      { name: '{due_date}', description: 'Data de vencimento' }
+      { name: '{nome_cliente}', description: 'Nome do cliente' },
+      { name: '{valor_cobranca}', description: 'Valor da cobrança' },
+      { name: '{data_vencimento}', description: 'Data de vencimento' },
+      { name: '{descricao_servico}', description: 'Descrição do serviço' },
+      { name: '{forma_pagamento}', description: 'Forma de pagamento' }
     ]
   },
   employees: {
     invoice: [
-      { name: '{employee_name}', description: 'Nome do funcionário' },
-      { name: '{invoice_value}', description: 'Valor da nota fiscal' },
-      { name: '{invoice_date}', description: 'Data da nota fiscal' }
+      { name: '{nome_funcionario}', description: 'Nome do funcionário' },
+      { name: '{valor_nota}', description: 'Valor da nota fiscal' },
+      { name: '{data_nota}', description: 'Data da nota fiscal' }
     ],
     hours: [
-      { name: '{employee_name}', description: 'Nome do funcionário' },
-      { name: '{total_hours}', description: 'Total de horas' },
-      { name: '{period}', description: 'Período de referência' }
+      { name: '{nome_funcionario}', description: 'Nome do funcionário' },
+      { name: '{total_horas}', description: 'Total de horas' },
+      { name: '{periodo}', description: 'Período de referência' }
     ]
   }
 };
-
