@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { EmailTemplate } from "@/types/email";
-import { fetchTemplates, updateTemplate, deleteTemplate } from "@/services/templateService";
+import { fetchTemplates, updateTemplate } from "@/services/templateService";
 
 export const useEmailTemplates = () => {
   const { toast } = useToast();
@@ -88,41 +88,6 @@ export const useEmailTemplates = () => {
     }
   };
 
-  const handleTemplateDelete = async (templateId: string, type: string, subtype: string) => {
-    try {
-      // Check if this is the only template of its type
-      const templatesOfSameType = savedTemplates.filter(t => 
-        t.type === type && t.subtype === subtype
-      );
-
-      if (templatesOfSameType.length <= 1) {
-        toast({
-          title: "Não é possível excluir",
-          description: `É necessário manter pelo menos um template para ${getTemplateTypeLabel(type, subtype)}.`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const template = savedTemplates.find(t => t.id === templateId);
-      if (!template) return;
-
-      await deleteTemplate(templateId, type, subtype);
-      setSavedTemplates(prev => prev.filter(template => template.id !== templateId));
-      toast({
-        title: "Template excluído",
-        description: `O template "${template.name}" (${getTemplateTypeLabel(type, subtype)}) foi excluído com sucesso.`,
-      });
-    } catch (error: any) {
-      console.error('Error deleting template:', error);
-      toast({
-        title: "Erro ao excluir template",
-        description: error.message || "Não foi possível excluir o template. Por favor, tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
-
   useEffect(() => {
     fetchAndSetTemplates();
   }, []);
@@ -130,7 +95,7 @@ export const useEmailTemplates = () => {
   return {
     savedTemplates,
     isLoading,
-    handleTemplateUpdate,
-    handleTemplateDelete
+    handleTemplateUpdate
   };
 };
+

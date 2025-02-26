@@ -6,7 +6,7 @@ import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 
 export const Emails = () => {
   const [currentSection, setCurrentSection] = useState<'employees' | 'clients'>('employees');
-  const { savedTemplates, isLoading, handleTemplateUpdate, handleTemplateDelete } = useEmailTemplates();
+  const { savedTemplates, isLoading, handleTemplateUpdate } = useEmailTemplates();
 
   const filteredTemplates = savedTemplates.filter(template => template.type === currentSection);
 
@@ -26,7 +26,6 @@ export const Emails = () => {
           <SavedTemplatesTable 
             templates={filteredTemplates} 
             onTemplateUpdate={handleTemplateUpdate}
-            onTemplateDelete={handleTemplateDelete}
             isLoading={isLoading}
           />
         </TabsContent>
@@ -35,7 +34,6 @@ export const Emails = () => {
           <SavedTemplatesTable 
             templates={filteredTemplates} 
             onTemplateUpdate={handleTemplateUpdate}
-            onTemplateDelete={handleTemplateDelete}
             isLoading={isLoading}
           />
         </TabsContent>
@@ -43,3 +41,4 @@ export const Emails = () => {
     </div>
   );
 };
+

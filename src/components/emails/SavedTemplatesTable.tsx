@@ -1,23 +1,18 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { EditTemplateDialog } from "./EditTemplateDialog";
 import { useState } from "react";
 import { EmailTemplate } from "@/types/email";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2 } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface SavedTemplatesTableProps {
   templates: EmailTemplate[];
   onTemplateUpdate?: (updatedTemplate: EmailTemplate) => void;
-  onTemplateDelete?: (templateId: string, type: string, subtype: string) => void;
   isLoading?: boolean;
 }
 
-export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDelete, isLoading }: SavedTemplatesTableProps) => {
+export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: SavedTemplatesTableProps) => {
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
-  const [deletingTemplate, setDeletingTemplate] = useState<EmailTemplate | null>(null);
   const { toast } = useToast();
 
   const getTemplateTypeLabel = (type: string, subtype: string) => {
@@ -34,17 +29,6 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
       title: "Template atualizado",
       description: `O template "${updatedTemplate.name}" (${getTemplateTypeLabel(updatedTemplate.type, updatedTemplate.subtype)}) foi atualizado com sucesso.`,
     });
-  };
-
-  const handleDeleteClick = (template: EmailTemplate) => {
-    setDeletingTemplate(template);
-  };
-
-  const handleConfirmDelete = () => {
-    if (deletingTemplate) {
-      onTemplateDelete?.(deletingTemplate.id, deletingTemplate.type, deletingTemplate.subtype);
-      setDeletingTemplate(null);
-    }
   };
 
   if (isLoading) {
@@ -76,12 +60,15 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
                 <th className="p-4 text-sm font-medium text-muted-foreground">Tipo</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Assunto</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Padrão</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
             <tbody>
               {templates.map((template) => (
-                <tr key={template.id} className="border-t hover:bg-muted/50">
+                <tr 
+                  key={template.id} 
+                  className="border-t hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => setEditingTemplate(template)}
+                >
                   <td className="p-4">
                     {template.name}
                   </td>
@@ -93,22 +80,6 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
                   </td>
                   <td className="p-4">
                     {template.is_default ? 'Sim' : 'Não'}
-                  </td>
-                  <td className="p-4 space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingTemplate(template)}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteClick(template)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </td>
                 </tr>
               ))}
@@ -125,37 +96,6 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, onTemplateDel
           onSave={handleSave}
         />
       )}
-
-      <AlertDialog open={!!deletingTemplate} onOpenChange={() => setDeletingTemplate(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>
-                Você está prestes a excluir o template:
-              </p>
-              <p className="font-medium">
-                Nome: {deletingTemplate?.name}
-              </p>
-              <p className="font-medium">
-                Tipo: {deletingTemplate ? getTemplateTypeLabel(deletingTemplate.type, deletingTemplate.subtype) : ''}
-              </p>
-              {deletingTemplate?.is_default && (
-                <p className="mt-2 text-destructive font-medium">
-                  Atenção: Este é o template padrão atual. Ao excluí-lo, outro template do mesmo tipo será definido como padrão.
-                </p>
-              )}
-              <p className="mt-2">
-                Esta ação não pode ser desfeita.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete}>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 };
