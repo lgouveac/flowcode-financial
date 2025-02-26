@@ -56,17 +56,17 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
           <table className="w-full">
             <thead className="bg-muted">
               <tr className="text-left">
-                <th className="p-4 text-sm font-medium text-muted-foreground">Nome</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Tipo</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Assunto</th>
-                <th className="p-4 text-sm font-medium text-muted-foreground">Padrão</th>
+                <th className="p-4 text-base font-medium text-muted-foreground">Nome</th>
+                <th className="p-4 text-base font-medium text-muted-foreground">Tipo</th>
+                <th className="p-4 text-base font-medium text-muted-foreground">Assunto</th>
+                <th className="p-4 text-base font-medium text-muted-foreground">Padrão</th>
               </tr>
             </thead>
             <tbody>
               {templates.map((template) => (
                 <tr 
                   key={template.id} 
-                  className="border-t hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="border-t hover:bg-muted/50 cursor-pointer transition-colors text-base"
                   onClick={() => setEditingTemplate(template)}
                 >
                   <td className="p-4">
@@ -99,3 +99,4 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
     </Card>
   );
 };
+
