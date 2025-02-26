@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { AddEmployeeDialog } from "./AddEmployeeDialog";
-import { EditableCell } from "./EditableCell";
+import { EditEmployeeDialog } from "./EditEmployeeDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,12 +17,19 @@ interface Employee {
   status: "active" | "inactive";
   payment_method: string;
   last_invoice?: string;
+  cnpj?: string;
+  pix?: string;
+  address?: string;
+  position?: string;
+  phone?: string;
+  email: string;
 }
 
 export const EmployeeTable = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   const { data: settings } = useQuery({
     queryKey: ["global-settings"],
@@ -165,69 +172,23 @@ export const EmployeeTable = () => {
               </thead>
               <tbody>
                 {employees.map((employee) => (
-                  <tr key={employee.id} className="border-t border-border/50 hover:bg-muted/50 transition-colors">
-                    <td className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <EditableCell
-                          value={employee.name}
-                          onChange={(value) => handleChange(employee.id, 'name', value)}
-                        />
-                        <div className="sm:hidden">
-                          <Select
-                            value={employee.type}
-                            onValueChange={(value: "fixed" | "freelancer") => handleChange(employee.id, 'type', value)}
-                          >
-                            <SelectTrigger className="h-8 w-full">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="fixed">Funcionário Fixo</SelectItem>
-                              <SelectItem value="freelancer">Freelancer</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </td>
+                  <tr
+                    key={employee.id}
+                    className="border-t border-border/50 hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedEmployee(employee)}
+                  >
+                    <td className="p-4">{employee.name}</td>
                     <td className="p-4 hidden sm:table-cell">
-                      <Select
-                        value={employee.type}
-                        onValueChange={(value: "fixed" | "freelancer") => handleChange(employee.id, 'type', value)}
-                      >
-                        <SelectTrigger className="h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="fixed">Funcionário Fixo</SelectItem>
-                          <SelectItem value="freelancer">Freelancer</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {employee.type === "fixed" ? "Funcionário Fixo" : "Freelancer"}
                     </td>
                     <td className="p-4">
-                      <Select
-                        value={employee.status}
-                        onValueChange={(value: "active" | "inactive") => handleChange(employee.id, 'status', value)}
-                      >
-                        <SelectTrigger className="h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Ativo</SelectItem>
-                          <SelectItem value="inactive">Inativo</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {employee.status === "active" ? "Ativo" : "Inativo"}
                     </td>
                     <td className="p-4 hidden md:table-cell">
-                      <EditableCell
-                        value={employee.payment_method || ""}
-                        onChange={(value) => handleChange(employee.id, 'payment_method', value)}
-                      />
+                      {employee.payment_method || "-"}
                     </td>
                     <td className="p-4 hidden lg:table-cell">
-                      <EditableCell
-                        value={employee.last_invoice || ""}
-                        onChange={(value) => handleChange(employee.id, 'last_invoice', value)}
-                        type="date"
-                      />
+                      {employee.last_invoice || "-"}
                     </td>
                   </tr>
                 ))}
@@ -242,6 +203,17 @@ export const EmployeeTable = () => {
         onClose={() => setSettingsOpen(false)}
         currentDay={settings?.employee_emails_send_day}
       />
+
+      <EditEmployeeDialog
+        employee={selectedEmployee}
+        open={!!selectedEmployee}
+        onClose={() => setSelectedEmployee(null)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["employees"] });
+          setSelectedEmployee(null);
+        }}
+      />
     </div>
   );
 };
+
