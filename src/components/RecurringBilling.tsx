@@ -1,12 +1,17 @@
 
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
 import { PaymentTable } from "./payments/PaymentTable";
 import { NewBillingDialog } from "./recurring-billing/NewBillingDialog";
+import { NotificationSettings } from "./emails/NotificationSettings";
+import { Settings } from "lucide-react";
+import { Button } from "./ui/button";
 import { useBillingData } from "@/hooks/useBillingData";
 
 export const RecurringBilling = () => {
   const { billings, payments, clients, templates, fetchBillings, fetchPayments } = useBillingData();
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleSuccess = () => {
     fetchBillings();
@@ -17,11 +22,20 @@ export const RecurringBilling = () => {
     <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
-        <NewBillingDialog 
-          clients={clients} 
-          onSuccess={handleSuccess}
-          templates={templates} 
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowSettings(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+          <NewBillingDialog 
+            clients={clients} 
+            onSuccess={handleSuccess}
+            templates={templates} 
+          />
+        </div>
       </div>
 
       <Tabs defaultValue="recurring" className="w-full">
@@ -36,7 +50,11 @@ export const RecurringBilling = () => {
           <PaymentTable payments={payments} />
         </TabsContent>
       </Tabs>
+
+      <NotificationSettings
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </div>
   );
 };
-
