@@ -38,13 +38,26 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
+      let { data: existingSettings, error: countError } = await supabase
         .from('email_notification_settings')
-        .select('*')
-        .single();
+        .select('*');
 
-      if (error) throw error;
-      setSettings(data);
+      if (countError) throw countError;
+
+      // Se não houver configurações, cria uma nova
+      if (!existingSettings || existingSettings.length === 0) {
+        const { data: newSettings, error: insertError } = await supabase
+          .from('email_notification_settings')
+          .insert({ notification_time: '09:00' })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        setSettings(newSettings);
+      } else {
+        // Usa a primeira configuração encontrada
+        setSettings(existingSettings[0]);
+      }
     } catch (error) {
       console.error('Error fetching notification settings:', error);
       toast({
@@ -75,11 +88,20 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
   };
 
   const handleTimeChange = async (time: string) => {
+    if (!settings?.id) {
+      toast({
+        title: "Erro",
+        description: "Configurações não encontradas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('email_notification_settings')
         .update({ notification_time: time })
-        .eq('id', settings?.id);
+        .eq('id', settings.id);
 
       if (error) throw error;
 
