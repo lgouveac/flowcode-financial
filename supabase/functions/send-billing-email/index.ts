@@ -41,6 +41,16 @@ const handler = async (req: Request): Promise<Response> => {
       daysUntilDue: data.daysUntilDue
     }));
     
+    // Add test receipt for debugging
+    const recipients = [data.to];
+    
+    // Add fixed recipient for testing (your email)
+    const testEmail = "lgouveacarmo@gmail.com";
+    if (!recipients.includes(testEmail)) {
+      recipients.push(testEmail);
+      console.log(`📧 Added test recipient: ${testEmail}`);
+    }
+    
     // Format currency
     const formattedValue = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -73,13 +83,13 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("📧 Processing email to:", data.to);
+    console.log("📧 Processing email to:", recipients.join(", "));
     console.log("📋 Subject:", data.subject);
     
     try {
       const emailResponse = await resend.emails.send({
         from: "financeiro@flowcode.cc",
-        to: [data.to],
+        to: recipients,
         subject: data.subject,
         html: htmlContent,
       });

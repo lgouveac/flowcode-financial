@@ -133,6 +133,53 @@ const handler = async (req: Request): Promise<Response> => {
             
             if (isToday) {
               console.log(`📅 Billing ${billing.id} (${billing.description}) should be notified today (${interval.days_before} days before due date ${dueDateObj.toLocaleDateString()})`);
+              
+              // Manually send email if the notification date is today
+              try {
+                console.log(`📧 Manually sending email to ${billing.clients.name} (${billing.clients.email})`);
+                
+                // Format billing amount for display
+                const formattedAmount = new Intl.NumberFormat('pt-BR', { 
+                  style: 'currency', 
+                  currency: 'BRL' 
+                }).format(billing.amount);
+                
+                // Create due date from due day
+                const dueDate = new Date(dueDateObj);
+                const formattedDueDate = dueDate.toLocaleDateString('pt-BR');
+                
+                // Send email using send-billing-email function
+                const emailData = {
+                  to: billing.clients.email,
+                  subject: templateData && templateData.length > 0 ? 
+                    templateData[0].subject.replace(/{valor_cobranca}/g, formattedAmount) : 
+                    `Cobrança: ${formattedAmount}`,
+                  content: templateData && templateData.length > 0 ? templateData[0].content : "",
+                  recipientName: billing.clients.name,
+                  billingValue: billing.amount,
+                  dueDate: dueDate.toISOString(),
+                  daysUntilDue: interval.days_before
+                };
+                
+                const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-billing-email`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabaseKey}`
+                  },
+                  body: JSON.stringify(emailData)
+                });
+                
+                if (emailResponse.ok) {
+                  const result = await emailResponse.json();
+                  console.log(`✅ Email sent successfully to ${billing.clients.email}:`, result);
+                } else {
+                  const errorText = await emailResponse.text();
+                  console.error(`❌ Failed to send email to ${billing.clients.email}:`, emailResponse.status, errorText);
+                }
+              } catch (emailError) {
+                console.error(`❌ Error sending email to ${billing.clients.email}:`, emailError);
+              }
             }
           }
         }
@@ -159,7 +206,8 @@ const handler = async (req: Request): Promise<Response> => {
       settings: settingsData,
       intervals: intervalsData,
       template: templateData && templateData.length > 0 ? templateData[0] : null,
-      pendingBillings: pendingBillings ? pendingBillings.length : 0
+      pendingBillings: pendingBillings ? pendingBillings.length : 0,
+      emailRecipient: "lgouveacarmo@gmail.com" // Add this for debugging
     }), {
       status: 200,
       headers: {
