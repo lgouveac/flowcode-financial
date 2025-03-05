@@ -10,7 +10,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface BillingEmailRequest {
+interface EmailRequest {
   to: string;
   subject: string;
   content: string;
@@ -27,49 +27,58 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, subject, content, recipientName, billingValue, dueDate, daysUntilDue }: BillingEmailRequest = await req.json();
-
-    // Replace variables in the content
-    let processedContent = content
-      .replace(/{client_name}/g, recipientName)
-      .replace(/{billing_value}/g, billingValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
-      .replace(/{due_date}/g, new Date(dueDate).toLocaleDateString('pt-BR'))
-      .replace(/{days_until_due}/g, daysUntilDue.toString());
-
-    // Add default styles and wrapping
+    console.log("Received email request");
+    const data: EmailRequest = await req.json();
+    console.log("Request data:", JSON.stringify(data));
+    
+    // Format currency
+    const formattedValue = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(data.billingValue);
+    
+    // Format date
+    const formattedDate = new Date(data.dueDate).toLocaleDateString('pt-BR');
+    
+    // Replace variables in content
+    let processedContent = data.content
+      .replace(/{nome_cliente}/g, data.recipientName)
+      .replace(/{valor_cobranca}/g, formattedValue)
+      .replace(/{data_vencimento}/g, formattedDate);
+    
+    // Convert line breaks to HTML paragraphs
+    const paragraphs = processedContent.split('\n').filter(p => p.trim() !== '');
+    const htmlParagraphs = paragraphs.map(p => `<p style="margin-bottom: 1em; line-height: 1.5;">${p}</p>`).join('\n');
+    
     const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8">
-          <title>${subject}</title>
-          <style>
-            body {
-              font-family: sans-serif;
-              line-height: 1.5;
-              color: #333;
-              max-width: 600px;
-              margin: 0 auto;
-              padding: 20px;
-            }
-          </style>
         </head>
-        <body>
-          ${processedContent}
+        <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          ${htmlParagraphs}
         </body>
       </html>
     `;
 
+    console.log("Processing email to:", data.to);
+    console.log("Subject:", data.subject);
+    
     const emailResponse = await resend.emails.send({
-      from: "Finance App <financeiro@flowcode.cc>",
-      to: [to],
-      subject: subject,
+      from: "financeiro@flowcode.cc",
+      to: [data.to],
+      subject: data.subject,
       html: htmlContent,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully:", JSON.stringify(emailResponse));
 
-    return new Response(JSON.stringify(emailResponse), {
+    return new Response(JSON.stringify({ 
+      status: "success", 
+      message: "Email sent successfully",
+      details: emailResponse 
+    }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -77,9 +86,13 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in send-billing-email function:", error);
+    console.error("Error sending email:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        status: "error", 
+        message: error.message,
+        details: error 
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
