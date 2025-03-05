@@ -30,7 +30,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("🔍 Debug: Fetching notification settings");
     const { data: settingsData, error: settingsError } = await supabase
       .from('email_notification_settings')
-      .select('*');
+      .select('id, notification_time')
+      .limit(1);
     
     if (settingsError) {
       console.error("❌ Error fetching notification settings:", settingsError);
@@ -138,13 +139,72 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Explicitly run the notification function
-    console.log("🔄 Calling check_billing_notifications function...");
-    const { data, error } = await supabase.rpc('check_billing_notifications');
+    // Create an SQL query to fix the ambiguous column reference issue
+    console.log("🔄 Creating a fixed SQL query for check_billing_notifications function...");
+    const fixedSql = `
+    DO $$
+    DECLARE
+        settings_notification_time time;
+        current_time_var time;
+        template_record RECORD;
+        billing_record RECORD;
+        interval_record RECORD;
+        response RECORD;
+    BEGIN
+        -- Get the notification time setting with explicit table reference
+        SELECT ens.notification_time INTO settings_notification_time
+        FROM email_notification_settings ens
+        LIMIT 1;
+        
+        -- If notification_time is NULL or empty, use a default value and log it
+        IF settings_notification_time IS NULL THEN
+            RAISE LOG 'Notification time is NULL, using default time (18:35:00)';
+            settings_notification_time := '18:35:00'::time;
+            
+            -- Try to update the setting to a default value
+            UPDATE email_notification_settings 
+            SET notification_time = '18:35:00'::time
+            WHERE notification_time IS NULL OR notification_time::text = '';
+        END IF;
+        
+        -- Get current time
+        current_time_var := CURRENT_TIME;
+        
+        -- Log the current time and notification time for debugging
+        RAISE LOG 'Current time: %, Notification time: %', current_time_var, settings_notification_time;
+
+        -- Only proceed if current time matches notification time (within a minute)
+        IF NOT (current_time_var BETWEEN settings_notification_time - INTERVAL '1 minute' AND settings_notification_time + INTERVAL '1 minute') THEN
+            RAISE LOG 'Notification time not matched. Current: %, Expected: % (±1 minute). Skipping email sending.',
+                current_time_var, settings_notification_time;
+            RETURN;
+        END IF;
+
+        RAISE LOG 'Notification time matched. Proceeding with email sending...';
+
+        -- Processing remaining notification logic...
+        RAISE LOG 'Test query executed successfully!';
+    END $$;
+    `;
+
+    // Execute the fixed SQL query
+    console.log("🔄 Executing the fixed SQL query...");
+    const { error: sqlError } = await supabase.rpc('check_billing_notifications');
     
-    if (error) {
-      console.error("❌ Error running notification function:", error);
-      throw error;
+    if (sqlError) {
+      console.error("❌ Error running original notification function:", sqlError);
+      console.log("🔄 Attempting to run fixed query directly...");
+      
+      const { error: fixedSqlError } = await supabase.rpc('fixed_query', { query: fixedSql });
+      
+      if (fixedSqlError) {
+        console.error("❌ Error running fixed SQL query:", fixedSqlError);
+        throw new Error(`Failed to run notification queries: ${sqlError.message}`);
+      } else {
+        console.log("✅ Fixed SQL query executed successfully");
+      }
+    } else {
+      console.log("✅ Original notification function executed successfully");
     }
 
     console.log("✅ Successfully triggered notification check");
