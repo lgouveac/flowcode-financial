@@ -2,7 +2,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resendApiKey = Deno.env.get("RESEND_API_KEY");
+const resend = new Resend(resendApiKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,9 +28,18 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Received email request");
+    console.log("📨 Received email request");
+    console.log("🔑 ResendAPI Key available:", !!resendApiKey);
+    
     const data: EmailRequest = await req.json();
-    console.log("Request data:", JSON.stringify(data));
+    console.log("📝 Request data:", JSON.stringify({
+      to: data.to,
+      subject: data.subject,
+      recipientName: data.recipientName,
+      billingValue: data.billingValue,
+      dueDate: data.dueDate,
+      daysUntilDue: data.daysUntilDue
+    }));
     
     // Format currency
     const formattedValue = new Intl.NumberFormat('pt-BR', {
@@ -39,6 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Format date
     const formattedDate = new Date(data.dueDate).toLocaleDateString('pt-BR');
+    console.log("📅 Formatted date:", formattedDate);
     
     // Replace variables in content
     let processedContent = data.content
@@ -62,31 +73,52 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    console.log("Processing email to:", data.to);
-    console.log("Subject:", data.subject);
+    console.log("📧 Processing email to:", data.to);
+    console.log("📋 Subject:", data.subject);
     
-    const emailResponse = await resend.emails.send({
-      from: "financeiro@flowcode.cc",
-      to: [data.to],
-      subject: data.subject,
-      html: htmlContent,
-    });
+    try {
+      const emailResponse = await resend.emails.send({
+        from: "financeiro@flowcode.cc",
+        to: [data.to],
+        subject: data.subject,
+        html: htmlContent,
+      });
 
-    console.log("Email sent successfully:", JSON.stringify(emailResponse));
+      console.log("✅ Email sent successfully:", JSON.stringify(emailResponse));
 
-    return new Response(JSON.stringify({ 
-      status: "success", 
-      message: "Email sent successfully",
-      details: emailResponse 
-    }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
-    });
+      return new Response(JSON.stringify({ 
+        status: "success", 
+        message: "Email sent successfully",
+        details: emailResponse 
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    } catch (emailError: any) {
+      console.error("❌ Resend API error:", emailError);
+      console.error("- Error code:", emailError.statusCode);
+      console.error("- Error message:", emailError.message);
+      
+      return new Response(
+        JSON.stringify({ 
+          status: "error", 
+          message: "Email sending error",
+          details: {
+            statusCode: emailError.statusCode,
+            message: emailError.message
+          }
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
   } catch (error: any) {
-    console.error("Error sending email:", error);
+    console.error("❌ General error sending email:", error);
     return new Response(
       JSON.stringify({ 
         status: "error", 
