@@ -33,20 +33,48 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (settingsError) {
       console.error("❌ Error fetching notification settings:", settingsError);
+      throw new Error(`Failed to fetch notification settings: ${settingsError.message}`);
+    } else if (!settingsData || settingsData.length === 0) {
+      console.error("❌ No notification settings found");
+      throw new Error("No notification settings found. Please create notification settings first.");
     } else {
       console.log("✅ Notification settings:", settingsData);
+      
+      // Verify notification time is not empty
+      const notificationTime = settingsData[0].notification_time;
+      if (!notificationTime) {
+        console.error("❌ Notification time is empty or null");
+        
+        // Try to fix it automatically
+        const { error: updateError } = await supabase
+          .from('email_notification_settings')
+          .update({ notification_time: '18:35:00' })
+          .eq('id', settingsData[0].id);
+          
+        if (updateError) {
+          console.error("❌ Failed to update notification time:", updateError);
+          throw new Error(`Failed to update empty notification time: ${updateError.message}`);
+        } else {
+          console.log("✅ Automatically fixed empty notification time to 18:35:00");
+        }
+      } else {
+        console.log("✅ Notification time is set properly to:", notificationTime);
+      }
     }
 
     // Get notification intervals for debugging
     console.log("🔍 Debug: Fetching notification intervals");
     const { data: intervalsData, error: intervalsError } = await supabase
       .from('email_notification_intervals')
-      .select('*');
+      .select('*')
+      .order('days_before', { ascending: false });
     
     if (intervalsError) {
       console.error("❌ Error fetching notification intervals:", intervalsError);
+    } else if (!intervalsData || intervalsData.length === 0) {
+      console.error("❌ No notification intervals found");
     } else {
-      console.log("✅ Notification intervals:", intervalsData);
+      console.log("✅ Found", intervalsData.length, "notification intervals:", intervalsData);
     }
 
     // Get default template for debugging
@@ -67,6 +95,22 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("✅ Default template found:", templateData[0].id);
     }
 
+    // Check if there are any pending billings
+    console.log("🔍 Debug: Checking for pending billings");
+    const { data: pendingBillings, error: billingError } = await supabase
+      .from('recurring_billing')
+      .select('*, clients(name, email)')
+      .eq('status', 'pending');
+      
+    if (billingError) {
+      console.error("❌ Error fetching pending billings:", billingError);
+    } else if (!pendingBillings || pendingBillings.length === 0) {
+      console.log("⚠️ No pending billings found. This might be why no emails are sent.");
+    } else {
+      console.log("✅ Found", pendingBillings.length, "pending billings");
+      console.log("Sample billing:", pendingBillings[0]);
+    }
+
     // Explicitly run the notification function
     console.log("🔄 Calling check_billing_notifications function...");
     const { data, error } = await supabase.rpc('check_billing_notifications');
@@ -81,7 +125,11 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ 
       status: "success", 
       message: "Notification check triggered successfully",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      settings: settingsData,
+      intervals: intervalsData,
+      template: templateData && templateData.length > 0 ? templateData[0] : null,
+      pendingBillings: pendingBillings ? pendingBillings.length : 0
     }), {
       status: 200,
       headers: {
