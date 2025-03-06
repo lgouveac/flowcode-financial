@@ -153,36 +153,49 @@ const handler = async (req: Request): Promise<Response> => {
       if (intervalsData && intervalsData.length > 0 && pendingBillings.length > 0) {
         console.log("🔍 Analyzing which billings should receive notifications today...");
         const today = new Date();
+        const todayDateString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
         
         for (const billing of pendingBillings) {
-          const dueDay = billing.due_day;
-          if (!dueDay) continue;
-          
-          // Create a date object for the due day in the current month
-          const currentMonth = today.getMonth();
-          const currentYear = today.getFullYear();
-          const dueDateObj = new Date(currentYear, currentMonth, dueDay);
-          
-          // If due day already passed this month, check next month
-          if (dueDateObj < today) {
-            dueDateObj.setMonth(dueDateObj.getMonth() + 1);
+          if (!billing.due_day || billing.due_day < 1 || billing.due_day > 31) {
+            console.log(`⚠️ Billing ${billing.id} has invalid due_day: ${billing.due_day}`);
+            continue;
           }
           
+          // Create a date object for the due day in the current month
+          const currentYear = today.getFullYear();
+          const currentMonth = today.getMonth(); // 0-based
+          
+          // Calculate due date for this month
+          const dueDateThisMonth = new Date(currentYear, currentMonth, billing.due_day);
+          
+          // If due day already passed this month, check next month
+          let dueDate;
+          if (dueDateThisMonth < today) {
+            dueDate = new Date(currentYear, currentMonth + 1, billing.due_day);
+          } else {
+            dueDate = dueDateThisMonth;
+          }
+          
+          // Format date for logging
+          const dueDateFormatted = dueDate.toISOString().split('T')[0];
+          console.log(`📅 Billing ${billing.id} (${billing.description}) has a due date of: ${dueDateFormatted}`);
+          
           for (const interval of intervalsData) {
-            const notificationDate = new Date(dueDateObj);
+            // Calculate notification date for this interval
+            const notificationDate = new Date(dueDate);
             notificationDate.setDate(notificationDate.getDate() - interval.days_before);
             
-            const isToday = 
-              notificationDate.getDate() === today.getDate() && 
-              notificationDate.getMonth() === today.getMonth() && 
-              notificationDate.getFullYear() === today.getFullYear();
+            // Format for comparison
+            const notificationDateFormatted = notificationDate.toISOString().split('T')[0];
             
-            console.log(`📅 Billing ${billing.id} (${billing.description}) due on ${dueDateObj.toLocaleDateString()}. Notification date for ${interval.days_before} days before: ${notificationDate.toLocaleDateString()}. Is today: ${isToday}`);
+            // Check if notification date is today
+            const isToday = notificationDateFormatted === todayDateString;
+            
+            console.log(`📅 Billing ${billing.id} - Due: ${dueDateFormatted}, Notify ${interval.days_before} days before on: ${notificationDateFormatted}, IsToday: ${isToday}`);
             
             if (isToday) {
-              console.log(`📅 Billing ${billing.id} (${billing.description}) should be notified today (${interval.days_before} days before due date ${dueDateObj.toLocaleDateString()})`);
+              console.log(`📅 Billing ${billing.id} (${billing.description}) should be notified today (${interval.days_before} days before due date ${dueDateFormatted})`);
               
-              // Manually send email if the notification date is today
               try {
                 console.log(`📧 Manually sending email to ${billing.clients.name} (${billing.clients.email})`);
                 
@@ -191,10 +204,6 @@ const handler = async (req: Request): Promise<Response> => {
                   style: 'currency', 
                   currency: 'BRL' 
                 }).format(billing.amount);
-                
-                // Create due date from due day
-                const dueDate = new Date(dueDateObj);
-                const formattedDueDate = dueDate.toLocaleDateString('pt-BR');
                 
                 // Send email using send-billing-email function
                 const emailData = {
