@@ -26,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("- SUPABASE_SERVICE_ROLE_KEY available:", !!supabaseKey);
     console.log("- RESEND_API_KEY available:", !!Deno.env.get("RESEND_API_KEY"));
 
-    // Get notification settings for debugging
+    // Get notification settings
     console.log("🔍 Debug: Fetching notification settings");
     const { data: settingsData, error: settingsError } = await supabase
       .from('email_notification_settings')
@@ -43,7 +43,43 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("✅ Notification settings:", settingsData);
     }
 
-    // Get notification intervals for debugging
+    // Extract notification time
+    const notificationTime = settingsData[0].notification_time;
+    
+    // Check if current time matches notification time
+    const now = new Date();
+    const currentTimeString = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    const dbTimeString = notificationTime.substring(0, 5); // HH:MM format
+    
+    console.log(`⏰ Current time: ${currentTimeString}, Notification time: ${dbTimeString}`);
+    
+    // Check if the current time is within a minute of the notification time
+    const currentHour = parseInt(currentTimeString.split(':')[0]);
+    const currentMinute = parseInt(currentTimeString.split(':')[1]);
+    const dbHour = parseInt(dbTimeString.split(':')[0]);
+    const dbMinute = parseInt(dbTimeString.split(':')[1]);
+    
+    const isTimeMatch = (currentHour === dbHour && currentMinute === dbMinute);
+    
+    console.log(`⏰ Time match: ${isTimeMatch ? "YES" : "NO"}`);
+    
+    if (!isTimeMatch) {
+      console.log("⏰ Current time does not match notification time. Skipping notifications.");
+      return new Response(JSON.stringify({ 
+        status: "skipped", 
+        message: "Current time does not match notification time",
+        currentTime: currentTimeString,
+        configuredTime: dbTimeString
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
+
+    // Get notification intervals
     console.log("🔍 Debug: Fetching notification intervals");
     const { data: intervalsData, error: intervalsError } = await supabase
       .from('email_notification_intervals')
@@ -71,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("✅ Found", intervalsData.length, "notification intervals:", intervalsData);
     }
 
-    // Get default template for debugging
+    // Get default template
     console.log("🔍 Debug: Fetching default template");
     const { data: templateData, error: templateError } = await supabase
       .from('email_templates')
@@ -89,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("✅ Default template found:", templateData[0].id);
     }
 
-    // Check if there are any pending billings
+    // Check for pending billings
     console.log("🔍 Debug: Checking for pending billings");
     const { data: pendingBillings, error: billingError } = await supabase
       .from('recurring_billing')
@@ -207,7 +243,10 @@ const handler = async (req: Request): Promise<Response> => {
       intervals: intervalsData,
       template: templateData && templateData.length > 0 ? templateData[0] : null,
       pendingBillings: pendingBillings ? pendingBillings.length : 0,
-      emailRecipient: "lgouveacarmo@gmail.com" // Add this for debugging
+      emailRecipient: "lgouveacarmo@gmail.com", // Add this for debugging
+      timeMatched: true,
+      currentTime: currentTimeString,
+      configuredTime: dbTimeString
     }), {
       status: 200,
       headers: {
