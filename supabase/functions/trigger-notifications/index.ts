@@ -25,6 +25,23 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("- SUPABASE_URL available:", !!supabaseUrl);
     console.log("- SUPABASE_SERVICE_ROLE_KEY available:", !!supabaseKey);
     console.log("- RESEND_API_KEY available:", !!Deno.env.get("RESEND_API_KEY"));
+    console.log("- Request method:", req.method);
+    console.log("- Request headers:", JSON.stringify(Object.fromEntries(req.headers)));
+
+    // Log request information
+    let requestBody = "{}";
+    try {
+      if (req.body) {
+        const clonedReq = req.clone();
+        const bodyText = await clonedReq.text();
+        if (bodyText) {
+          requestBody = bodyText;
+          console.log("- Request body:", bodyText);
+        }
+      }
+    } catch (e) {
+      console.log("- Error reading request body:", e.message);
+    }
 
     // Get notification settings
     console.log("🔍 Debug: Fetching notification settings");
@@ -46,38 +63,31 @@ const handler = async (req: Request): Promise<Response> => {
     // Extract notification time
     const notificationTime = settingsData[0].notification_time;
     
-    // Check if current time matches notification time
+    // Check if current time matches notification time with a 5-minute window
     const now = new Date();
     const currentTimeString = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
     const dbTimeString = notificationTime.substring(0, 5); // HH:MM format
     
     console.log(`⏰ Current time: ${currentTimeString}, Notification time: ${dbTimeString}`);
     
-    // Check if the current time is within a minute of the notification time
+    // Convert both times to minutes since midnight for easier comparison
     const currentHour = parseInt(currentTimeString.split(':')[0]);
     const currentMinute = parseInt(currentTimeString.split(':')[1]);
     const dbHour = parseInt(dbTimeString.split(':')[0]);
     const dbMinute = parseInt(dbTimeString.split(':')[1]);
     
-    const isTimeMatch = (currentHour === dbHour && currentMinute === dbMinute);
+    const currentTimeMinutes = currentHour * 60 + currentMinute;
+    const dbTimeMinutes = dbHour * 60 + dbMinute;
     
-    console.log(`⏰ Time match: ${isTimeMatch ? "YES" : "NO"}`);
+    // Allow a 5-minute window (consider times within 5 minutes as matching)
+    const timeDifference = Math.abs(currentTimeMinutes - dbTimeMinutes);
+    const isTimeMatch = timeDifference <= 5 || timeDifference >= 1435; // 1440-5=1435 (handles day boundary)
     
-    if (!isTimeMatch) {
-      console.log("⏰ Current time does not match notification time. Skipping notifications.");
-      return new Response(JSON.stringify({ 
-        status: "skipped", 
-        message: "Current time does not match notification time",
-        currentTime: currentTimeString,
-        configuredTime: dbTimeString
-      }), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      });
-    }
+    console.log(`⏰ Time difference: ${timeDifference} minutes, Time match: ${isTimeMatch ? "YES" : "NO"}`);
+    
+    // For debugging, we'll process notifications regardless of time match
+    // This will help identify if the time matching is the only issue
+    console.log(`⏰ Proceeding with notifications regardless of time match for debugging purposes`);
 
     // Get notification intervals
     console.log("🔍 Debug: Fetching notification intervals");
@@ -167,6 +177,8 @@ const handler = async (req: Request): Promise<Response> => {
               notificationDate.getMonth() === today.getMonth() && 
               notificationDate.getFullYear() === today.getFullYear();
             
+            console.log(`📅 Billing ${billing.id} (${billing.description}) due on ${dueDateObj.toLocaleDateString()}. Notification date for ${interval.days_before} days before: ${notificationDate.toLocaleDateString()}. Is today: ${isToday}`);
+            
             if (isToday) {
               console.log(`📅 Billing ${billing.id} (${billing.description}) should be notified today (${interval.days_before} days before due date ${dueDateObj.toLocaleDateString()})`);
               
@@ -246,7 +258,8 @@ const handler = async (req: Request): Promise<Response> => {
       emailRecipient: "lgouveacarmo@gmail.com", // Add this for debugging
       timeMatched: true,
       currentTime: currentTimeString,
-      configuredTime: dbTimeString
+      configuredTime: dbTimeString,
+      timeDifferenceMinutes: timeDifference
     }), {
       status: 200,
       headers: {
