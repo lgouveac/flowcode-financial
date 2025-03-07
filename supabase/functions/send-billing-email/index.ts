@@ -57,8 +57,9 @@ const handler = async (req: Request): Promise<Response> => {
       billingValue: data.billingValue,
       dueDate: data.dueDate,
       daysUntilDue: data.daysUntilDue,
-      currentInstallment: data.currentInstallment,
-      totalInstallments: data.totalInstallments
+      currentInstallment: data.currentInstallment || 1,
+      totalInstallments: data.totalInstallments || 1,
+      paymentMethod: data.paymentMethod || 'PIX'
     }));
     
     // Generate a cache key based on recipient, date, and content
@@ -98,10 +99,16 @@ const handler = async (req: Request): Promise<Response> => {
     const formattedDate = new Date(data.dueDate).toLocaleDateString('pt-BR');
     console.log("📅 Formatted date:", formattedDate);
     
-    // Ensure these are defined values, not undefined
-    const currentInstallment = data.currentInstallment || 1;
-    const totalInstallments = data.totalInstallments || 1;
+    // Ensure these are defined values with proper type checking, not undefined
+    const currentInstallment = typeof data.currentInstallment === 'number' ? data.currentInstallment : 1;
+    const totalInstallments = typeof data.totalInstallments === 'number' ? data.totalInstallments : 1;
     const paymentMethod = data.paymentMethod || 'PIX';
+    
+    console.log("📦 Variable values:", {
+      currentInstallment,
+      totalInstallments,
+      paymentMethod
+    });
     
     // Replace variables in content
     let processedContent = data.content
@@ -136,6 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("📧 Processing email to:", recipients.join(", "));
     console.log("📋 Subject:", processedSubject);
+    console.log("🔍 Current installment:", currentInstallment, "Total installments:", totalInstallments);
     
     try {
       const emailResponse = await resend.emails.send({
