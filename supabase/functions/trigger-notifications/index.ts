@@ -79,169 +79,35 @@ const handler = async (req: Request): Promise<Response> => {
     const currentTimeMinutes = currentHour * 60 + currentMinute;
     const dbTimeMinutes = dbHour * 60 + dbMinute;
     
-    // Allow a 5-minute window (consider times within 5 minutes as matching)
+    // Allow a 2-minute window (consider times within 2 minutes as matching)
+    // We'll make this stricter than before to avoid sending too many emails
     const timeDifference = Math.abs(currentTimeMinutes - dbTimeMinutes);
-    const isTimeMatch = timeDifference <= 5 || timeDifference >= 1435; // 1440-5=1435 (handles day boundary)
+    const isTimeMatch = timeDifference <= 2 || timeDifference >= 1438; // 1440-2=1438 (handles day boundary)
     
     console.log(`⏰ Time difference: ${timeDifference} minutes, Time match: ${isTimeMatch ? "YES" : "NO"}`);
     
-    // For debugging, we'll process notifications regardless of time match
-    // This will help identify if the time matching is the only issue
-    console.log(`⏰ Proceeding with notifications regardless of time match for debugging purposes`);
-
-    // Get notification intervals
-    console.log("🔍 Debug: Fetching notification intervals");
-    const { data: intervalsData, error: intervalsError } = await supabase
-      .from('email_notification_intervals')
-      .select('*')
-      .order('days_before', { ascending: false });
-    
-    if (intervalsError) {
-      console.error("❌ Error fetching notification intervals:", intervalsError);
-      throw new Error(`Failed to fetch notification intervals: ${intervalsError.message}`);
-    } else if (!intervalsData || intervalsData.length === 0) {
-      console.error("❌ No notification intervals found");
-      console.log("⚠️ Creating a default notification interval (7 days before)");
-      
-      // Create a default interval if none exists
-      const { error: createError } = await supabase
-        .from('email_notification_intervals')
-        .insert({ days_before: 7 });
-        
-      if (createError) {
-        console.error("❌ Failed to create default interval:", createError);
-      } else {
-        console.log("✅ Default interval created successfully");
-      }
-    } else {
-      console.log("✅ Found", intervalsData.length, "notification intervals:", intervalsData);
+    // IMPORTANT CHANGE: Only proceed with emails if time matches
+    // This was the bug - we were ignoring the time match result
+    if (!isTimeMatch) {
+      console.log("⏰ Current time does not match notification time. Skipping email sending.");
+      return new Response(JSON.stringify({ 
+        status: "success", 
+        message: "Notification time not matched, no emails sent",
+        timestamp: new Date().toISOString(),
+        timeMatched: false,
+        currentTime: currentTimeString,
+        configuredTime: dbTimeString,
+        timeDifferenceMinutes: timeDifference
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
     }
 
-    // Get default template
-    console.log("🔍 Debug: Fetching default template");
-    const { data: templateData, error: templateError } = await supabase
-      .from('email_templates')
-      .select('*')
-      .eq('type', 'clients')
-      .eq('subtype', 'recurring')
-      .eq('is_default', true)
-      .limit(1);
-    
-    if (templateError) {
-      console.error("❌ Error fetching default template:", templateError);
-    } else if (!templateData || templateData.length === 0) {
-      console.error("❌ No default template found");
-    } else {
-      console.log("✅ Default template found:", templateData[0].id);
-    }
-
-    // Check for pending billings
-    console.log("🔍 Debug: Checking for pending billings");
-    const { data: pendingBillings, error: billingError } = await supabase
-      .from('recurring_billing')
-      .select('*, clients(name, email)')
-      .eq('status', 'pending');
-      
-    if (billingError) {
-      console.error("❌ Error fetching pending billings:", billingError);
-    } else if (!pendingBillings || pendingBillings.length === 0) {
-      console.log("⚠️ No pending billings found. This might be why no emails are sent.");
-    } else {
-      console.log("✅ Found", pendingBillings.length, "pending billings");
-      
-      // Calculate which billings should receive notifications today based on the intervals
-      if (intervalsData && intervalsData.length > 0 && pendingBillings.length > 0) {
-        console.log("🔍 Analyzing which billings should receive notifications today...");
-        const today = new Date();
-        const todayDateString = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-        
-        for (const billing of pendingBillings) {
-          if (!billing.due_day || billing.due_day < 1 || billing.due_day > 31) {
-            console.log(`⚠️ Billing ${billing.id} has invalid due_day: ${billing.due_day}`);
-            continue;
-          }
-          
-          // Create a date object for the due day in the current month
-          const currentYear = today.getFullYear();
-          const currentMonth = today.getMonth(); // 0-based
-          
-          // Calculate due date for this month
-          const dueDateThisMonth = new Date(currentYear, currentMonth, billing.due_day);
-          
-          // If due day already passed this month, check next month
-          let dueDate;
-          if (dueDateThisMonth < today) {
-            dueDate = new Date(currentYear, currentMonth + 1, billing.due_day);
-          } else {
-            dueDate = dueDateThisMonth;
-          }
-          
-          // Format date for logging
-          const dueDateFormatted = dueDate.toISOString().split('T')[0];
-          console.log(`📅 Billing ${billing.id} (${billing.description}) has a due date of: ${dueDateFormatted}`);
-          
-          for (const interval of intervalsData) {
-            // Calculate notification date for this interval
-            const notificationDate = new Date(dueDate);
-            notificationDate.setDate(notificationDate.getDate() - interval.days_before);
-            
-            // Format for comparison
-            const notificationDateFormatted = notificationDate.toISOString().split('T')[0];
-            
-            // Check if notification date is today
-            const isToday = notificationDateFormatted === todayDateString;
-            
-            console.log(`📅 Billing ${billing.id} - Due: ${dueDateFormatted}, Notify ${interval.days_before} days before on: ${notificationDateFormatted}, IsToday: ${isToday}`);
-            
-            if (isToday) {
-              console.log(`📅 Billing ${billing.id} (${billing.description}) should be notified today (${interval.days_before} days before due date ${dueDateFormatted})`);
-              
-              try {
-                console.log(`📧 Manually sending email to ${billing.clients.name} (${billing.clients.email})`);
-                
-                // Format billing amount for display
-                const formattedAmount = new Intl.NumberFormat('pt-BR', { 
-                  style: 'currency', 
-                  currency: 'BRL' 
-                }).format(billing.amount);
-                
-                // Send email using send-billing-email function
-                const emailData = {
-                  to: billing.clients.email,
-                  subject: templateData && templateData.length > 0 ? 
-                    templateData[0].subject.replace(/{valor_cobranca}/g, formattedAmount) : 
-                    `Cobrança: ${formattedAmount}`,
-                  content: templateData && templateData.length > 0 ? templateData[0].content : "",
-                  recipientName: billing.clients.name,
-                  billingValue: billing.amount,
-                  dueDate: dueDate.toISOString(),
-                  daysUntilDue: interval.days_before
-                };
-                
-                const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-billing-email`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${supabaseKey}`
-                  },
-                  body: JSON.stringify(emailData)
-                });
-                
-                if (emailResponse.ok) {
-                  const result = await emailResponse.json();
-                  console.log(`✅ Email sent successfully to ${billing.clients.email}:`, result);
-                } else {
-                  const errorText = await emailResponse.text();
-                  console.error(`❌ Failed to send email to ${billing.clients.email}:`, emailResponse.status, errorText);
-                }
-              } catch (emailError) {
-                console.error(`❌ Error sending email to ${billing.clients.email}:`, emailError);
-              }
-            }
-          }
-        }
-      }
-    }
+    console.log("⏰ Time matched! Proceeding with notifications");
 
     // Execute the database notification function
     console.log("🔄 Executing check_billing_notifications function...");
@@ -261,10 +127,6 @@ const handler = async (req: Request): Promise<Response> => {
       message: "Notification check triggered successfully",
       timestamp: new Date().toISOString(),
       settings: settingsData,
-      intervals: intervalsData,
-      template: templateData && templateData.length > 0 ? templateData[0] : null,
-      pendingBillings: pendingBillings ? pendingBillings.length : 0,
-      emailRecipient: "lgouveacarmo@gmail.com", // Add this for debugging
       timeMatched: true,
       currentTime: currentTimeString,
       configuredTime: dbTimeString,

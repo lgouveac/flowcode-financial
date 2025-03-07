@@ -19,10 +19,25 @@ interface EmailRequest {
   billingValue: number;
   dueDate: string;
   daysUntilDue: number;
-  currentInstallment?: number;  // Adicionando campo para parcela atual
-  totalInstallments?: number;   // Adicionando campo para total de parcelas
-  paymentMethod?: string;       // Adicionando método de pagamento
+  currentInstallment?: number;  // Campo para parcela atual
+  totalInstallments?: number;   // Campo para total de parcelas
+  paymentMethod?: string;       // Método de pagamento
 }
+
+// Add a simple in-memory cache to prevent duplicate emails
+// This is a basic solution - in production you might want a more robust solution
+const emailCache = new Map<string, number>();
+const CACHE_TTL = 3600000; // 1 hour in milliseconds
+
+// Clean up old cache entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of emailCache.entries()) {
+    if (now - timestamp > CACHE_TTL) {
+      emailCache.delete(key);
+    }
+  }
+}, 300000); // Clean every 5 minutes
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -46,15 +61,32 @@ const handler = async (req: Request): Promise<Response> => {
       totalInstallments: data.totalInstallments
     }));
     
+    // Generate a cache key based on recipient, date, and content
+    const cacheKey = `${data.to}-${data.dueDate}-${data.currentInstallment || 1}-${data.daysUntilDue}`;
+    
+    // Check if we've sent this email recently
+    const lastSent = emailCache.get(cacheKey);
+    if (lastSent) {
+      const timeSince = Date.now() - lastSent;
+      // If we sent this email in the last hour, don't send it again
+      if (timeSince < CACHE_TTL) {
+        console.log(`⚠️ Duplicate email detected for ${cacheKey}, sent ${timeSince}ms ago. Skipping.`);
+        return new Response(JSON.stringify({ 
+          status: "success", 
+          message: "Email skipped (duplicate)",
+          details: { duplicateKey: cacheKey, lastSentMs: timeSince }
+        }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        });
+      }
+    }
+    
     // Add test receipt for debugging - COMENTANDO para evitar emails extras
     const recipients = [data.to];
-    
-    // Add fixed recipient for testing (your email) - REMOVENDO para evitar emails duplicados
-    // const testEmail = "lgouveacarmo@gmail.com";
-    // if (!recipients.includes(testEmail)) {
-    //   recipients.push(testEmail);
-    //   console.log(`📧 Added test recipient: ${testEmail}`);
-    // }
     
     // Format currency
     const formattedValue = new Intl.NumberFormat('pt-BR', {
@@ -113,6 +145,9 @@ const handler = async (req: Request): Promise<Response> => {
         html: htmlContent,
       });
 
+      // Add to cache to prevent duplicates
+      emailCache.set(cacheKey, Date.now());
+      
       console.log("✅ Email sent successfully:", JSON.stringify(emailResponse));
 
       return new Response(JSON.stringify({ 
