@@ -19,6 +19,9 @@ interface EmailRequest {
   billingValue: number;
   dueDate: string;
   daysUntilDue: number;
+  currentInstallment?: number;  // Adicionando campo para parcela atual
+  totalInstallments?: number;   // Adicionando campo para total de parcelas
+  paymentMethod?: string;       // Adicionando método de pagamento
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -38,18 +41,20 @@ const handler = async (req: Request): Promise<Response> => {
       recipientName: data.recipientName,
       billingValue: data.billingValue,
       dueDate: data.dueDate,
-      daysUntilDue: data.daysUntilDue
+      daysUntilDue: data.daysUntilDue,
+      currentInstallment: data.currentInstallment,
+      totalInstallments: data.totalInstallments
     }));
     
-    // Add test receipt for debugging
+    // Add test receipt for debugging - COMENTANDO para evitar emails extras
     const recipients = [data.to];
     
-    // Add fixed recipient for testing (your email)
-    const testEmail = "lgouveacarmo@gmail.com";
-    if (!recipients.includes(testEmail)) {
-      recipients.push(testEmail);
-      console.log(`📧 Added test recipient: ${testEmail}`);
-    }
+    // Add fixed recipient for testing (your email) - REMOVENDO para evitar emails duplicados
+    // const testEmail = "lgouveacarmo@gmail.com";
+    // if (!recipients.includes(testEmail)) {
+    //   recipients.push(testEmail);
+    //   console.log(`📧 Added test recipient: ${testEmail}`);
+    // }
     
     // Format currency
     const formattedValue = new Intl.NumberFormat('pt-BR', {
@@ -61,11 +66,25 @@ const handler = async (req: Request): Promise<Response> => {
     const formattedDate = new Date(data.dueDate).toLocaleDateString('pt-BR');
     console.log("📅 Formatted date:", formattedDate);
     
+    // Ensure these are defined values, not undefined
+    const currentInstallment = data.currentInstallment || 1;
+    const totalInstallments = data.totalInstallments || 1;
+    const paymentMethod = data.paymentMethod || 'PIX';
+    
     // Replace variables in content
     let processedContent = data.content
       .replace(/{nome_cliente}/g, data.recipientName)
       .replace(/{valor_cobranca}/g, formattedValue)
-      .replace(/{data_vencimento}/g, formattedDate);
+      .replace(/{data_vencimento}/g, formattedDate)
+      .replace(/{numero_parcela}/g, String(currentInstallment))
+      .replace(/{total_parcelas}/g, String(totalInstallments))
+      .replace(/{forma_pagamento}/g, paymentMethod);
+    
+    // Replace subject variables too
+    let processedSubject = data.subject
+      .replace(/{valor_cobranca}/g, formattedValue)
+      .replace(/{numero_parcela}/g, String(currentInstallment))
+      .replace(/{total_parcelas}/g, String(totalInstallments));
     
     // Convert line breaks to HTML paragraphs
     const paragraphs = processedContent.split('\n').filter(p => p.trim() !== '');
@@ -84,13 +103,13 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     console.log("📧 Processing email to:", recipients.join(", "));
-    console.log("📋 Subject:", data.subject);
+    console.log("📋 Subject:", processedSubject);
     
     try {
       const emailResponse = await resend.emails.send({
         from: "financeiro@flowcode.cc",
         to: recipients,
-        subject: data.subject,
+        subject: processedSubject,
         html: htmlContent,
       });
 
