@@ -19,9 +19,9 @@ interface EmailRequest {
   billingValue: number;
   dueDate: string;
   daysUntilDue: number;
-  currentInstallment?: number;  // Campo para parcela atual
-  totalInstallments?: number;   // Campo para total de parcelas
-  paymentMethod?: string;       // Método de pagamento
+  currentInstallment?: number;
+  totalInstallments?: number;
+  paymentMethod?: string;
 }
 
 // Add a simple in-memory cache to prevent duplicate emails
