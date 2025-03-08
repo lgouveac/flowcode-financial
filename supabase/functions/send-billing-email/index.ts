@@ -194,6 +194,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       console.log("✅ Email sent successfully:", JSON.stringify(emailResponse));
 
+      // Return with a standardized structure for our PostgreSQL function
       return new Response(JSON.stringify({ 
         status: "success", 
         message: "Email sent successfully",
