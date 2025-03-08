@@ -86,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
     
-    // Add test receipt for debugging - COMENTANDO para evitar emails extras
+    // Prepare recipients
     const recipients = [data.to];
     
     // Format currency
@@ -110,20 +110,56 @@ const handler = async (req: Request): Promise<Response> => {
       paymentMethod
     });
     
-    // Replace variables in content
-    let processedContent = data.content
-      .replace(/{nome_cliente}/g, data.recipientName)
-      .replace(/{valor_cobranca}/g, formattedValue)
-      .replace(/{data_vencimento}/g, formattedDate)
-      .replace(/{numero_parcela}/g, String(currentInstallment))
-      .replace(/{total_parcelas}/g, String(totalInstallments))
-      .replace(/{forma_pagamento}/g, paymentMethod);
+    // Format installment information (e.g., "1/5")
+    const installmentInfo = `${currentInstallment}/${totalInstallments}`;
+    console.log("📊 Installment info:", installmentInfo);
+    
+    // Replace variables in content - ensure all replacements work correctly
+    let processedContent = data.content;
+    
+    // Define replacement pairs in order of specificity (longest patterns first)
+    const replacements: [RegExp, string][] = [
+      [/{nome_cliente}/g, data.recipientName],
+      [/{valor_cobranca}/g, formattedValue],
+      [/{data_vencimento}/g, formattedDate],
+      [/{numero_parcela}\/\{total_parcelas}/g, installmentInfo], // Handle "X/Y" pattern if present
+      [/{numero_parcela}/g, String(currentInstallment)],
+      [/{total_parcelas}/g, String(totalInstallments)],
+      [/{forma_pagamento}/g, paymentMethod]
+    ];
+    
+    // Apply all replacements
+    replacements.forEach(([pattern, replacement]) => {
+      processedContent = processedContent.replace(pattern, replacement);
+    });
+    
+    // Log the original and processed content for debugging
+    console.log("🔄 Original content:", data.content);
+    console.log("✅ Processed content:", processedContent);
     
     // Replace subject variables too
-    let processedSubject = data.subject
-      .replace(/{valor_cobranca}/g, formattedValue)
-      .replace(/{numero_parcela}/g, String(currentInstallment))
-      .replace(/{total_parcelas}/g, String(totalInstallments));
+    let processedSubject = data.subject;
+    const subjectReplacements: [RegExp, string][] = [
+      [/{valor_cobranca}/g, formattedValue],
+      [/{numero_parcela}\/\{total_parcelas}/g, installmentInfo],
+      [/{numero_parcela}/g, String(currentInstallment)],
+      [/{total_parcelas}/g, String(totalInstallments)]
+    ];
+    
+    subjectReplacements.forEach(([pattern, replacement]) => {
+      processedSubject = processedSubject.replace(pattern, replacement);
+    });
+    
+    // Check if the template contains the string "parcela" but numbers weren't replaced
+    if (processedContent.includes("parcela") && 
+        (processedContent.includes("{numero_parcela}") || processedContent.includes("{total_parcelas}"))) {
+      console.warn("⚠️ Warning: Template contains 'parcela' but variables weren't replaced. This may indicate a template issue.");
+      
+      // Emergency replacement to avoid "{parcela X/Y}" showing up in emails
+      processedContent = processedContent
+        .replace(/parcela {numero_parcela}\/\{total_parcelas}/g, `parcela ${installmentInfo}`)
+        .replace(/parcela {numero_parcela}/g, `parcela ${currentInstallment}`);
+    }
     
     // Convert line breaks to HTML paragraphs
     const paragraphs = processedContent.split('\n').filter(p => p.trim() !== '');

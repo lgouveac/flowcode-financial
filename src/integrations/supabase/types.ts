@@ -458,6 +458,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      trigger_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       billing_status:
