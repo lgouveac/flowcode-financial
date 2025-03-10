@@ -15,14 +15,8 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
 
-  // Prevent any default form submission
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    return false;
-  };
-
   return (
-    <div className="space-y-8" onSubmit={handleFormSubmit}>
+    <div className="space-y-8">
       {showChart ? (
         <>
           <CashFlowChart 

@@ -52,11 +52,12 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          type="button"
+          type="button" 
           onClick={(e) => {
             e.preventDefault();
-            e.stopPropagation(); // Prevent event bubbling to parent forms
+            e.stopPropagation();
             setOpen(!open);
+            return false; // Ensure no default action occurs
           }}
         >
           {selectedPayment && selectedPaymentData ? (
@@ -84,8 +85,8 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
               <CommandItem
                 key={payment.id}
                 value={payment.id}
-                onSelect={() => {
-                  onSelect(payment.id);
+                onSelect={(currentValue) => {
+                  onSelect(currentValue);
                   setOpen(false);
                 }}
                 className="flex flex-col items-start"
