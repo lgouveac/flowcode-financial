@@ -153,110 +153,108 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
         </Select>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Parcela</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Dia do Vencimento</TableHead>
-              <TableHead>Data Pgto.</TableHead>
-              <TableHead>Método</TableHead>
-              <TableHead>Status</TableHead>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Descrição</TableHead>
+            <TableHead>Parcela</TableHead>
+            <TableHead>Valor</TableHead>
+            <TableHead>Dia do Vencimento</TableHead>
+            <TableHead>Data Pgto.</TableHead>
+            <TableHead>Método</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredBillings.map((billing, index) => (
+            <TableRow 
+              key={billing.id} 
+              className={`group hover:bg-muted/50 cursor-pointer ${
+                // Add a visual separator between different billing groups
+                index > 0 &&
+                filteredBillings[index - 1]?.description !== billing.description &&
+                "border-t-4 border-t-gray-200"
+              }`}
+              onClick={() => handleRowClick(billing.id)}
+            >
+              <TableCell>{billing.clients?.name}</TableCell>
+              <TableCell className="relative">
+                <EditableCell
+                  value={billing.description}
+                  onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </TableCell>
+              <TableCell>
+                {billing.current_installment}/{billing.installments}
+              </TableCell>
+              <TableCell className="relative">
+                <EditableCell
+                  value={billing.amount.toString()}
+                  onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
+                  type="number"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </TableCell>
+              <TableCell className="relative">
+                <EditableCell
+                  value={billing.due_day.toString()}
+                  onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
+                  type="number"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </TableCell>
+              <TableCell className="relative">
+                <input
+                  type="date"
+                  value={billing.payment_date || ''}
+                  onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
+                  className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
+                  disabled={billing.status !== 'paid'}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <Select
+                  value={billing.payment_method}
+                  onValueChange={(value) => handleUpdateBilling(billing.id, 'payment_method', value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="boleto">Boleto</SelectItem>
+                    <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <Select
+                  value={billing.status}
+                  onValueChange={(value) => handleUpdateBilling(billing.id, 'status', value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      <Badge variant={getStatusBadgeVariant(billing.status)}>
+                        {getStatusLabel(billing.status)}
+                      </Badge>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="billed">Faturado</SelectItem>
+                    <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                    <SelectItem value="overdue">Atrasado</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredBillings.map((billing, index) => (
-              <TableRow 
-                key={billing.id} 
-                className={`group hover:bg-muted/50 cursor-pointer ${
-                  // Add a visual separator between different billing groups
-                  index > 0 &&
-                  filteredBillings[index - 1]?.description !== billing.description &&
-                  "border-t-4 border-t-gray-200"
-                }`}
-                onClick={() => handleRowClick(billing.id)}
-              >
-                <TableCell>{billing.clients?.name}</TableCell>
-                <TableCell className="relative">
-                  <EditableCell
-                    value={billing.description}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </TableCell>
-                <TableCell>
-                  {billing.current_installment}/{billing.installments}
-                </TableCell>
-                <TableCell className="relative">
-                  <EditableCell
-                    value={billing.amount.toString()}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
-                    type="number"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </TableCell>
-                <TableCell className="relative">
-                  <EditableCell
-                    value={billing.due_day.toString()}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
-                    type="number"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </TableCell>
-                <TableCell className="relative">
-                  <input
-                    type="date"
-                    value={billing.payment_date || ''}
-                    onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
-                    className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
-                    disabled={billing.status !== 'paid'}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={billing.payment_method}
-                    onValueChange={(value) => handleUpdateBilling(billing.id, 'payment_method', value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pix">PIX</SelectItem>
-                      <SelectItem value="boleto">Boleto</SelectItem>
-                      <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={billing.status}
-                    onValueChange={(value) => handleUpdateBilling(billing.id, 'status', value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue>
-                        <Badge variant={getStatusBadgeVariant(billing.status)}>
-                          {getStatusLabel(billing.status)}
-                        </Badge>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendente</SelectItem>
-                      <SelectItem value="billed">Faturado</SelectItem>
-                      <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                      <SelectItem value="overdue">Atrasado</SelectItem>
-                      <SelectItem value="cancelled">Cancelado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          ))}
+        </TableBody>
+      </Table>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>

@@ -30,12 +30,15 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
     }).format(value);
   };
 
-  const filteredPayments = payments.filter(payment => {
+  // Garantir que payments nunca seja undefined para evitar o erro
+  const safePayments = payments || [];
+
+  const filteredPayments = safePayments.filter(payment => {
     const searchLower = searchValue.toLowerCase();
     return (
-      payment.clients.name.toLowerCase().includes(searchLower) ||
-      payment.description.toLowerCase().includes(searchLower) ||
-      payment.amount.toString().includes(searchLower)
+      payment.clients?.name?.toLowerCase()?.includes(searchLower) ||
+      payment.description?.toLowerCase()?.includes(searchLower) ||
+      payment.amount?.toString()?.includes(searchLower)
     );
   });
 
@@ -49,7 +52,8 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           className="w-full justify-between"
         >
           {selectedPayment ? (
-            payments.find((payment) => payment.id === selectedPayment)?.description
+            safePayments.find((payment) => payment.id === selectedPayment)?.description || 
+            "Selecione um recebimento..."
           ) : (
             "Selecione um recebimento..."
           )}
@@ -57,7 +61,7 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
-        <Command className="w-full">
+        <Command>
           <CommandInput 
             placeholder="Busque por cliente, descrição ou valor..." 
             value={searchValue}
@@ -68,34 +72,36 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
               Nenhum recebimento encontrado
             </p>
           </CommandEmpty>
-          <CommandGroup className="max-h-[300px] overflow-auto">
-            {filteredPayments.map(payment => (
-              <CommandItem
-                key={payment.id}
-                value={payment.id}
-                onSelect={() => {
-                  onSelect(payment.id);
-                  setOpen(false);
-                }}
-                className="flex flex-col items-start"
-              >
-                <div className="flex items-center w-full">
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 flex-shrink-0",
-                      selectedPayment === payment.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div className="flex flex-col flex-grow">
-                    <span className="font-medium">{payment.clients.name}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {payment.description} - {formatCurrency(payment.amount)}
-                    </span>
+          {filteredPayments.length > 0 && (
+            <CommandGroup className="max-h-[300px] overflow-auto">
+              {filteredPayments.map(payment => (
+                <CommandItem
+                  key={payment.id}
+                  value={payment.id}
+                  onSelect={() => {
+                    onSelect(payment.id);
+                    setOpen(false);
+                  }}
+                  className="flex flex-col items-start"
+                >
+                  <div className="flex items-center w-full">
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4 flex-shrink-0",
+                        selectedPayment === payment.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex flex-col flex-grow">
+                      <span className="font-medium">{payment.clients?.name || 'Cliente'}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {payment.description || 'Sem descrição'} - {formatCurrency(payment.amount || 0)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
