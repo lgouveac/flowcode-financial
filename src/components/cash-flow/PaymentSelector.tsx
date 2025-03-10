@@ -52,10 +52,10 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          type="button" // Explicitly set type to button to prevent form submission
+          type="button"
           onClick={(e) => {
-            // Prevent default to avoid navigation
             e.preventDefault();
+            setOpen(!open); // Explicitly toggle the open state when button is clicked
           }}
         >
           {selectedPayment && selectedPaymentData ? (
@@ -66,7 +66,7 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-full p-0 z-50" align="start">
         <Command>
           <CommandInput 
             placeholder="Busque por cliente, descrição ou valor..." 
