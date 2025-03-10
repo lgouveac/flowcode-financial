@@ -10,19 +10,28 @@ interface EditableCellProps {
   onChange: (value: string) => void;
   type?: string;
   className?: string;
+  onClick?: (e: React.MouseEvent) => void;
 }
 
-export const EditableCell = ({ value, onChange, type = "text", className = "" }: EditableCellProps) => {
+export const EditableCell = ({ 
+  value, 
+  onChange, 
+  type = "text", 
+  className = "",
+  onClick 
+}: EditableCellProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
   const { toast } = useToast();
 
-  const handleEdit = () => {
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsEditing(true);
     setTempValue(value);
   };
 
-  const handleSave = () => {
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onChange(tempValue);
     setIsEditing(false);
     toast({
@@ -31,14 +40,21 @@ export const EditableCell = ({ value, onChange, type = "text", className = "" }:
     });
   };
 
-  const handleCancel = () => {
+  const handleCancel = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsEditing(false);
     setTempValue(value);
   };
 
+  const handleCellClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      onClick(e);
+    }
+  };
+
   if (isEditing) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         <Input
           value={tempValue}
           onChange={(e) => setTempValue(e.target.value)}
@@ -59,7 +75,7 @@ export const EditableCell = ({ value, onChange, type = "text", className = "" }:
   }
 
   return (
-    <div className="relative flex items-center justify-between group/cell">
+    <div className="relative flex items-center justify-between group/cell" onClick={handleCellClick}>
       <span className="flex-1">{value}</span>
       <Button
         variant="ghost"
