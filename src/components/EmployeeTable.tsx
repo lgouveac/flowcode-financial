@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { EditEmployeeDialog } from "./EditEmployeeDialog";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { EmployeeEmailSettings } from "./emails/EmployeeEmailSettings";
 import { LoadingState } from "./employees/LoadingState";
@@ -10,6 +10,7 @@ import { TableHeader } from "./employees/TableHeader";
 import { EmployeeTableRow } from "./employees/EmployeeTableRow";
 import { Button } from "./ui/button";
 import { ImportCSV } from "./import/ImportCSV";
+import { useToast } from "./ui/use-toast";
 
 interface Employee {
   id: string;
@@ -28,6 +29,7 @@ interface Employee {
 
 export const EmployeeTable = () => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
@@ -70,6 +72,39 @@ export const EmployeeTable = () => {
     },
   });
 
+  const updateEmployeeMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: keyof Employee; value: any }) => {
+      const { error } = await supabase
+        .from("employees")
+        .update({ [field]: value })
+        .eq("id", id);
+
+      if (error) {
+        console.error(`Error updating employee ${field}:`, error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      toast({
+        title: "Sucesso",
+        description: "Funcionário atualizado com sucesso.",
+      });
+    },
+    onError: (error) => {
+      console.error("Mutation error:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o funcionário.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEmployeeChange = (id: string, field: keyof Employee, value: any) => {
+    updateEmployeeMutation.mutate({ id, field, value });
+  };
+
   if (isLoading) {
     return <LoadingState onSettingsClick={() => setSettingsOpen(true)} />;
   }
@@ -108,6 +143,7 @@ export const EmployeeTable = () => {
                     key={employee.id}
                     employee={employee}
                     onClick={setSelectedEmployee}
+                    onStatusChange={(value) => handleEmployeeChange(employee.id, "status", value)}
                   />
                 ))}
               </tbody>

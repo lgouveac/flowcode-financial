@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import { NewCashFlowForm } from "./NewCashFlowForm";
+import { ImportCashFlow } from "./ImportCashFlow";
 import type { CashFlow } from "@/types/cashflow";
 
 interface CashFlowTableProps {
@@ -18,17 +19,20 @@ export const CashFlowTable = ({
     <div className="relative z-10">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Fluxo de Caixa</h2>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              Nova Movimentação
-            </Button>
-          </DialogTrigger>
-          <NewCashFlowForm 
-            onSuccess={onNewCashFlow}
-            onClose={() => {}}
-          />
-        </Dialog>
+        <div className="flex gap-3">
+          <ImportCashFlow onSuccess={onNewCashFlow} />
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                Nova Movimentação
+              </Button>
+            </DialogTrigger>
+            <NewCashFlowForm 
+              onSuccess={onNewCashFlow}
+              onClose={() => {}}
+            />
+          </Dialog>
+        </div>
       </div>
 
       {cashFlow.length === 0 ? (
