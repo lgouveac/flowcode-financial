@@ -2,6 +2,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarChart3 } from "lucide-react";
 
 interface CashFlowChartProps {
   chartData: any[];
@@ -74,21 +75,31 @@ export const CashFlowChart = ({
         </div>
         
         <div className="h-[300px] w-full border border-border rounded-lg p-6">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={chartData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="entrada" name="Entradas" stroke="#7C3AED" activeDot={{ r: 8 }} />
-              <Line type="monotone" dataKey="saida" name="Saídas" stroke="#EF4444" />
-              <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#3B82F6" />
-            </LineChart>
-          </ResponsiveContainer>
+          {chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart 
+                data={chartData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="entrada" name="Entradas" stroke="#7C3AED" activeDot={{ r: 8 }} />
+                <Line type="monotone" dataKey="saida" name="Saídas" stroke="#EF4444" />
+                <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#3B82F6" />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full">
+              <BarChart3 className="h-16 w-16 text-muted-foreground/50 mb-3" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-1">Sem dados disponíveis</h3>
+              <p className="text-sm text-muted-foreground/70 text-center max-w-xs">
+                Nenhuma movimentação encontrada para o período selecionado. Adicione transações para visualizar o gráfico.
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
