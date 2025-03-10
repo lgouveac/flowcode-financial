@@ -31,7 +31,9 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
   };
 
   // Garantir que payments nunca seja undefined para evitar o erro
-  const safePayments = payments || [];
+  const safePayments = Array.isArray(payments) ? payments : [];
+
+  const selectedPaymentData = safePayments.find((payment) => payment.id === selectedPayment);
 
   const filteredPayments = safePayments.filter(payment => {
     const searchLower = searchValue.toLowerCase();
@@ -51,9 +53,8 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {selectedPayment ? (
-            safePayments.find((payment) => payment.id === selectedPayment)?.description || 
-            "Selecione um recebimento..."
+          {selectedPayment && selectedPaymentData ? (
+            selectedPaymentData.description || "Selecione um recebimento..."
           ) : (
             "Selecione um recebimento..."
           )}
@@ -72,7 +73,7 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
               Nenhum recebimento encontrado
             </p>
           </CommandEmpty>
-          {filteredPayments.length > 0 && (
+          {filteredPayments.length > 0 ? (
             <CommandGroup className="max-h-[300px] overflow-auto">
               {filteredPayments.map(payment => (
                 <CommandItem
@@ -101,7 +102,7 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
                 </CommandItem>
               ))}
             </CommandGroup>
-          )}
+          ) : null}
         </Command>
       </PopoverContent>
     </Popover>

@@ -53,40 +53,38 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
         <CardTitle>Templates Salvos</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Assunto</TableHead>
-                <TableHead>Padrão</TableHead>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Assunto</TableHead>
+              <TableHead>Padrão</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {templates.map((template) => (
+              <TableRow 
+                key={template.id}
+                className="cursor-pointer"
+                onClick={() => setEditingTemplate(template)}
+              >
+                <TableCell>
+                  {template.name}
+                </TableCell>
+                <TableCell>
+                  {getTemplateTypeLabel(template.type, template.subtype)}
+                </TableCell>
+                <TableCell>
+                  {template.subject}
+                </TableCell>
+                <TableCell>
+                  {template.is_default ? 'Sim' : 'Não'}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {templates.map((template) => (
-                <TableRow 
-                  key={template.id}
-                  className="cursor-pointer"
-                  onClick={() => setEditingTemplate(template)}
-                >
-                  <TableCell>
-                    {template.name}
-                  </TableCell>
-                  <TableCell>
-                    {getTemplateTypeLabel(template.type, template.subtype)}
-                  </TableCell>
-                  <TableCell>
-                    {template.subject}
-                  </TableCell>
-                  <TableCell>
-                    {template.is_default ? 'Sim' : 'Não'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
 
       {editingTemplate && (

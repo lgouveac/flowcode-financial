@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { CashFlow } from "@/components/CashFlow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,18 +7,21 @@ import { useMetrics } from "@/hooks/useMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+
 export const Overview = () => {
   const [period, setPeriod] = useState("current");
   const {
     metrics,
     isLoading
   } = useMetrics(period);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     }).format(value);
   };
+
   const stats = [{
     title: "Receita Total",
     value: formatCurrency(metrics.totalRevenue),
@@ -39,7 +43,9 @@ export const Overview = () => {
     change: metrics.clientsChange,
     description: "Últimos 30 dias"
   }];
-  return <div className="space-y-8">
+
+  return (
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Visão Geral</h1>
         <Select value={period} onValueChange={setPeriod}>
@@ -57,15 +63,12 @@ export const Overview = () => {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, i) => <motion.div key={stat.title} initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        delay: i * 0.1
-      }}>
+        {stats.map((stat, i) => (
+          <motion.div key={stat.title} 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: i * 0.1 }}
+          >
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -73,10 +76,13 @@ export const Overview = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoading ? <div className="space-y-2">
+                {isLoading ? (
+                  <div className="space-y-2">
                     <Skeleton className="h-8 w-[100px]" />
                     <Skeleton className="h-4 w-[60px]" />
-                  </div> : <>
+                  </div>
+                ) : (
+                  <>
                     <div className="flex items-baseline gap-2">
                       <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
                       <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-500' : stat.change === '0%' ? 'text-gray-500' : 'text-red-500'}`}>
@@ -84,10 +90,12 @@ export const Overview = () => {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
-                  </>}
+                  </>
+                )}
               </CardContent>
             </Card>
-          </motion.div>)}
+          </motion.div>
+        ))}
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
@@ -95,26 +103,16 @@ export const Overview = () => {
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="detailed">Detalhado</TabsTrigger>
         </TabsList>
-        <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              
-            </CardHeader>
-            <CardContent>
-              <CashFlow showChart={true} period={period} />
-            </CardContent>
-          </Card>
+        <TabsContent value="overview" className="border rounded-lg p-6">
+          <CashFlow showChart={true} period={period} />
         </TabsContent>
         <TabsContent value="detailed" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Transações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CashFlow showChart={false} period={period} />
-            </CardContent>
-          </Card>
+          <div className="border rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Transações</h3>
+            <CashFlow showChart={false} period={period} />
+          </div>
         </TabsContent>
       </Tabs>
-    </div>;
+    </div>
+  );
 };
