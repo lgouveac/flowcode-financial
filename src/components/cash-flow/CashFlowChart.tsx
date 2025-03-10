@@ -23,7 +23,7 @@ export const CashFlowChart = ({
   setMonth
 }: CashFlowChartProps) => {
   return (
-    <Card className="shadow-sm">
+    <Card className="border-0 shadow-none">
       <CardHeader className="border-b pb-6">
         <div className="flex flex-col space-y-1.5">
           <CardTitle className="text-2xl font-display">Fluxo de Caixa</CardTitle>
