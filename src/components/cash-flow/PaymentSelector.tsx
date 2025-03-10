@@ -55,7 +55,8 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           type="button"
           onClick={(e) => {
             e.preventDefault();
-            setOpen(!open); // Explicitly toggle the open state when button is clicked
+            e.stopPropagation(); // Prevent event bubbling to parent forms
+            setOpen(!open);
           }}
         >
           {selectedPayment && selectedPaymentData ? (
@@ -78,36 +79,34 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
               Nenhum recebimento encontrado
             </p>
           </CommandEmpty>
-          {filteredPayments.length > 0 ? (
-            <CommandGroup className="max-h-[300px] overflow-auto">
-              {filteredPayments.map(payment => (
-                <CommandItem
-                  key={payment.id}
-                  value={payment.id}
-                  onSelect={() => {
-                    onSelect(payment.id);
-                    setOpen(false);
-                  }}
-                  className="flex flex-col items-start"
-                >
-                  <div className="flex items-center w-full">
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4 flex-shrink-0",
-                        selectedPayment === payment.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col flex-grow">
-                      <span className="font-medium">{payment.clients?.name || 'Cliente'}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {payment.description || 'Sem descrição'} - {formatCurrency(payment.amount || 0)}
-                      </span>
-                    </div>
+          <CommandGroup className="max-h-[300px] overflow-auto">
+            {filteredPayments.map(payment => (
+              <CommandItem
+                key={payment.id}
+                value={payment.id}
+                onSelect={() => {
+                  onSelect(payment.id);
+                  setOpen(false);
+                }}
+                className="flex flex-col items-start"
+              >
+                <div className="flex items-center w-full">
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4 flex-shrink-0",
+                      selectedPayment === payment.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex flex-col flex-grow">
+                    <span className="font-medium">{payment.clients?.name || 'Cliente'}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {payment.description || 'Sem descrição'} - {formatCurrency(payment.amount || 0)}
+                    </span>
                   </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          ) : null}
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
         </Command>
       </PopoverContent>
     </Popover>

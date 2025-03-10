@@ -60,6 +60,8 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Stop propagation to prevent any parent form submission
+    
     setIsSubmitting(true);
 
     try {
