@@ -120,7 +120,7 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ 
         status: "success", 
         message: "Email sent successfully",
-        details: emailResponse 
+        content: emailResponse  // Renamed from 'details' to 'content' to match what PostgreSQL is expecting
       }), {
         status: 200,
         headers: {
@@ -137,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
         JSON.stringify({ 
           status: "error", 
           message: "Email sending error",
-          details: {
+          content: {  // Renamed from 'details' to 'content' to match what PostgreSQL is expecting
             statusCode: emailError.statusCode,
             message: emailError.message
           }
@@ -154,7 +154,7 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         status: "error", 
         message: error.message,
-        details: error 
+        content: error  // Renamed from 'details' to 'content' to match what PostgreSQL is expecting
       }),
       {
         status: 500,
