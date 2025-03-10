@@ -72,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ 
         status: "success", 
         message: "Email skipped (duplicate)",
-        details: { duplicateKey: cacheKey, lastSentMs: timeSince }
+        content: { duplicateKey: cacheKey, lastSentMs: timeSince }
       }), {
         status: 200,
         headers: {
@@ -116,11 +116,11 @@ const handler = async (req: Request): Promise<Response> => {
       
       console.log("✅ Email sent successfully:", JSON.stringify(emailResponse));
 
-      // Return with a standardized structure
+      // IMPORTANTE: Garantir que ambos os campos 'status' e 'content' estejam presentes
       return new Response(JSON.stringify({ 
         status: "success", 
         message: "Email sent successfully",
-        content: emailResponse  // Renamed from 'details' to 'content' to match what PostgreSQL is expecting
+        content: emailResponse  // Campo 'content' para corresponder à consulta SQL
       }), {
         status: 200,
         headers: {
@@ -133,11 +133,12 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("- Error code:", emailError.statusCode);
       console.error("- Error message:", emailError.message);
       
+      // IMPORTANTE: Garantir que ambos os campos 'status' e 'content' estejam presentes
       return new Response(
         JSON.stringify({ 
           status: "error", 
           message: "Email sending error",
-          content: {  // Renamed from 'details' to 'content' to match what PostgreSQL is expecting
+          content: {
             statusCode: emailError.statusCode,
             message: emailError.message
           }
@@ -150,11 +151,13 @@ const handler = async (req: Request): Promise<Response> => {
     }
   } catch (error: any) {
     console.error("❌ General error sending email:", error);
+    
+    // IMPORTANTE: Garantir que ambos os campos 'status' e 'content' estejam presentes
     return new Response(
       JSON.stringify({ 
         status: "error", 
         message: error.message,
-        content: error  // Renamed from 'details' to 'content' to match what PostgreSQL is expecting
+        content: { error: error.toString() }
       }),
       {
         status: 500,
