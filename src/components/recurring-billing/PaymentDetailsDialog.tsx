@@ -6,6 +6,8 @@ import { Payment } from "@/types/payment";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { EditableCell } from "../EditableCell";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PaymentDetailsDialogProps {
   billingId: string | null;
@@ -37,8 +39,8 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             name
           )
         `)
-        .order('installment_number', { ascending: true })
-        .contains('description', `(${billingId})`);
+        .eq('description', `like`, `%${billingId}%`)
+        .order('installment_number', { ascending: true });
 
       if (error) throw error;
       
@@ -52,6 +54,31 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdatePayment = async (paymentId: string, field: string, value: any) => {
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .update({ [field]: value })
+        .eq('id', paymentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Pagamento atualizado",
+        description: "As informações foram atualizadas com sucesso.",
+      });
+
+      fetchPayments();
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar o pagamento.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -117,29 +144,72 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                     <TableCell>
                       {payment.installment_number}/{payment.total_installments}
                     </TableCell>
-                    <TableCell>{payment.description}</TableCell>
                     <TableCell>
-                      {payment.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      <EditableCell
+                        value={payment.description}
+                        onChange={(value) => handleUpdatePayment(payment.id, 'description', value)}
+                      />
                     </TableCell>
                     <TableCell>
-                      {new Date(payment.due_date).toLocaleDateString('pt-BR')}
+                      <EditableCell
+                        value={payment.amount.toString()}
+                        onChange={(value) => handleUpdatePayment(payment.id, 'amount', parseFloat(value))}
+                        type="number"
+                      />
                     </TableCell>
                     <TableCell>
-                      {payment.payment_date 
-                        ? new Date(payment.payment_date).toLocaleDateString('pt-BR') 
-                        : '-'}
+                      <input
+                        type="date"
+                        value={payment.due_date}
+                        onChange={(e) => handleUpdatePayment(payment.id, 'due_date', e.target.value)}
+                        className="w-full bg-transparent"
+                      />
                     </TableCell>
                     <TableCell>
-                      {payment.payment_method === 'pix' 
-                        ? 'PIX' 
-                        : payment.payment_method === 'boleto' 
-                          ? 'Boleto' 
-                          : 'Cartão de Crédito'}
+                      <input
+                        type="date"
+                        value={payment.payment_date || ''}
+                        onChange={(e) => handleUpdatePayment(payment.id, 'payment_date', e.target.value)}
+                        className={`w-full bg-transparent ${payment.status === 'paid' ? '' : 'opacity-50'}`}
+                        disabled={payment.status !== 'paid'}
+                      />
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(payment.status)}>
-                        {getStatusLabel(payment.status)}
-                      </Badge>
+                      <Select
+                        value={payment.payment_method}
+                        onValueChange={(value) => handleUpdatePayment(payment.id, 'payment_method', value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="boleto">Boleto</SelectItem>
+                          <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={payment.status}
+                        onValueChange={(value) => handleUpdatePayment(payment.id, 'status', value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue>
+                            <Badge variant={getStatusBadgeVariant(payment.status)}>
+                              {getStatusLabel(payment.status)}
+                            </Badge>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pendente</SelectItem>
+                          <SelectItem value="billed">Faturado</SelectItem>
+                          <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                          <SelectItem value="paid">Pago</SelectItem>
+                          <SelectItem value="overdue">Atrasado</SelectItem>
+                          <SelectItem value="cancelled">Cancelado</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                   </TableRow>
                 ))}
