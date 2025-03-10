@@ -31,6 +31,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     
     setLoading(true);
     try {
+      // Fix here - using `ilike` with a wildcard pattern instead of the incorrect `like` with 3 arguments
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -39,7 +40,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             name
           )
         `)
-        .eq('description', `like`, `%${billingId}%`)
+        .ilike('description', `%${billingId}%`)
         .order('installment_number', { ascending: true });
 
       if (error) throw error;
