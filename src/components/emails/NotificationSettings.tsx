@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -198,15 +197,12 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label>Horário de Envio</Label>
-            <div className="relative">
-              <Input
-                type="time"
-                value={timeValue}
-                onChange={(e) => handleTimeChange(e.target.value)}
-                className="pl-9"
-              />
-              <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white" />
-            </div>
+            <Input
+              type="time"
+              value={timeValue}
+              onChange={(e) => handleTimeChange(e.target.value)}
+              className="[&::-webkit-calendar-picker-indicator]:text-white [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:filter-invert"
+            />
           </div>
 
           <div className="space-y-4">
