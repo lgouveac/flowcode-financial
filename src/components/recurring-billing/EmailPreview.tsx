@@ -52,7 +52,7 @@ export const EmailPreview = ({
   return (
     <div className="space-y-2">
       <Label>Prévia do Email</Label>
-      <div className="bg-background border rounded-md p-4 whitespace-pre-wrap text-sm">
+      <div className="bg-background border rounded-md p-4 whitespace-pre-wrap text-sm text-left">
         {content}
       </div>
     </div>

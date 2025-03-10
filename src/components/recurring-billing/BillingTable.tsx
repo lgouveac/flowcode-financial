@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { RecurringBilling } from "@/types/billing";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string } }>;
@@ -23,6 +25,8 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
     field: string;
     value: any;
   } | null>(null);
+  const [selectedBillingId, setSelectedBillingId] = useState<string | null>(null);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
 
   const filteredBillings = billings.filter(billing => {
     const matchesSearch = search.toLowerCase() === '' || 
@@ -87,6 +91,11 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
     
     setShowConfirmDialog(false);
     setPendingAction(null);
+  };
+
+  const handleRowClick = (billingId: string) => {
+    setSelectedBillingId(billingId);
+    setShowPaymentDetails(true);
   };
 
   const getStatusBadgeVariant = (status: RecurringBilling['status']) => {
@@ -162,18 +171,20 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
             {filteredBillings.map((billing, index) => (
               <TableRow 
                 key={billing.id} 
-                className={`group ${
+                className={`group hover:bg-muted/50 cursor-pointer ${
                   // Add a visual separator between different billing groups
                   index > 0 &&
                   filteredBillings[index - 1]?.description !== billing.description &&
                   "border-t-4 border-t-gray-200"
                 }`}
+                onClick={() => handleRowClick(billing.id)}
               >
                 <TableCell>{billing.clients?.name}</TableCell>
                 <TableCell className="relative">
                   <EditableCell
                     value={billing.description}
                     onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
                 <TableCell>
@@ -184,6 +195,7 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                     value={billing.amount.toString()}
                     onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
                     type="number"
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
                 <TableCell className="relative">
@@ -191,6 +203,7 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                     value={billing.due_day.toString()}
                     onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
                     type="number"
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
                 <TableCell className="relative">
@@ -200,9 +213,10 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                     onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
                     className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
                     disabled={billing.status !== 'paid'}
+                    onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Select
                     value={billing.payment_method}
                     onValueChange={(value) => handleUpdateBilling(billing.id, 'payment_method', value)}
@@ -217,7 +231,7 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                     </SelectContent>
                   </Select>
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Select
                     value={billing.status}
                     onValueChange={(value) => handleUpdateBilling(billing.id, 'status', value)}
@@ -260,6 +274,12 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PaymentDetailsDialog
+        billingId={selectedBillingId}
+        open={showPaymentDetails}
+        onClose={() => setShowPaymentDetails(false)}
+      />
     </div>
   );
 };
