@@ -52,6 +52,11 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          type="button" // Explicitly set type to button to prevent form submission
+          onClick={(e) => {
+            // Prevent default to avoid navigation
+            e.preventDefault();
+          }}
         >
           {selectedPayment && selectedPaymentData ? (
             selectedPaymentData.description || "Selecione um recebimento..."
