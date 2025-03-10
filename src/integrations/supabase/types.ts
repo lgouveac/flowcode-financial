@@ -140,6 +140,36 @@ export type Database = {
         }
         Relationships: []
       }
+      email_notification_log: {
+        Row: {
+          billing_id: string
+          client_id: string
+          created_at: string
+          days_before: number
+          due_date: string
+          id: string
+          sent_at: string
+        }
+        Insert: {
+          billing_id: string
+          client_id: string
+          created_at?: string
+          days_before: number
+          due_date: string
+          id?: string
+          sent_at?: string
+        }
+        Update: {
+          billing_id?: string
+          client_id?: string
+          created_at?: string
+          days_before?: number
+          due_date?: string
+          id?: string
+          sent_at?: string
+        }
+        Relationships: []
+      }
       email_notification_settings: {
         Row: {
           created_at: string | null
