@@ -116,11 +116,10 @@ const handler = async (req: Request): Promise<Response> => {
       
       console.log("✅ Email sent successfully:", JSON.stringify(emailResponse));
 
-      // IMPORTANTE: Garantir que ambos os campos 'status' e 'content' estejam presentes
+      // Return a response with the expected structure
       return new Response(JSON.stringify({ 
         status: "success", 
-        message: "Email sent successfully",
-        content: emailResponse  // Campo 'content' para corresponder à consulta SQL
+        content: emailResponse  // Always include the 'content' field
       }), {
         status: 200,
         headers: {
@@ -133,11 +132,10 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("- Error code:", emailError.statusCode);
       console.error("- Error message:", emailError.message);
       
-      // IMPORTANTE: Garantir que ambos os campos 'status' e 'content' estejam presentes
+      // Return a response with the expected structure even for errors
       return new Response(
         JSON.stringify({ 
           status: "error", 
-          message: "Email sending error",
           content: {
             statusCode: emailError.statusCode,
             message: emailError.message
@@ -152,11 +150,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("❌ General error sending email:", error);
     
-    // IMPORTANTE: Garantir que ambos os campos 'status' e 'content' estejam presentes
+    // Return a response with the expected structure even for general errors
     return new Response(
       JSON.stringify({ 
         status: "error", 
-        message: error.message,
         content: { error: error.toString() }
       }),
       {
