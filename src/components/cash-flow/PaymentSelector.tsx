@@ -57,7 +57,6 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
             e.preventDefault();
             e.stopPropagation();
             setOpen(!open);
-            return false; // Ensure no default action occurs
           }}
         >
           {selectedPayment && selectedPaymentData ? (
@@ -85,8 +84,8 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
               <CommandItem
                 key={payment.id}
                 value={payment.id}
-                onSelect={(currentValue) => {
-                  onSelect(currentValue);
+                onSelect={(value) => {
+                  onSelect(value);
                   setOpen(false);
                 }}
                 className="flex flex-col items-start"

@@ -38,14 +38,8 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
     }
   };
 
-  // Prevent default behavior to stop form submission
-  const preventDefault = (e: React.MouseEvent | React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   return (
-    <DialogContent onClick={preventDefault}>
+    <DialogContent className="overflow-visible">
       <DialogHeader>
         <DialogTitle>Nova Movimentação</DialogTitle>
         <DialogDescription>
@@ -55,7 +49,6 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
       <form 
         onSubmit={(e) => {
           e.preventDefault();
-          e.stopPropagation();
           handleSubmit(e);
         }} 
         className="space-y-6"
@@ -84,7 +77,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
           </div>
         )}
 
-        <Button type="submit" className="w-full mt-6" disabled={isSubmitting} onClick={preventDefault}>
+        <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
           {isSubmitting ? "Salvando..." : "Adicionar Movimentação"}
         </Button>
       </form>
