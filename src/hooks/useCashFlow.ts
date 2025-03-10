@@ -17,11 +17,55 @@ export const useCashFlow = (period: string = 'current') => {
     // Log the selected period for debugging
     console.log('Selected period:', selectedPeriod);
 
+    // Handle custom period formats like "2025-3" (year-month)
+    if (selectedPeriod.includes('-')) {
+      const parts = selectedPeriod.split('-');
+      
+      // Year-month format (e.g., "2025-3")
+      if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+        const year = Number(parts[0]);
+        const month = Number(parts[1]);
+        const nextMonth = month === 12 ? 1 : month + 1;
+        const nextMonthYear = month === 12 ? year + 1 : year;
+        
+        return {
+          start: `${year}-${String(month).padStart(2, '0')}-01`,
+          end: `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`,
+        };
+      }
+      
+      // Handle quarter format (e.g., "quarter-2025")
+      if (parts[0] === 'quarter') {
+        const year = Number(parts[1]);
+        const currentQuarter = Math.floor((currentMonth - 1) / 3) + 1;
+        const quarterStartMonth = (currentQuarter - 1) * 3 + 1;
+        const quarterEndMonth = quarterStartMonth + 3;
+        const quarterEndYear = quarterEndMonth > 12 ? year + 1 : year;
+        
+        return {
+          start: `${year}-${String(quarterStartMonth).padStart(2, '0')}-01`,
+          end: quarterEndMonth > 12 
+            ? `${quarterEndYear}-${String(quarterEndMonth - 12).padStart(2, '0')}-01`
+            : `${year}-${String(quarterEndMonth).padStart(2, '0')}-01`,
+        };
+      }
+      
+      // Handle year format (e.g., "year-2025")
+      if (parts[0] === 'year') {
+        const year = Number(parts[1]);
+        return {
+          start: `${year}-01-01`,
+          end: `${year + 1}-01-01`,
+        };
+      }
+    }
+
+    // Default period handlers from before
     switch (selectedPeriod) {
       case 'current':
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
+          end: `${currentMonth === 12 ? currentYear + 1 : currentYear}-${String(currentMonth === 12 ? 1 : currentMonth + 1).padStart(2, '0')}-01`,
         };
       case 'last_month':
         const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
@@ -31,19 +75,22 @@ export const useCashFlow = (period: string = 'current') => {
           end: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
       case 'last_3_months':
-        const threeMonthsAgo = new Date(now.setMonth(now.getMonth() - 3));
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         return {
           start: threeMonthsAgo.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
         };
       case 'last_6_months':
-        const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
         return {
           start: sixMonthsAgo.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
         };
       case 'last_year':
-        const lastYear = new Date(now.setFullYear(now.getFullYear() - 1));
+        const lastYear = new Date();
+        lastYear.setFullYear(lastYear.getFullYear() - 1);
         return {
           start: lastYear.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
@@ -51,7 +98,7 @@ export const useCashFlow = (period: string = 'current') => {
       default:
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
+          end: `${currentMonth === 12 ? currentYear + 1 : currentYear}-${String(currentMonth === 12 ? 1 : currentMonth + 1).padStart(2, '0')}-01`,
         };
     }
   };
