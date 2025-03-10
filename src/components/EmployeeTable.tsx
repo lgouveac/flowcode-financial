@@ -8,6 +8,8 @@ import { LoadingState } from "./employees/LoadingState";
 import { ErrorState } from "./employees/ErrorState";
 import { TableHeader } from "./employees/TableHeader";
 import { EmployeeTableRow } from "./employees/EmployeeTableRow";
+import { Button } from "./ui/button";
+import { ImportCSV } from "./import/ImportCSV";
 
 interface Employee {
   id: string;
@@ -78,7 +80,10 @@ export const EmployeeTable = () => {
 
   return (
     <div className="space-y-8">
-      <TableHeader onSettingsClick={() => setSettingsOpen(true)} />
+      <div className="flex justify-between items-center">
+        <TableHeader onSettingsClick={() => setSettingsOpen(true)} />
+        <ImportCSV />
+      </div>
 
       {employees.length === 0 ? (
         <div className="rounded-lg border bg-background/50 p-8 text-center">
@@ -129,4 +134,3 @@ export const EmployeeTable = () => {
     </div>
   );
 };
-

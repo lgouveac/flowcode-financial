@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -5,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Trash2, Clock } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 interface NotificationInterval {
   id: string;
@@ -201,7 +202,7 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
               type="time"
               value={timeValue}
               onChange={(e) => handleTimeChange(e.target.value)}
-              className="[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-100"
+              className="dark:[&::-webkit-calendar-picker-indicator]:invert dark:[&::-webkit-calendar-picker-indicator]:brightness-100"
             />
           </div>
 

@@ -1,5 +1,5 @@
 
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NewClientForm } from "./client/NewClientForm";
 import { ClientRow } from "./client/ClientRow";
 import { EditClientDialog } from "./EditClientDialog";
+import { ImportCSV } from "./import/ImportCSV";
 import type { Client, NewClient } from "@/types/client";
 
 export const ClientTable = () => {
@@ -103,23 +104,26 @@ export const ClientTable = () => {
     <div className="space-y-4 p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Clientes</h1>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto gap-2">
-              <PlusIcon className="h-4 w-4" />
-              Novo Cliente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Novo Cliente</DialogTitle>
-            </DialogHeader>
-            <NewClientForm
-              onSubmit={handleNewClient}
-              onClose={() => document.querySelector<HTMLButtonElement>('[role="dialog"] button[type="button"]')?.click()}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex w-full sm:w-auto gap-2">
+          <ImportCSV />
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="w-full sm:w-auto gap-2">
+                <PlusIcon className="h-4 w-4" />
+                Novo Cliente
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle>Novo Cliente</DialogTitle>
+              </DialogHeader>
+              <NewClientForm
+                onSubmit={handleNewClient}
+                onClose={() => document.querySelector<HTMLButtonElement>('[role="dialog"] button[type="button"]')?.click()}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
       
       <div className="rounded-lg border bg-card">
