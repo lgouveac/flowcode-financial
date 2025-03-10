@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Clock } from "lucide-react";
 
 interface NotificationInterval {
   id: string;
@@ -28,6 +28,7 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [intervals, setIntervals] = useState<NotificationInterval[]>([]);
   const [newInterval, setNewInterval] = useState<string>("");
+  const [timeValue, setTimeValue] = useState<string>("");
 
   useEffect(() => {
     if (open) {
@@ -35,6 +36,12 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
       fetchIntervals();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (settings?.notification_time) {
+      setTimeValue(settings.notification_time.slice(0, 5));
+    }
+  }, [settings]);
 
   const fetchSettings = async () => {
     try {
@@ -88,6 +95,8 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
   };
 
   const handleTimeChange = async (time: string) => {
+    setTimeValue(time);
+    
     if (!settings?.id) {
       toast({
         title: "Erro",
@@ -189,11 +198,15 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label>Horário de Envio</Label>
-            <Input
-              type="time"
-              value={settings?.notification_time?.slice(0, 5) || ""}
-              onChange={(e) => handleTimeChange(e.target.value)}
-            />
+            <div className="relative">
+              <Input
+                type="time"
+                value={timeValue}
+                onChange={(e) => handleTimeChange(e.target.value)}
+                className="pl-9"
+              />
+              <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white" />
+            </div>
           </div>
 
           <div className="space-y-4">
