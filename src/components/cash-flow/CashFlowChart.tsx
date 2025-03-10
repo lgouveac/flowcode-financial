@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3 } from "lucide-react";
+import { useEffect } from 'react';
 
 interface CashFlowChartProps {
   chartData: any[];
@@ -23,6 +24,11 @@ export const CashFlowChart = ({
   month,
   setMonth
 }: CashFlowChartProps) => {
+  // Log the chart data for debugging
+  useEffect(() => {
+    console.log('CashFlowChart chartData:', chartData);
+  }, [chartData]);
+
   return (
     <Card className="shadow-none border-0">
       <CardHeader className="px-0">

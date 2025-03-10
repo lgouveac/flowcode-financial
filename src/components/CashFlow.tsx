@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CashFlowChart } from "./cash-flow/CashFlowChart";
 import { CashFlowTable } from "./cash-flow/CashFlowTable";
 import { useCashFlow } from "@/hooks/useCashFlow";
@@ -14,6 +14,13 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
+
+  // Log data for debugging
+  useEffect(() => {
+    console.log('CashFlow component period:', period);
+    console.log('CashFlow component cashFlow data:', cashFlow);
+    console.log('CashFlow component chartData:', chartData);
+  }, [period, cashFlow, chartData]);
 
   return (
     <div className="space-y-8">

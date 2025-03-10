@@ -14,6 +14,9 @@ export const useCashFlow = (period: string = 'current') => {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
+    // Log the selected period for debugging
+    console.log('Selected period:', selectedPeriod);
+
     switch (selectedPeriod) {
       case 'current':
         return {
@@ -57,6 +60,9 @@ export const useCashFlow = (period: string = 'current') => {
     try {
       const dates = getPeriodDates(period);
       
+      // Log the date range for debugging
+      console.log('Fetching cash flow for date range:', dates);
+      
       const { data, error } = await supabase
         .from('cash_flow')
         .select('*')
@@ -65,6 +71,8 @@ export const useCashFlow = (period: string = 'current') => {
         .order('date', { ascending: true });
 
       if (error) throw error;
+
+      console.log('Cash flow data from database:', data);
 
       // Transform the data to ensure type safety
       const transformedData: CashFlow[] = (data || []).map(item => ({
@@ -104,7 +112,9 @@ export const useCashFlow = (period: string = 'current') => {
         chartDataMap.set(date, currentData);
       });
 
-      setChartData(Array.from(chartDataMap.values()));
+      const newChartData = Array.from(chartDataMap.values());
+      console.log('Processed chart data:', newChartData);
+      setChartData(newChartData);
 
     } catch (error) {
       console.error('Error fetching cash flow:', error);
@@ -126,4 +136,3 @@ export const useCashFlow = (period: string = 'current') => {
     onNewCashFlow: fetchCashFlow,
   };
 };
-
