@@ -206,8 +206,8 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
                 value={newInterval}
                 onChange={(e) => setNewInterval(e.target.value)}
               />
-              <Button onClick={handleAddInterval} size="icon">
-                <Plus className="h-4 w-4" />
+              <Button onClick={handleAddInterval} size="icon" className="text-white">
+                <Plus className="h-4 w-4 text-white" />
               </Button>
             </div>
 
@@ -220,7 +220,7 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
                     size="icon"
                     onClick={() => handleDeleteInterval(interval.id)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-white" />
                   </Button>
                 </div>
               ))}
