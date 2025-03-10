@@ -17,9 +17,15 @@ interface PaymentSelectorProps {
   payments: PaymentWithClient[];
   selectedPayment: string;
   onSelect: (paymentId: string) => void;
+  isLoading?: boolean;
 }
 
-export const PaymentSelector = ({ payments, selectedPayment, onSelect }: PaymentSelectorProps) => {
+export const PaymentSelector = ({ 
+  payments, 
+  selectedPayment, 
+  onSelect,
+  isLoading = false
+}: PaymentSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
@@ -38,9 +44,9 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
   const filteredPayments = safePayments.filter(payment => {
     const searchLower = searchValue.toLowerCase();
     return (
-      payment.clients?.name?.toLowerCase()?.includes(searchLower) ||
-      payment.description?.toLowerCase()?.includes(searchLower) ||
-      payment.amount?.toString()?.includes(searchLower)
+      payment.clients?.name?.toLowerCase().includes(searchLower) ||
+      payment.description?.toLowerCase().includes(searchLower) ||
+      payment.amount?.toString().includes(searchLower)
     );
   });
 
@@ -58,8 +64,11 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
             e.stopPropagation();
             setOpen(!open);
           }}
+          disabled={isLoading}
         >
-          {selectedPayment && selectedPaymentData ? (
+          {isLoading ? (
+            "Carregando recebimentos..."
+          ) : selectedPayment && selectedPaymentData ? (
             selectedPaymentData.description || "Selecione um recebimento..."
           ) : (
             "Selecione um recebimento..."
@@ -76,37 +85,43 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           />
           <CommandEmpty className="py-6 text-center text-sm">
             <p className="text-muted-foreground">
-              Nenhum recebimento encontrado
+              {isLoading ? "Carregando recebimentos..." : "Nenhum recebimento encontrado"}
             </p>
           </CommandEmpty>
-          <CommandGroup className="max-h-[300px] overflow-auto">
-            {filteredPayments.map(payment => (
-              <CommandItem
-                key={payment.id}
-                value={payment.id}
-                onSelect={(value) => {
-                  onSelect(value);
-                  setOpen(false);
-                }}
-                className="flex flex-col items-start"
-              >
-                <div className="flex items-center w-full">
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 flex-shrink-0",
-                      selectedPayment === payment.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div className="flex flex-col flex-grow">
-                    <span className="font-medium">{payment.clients?.name || 'Cliente'}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {payment.description || 'Sem descrição'} - {formatCurrency(payment.amount || 0)}
-                    </span>
+          {isLoading ? (
+            <div className="py-6 text-center text-sm">
+              <p className="text-muted-foreground">Carregando recebimentos...</p>
+            </div>
+          ) : (
+            <CommandGroup className="max-h-[300px] overflow-auto">
+              {filteredPayments.map(payment => (
+                <CommandItem
+                  key={payment.id}
+                  value={payment.id}
+                  onSelect={(value) => {
+                    onSelect(value);
+                    setOpen(false);
+                  }}
+                  className="flex flex-col items-start"
+                >
+                  <div className="flex items-center w-full">
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4 flex-shrink-0",
+                        selectedPayment === payment.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <div className="flex flex-col flex-grow">
+                      <span className="font-medium">{payment.clients?.name || 'Cliente'}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {payment.description || 'Sem descrição'} - {formatCurrency(payment.amount || 0)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </Command>
       </PopoverContent>
     </Popover>

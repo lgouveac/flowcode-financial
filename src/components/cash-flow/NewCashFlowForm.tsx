@@ -26,6 +26,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
     setSelectedPayment,
     payments,
     isSubmitting,
+    isLoading,
     handleSubmit,
   } = useCashFlowForm({ onSuccess, onClose });
 
@@ -73,6 +74,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
               payments={payments}
               selectedPayment={selectedPayment}
               onSelect={handlePaymentSelect}
+              isLoading={isLoading}
             />
           </div>
         )}

@@ -25,6 +25,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
   const [selectedPayment, setSelectedPayment] = useState<string>('');
   const [payments, setPayments] = useState<PaymentWithClient[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (category === 'payment') {
@@ -34,28 +35,41 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
 
   const fetchPendingPayments = async () => {
     console.log('Fetching pending payments...');
-    const { data, error } = await supabase
-      .from('payments')
-      .select(`
-        *,
-        clients (
-          name
-        )
-      `)
-      .in('status', ['pending', 'billed', 'awaiting_invoice']);
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          clients (
+            name
+          )
+        `)
+        .in('status', ['pending', 'billed', 'awaiting_invoice']);
 
-    if (error) {
-      console.error('Error fetching payments:', error);
+      if (error) {
+        console.error('Error fetching payments:', error);
+        toast({
+          title: "Erro ao carregar pagamentos",
+          description: "Não foi possível carregar os pagamentos pendentes.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Fetched payments:', data);
+      setPayments(data || []);
+    } catch (err) {
+      console.error('Exception fetching payments:', err);
       toast({
         title: "Erro ao carregar pagamentos",
-        description: "Não foi possível carregar os pagamentos pendentes.",
+        description: "Ocorreu um erro inesperado.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    console.log('Fetched payments:', data);
-    setPayments(data || []);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,6 +158,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
     setSelectedPayment,
     payments,
     isSubmitting,
+    isLoading,
     handleSubmit,
   };
 };
