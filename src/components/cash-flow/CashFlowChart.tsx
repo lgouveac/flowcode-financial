@@ -25,7 +25,7 @@ export const CashFlowChart = ({
 }: CashFlowChartProps) => {
   return (
     <Card className="shadow-none border-0">
-      <CardHeader>
+      <CardHeader className="px-0">
         <div className="flex flex-col space-y-1.5">
           <CardTitle className="text-2xl font-display">Fluxo de Caixa</CardTitle>
           <p className="text-sm text-muted-foreground">Movimentação de entrada e saída do seu negócio</p>
