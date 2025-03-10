@@ -43,10 +43,10 @@ export const RecurringBilling = () => {
           <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
           <TabsTrigger value="onetime">Pontuais</TabsTrigger>
         </TabsList>
-        <TabsContent value="recurring">
+        <TabsContent value="recurring" className="border rounded-lg">
           <BillingTable billings={billings} />
         </TabsContent>
-        <TabsContent value="onetime">
+        <TabsContent value="onetime" className="border rounded-lg">
           <PaymentTable payments={payments} />
         </TabsContent>
       </Tabs>

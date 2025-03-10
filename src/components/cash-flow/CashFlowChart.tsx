@@ -1,4 +1,3 @@
-
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,7 +22,7 @@ export const CashFlowChart = ({
   setMonth
 }: CashFlowChartProps) => {
   return (
-    <Card className="border-0 shadow-none">
+    <Card className="border border-border rounded-lg shadow-none">
       <CardHeader className="border-b pb-6">
         <div className="flex flex-col space-y-1.5">
           <CardTitle className="text-2xl font-display">Fluxo de Caixa</CardTitle>
@@ -94,4 +93,3 @@ export const CashFlowChart = ({
     </Card>
   );
 };
-

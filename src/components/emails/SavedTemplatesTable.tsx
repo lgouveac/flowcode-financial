@@ -1,5 +1,5 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 import { EditTemplateDialog } from "./EditTemplateDialog";
 import { useState } from "react";
 import { EmailTemplate } from "@/types/email";
@@ -34,58 +34,60 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
 
   if (isLoading) {
     return (
-      <Card className="mt-6">
+      <div className="mt-6">
         <CardHeader>
           <CardTitle>Templates Salvos</CardTitle>
         </CardHeader>
-        <CardContent>
+        <div className="p-6 pt-0">
           <div className="flex items-center justify-center h-32">
             <p className="text-muted-foreground">Carregando templates...</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="mt-6">
+    <div className="mt-6">
       <CardHeader>
         <CardTitle>Templates Salvos</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Assunto</TableHead>
-              <TableHead>Padrão</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {templates.map((template) => (
-              <TableRow 
-                key={template.id}
-                className="cursor-pointer"
-                onClick={() => setEditingTemplate(template)}
-              >
-                <TableCell>
-                  {template.name}
-                </TableCell>
-                <TableCell>
-                  {getTemplateTypeLabel(template.type, template.subtype)}
-                </TableCell>
-                <TableCell>
-                  {template.subject}
-                </TableCell>
-                <TableCell>
-                  {template.is_default ? 'Sim' : 'Não'}
-                </TableCell>
+      <div className="p-6 pt-0">
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Assunto</TableHead>
+                <TableHead>Padrão</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
+            </TableHeader>
+            <TableBody>
+              {templates.map((template) => (
+                <TableRow 
+                  key={template.id}
+                  className="cursor-pointer"
+                  onClick={() => setEditingTemplate(template)}
+                >
+                  <TableCell>
+                    {template.name}
+                  </TableCell>
+                  <TableCell>
+                    {getTemplateTypeLabel(template.type, template.subtype)}
+                  </TableCell>
+                  <TableCell>
+                    {template.subject}
+                  </TableCell>
+                  <TableCell>
+                    {template.is_default ? 'Sim' : 'Não'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
 
       {editingTemplate && (
         <EditTemplateDialog
@@ -95,6 +97,6 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
           onSave={handleSave}
         />
       )}
-    </Card>
+    </div>
   );
 };
