@@ -126,7 +126,7 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-4 pl-4">
       <div className="flex flex-col sm:flex-row gap-4">
         <Input
           placeholder="Buscar por cliente ou descrição..."
