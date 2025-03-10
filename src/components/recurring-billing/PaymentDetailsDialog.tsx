@@ -31,7 +31,20 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     
     setLoading(true);
     try {
-      // Get all payments with installment numbers, these are recurring payments
+      // Primeiro, buscar o client_id da cobrança recorrente
+      const { data: billingData, error: billingError } = await supabase
+        .from('recurring_billing')
+        .select('client_id')
+        .eq('id', billingId)
+        .single();
+
+      if (billingError) throw billingError;
+      
+      if (!billingData || !billingData.client_id) {
+        throw new Error('Cobrança não encontrada ou sem cliente associado');
+      }
+
+      // Agora, buscar todos os pagamentos recorrentes deste cliente
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -40,6 +53,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             name
           )
         `)
+        .eq('client_id', billingData.client_id)
         .not('installment_number', 'is', null)
         .order('installment_number', { ascending: true });
 
