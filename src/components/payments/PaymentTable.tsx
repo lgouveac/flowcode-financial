@@ -21,12 +21,17 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
 
   const handleUpdatePayment = async (paymentId: string, field: string, value: any) => {
     try {
+      console.log('Updating payment:', { paymentId, field, value });
+      
       const { error } = await supabase
         .from('payments')
         .update({ [field]: value })
         .eq('id', paymentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating payment:', error);
+        throw error;
+      }
 
       toast({
         title: "Pagamento atualizado",

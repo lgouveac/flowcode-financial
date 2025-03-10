@@ -201,7 +201,7 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
               type="time"
               value={timeValue}
               onChange={(e) => handleTimeChange(e.target.value)}
-              className="[&::-webkit-calendar-picker-indicator]:text-white [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:filter-invert"
+              className="[&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-100"
             />
           </div>
 
