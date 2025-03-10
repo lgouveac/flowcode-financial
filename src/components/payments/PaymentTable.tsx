@@ -14,9 +14,9 @@ interface PaymentTableProps {
 export const PaymentTable = ({ payments }: PaymentTableProps) => {
   const { toast } = useToast();
 
-  // Filter out any payments that have an installment number, which indicates they are part of a recurring billing
+  // Only show payments that don't have an installment number (one-time payments)
   const oneTimePayments = payments.filter(payment => 
-    !payment.installment_number
+    payment.installment_number === null
   );
 
   const handleUpdatePayment = async (paymentId: string, field: string, value: any) => {

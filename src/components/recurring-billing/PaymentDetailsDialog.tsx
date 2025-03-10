@@ -31,7 +31,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     
     setLoading(true);
     try {
-      // Fix here - using `ilike` with a wildcard pattern instead of the incorrect `like` with 3 arguments
+      // Get all payments with installment numbers, these are recurring payments
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -40,7 +40,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             name
           )
         `)
-        .ilike('description', `%${billingId}%`)
+        .not('installment_number', 'is', null)
         .order('installment_number', { ascending: true });
 
       if (error) throw error;
@@ -114,7 +114,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Detalhes dos Pagamentos</DialogTitle>
+          <DialogTitle>Detalhes dos Pagamentos Recorrentes</DialogTitle>
         </DialogHeader>
         
         {loading ? (
