@@ -61,7 +61,6 @@ export const PaymentSelector = ({
           type="button" 
           onClick={(e) => {
             e.preventDefault();
-            e.stopPropagation();
             setOpen(!open);
           }}
           disabled={isLoading}
