@@ -33,6 +33,8 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setIsLoading(true);
     
     try {
+      console.log("Fetching billing details for ID:", billingId);
+      
       // Fetch billing details
       const { data: billingData, error: billingError } = await supabase
         .from('recurring_billing')
@@ -40,8 +42,12 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         .eq('id', billingId)
         .single();
 
-      if (billingError) throw billingError;
+      if (billingError) {
+        console.error('Error fetching billing details:', billingError);
+        throw billingError;
+      }
       
+      console.log("Received billing data:", billingData);
       setBilling(billingData);
 
       // Fetch related payments
@@ -52,8 +58,12 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         .eq('client_id', billingData.client_id)
         .order('installment_number', { ascending: true });
 
-      if (paymentsError) throw paymentsError;
+      if (paymentsError) {
+        console.error('Error fetching payments:', paymentsError);
+        throw paymentsError;
+      }
       
+      console.log("Received payments data:", paymentsData);
       setPayments(paymentsData || []);
     } catch (error) {
       console.error('Error fetching details:', error);
@@ -67,12 +77,18 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
-  const createPayment = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent any form submission
-    e.stopPropagation(); // Stop event propagation
+  const createPayment = async (event: React.MouseEvent) => {
+    // Prevent default behavior and stop propagation
+    event.preventDefault();
+    event.stopPropagation();
     
-    if (!billing) return;
+    // Safety check
+    if (!billing) {
+      console.error("Cannot create payment: billing data is null");
+      return;
+    }
     
+    console.log("Creating payment for billing:", billing);
     setIsCreatingPayment(true);
     
     try {
@@ -86,27 +102,39 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       }
       
       const formattedDueDate = dueDate.toISOString().split('T')[0];
+      console.log("Calculated due date:", formattedDueDate);
       
-      // Create a properly typed payment object
+      // Create payment object with correct types
       const newPayment = {
         client_id: billing.client_id,
         description: `${billing.description} (${billing.current_installment}/${billing.installments})`,
         amount: billing.amount,
         due_date: formattedDueDate,
         payment_method: billing.payment_method,
-        status: 'pending' as const, // Explicitly type as a literal to match the expected enum
+        status: 'pending' as const, // Explicitly typed as a literal
         installment_number: billing.current_installment,
         total_installments: billing.installments
       };
       
-      const { error } = await supabase
+      console.log("Preparing to insert payment:", newPayment);
+      
+      // Insert the new payment
+      const { data, error } = await supabase
         .from('payments')
-        .insert(newPayment); // Pass a single object, not an array
+        .insert(newPayment)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting payment:', error);
+        throw error;
+      }
+      
+      console.log("Payment created successfully:", data);
       
       // Update current installment in recurring_billing
       if (billing.current_installment < billing.installments) {
+        console.log("Updating current installment from", billing.current_installment, "to", billing.current_installment + 1);
+        
         const { error: updateError } = await supabase
           .from('recurring_billing')
           .update({ 
@@ -114,7 +142,12 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
           })
           .eq('id', billingId);
 
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Error updating recurring billing:', updateError);
+          throw updateError;
+        }
+        
+        console.log("Current installment updated successfully");
       }
       
       toast({
@@ -136,8 +169,17 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
+  // This is a manual dialog close handler that ensures proper cleanup
+  const handleDialogClose = () => {
+    // Reset state when dialog closes
+    setBilling(null);
+    setPayments([]);
+    // Call the parent's onClose handler
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleDialogClose()}>
       <DialogContent className="max-w-3xl" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Detalhes do Recebimento Recorrente</DialogTitle>
@@ -172,6 +214,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                       onClick={createPayment}
                       disabled={isCreatingPayment || billing.current_installment > billing.installments}
                       className="w-full"
+                      type="button"
                     >
                       {isCreatingPayment ? (
                         <>
@@ -229,7 +272,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             
             <div className="flex justify-end">
               <DialogClose asChild>
-                <Button variant="outline" onClick={onClose}>
+                <Button variant="outline" onClick={handleDialogClose} type="button">
                   Fechar
                 </Button>
               </DialogClose>
