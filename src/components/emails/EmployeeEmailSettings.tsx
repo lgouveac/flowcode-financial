@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,26 +17,90 @@ interface EmployeeEmailSettingsProps {
   open: boolean;
   onClose: () => void;
   currentDay?: number;
+  currentTime?: string;
 }
 
-export const EmployeeEmailSettings = ({ open, onClose, currentDay = 5 }: EmployeeEmailSettingsProps) => {
+export const EmployeeEmailSettings = ({ 
+  open, 
+  onClose, 
+  currentDay = 5, 
+  currentTime = "09:00" 
+}: EmployeeEmailSettingsProps) => {
   const { toast } = useToast();
   const [sendDay, setSendDay] = useState(currentDay);
+  const [sendTime, setSendTime] = useState(currentTime);
   const [isLoading, setIsLoading] = useState(false);
+  const [settingsId, setSettingsId] = useState<string | null>(null);
+
+  // Fetch the current settings when the dialog opens
+  useEffect(() => {
+    if (open) {
+      fetchSettings();
+    }
+  }, [open]);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('global_settings')
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Error fetching settings:', error);
+        return;
+      }
+
+      if (data) {
+        setSettingsId(data.id);
+        setSendDay(data.employee_emails_send_day || currentDay);
+      }
+    } catch (error) {
+      console.error('Error in fetchSettings:', error);
+    }
+  };
 
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('global_settings')
-        .update({ employee_emails_send_day: sendDay })
-        .eq('id', '1'); // Assumindo que temos apenas uma linha de configurações globais
+      if (!settingsId) {
+        // If no settings exist, create a new record
+        const { error } = await supabase
+          .from('global_settings')
+          .insert({ employee_emails_send_day: sendDay });
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        // Update existing settings
+        const { error } = await supabase
+          .from('global_settings')
+          .update({ employee_emails_send_day: sendDay })
+          .eq('id', settingsId);
+
+        if (error) throw error;
+      }
+
+      // Update the notification time in email_notification_settings
+      const { error: timeError } = await supabase
+        .from('email_notification_settings')
+        .update({ notification_time: sendTime })
+        .eq('id', (await supabase.from('email_notification_settings').select('id').single()).data?.id);
+
+      if (timeError) {
+        console.error('Error updating notification time:', timeError);
+        // If no records exist, create one
+        if (timeError.code === 'PGRST116') {
+          await supabase
+            .from('email_notification_settings')
+            .insert({ notification_time: sendTime });
+        } else {
+          throw timeError;
+        }
+      }
 
       toast({
         title: "Configurações salvas",
-        description: "O dia de envio dos emails foi atualizado com sucesso.",
+        description: "As configurações de email foram atualizadas com sucesso.",
       });
 
       onClose();
@@ -58,7 +122,7 @@ export const EmployeeEmailSettings = ({ open, onClose, currentDay = 5 }: Employe
         <DialogHeader>
           <DialogTitle>Configurações de Email</DialogTitle>
           <DialogDescription>
-            Configure o dia do mês em que os emails serão enviados automaticamente para os funcionários.
+            Configure o dia e a hora em que os emails serão enviados automaticamente para os funcionários.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -73,6 +137,18 @@ export const EmployeeEmailSettings = ({ open, onClose, currentDay = 5 }: Employe
               max={31}
               value={sendDay}
               onChange={(e) => setSendDay(Number(e.target.value))}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="sendTime" className="text-right">
+              Horário
+            </Label>
+            <Input
+              id="sendTime"
+              type="time"
+              value={sendTime}
+              onChange={(e) => setSendTime(e.target.value)}
               className="col-span-3"
             />
           </div>

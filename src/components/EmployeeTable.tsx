@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { EditEmployeeDialog } from "./EditEmployeeDialog";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -33,20 +32,31 @@ export const EmployeeTable = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
-  const { data: settings } = useQuery({
+  const { data: settings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ["global-settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: globalSettings, error: globalError } = await supabase
         .from("global_settings")
         .select("*")
         .single();
 
-      if (error) {
-        console.error("Error fetching settings:", error);
-        throw error;
+      if (globalError) {
+        console.error("Error fetching global settings:", globalError);
       }
 
-      return data;
+      const { data: emailSettings, error: emailError } = await supabase
+        .from("email_notification_settings")
+        .select("*")
+        .single();
+
+      if (emailError) {
+        console.error("Error fetching email settings:", emailError);
+      }
+
+      return {
+        ...globalSettings,
+        notificationTime: emailSettings?.notification_time || "09:00"
+      };
     },
   });
 
@@ -156,6 +166,7 @@ export const EmployeeTable = () => {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         currentDay={settings?.employee_emails_send_day}
+        currentTime={settings?.notificationTime?.substring(0, 5)}
       />
 
       <EditEmployeeDialog
