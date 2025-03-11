@@ -1,60 +1,25 @@
 
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { useState } from "react";
+import { Payment } from "@/types/payment";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-import type { Payment } from "@/types/payment";
-
-interface PaymentWithClient extends Payment {
-  clients: {
-    name: string;
-  };
-}
+import { Check, ChevronsUpDown } from "lucide-react";
 
 interface PaymentSelectorProps {
-  payments: PaymentWithClient[];
-  selectedPayment: string;
-  onSelect: (paymentId: string) => void;
-  isLoading?: boolean;
+  payments: Payment[];
+  selectedPayment: Payment | null;
+  onSelect: (payment: Payment | null) => void;
 }
 
-export const PaymentSelector = ({ 
-  payments, 
-  selectedPayment, 
-  onSelect,
-  isLoading = false
-}: PaymentSelectorProps) => {
+export const PaymentSelector = ({ payments = [], selectedPayment, onSelect }: PaymentSelectorProps) => {
   const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-  // Garantir que payments nunca seja undefined para evitar o erro
-  const safePayments = Array.isArray(payments) ? payments : [];
-
-  const selectedPaymentData = safePayments.find((payment) => payment.id === selectedPayment);
-
-  const filteredPayments = safePayments.filter(payment => {
-    const searchLower = searchValue.toLowerCase();
-    return (
-      payment.clients?.name?.toLowerCase().includes(searchLower) ||
-      payment.description?.toLowerCase().includes(searchLower) ||
-      payment.amount?.toString().includes(searchLower)
-    );
-  });
-
-  // Handle payment selection
-  const handleSelect = (currentValue: string) => {
-    onSelect(currentValue);
-    setOpen(false);
-  };
+  if (!Array.isArray(payments)) {
+    console.error('Payments is not an array:', payments);
+    return null;
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -64,62 +29,35 @@ export const PaymentSelector = ({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          type="button"
-          disabled={isLoading}
         >
-          {isLoading ? (
-            "Carregando recebimentos..."
-          ) : selectedPayment && selectedPaymentData ? (
-            selectedPaymentData.description || "Selecione um recebimento..."
-          ) : (
-            "Selecione um recebimento..."
-          )}
+          {selectedPayment ? `${selectedPayment.description} - R$ ${selectedPayment.amount.toFixed(2)}` : "Selecionar pagamento..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 z-50" align="start">
+      <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput 
-            placeholder="Busque por cliente, descrição ou valor..." 
-            value={searchValue}
-            onValueChange={setSearchValue}
-          />
-          <CommandEmpty className="py-6 text-center text-sm">
-            <p className="text-muted-foreground">
-              {isLoading ? "Carregando recebimentos..." : "Nenhum recebimento encontrado"}
-            </p>
-          </CommandEmpty>
-          {isLoading ? (
-            <div className="py-6 text-center text-sm">
-              <p className="text-muted-foreground">Carregando recebimentos...</p>
-            </div>
-          ) : (
-            <CommandGroup className="max-h-[300px] overflow-auto">
-              {filteredPayments.map(payment => (
-                <CommandItem
-                  key={payment.id}
-                  value={payment.id}
-                  onSelect={handleSelect}
-                  className="flex flex-col items-start"
-                >
-                  <div className="flex items-center w-full">
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4 flex-shrink-0",
-                        selectedPayment === payment.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex flex-col flex-grow">
-                      <span className="font-medium">{payment.clients?.name || 'Cliente'}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {payment.description || 'Sem descrição'} - {formatCurrency(payment.amount || 0)}
-                      </span>
-                    </div>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
+          <CommandInput placeholder="Buscar pagamento..." />
+          <CommandEmpty>Nenhum pagamento encontrado.</CommandEmpty>
+          <CommandGroup>
+            {payments.map((payment) => (
+              <CommandItem
+                key={payment.id}
+                value={payment.id}
+                onSelect={() => {
+                  onSelect(payment);
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    selectedPayment?.id === payment.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {payment.description} - R$ {payment.amount.toFixed(2)}
+              </CommandItem>
+            ))}
+          </CommandGroup>
         </Command>
       </PopoverContent>
     </Popover>
