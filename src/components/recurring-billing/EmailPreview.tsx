@@ -33,6 +33,7 @@ export const EmailPreview = ({
   if (!selectedTemplateData) return null;
 
   let content = selectedTemplateData.content;
+  let subject = selectedTemplateData.subject;
 
   const replacements = {
     "{nome_cliente}": clientName || "Cliente",
@@ -47,11 +48,15 @@ export const EmailPreview = ({
 
   Object.entries(replacements).forEach(([key, value]) => {
     content = content.replace(new RegExp(key, 'g'), value);
+    subject = subject.replace(new RegExp(key, 'g'), value);
   });
 
   return (
     <div className="space-y-2">
       <Label>Prévia do Email</Label>
+      <div className="mb-2">
+        <Label className="text-xs text-muted-foreground">Assunto: {subject}</Label>
+      </div>
       <div className="bg-background border rounded-md p-4 whitespace-pre-wrap text-sm text-left">
         {content}
       </div>

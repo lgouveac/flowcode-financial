@@ -53,6 +53,7 @@ export const processEmailSubject = (subject: string, data: EmailData): string =>
   const installmentInfo = `${data.currentInstallment}/${data.totalInstallments}`;
   
   const subjectReplacements: [RegExp, string][] = [
+    [/{nome_cliente}/g, data.recipientName],
     [/{valor_cobranca}/g, formattedValue],
     [/{numero_parcela}\/\{total_parcelas}/g, installmentInfo],
     [/{numero_parcela}/g, String(data.currentInstallment)],
@@ -67,11 +68,11 @@ export const processEmailSubject = (subject: string, data: EmailData): string =>
   return processedSubject;
 };
 
-// Convert plain text content to HTML
+// Convert plain text content to HTML with left alignment
 export const convertToHtml = (content: string): string => {
   // Convert line breaks to HTML paragraphs
   const paragraphs = content.split('\n').filter(p => p.trim() !== '');
-  const htmlParagraphs = paragraphs.map(p => `<p style="margin-bottom: 1em; line-height: 1.5;">${p}</p>`).join('\n');
+  const htmlParagraphs = paragraphs.map(p => `<p style="margin-bottom: 1em; line-height: 1.5; text-align: left;">${p}</p>`).join('\n');
   
   return `
     <!DOCTYPE html>
@@ -79,7 +80,7 @@ export const convertToHtml = (content: string): string => {
       <head>
         <meta charset="utf-8">
       </head>
-      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; text-align: left;">
         ${htmlParagraphs}
       </body>
     </html>
