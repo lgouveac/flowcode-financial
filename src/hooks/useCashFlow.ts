@@ -141,7 +141,10 @@ export const useCashFlow = (period: string = 'current') => {
       const chartDataMap = new Map();
       
       transformedData.forEach((flow) => {
-        const date = new Date(flow.date).toLocaleDateString('pt-BR');
+        // Format the date for display in Portuguese format (DD/MM/YYYY)
+        const dateObj = new Date(flow.date);
+        const date = dateObj.toLocaleDateString('pt-BR');
+        
         const currentData = chartDataMap.get(date) || {
           name: date,
           entrada: 0,
@@ -159,7 +162,20 @@ export const useCashFlow = (period: string = 'current') => {
         chartDataMap.set(date, currentData);
       });
 
+      // Convert Map to Array and sort by date
       const newChartData = Array.from(chartDataMap.values());
+      
+      // Sort by date (DD/MM/YYYY format needs special handling)
+      newChartData.sort((a, b) => {
+        const [dayA, monthA, yearA] = a.name.split('/').map(Number);
+        const [dayB, monthB, yearB] = b.name.split('/').map(Number);
+        
+        // Compare year first, then month, then day
+        if (yearA !== yearB) return yearA - yearB;
+        if (monthA !== monthB) return monthA - monthB;
+        return dayA - dayB;
+      });
+      
       console.log('Processed chart data:', newChartData);
       setChartData(newChartData);
 

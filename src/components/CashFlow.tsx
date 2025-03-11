@@ -25,6 +25,9 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
       setCustomPeriod(`quarter-${selectedYear}`);
     } else if (selectedPeriod === 'year') {
       setCustomPeriod(`year-${selectedYear}`);
+    } else {
+      // For predefined periods like 'current', 'last_month', etc.
+      setCustomPeriod(selectedPeriod);
     }
   }, [selectedPeriod, selectedYear, selectedMonth]);
   
