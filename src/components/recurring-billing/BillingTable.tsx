@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { RecurringBilling } from "@/types/billing";
 import { Badge } from "@/components/ui/badge";
@@ -167,15 +166,10 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredBillings.map((billing, index) => (
+          {filteredBillings.map((billing) => (
             <TableRow 
               key={billing.id} 
-              className={`group hover:bg-muted/50 cursor-pointer ${
-                // Add a visual separator between different billing groups
-                index > 0 &&
-                filteredBillings[index - 1]?.description !== billing.description &&
-                "border-t-4 border-t-gray-200"
-              }`}
+              className="group hover:bg-muted/50 cursor-pointer"
               onClick={() => handleRowClick(billing.id)}
             >
               <TableCell>{billing.clients?.name}</TableCell>
