@@ -69,6 +69,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
 
   const createPayment = async (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent any form submission
+    e.stopPropagation(); // Stop event propagation
     
     if (!billing) return;
     
@@ -86,21 +87,21 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       
       const formattedDueDate = dueDate.toISOString().split('T')[0];
       
+      // Create a properly typed payment object
       const newPayment = {
         client_id: billing.client_id,
         description: `${billing.description} (${billing.current_installment}/${billing.installments})`,
         amount: billing.amount,
         due_date: formattedDueDate,
         payment_method: billing.payment_method,
-        status: 'pending',
+        status: 'pending' as const, // Explicitly type as a literal to match the expected enum
         installment_number: billing.current_installment,
-        total_installments: billing.installments,
-        email_template: billing.email_template
+        total_installments: billing.installments
       };
       
       const { error } = await supabase
         .from('payments')
-        .insert([newPayment]);
+        .insert(newPayment); // Pass a single object, not an array
 
       if (error) throw error;
       
@@ -137,7 +138,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Detalhes do Recebimento Recorrente</DialogTitle>
           <DialogDescription>
