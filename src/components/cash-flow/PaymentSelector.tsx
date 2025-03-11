@@ -9,7 +9,7 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 interface PaymentSelectorProps {
-  payments: Payment[];
+  payments: Payment[] | null | undefined;
   selectedPayment: Payment | null;
   onSelect: (payment: Payment | null) => void;
 }
@@ -19,6 +19,10 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
   
   // Ensure payments is an array, if not, use empty array
   const safePayments = Array.isArray(payments) ? payments : [];
+
+  // Debugging
+  console.log('PaymentSelector received payments:', payments);
+  console.log('PaymentSelector selected payment:', selectedPayment);
 
   return (
     <div className="space-y-2">
@@ -43,24 +47,28 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
             <CommandInput placeholder="Buscar pagamento..." />
             <CommandEmpty>Nenhum pagamento encontrado.</CommandEmpty>
             <CommandGroup>
-              {safePayments.map((payment) => (
-                <CommandItem
-                  key={payment.id}
-                  value={payment.id}
-                  onSelect={() => {
-                    onSelect(payment);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedPayment?.id === payment.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {payment.description} - R$ {payment.amount.toFixed(2)}
-                </CommandItem>
-              ))}
+              {safePayments.length > 0 ? (
+                safePayments.map((payment) => (
+                  <CommandItem
+                    key={payment.id}
+                    value={payment.id}
+                    onSelect={() => {
+                      onSelect(payment);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedPayment?.id === payment.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {payment.description} - R$ {payment.amount.toFixed(2)}
+                  </CommandItem>
+                ))
+              ) : (
+                <CommandItem disabled>Nenhum pagamento pendente encontrado</CommandItem>
+              )}
             </CommandGroup>
           </Command>
         </PopoverContent>

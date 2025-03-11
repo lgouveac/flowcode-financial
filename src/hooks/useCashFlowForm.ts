@@ -23,9 +23,10 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<string>('');
-  const [payments, setPayments] = useState<PaymentWithClient[]>([]);
+  const [payments, setPayments] = useState<PaymentWithClient[] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (category === 'payment') {
@@ -36,6 +37,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
   const fetchPendingPayments = async () => {
     console.log('Fetching pending payments...');
     setIsLoading(true);
+    setError(null);
     
     try {
       const { data, error } = await supabase
@@ -50,11 +52,13 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
 
       if (error) {
         console.error('Error fetching payments:', error);
+        setError(error.message);
         toast({
           title: "Erro ao carregar pagamentos",
           description: "Não foi possível carregar os pagamentos pendentes.",
           variant: "destructive",
         });
+        setPayments([]);
         return;
       }
 
@@ -62,11 +66,13 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
       setPayments(data || []);
     } catch (err) {
       console.error('Exception fetching payments:', err);
+      setError('Unexpected error occurred');
       toast({
         title: "Erro ao carregar pagamentos",
         description: "Ocorreu um erro inesperado.",
         variant: "destructive",
       });
+      setPayments([]);
     } finally {
       setIsLoading(false);
     }
@@ -168,6 +174,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
     payments,
     isSubmitting,
     isLoading,
+    error,
     handleSubmit,
   };
 };

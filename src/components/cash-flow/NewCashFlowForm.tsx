@@ -6,7 +6,7 @@ import { PaymentSelector } from "./PaymentSelector";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Payment } from "@/types/payment";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface NewCashFlowFormProps {
   open: boolean;
@@ -33,6 +33,15 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
     isLoading,
     handleSubmit
   } = useCashFlowForm({ onSuccess, onClose });
+  
+  // For debugging
+  const [loadState, setLoadState] = useState("initial");
+  
+  useEffect(() => {
+    console.log("NewCashFlowForm payments state:", payments);
+    console.log("Selected payment ID:", selectedPayment);
+    setLoadState("loaded");
+  }, [payments, selectedPayment]);
 
   const isPaymentCategory = category === 'payment';
 
@@ -40,9 +49,12 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
   const selectedPaymentObject = isPaymentCategory && selectedPayment && payments
     ? payments.find(p => p.id === selectedPayment)
     : null;
+    
+  console.log("Selected payment object:", selectedPaymentObject);
 
   // Handle payment selection
   const handlePaymentSelect = (payment: Payment | null) => {
+    console.log("Payment selected:", payment);
     if (payment) {
       setSelectedPayment(payment.id);
       setDescription(payment.description);
@@ -86,7 +98,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
             
             {isPaymentCategory && (
               <PaymentSelector
-                payments={payments || []}
+                payments={payments}
                 selectedPayment={selectedPaymentObject}
                 onSelect={handlePaymentSelect}
               />
