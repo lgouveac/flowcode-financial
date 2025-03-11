@@ -20,6 +20,7 @@ export const CashFlowTable = ({
 }: CashFlowTableProps) => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Format date to YYYY-MM-DD for input editing
   const formatDateForInput = (dateString: string) => {
@@ -88,15 +89,16 @@ export const CashFlowTable = ({
         <h2 className="text-xl font-semibold">Fluxo de Caixa</h2>
         <div className="flex gap-3">
           <ImportCashFlow onSuccess={onNewCashFlow} />
-          <Dialog>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 Nova Movimentação
               </Button>
             </DialogTrigger>
             <NewCashFlowForm 
+              open={dialogOpen}
               onSuccess={onNewCashFlow}
-              onClose={() => {}}
+              onClose={() => setDialogOpen(false)}
             />
           </Dialog>
         </div>
