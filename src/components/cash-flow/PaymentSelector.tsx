@@ -50,10 +50,17 @@ export const PaymentSelector = ({
     );
   });
 
-  // Prevent any form submission and toggle popup state
+  // Handle payment selection
   const handleSelect = (value: string) => {
     onSelect(value);
     setOpen(false);
+  };
+
+  // Toggle dropdown without form submission
+  const handleToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen(!open);
   };
 
   return (
@@ -64,11 +71,8 @@ export const PaymentSelector = ({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          onClick={(e) => {
-            e.preventDefault(); // Prevent form submission
-            e.stopPropagation(); // Stop event bubbling
-          }}
-          type="button" // Explicitly set type to button to prevent form submission
+          onClick={handleToggle}
+          type="button"
           disabled={isLoading}
         >
           {isLoading ? (
