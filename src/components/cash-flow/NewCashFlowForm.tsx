@@ -47,13 +47,6 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
           handleSubmit(e);
         }}>
           <div className="grid gap-4 py-4">
-            {isPaymentCategory && (
-              <PaymentSelector
-                payments={payments || []}
-                selectedPayment={selectedPayment as unknown as Payment | null}
-                onSelect={(payment) => setSelectedPayment(payment ? payment.id : '')}
-              />
-            )}
             <FormFields
               movementType={movementType}
               category={category}
@@ -67,6 +60,19 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               onDateChange={setDate}
               isPaymentCategory={isPaymentCategory}
             />
+            {isPaymentCategory && payments && (
+              <PaymentSelector
+                payments={payments}
+                selectedPayment={selectedPayment as unknown as Payment | null}
+                onSelect={(payment) => {
+                  if (payment) {
+                    setSelectedPayment(payment.id);
+                    setDescription(payment.description);
+                    setAmount(payment.amount.toString());
+                  }
+                }}
+              />
+            )}
           </div>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
