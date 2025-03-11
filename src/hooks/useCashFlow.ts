@@ -28,6 +28,9 @@ export const useCashFlow = (period: string = 'current') => {
         const nextMonth = month === 12 ? 1 : month + 1;
         const nextMonthYear = month === 12 ? year + 1 : year;
         
+        // For debugging, log the calculated range
+        console.log(`Date range for ${year}-${month}: from ${year}-${String(month).padStart(2, '0')}-01 to ${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`);
+        
         return {
           start: `${year}-${String(month).padStart(2, '0')}-01`,
           end: `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`,
@@ -96,6 +99,8 @@ export const useCashFlow = (period: string = 'current') => {
           end: new Date().toISOString().split('T')[0],
         };
       default:
+        // If the period doesn't match any known format, use current month as a safe default
+        console.log(`Unknown period format "${selectedPeriod}", defaulting to current month`);
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
           end: `${currentMonth === 12 ? currentYear + 1 : currentYear}-${String(currentMonth === 12 ? 1 : currentMonth + 1).padStart(2, '0')}-01`,
