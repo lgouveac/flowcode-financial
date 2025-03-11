@@ -40,7 +40,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
   };
 
   // Prevent accidental form submission
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const onFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     handleSubmit(e);
   };
@@ -54,7 +54,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
         </DialogDescription>
       </DialogHeader>
       <form 
-        onSubmit={handleFormSubmit}
+        onSubmit={onFormSubmit}
         className="space-y-6"
       >
         <FormFields

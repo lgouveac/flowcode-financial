@@ -51,16 +51,9 @@ export const PaymentSelector = ({
   });
 
   // Handle payment selection
-  const handleSelect = (value: string) => {
-    onSelect(value);
+  const handleSelect = (currentValue: string) => {
+    onSelect(currentValue);
     setOpen(false);
-  };
-
-  // Toggle dropdown without form submission
-  const handleToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setOpen(!open);
   };
 
   return (
@@ -71,7 +64,6 @@ export const PaymentSelector = ({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          onClick={handleToggle}
           type="button"
           disabled={isLoading}
         >
