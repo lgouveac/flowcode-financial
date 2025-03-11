@@ -6,6 +6,7 @@ interface EmailPreviewProps {
   selectedTemplate?: string;
   templates: EmailTemplate[];
   clientName?: string;
+  responsibleName?: string;
   amount?: number;
   dueDay?: number;
   description?: string;
@@ -19,6 +20,7 @@ export const EmailPreview = ({
   selectedTemplate,
   templates,
   clientName,
+  responsibleName,
   amount,
   dueDay,
   dueDate,
@@ -37,6 +39,7 @@ export const EmailPreview = ({
 
   const replacements = {
     "{nome_cliente}": clientName || "Cliente",
+    "{nome_responsavel}": responsibleName || "Responsável",
     "{valor_cobranca}": (amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
     "{data_vencimento}": dueDate ? new Date(dueDate).toLocaleDateString('pt-BR') : dueDay ? String(dueDay) : "",
     "{plano_servico}": description || "",

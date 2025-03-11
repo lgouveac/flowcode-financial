@@ -26,6 +26,7 @@ interface EmailRequest {
   subject: string;
   content: string;
   recipientName: string;
+  responsibleName?: string;
   billingValue: number;
   dueDate: string;
   daysUntilDue: number;
@@ -49,6 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
       to: data.to,
       subject: data.subject,
       recipientName: data.recipientName,
+      responsibleName: data.responsibleName,
       billingValue: data.billingValue,
       dueDate: data.dueDate,
       daysUntilDue: data.daysUntilDue,
@@ -85,6 +87,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Normalize data for email processing
     const emailData: EmailData = {
       recipientName: data.recipientName,
+      responsibleName: data.responsibleName,
       billingValue: data.billingValue,
       dueDate: data.dueDate,
       currentInstallment: typeof data.currentInstallment === 'number' ? data.currentInstallment : 1,

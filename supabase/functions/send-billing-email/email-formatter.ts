@@ -3,6 +3,7 @@ import { formatCurrency, formatDate } from "./utils.ts";
 
 export interface EmailData {
   recipientName: string;
+  responsibleName?: string;
   billingValue: number;
   dueDate: string;
   currentInstallment: number;
@@ -19,6 +20,7 @@ export const processEmailContent = (content: string, data: EmailData): string =>
   // Define replacement pairs in order of specificity (longest patterns first)
   const replacements: [RegExp, string][] = [
     [/{nome_cliente}/g, data.recipientName],
+    [/{nome_responsavel}/g, data.responsibleName || 'Responsável'],
     [/{valor_cobranca}/g, formattedValue],
     [/{data_vencimento}/g, formattedDate],
     [/{numero_parcela}\/\{total_parcelas}/g, installmentInfo], // Handle "X/Y" pattern if present
@@ -54,6 +56,7 @@ export const processEmailSubject = (subject: string, data: EmailData): string =>
   
   const subjectReplacements: [RegExp, string][] = [
     [/{nome_cliente}/g, data.recipientName],
+    [/{nome_responsavel}/g, data.responsibleName || 'Responsável'],
     [/{valor_cobranca}/g, formattedValue],
     [/{numero_parcela}\/\{total_parcelas}/g, installmentInfo],
     [/{numero_parcela}/g, String(data.currentInstallment)],

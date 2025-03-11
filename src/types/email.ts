@@ -29,6 +29,7 @@ export const variablesList: VariablesType = {
   clients: {
     recurring: [
       { name: '{nome_cliente}', description: 'Nome do cliente' },
+      { name: '{nome_responsavel}', description: 'Nome do responsável' },
       { name: '{valor_cobranca}', description: 'Valor da cobrança' },
       { name: '{data_vencimento}', description: 'Data de vencimento' },
       { name: '{plano_servico}', description: 'Descrição do serviço' },
@@ -38,6 +39,7 @@ export const variablesList: VariablesType = {
     ],
     oneTime: [
       { name: '{nome_cliente}', description: 'Nome do cliente' },
+      { name: '{nome_responsavel}', description: 'Nome do responsável' },
       { name: '{valor_cobranca}', description: 'Valor da cobrança' },
       { name: '{data_vencimento}', description: 'Data de vencimento' },
       { name: '{descricao_servico}', description: 'Descrição do serviço' },

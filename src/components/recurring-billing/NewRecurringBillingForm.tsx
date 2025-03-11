@@ -13,7 +13,7 @@ import { EmailPreview } from "./EmailPreview";
 interface NewRecurringBillingFormProps {
   onSubmit: (billing: RecurringBilling & { email_template?: string }) => void;
   onClose: () => void;
-  clients: Array<{ id: string; name: string }>;
+  clients: Array<{ id: string; name: string, partner_name?: string }>;
   templates?: EmailTemplate[];
 }
 
@@ -90,6 +90,7 @@ export const NewRecurringBillingForm = ({
           selectedTemplate={formData.email_template}
           templates={templates}
           clientName={selectedClient?.name}
+          responsibleName={selectedClient?.partner_name}
           amount={formData.amount}
           dueDay={formData.due_day}
           description={formData.description}
