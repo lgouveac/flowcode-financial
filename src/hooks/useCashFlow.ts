@@ -112,8 +112,8 @@ export const useCashFlow = (period: string = 'current') => {
     try {
       const dates = getPeriodDates(period);
       
-      // Log the date range for debugging
-      console.log('Fetching cash flow for date range:', dates);
+      // Log the date range and period for debugging
+      console.log('Fetching cash flow for:', { period, dates });
       
       const { data, error } = await supabase
         .from('cash_flow')
@@ -124,12 +124,13 @@ export const useCashFlow = (period: string = 'current') => {
 
       if (error) throw error;
 
+      // Log the raw data from database
       console.log('Cash flow data from database:', data);
 
       // Transform the data to ensure type safety
       const transformedData: CashFlow[] = (data || []).map(item => ({
         ...item,
-        type: validateCashFlowType(item.type), // This ensures type is either 'income' or 'expense'
+        type: validateCashFlowType(item.type),
         id: item.id,
         description: item.description,
         amount: item.amount,
@@ -141,12 +142,12 @@ export const useCashFlow = (period: string = 'current') => {
       }));
 
       setCashFlow(transformedData);
+      console.log('Transformed cash flow data:', transformedData);
 
       // Process data for the chart
       const chartDataMap = new Map();
       
       transformedData.forEach((flow) => {
-        // Format the date for display in Portuguese format (DD/MM/YYYY)
         const dateObj = new Date(flow.date);
         const date = dateObj.toLocaleDateString('pt-BR');
         
