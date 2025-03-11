@@ -50,6 +50,12 @@ export const PaymentSelector = ({
     );
   });
 
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOpen(!open);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -58,11 +64,8 @@ export const PaymentSelector = ({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          type="button" 
-          onClick={(e) => {
-            e.preventDefault();
-            setOpen(!open);
-          }}
+          type="button"
+          onMouseDown={handleButtonClick} // Changed to onMouseDown to ensure it fires before any form submission
           disabled={isLoading}
         >
           {isLoading ? (
