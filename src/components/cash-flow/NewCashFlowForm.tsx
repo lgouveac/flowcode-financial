@@ -6,6 +6,7 @@ import { PaymentSelector } from "./PaymentSelector";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Payment } from "@/types/payment";
+import { useEffect } from "react";
 
 interface NewCashFlowFormProps {
   open: boolean;
@@ -35,6 +36,28 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
 
   const isPaymentCategory = category === 'payment';
 
+  // Prepare the selected payment object for the selector
+  const selectedPaymentObject = isPaymentCategory && selectedPayment && payments
+    ? payments.find(p => p.id === selectedPayment)
+    : null;
+
+  // Handle payment selection
+  const handlePaymentSelect = (payment: Payment | null) => {
+    if (payment) {
+      setSelectedPayment(payment.id);
+      setDescription(payment.description);
+      setAmount(payment.amount.toString());
+      // Set date to payment due_date if no date is selected
+      if (!date) {
+        setDate(payment.due_date);
+      }
+    } else {
+      setSelectedPayment('');
+      setDescription('');
+      setAmount('');
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent onClick={(e) => e.stopPropagation()} className="sm:max-w-[425px]">
@@ -60,21 +83,16 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               onDateChange={setDate}
               isPaymentCategory={isPaymentCategory}
             />
-            {isPaymentCategory && payments && (
+            
+            {isPaymentCategory && (
               <PaymentSelector
-                payments={payments}
-                selectedPayment={selectedPayment as unknown as Payment | null}
-                onSelect={(payment) => {
-                  if (payment) {
-                    setSelectedPayment(payment.id);
-                    setDescription(payment.description);
-                    setAmount(payment.amount.toString());
-                  }
-                }}
+                payments={payments || []}
+                selectedPayment={selectedPaymentObject}
+                onSelect={handlePaymentSelect}
               />
             )}
           </div>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || (isPaymentCategory && !selectedPayment)}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

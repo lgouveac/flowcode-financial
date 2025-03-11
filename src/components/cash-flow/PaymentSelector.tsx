@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Payment } from "@/types/payment";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -13,13 +14,11 @@ interface PaymentSelectorProps {
   onSelect: (payment: Payment | null) => void;
 }
 
-export const PaymentSelector = ({ payments = [], selectedPayment, onSelect }: PaymentSelectorProps) => {
+export const PaymentSelector = ({ payments, selectedPayment, onSelect }: PaymentSelectorProps) => {
   const [open, setOpen] = useState(false);
-
-  if (!Array.isArray(payments)) {
-    console.error('Payments is not an array:', payments);
-    return null;
-  }
+  
+  // Ensure payments is an array, if not, use empty array
+  const safePayments = Array.isArray(payments) ? payments : [];
 
   return (
     <div className="space-y-2">
@@ -44,7 +43,7 @@ export const PaymentSelector = ({ payments = [], selectedPayment, onSelect }: Pa
             <CommandInput placeholder="Buscar pagamento..." />
             <CommandEmpty>Nenhum pagamento encontrado.</CommandEmpty>
             <CommandGroup>
-              {payments.map((payment) => (
+              {safePayments.map((payment) => (
                 <CommandItem
                   key={payment.id}
                   value={payment.id}

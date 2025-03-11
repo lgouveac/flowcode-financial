@@ -76,6 +76,15 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
     e.preventDefault();
     e.stopPropagation(); // Stop propagation to prevent any parent form submission
     
+    if (category === 'payment' && !selectedPayment) {
+      toast({
+        title: "Selecione um pagamento",
+        description: "É necessário selecionar um pagamento para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
