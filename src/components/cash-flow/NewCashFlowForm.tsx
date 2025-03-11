@@ -39,6 +39,12 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
     }
   };
 
+  // Prevent accidental form submission
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit(e);
+  };
+
   return (
     <DialogContent className="overflow-visible">
       <DialogHeader>
@@ -48,10 +54,7 @@ export const NewCashFlowForm = ({ onSuccess, onClose }: NewCashFlowFormProps) =>
         </DialogDescription>
       </DialogHeader>
       <form 
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSubmit(e);
-        }} 
+        onSubmit={handleFormSubmit}
         className="space-y-6"
       >
         <FormFields

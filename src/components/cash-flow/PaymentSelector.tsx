@@ -50,10 +50,10 @@ export const PaymentSelector = ({
     );
   });
 
-  const handleButtonClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setOpen(!open);
+  // Prevent any form submission and toggle popup state
+  const handleSelect = (value: string) => {
+    onSelect(value);
+    setOpen(false);
   };
 
   return (
@@ -64,8 +64,11 @@ export const PaymentSelector = ({
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
-          type="button"
-          onMouseDown={handleButtonClick} // Changed to onMouseDown to ensure it fires before any form submission
+          onClick={(e) => {
+            e.preventDefault(); // Prevent form submission
+            e.stopPropagation(); // Stop event bubbling
+          }}
+          type="button" // Explicitly set type to button to prevent form submission
           disabled={isLoading}
         >
           {isLoading ? (
@@ -100,10 +103,7 @@ export const PaymentSelector = ({
                 <CommandItem
                   key={payment.id}
                   value={payment.id}
-                  onSelect={(value) => {
-                    onSelect(value);
-                    setOpen(false);
-                  }}
+                  onSelect={handleSelect}
                   className="flex flex-col items-start"
                 >
                   <div className="flex items-center w-full">
