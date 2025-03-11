@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { RecurringBilling } from "@/types/billing";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +93,17 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
     setPendingAction(null);
   };
 
-  const handleRowClick = (billingId: string) => {
+  const handleRowClick = (billingId: string, e: React.MouseEvent) => {
+    // Prevent opening the dialog if clicked on a form element
+    if (
+      e.target instanceof HTMLInputElement || 
+      e.target instanceof HTMLSelectElement ||
+      e.target instanceof HTMLButtonElement ||
+      (e.target as HTMLElement).closest('.editable-cell') !== null
+    ) {
+      return;
+    }
+    
     setSelectedBillingId(billingId);
     setShowPaymentDetails(true);
   };
@@ -122,6 +133,11 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
       cancelled: 'Cancelado'
     };
     return statusLabels[status];
+  };
+
+  const handleDialogClose = () => {
+    setShowPaymentDetails(false);
+    setSelectedBillingId(null);
   };
 
   return (
@@ -170,44 +186,48 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
             <TableRow 
               key={billing.id} 
               className="group hover:bg-muted/50 cursor-pointer"
-              onClick={() => handleRowClick(billing.id)}
+              onClick={(e) => handleRowClick(billing.id, e)}
             >
               <TableCell>{billing.clients?.name}</TableCell>
               <TableCell className="relative">
-                <EditableCell
-                  value={billing.description}
-                  onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
-                  onClick={(e) => e.stopPropagation()}
-                />
+                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
+                  <EditableCell
+                    value={billing.description}
+                    onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
+                  />
+                </div>
               </TableCell>
               <TableCell>
                 {billing.current_installment}/{billing.installments}
               </TableCell>
               <TableCell className="relative">
-                <EditableCell
-                  value={billing.amount.toString()}
-                  onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
-                  type="number"
-                  onClick={(e) => e.stopPropagation()}
-                />
+                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
+                  <EditableCell
+                    value={billing.amount.toString()}
+                    onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
+                    type="number"
+                  />
+                </div>
               </TableCell>
               <TableCell className="relative">
-                <EditableCell
-                  value={billing.due_day.toString()}
-                  onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
-                  type="number"
-                  onClick={(e) => e.stopPropagation()}
-                />
+                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
+                  <EditableCell
+                    value={billing.due_day.toString()}
+                    onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
+                    type="number"
+                  />
+                </div>
               </TableCell>
               <TableCell className="relative">
-                <input
-                  type="date"
-                  value={billing.payment_date || ''}
-                  onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
-                  className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
-                  disabled={billing.status !== 'paid'}
-                  onClick={(e) => e.stopPropagation()}
-                />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="date"
+                    value={billing.payment_date || ''}
+                    onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
+                    className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
+                    disabled={billing.status !== 'paid'}
+                  />
+                </div>
               </TableCell>
               <TableCell onClick={(e) => e.stopPropagation()}>
                 <Select
@@ -267,11 +287,13 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <PaymentDetailsDialog
-        billingId={selectedBillingId}
-        open={showPaymentDetails}
-        onClose={() => setShowPaymentDetails(false)}
-      />
+      {selectedBillingId && (
+        <PaymentDetailsDialog
+          billingId={selectedBillingId}
+          open={showPaymentDetails}
+          onClose={handleDialogClose}
+        />
+      )}
     </div>
   );
 };

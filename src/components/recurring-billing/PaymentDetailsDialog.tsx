@@ -1,13 +1,12 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Payment } from "@/types/payment";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { EditableCell } from "../EditableCell";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RecurringBilling } from "@/types/billing";
+import { Payment } from "@/types/payment";
+import { Loader2 } from "lucide-react";
 
 interface PaymentDetailsDialogProps {
   billingId: string | null;
@@ -16,219 +15,225 @@ interface PaymentDetailsDialogProps {
 }
 
 export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetailsDialogProps) => {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [billing, setBilling] = useState<RecurringBilling | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
 
   useEffect(() => {
-    if (billingId && open) {
-      fetchPayments();
+    if (open && billingId) {
+      fetchBillingDetails();
     }
-  }, [billingId, open]);
+  }, [open, billingId]);
 
-  const fetchPayments = async () => {
+  const fetchBillingDetails = async () => {
     if (!billingId) return;
     
-    setLoading(true);
+    setIsLoading(true);
+    
     try {
-      // Primeiro, buscar o client_id da cobrança recorrente
+      // Fetch billing details
       const { data: billingData, error: billingError } = await supabase
         .from('recurring_billing')
-        .select('client_id')
+        .select('*, clients(name, email)')
         .eq('id', billingId)
         .single();
 
       if (billingError) throw billingError;
       
-      if (!billingData || !billingData.client_id) {
-        throw new Error('Cobrança não encontrada ou sem cliente associado');
-      }
+      setBilling(billingData);
 
-      // Agora, buscar todos os pagamentos recorrentes deste cliente
-      const { data, error } = await supabase
+      // Fetch related payments
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
-        .select(`
-          *,
-          clients (
-            name
-          )
-        `)
+        .select('*')
+        .eq('description', billingData.description)
         .eq('client_id', billingData.client_id)
-        .not('installment_number', 'is', null)
         .order('installment_number', { ascending: true });
 
-      if (error) throw error;
+      if (paymentsError) throw paymentsError;
       
-      setPayments(data || []);
+      setPayments(paymentsData || []);
     } catch (error) {
-      console.error('Error fetching payments:', error);
+      console.error('Error fetching details:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar os detalhes dos pagamentos.",
+        title: "Erro ao carregar detalhes",
+        description: "Não foi possível carregar os detalhes do recebimento.",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleUpdatePayment = async (paymentId: string, field: string, value: any) => {
+  const createPayment = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent any form submission
+    
+    if (!billing) return;
+    
+    setIsCreatingPayment(true);
+    
     try {
+      // Calculate next due date based on the due_day
+      const today = new Date();
+      let dueDate = new Date(today.getFullYear(), today.getMonth(), billing.due_day);
+      
+      // If the calculated due date is in the past, move to next month
+      if (dueDate < today) {
+        dueDate = new Date(today.getFullYear(), today.getMonth() + 1, billing.due_day);
+      }
+      
+      const formattedDueDate = dueDate.toISOString().split('T')[0];
+      
+      const newPayment = {
+        client_id: billing.client_id,
+        description: `${billing.description} (${billing.current_installment}/${billing.installments})`,
+        amount: billing.amount,
+        due_date: formattedDueDate,
+        payment_method: billing.payment_method,
+        status: 'pending',
+        installment_number: billing.current_installment,
+        total_installments: billing.installments,
+        email_template: billing.email_template
+      };
+      
       const { error } = await supabase
         .from('payments')
-        .update({ [field]: value })
-        .eq('id', paymentId);
+        .insert([newPayment]);
 
       if (error) throw error;
+      
+      // Update current installment in recurring_billing
+      if (billing.current_installment < billing.installments) {
+        const { error: updateError } = await supabase
+          .from('recurring_billing')
+          .update({ 
+            current_installment: billing.current_installment + 1
+          })
+          .eq('id', billingId);
 
+        if (updateError) throw updateError;
+      }
+      
       toast({
-        title: "Pagamento atualizado",
-        description: "As informações foram atualizadas com sucesso.",
+        title: "Pagamento criado",
+        description: "O pagamento foi criado com sucesso.",
       });
-
-      fetchPayments();
+      
+      // Refresh the data
+      fetchBillingDetails();
     } catch (error) {
-      console.error('Error updating payment:', error);
+      console.error('Error creating payment:', error);
       toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível atualizar o pagamento.",
+        title: "Erro ao criar pagamento",
+        description: "Não foi possível criar o pagamento.",
         variant: "destructive",
       });
+    } finally {
+      setIsCreatingPayment(false);
     }
-  };
-
-  const getStatusBadgeVariant = (status: Payment['status']) => {
-    switch (status) {
-      case 'paid':
-        return 'default';
-      case 'pending':
-        return 'secondary';
-      case 'overdue':
-        return 'destructive';
-      case 'cancelled':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusLabel = (status: Payment['status']) => {
-    const statusLabels: Record<Payment['status'], string> = {
-      pending: 'Pendente',
-      billed: 'Faturado',
-      awaiting_invoice: 'Aguardando Fatura',
-      paid: 'Pago',
-      overdue: 'Atrasado',
-      cancelled: 'Cancelado'
-    };
-    return statusLabels[status];
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Detalhes dos Pagamentos Recorrentes</DialogTitle>
+          <DialogTitle>Detalhes do Recebimento Recorrente</DialogTitle>
+          <DialogDescription>
+            Detalhes e histórico de pagamentos para este recebimento recorrente
+          </DialogDescription>
         </DialogHeader>
         
-        {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <p className="text-muted-foreground">Carregando pagamentos...</p>
-          </div>
-        ) : payments.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <p className="text-muted-foreground">Nenhum pagamento encontrado para esta cobrança.</p>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Parcela</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Vencimento</TableHead>
-                <TableHead>Data Pgto.</TableHead>
-                <TableHead>Método</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>
-                    {payment.installment_number}/{payment.total_installments}
-                  </TableCell>
-                  <TableCell>
-                    <EditableCell
-                      value={payment.description}
-                      onChange={(value) => handleUpdatePayment(payment.id, 'description', value)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <EditableCell
-                      value={payment.amount.toString()}
-                      onChange={(value) => handleUpdatePayment(payment.id, 'amount', parseFloat(value))}
-                      type="number"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <input
-                      type="date"
-                      value={payment.due_date}
-                      onChange={(e) => handleUpdatePayment(payment.id, 'due_date', e.target.value)}
-                      className="w-full bg-transparent"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <input
-                      type="date"
-                      value={payment.payment_date || ''}
-                      onChange={(e) => handleUpdatePayment(payment.id, 'payment_date', e.target.value)}
-                      className={`w-full bg-transparent ${payment.status === 'paid' ? '' : 'opacity-50'}`}
-                      disabled={payment.status !== 'paid'}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={payment.payment_method}
-                      onValueChange={(value) => handleUpdatePayment(payment.id, 'payment_method', value)}
+          <div className="space-y-6">
+            {billing && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-lg font-medium">Informações Básicas</h3>
+                  <div className="mt-2 space-y-2">
+                    <p><span className="font-medium">Cliente:</span> {(billing as any).clients?.name}</p>
+                    <p><span className="font-medium">Descrição:</span> {billing.description}</p>
+                    <p><span className="font-medium">Valor:</span> R$ {billing.amount.toFixed(2)}</p>
+                    <p><span className="font-medium">Dia de Vencimento:</span> {billing.due_day}</p>
+                    <p><span className="font-medium">Parcela Atual:</span> {billing.current_installment}/{billing.installments}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium">Ações</h3>
+                  <div className="mt-2 space-y-3">
+                    <Button 
+                      onClick={createPayment}
+                      disabled={isCreatingPayment || billing.current_installment > billing.installments}
+                      className="w-full"
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pix">PIX</SelectItem>
-                        <SelectItem value="boleto">Boleto</SelectItem>
-                        <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={payment.status}
-                      onValueChange={(value) => handleUpdatePayment(payment.id, 'status', value)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue>
-                          <Badge variant={getStatusBadgeVariant(payment.status)}>
-                            {getStatusLabel(payment.status)}
-                          </Badge>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="billed">Faturado</SelectItem>
-                        <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                        <SelectItem value="paid">Pago</SelectItem>
-                        <SelectItem value="overdue">Atrasado</SelectItem>
-                        <SelectItem value="cancelled">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                      {isCreatingPayment ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Gerando...
+                        </>
+                      ) : (
+                        "Gerar Próximo Pagamento"
+                      )}
+                    </Button>
+                    
+                    {billing.current_installment > billing.installments && (
+                      <p className="text-sm text-muted-foreground">
+                        Todas as parcelas já foram geradas.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div>
+              <h3 className="text-lg font-medium mb-3">Histórico de Pagamentos</h3>
+              {payments.length > 0 ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-3 font-medium">Parcela</th>
+                        <th className="text-left p-3 font-medium">Descrição</th>
+                        <th className="text-left p-3 font-medium">Valor</th>
+                        <th className="text-left p-3 font-medium">Vencimento</th>
+                        <th className="text-left p-3 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map((payment) => (
+                        <tr key={payment.id} className="border-t">
+                          <td className="p-3">{payment.installment_number}/{payment.total_installments}</td>
+                          <td className="p-3">{payment.description}</td>
+                          <td className="p-3">R$ {payment.amount.toFixed(2)}</td>
+                          <td className="p-3">{new Date(payment.due_date).toLocaleDateString('pt-BR')}</td>
+                          <td className="p-3 capitalize">{payment.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  Nenhum pagamento gerado ainda.
+                </p>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
+              <DialogClose asChild>
+                <Button variant="outline" onClick={onClose}>
+                  Fechar
+                </Button>
+              </DialogClose>
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>
