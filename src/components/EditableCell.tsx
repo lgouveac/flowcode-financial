@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { PencilIcon, CheckIcon, XIcon } from "lucide-react";
@@ -51,6 +52,17 @@ export const EditableCell = ({
     });
   };
 
+  const getInputAttributes = () => {
+    if (type === "number") {
+      return {
+        step: "0.01",
+        min: "0",
+        inputMode: "decimal" as const
+      };
+    }
+    return {};
+  };
+
   if (isEditing) {
     return (
       <div className="flex items-center gap-2 min-w-[200px]" onClick={(e) => e.stopPropagation()}>
@@ -60,8 +72,7 @@ export const EditableCell = ({
           type={type}
           className={`h-8 text-base ${className}`}
           autoFocus
-          step={type === "number" ? "0.01" : undefined}
-          min={type === "number" ? "0" : undefined}
+          {...getInputAttributes()}
         />
         <div className="flex gap-1">
           <Button variant="ghost" size="sm" onClick={handleSave} className="h-8 w-8 p-0">
