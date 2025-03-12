@@ -1,4 +1,8 @@
 
+-- Create extensions if they don't already exist
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+
 -- Create a cron job to run the trigger-employee-notifications edge function daily
 SELECT cron.schedule(
   'invoke-employee-notifications-daily',
@@ -11,3 +15,7 @@ SELECT cron.schedule(
   ) as request_id;
   $$
 );
+
+-- Create a server setting for the service key
+-- This is needed to authenticate edge function calls
+ALTER DATABASE postgres SET app.settings.service_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bHB2cGR3Z2l3YmRwcWhlZW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxOTA5NzEsImV4cCI6MjA1NTc2Njk3MX0.gljQ6JAfbMzP-cbA68Iz21vua9YqAqVQgpB-eLk6nAg';
