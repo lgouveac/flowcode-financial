@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -62,9 +61,9 @@ export const EmployeeEmailSettings = ({
       const { data: timeData, error: timeError } = await supabase
         .from('employee_email_settings')
         .select('id, notification_time')
-        .single();
+        .maybeSingle();
 
-      if (timeError && timeError.code !== 'PGRST116') {
+      if (timeError) {
         console.error('Error fetching employee time settings:', timeError);
         return;
       }

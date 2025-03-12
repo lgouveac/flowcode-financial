@@ -227,6 +227,27 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_email_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          notification_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notification_time?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notification_time?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       employee_monthly_values: {
         Row: {
           amount: number
