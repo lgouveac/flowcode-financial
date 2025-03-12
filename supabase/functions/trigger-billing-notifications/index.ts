@@ -21,9 +21,9 @@ serve(async (req) => {
       throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
     }
 
-    // Execute the trigger_notifications PostgreSQL function
+    // Execute the check_billing_notifications PostgreSQL function
     const response = await fetch(
-      `${supabaseUrl}/rest/v1/rpc/trigger_notifications`,
+      `${supabaseUrl}/rest/v1/rpc/check_billing_notifications`,
       {
         method: "POST",
         headers: {
@@ -35,18 +35,19 @@ serve(async (req) => {
       }
     );
 
+    // Parse the response for any errors
     const result = await response.json();
-    console.log("Notification trigger result:", result);
+    console.log("Billing notification trigger result:", result);
 
     return new Response(
-      JSON.stringify({ success: true, message: "Notifications triggered", result }),
+      JSON.stringify({ success: true, message: "Billing notifications triggered", result }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       }
     );
   } catch (error) {
-    console.error("Error triggering notifications:", error);
+    console.error("Error triggering billing notifications:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {

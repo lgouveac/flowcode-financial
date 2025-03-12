@@ -12,6 +12,11 @@ export interface Payment {
   updated_at?: string;
   installment_number?: number;
   total_installments?: number;
+  clients?: {
+    name: string;
+    email: string;
+    partner_name?: string;
+  };
 }
 
 export type NewPayment = Omit<Payment, 'id' | 'created_at' | 'updated_at'>;

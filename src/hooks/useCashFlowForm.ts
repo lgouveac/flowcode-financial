@@ -7,6 +7,8 @@ import type { Payment } from "@/types/payment";
 interface PaymentWithClient extends Payment {
   clients: {
     name: string;
+    email?: string;
+    partner_name?: string;
   };
 }
 
@@ -45,7 +47,9 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
         .select(`
           *,
           clients (
-            name
+            name,
+            email,
+            partner_name
           )
         `)
         .in('status', ['pending', 'billed', 'awaiting_invoice']);
