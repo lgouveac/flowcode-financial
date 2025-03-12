@@ -17,10 +17,8 @@ interface PaymentSelectorProps {
 export const PaymentSelector = ({ payments, selectedPayment, onSelect }: PaymentSelectorProps) => {
   const [open, setOpen] = useState(false);
   
-  // Ensure payments is an array, if not, use empty array
   const safePayments = Array.isArray(payments) ? payments : [];
 
-  // Debugging
   console.log('PaymentSelector received payments:', payments);
   console.log('PaymentSelector selected payment:', selectedPayment);
 
@@ -47,28 +45,24 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
             <CommandInput placeholder="Buscar pagamento..." />
             <CommandEmpty>Nenhum pagamento encontrado.</CommandEmpty>
             <CommandGroup>
-              {safePayments.length > 0 ? (
-                safePayments.map((payment) => (
-                  <CommandItem
-                    key={payment.id}
-                    value={payment.id}
-                    onSelect={() => {
-                      onSelect(payment);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedPayment?.id === payment.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {payment.description} - R$ {payment.amount.toFixed(2)}
-                  </CommandItem>
-                ))
-              ) : (
-                <CommandItem disabled>Nenhum pagamento pendente encontrado</CommandItem>
-              )}
+              {safePayments.map((payment) => (
+                <CommandItem
+                  key={payment.id}
+                  value={payment.id}
+                  onSelect={() => {
+                    onSelect(payment);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedPayment?.id === payment.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {payment.description} - R$ {payment.amount.toFixed(2)}
+                </CommandItem>
+              ))}
             </CommandGroup>
           </Command>
         </PopoverContent>

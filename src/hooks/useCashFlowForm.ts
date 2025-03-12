@@ -1,24 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { Payment } from "@/types/payment";
 
-// This interface now properly extends Payment with the updated clients type
-interface PaymentWithClient extends Payment {
-  clients: {
-    name: string;
-    email?: string;
-    partner_name?: string;
-  };
-}
+// Remove the PaymentWithClient interface since we don't need it anymore
+// The Payment type already has the correct clients structure
 
-interface UseCashFlowFormProps {
-  onSuccess: () => void;
-  onClose: () => void;
-}
-
-export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) => {
+export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) => {
   const { toast } = useToast();
   const [movementType, setMovementType] = useState<'income' | 'expense'>('income');
   const [category, setCategory] = useState('');
@@ -26,7 +14,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: UseCashFlowFormProps) =>
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<string>('');
-  const [payments, setPayments] = useState<PaymentWithClient[] | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
