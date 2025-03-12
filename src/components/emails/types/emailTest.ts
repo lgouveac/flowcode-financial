@@ -18,6 +18,7 @@ export interface RecurringBilling {
   client: {
     name: string;
     email: string;
+    partner_name?: string;
   };
 }
 
@@ -30,6 +31,7 @@ export interface Payment {
   client: {
     name: string;
     email: string;
+    partner_name?: string;
   };
 }
 
