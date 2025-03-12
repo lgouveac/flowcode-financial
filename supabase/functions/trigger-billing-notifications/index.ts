@@ -23,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
   console.log("🔔 Trigger billing notifications function called");
 
   try {
-    // Get notification time setting
+    // Get notification time setting - ONLY from email_notification_settings
     const { data: settings, error: settingsError } = await supabase
       .from('email_notification_settings')
       .select('notification_time')

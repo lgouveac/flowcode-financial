@@ -1,11 +1,18 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
+// CORS headers for the API
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
+
+// Initialize Supabase client
+const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -13,191 +20,178 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log("🔔 Trigger employee notifications function called");
+
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    
-    if (!supabaseServiceKey) {
-      throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
-    // Get the current date and time
-    const now = new Date();
-    const currentDay = now.getDate();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    
-    console.log(`Current time: ${currentHour}:${currentMinute}, Current day: ${currentDay}`);
-    
-    // Get the email settings from global_settings for the day
+    // Get employee notification time setting - ONLY use employee_email_settings
     const { data: settings, error: settingsError } = await supabase
-      .from("global_settings")
-      .select("employee_emails_send_day")
-      .single();
-    
+      .from('employee_email_settings')
+      .select('notification_time')
+      .limit(1);
+
     if (settingsError) {
-      console.error("Error fetching global settings:", settingsError);
-      throw new Error(`Error fetching global settings: ${settingsError.message}`);
+      console.error("Error fetching employee notification settings:", settingsError);
+      throw new Error(`Failed to fetch employee notification settings: ${settingsError.message}`);
     }
 
-    // Get the notification time from employee_email_settings
-    const { data: timeSettings, error: timeError } = await supabase
-      .from("employee_email_settings")
-      .select("notification_time")
+    // Default to 09:00 if no settings found
+    const notificationTime = settings && settings.length > 0 && settings[0].notification_time 
+      ? settings[0].notification_time 
+      : '09:00:00';
+
+    // Get current time in HH:MM format
+    const now = new Date();
+    const currentTime = now.toLocaleTimeString('en-US', { 
+      hour12: false, 
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'UTC'  // Use same timezone as your database
+    });
+
+    // Extract hours and minutes from notification time (format: HH:MM:SS)
+    const notificationHoursMinutes = notificationTime.substring(0, 5);
+    
+    console.log(`⏰ Current time: ${currentTime}, Employee notification time: ${notificationHoursMinutes}`);
+
+    // Check if it's time to send notifications (within 5 minutes window)
+    const currentHour = parseInt(currentTime.split(':')[0], 10);
+    const currentMinute = parseInt(currentTime.split(':')[1], 10);
+    const notifHour = parseInt(notificationHoursMinutes.split(':')[0], 10);
+    const notifMinute = parseInt(notificationHoursMinutes.split(':')[1], 10);
+
+    // Calculate total minutes for easier comparison
+    const currentTotalMinutes = currentHour * 60 + currentMinute;
+    const notifTotalMinutes = notifHour * 60 + notifMinute;
+    const minutesDifference = Math.abs(currentTotalMinutes - notifTotalMinutes);
+
+    // Get the global settings for employee emails send day
+    const { data: globalSettings, error: globalError } = await supabase
+      .from('global_settings')
+      .select('employee_emails_send_day')
       .single();
-    
-    if (timeError && timeError.code !== "PGRST116") {
-      console.error("Error fetching employee time settings:", timeError);
-      throw new Error(`Error fetching employee time settings: ${timeError.message}`);
+
+    if (globalError) {
+      console.error("Error fetching global settings:", globalError);
+      throw new Error(`Failed to fetch global settings: ${globalError.message}`);
     }
 
-    const emailSendDay = settings?.employee_emails_send_day || 5;
-    const notificationTime = timeSettings?.notification_time || "09:00";
+    // Get employee_emails_send_day or default to 5 (5th day of month)
+    const emailSendDay = globalSettings?.employee_emails_send_day || 5;
     
-    // Parse the notification time
-    const [hour, minute] = notificationTime.split(':').map(Number);
-    
-    // Log the current day and configured day
-    console.log(`Current day: ${currentDay}, Email send day: ${emailSendDay}`);
-    console.log(`Current time: ${currentHour}:${currentMinute}, Configured time: ${hour}:${minute}`);
-    
-    // Check if both the day and time (within a 5-minute window) match
-    const isTimeMatching = 
-      currentHour === hour && 
-      Math.abs(currentMinute - minute) <= 5;
-    
-    // Only continue if the current day and time match the configured settings
-    if (currentDay !== emailSendDay || !isTimeMatching) {
-      return new Response(
-        JSON.stringify({ 
-          message: `Not sending emails now. Day or time doesn't match.`,
-          match: false,
-          currentDay,
-          emailSendDay,
-          currentTime: `${currentHour}:${currentMinute}`,
-          configuredTime: notificationTime
-        }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-    
-    console.log(`Day and time matched. Proceeding with email sending...`);
-    
-    // Fetch email templates
-    const { data: templates, error: templatesError } = await supabase
-      .from("email_templates")
-      .select("*")
-      .eq("type", "employees")
-      .eq("is_default", true);
-      
-    if (templatesError) {
-      console.error("Error fetching templates:", templatesError);
-      throw new Error(`Error fetching templates: ${templatesError.message}`);
-    }
+    // Check if today is the day to send emails
+    const currentDay = now.getDate();
+    const shouldSendToday = currentDay === emailSendDay;
 
-    // Create a map of templates by subtype
-    const templateMap = templates.reduce((acc, template) => {
-      acc[template.subtype] = template;
-      return acc;
-    }, {});
-    
-    // Fetch active employees
-    const { data: employees, error: employeesError } = await supabase
-      .from("employees")
-      .select("id, name, email, type")
-      .eq("status", "active");
+    console.log(`📆 Current day: ${currentDay}, Send day: ${emailSendDay}, Should send today: ${shouldSendToday}`);
+
+    if (shouldSendToday && minutesDifference <= 5) {
+      console.log("✅ It's employee notification time! Sending employee notifications");
       
-    if (employeesError) {
-      console.error("Error fetching employees:", employeesError);
-      throw new Error(`Error fetching employees: ${employeesError.message}`);
-    }
-    
-    console.log(`Found ${employees?.length || 0} active employees to notify`);
-    
-    // Count of successfully sent emails
-    let sentCount = 0;
-    const results = [];
-    
-    // Send emails to each employee based on their type (invoice or hours)
-    for (const employee of employees || []) {
-      const templateType = employee.type === "freelancer" ? "invoice" : "hours";
-      const template = templateMap[templateType];
-      
+      // Get active employees
+      const { data: employees, error: employeesError } = await supabase
+        .from('employees')
+        .select('id, name, email, position')
+        .eq('status', 'active');
+
+      if (employeesError) {
+        throw new Error(`Failed to fetch employees: ${employeesError.message}`);
+      }
+
+      console.log(`👥 Found ${employees?.length || 0} active employees`);
+
+      // Get default employee email template
+      const { data: template, error: templateError } = await supabase
+        .from('email_templates')
+        .select('content, subject')
+        .eq('type', 'employees')
+        .eq('subtype', 'hours')
+        .eq('is_default', true)
+        .maybeSingle();
+
+      if (templateError) {
+        throw new Error(`Failed to fetch template: ${templateError.message}`);
+      }
+
       if (!template) {
-        console.log(`No template found for employee type: ${templateType}`);
-        continue;
+        throw new Error("No default employee email template found");
       }
-      
-      try {
-        console.log(`Sending email to ${employee.name} (${employee.email})`);
-        
-        // Call the process-billing-notifications function to format and send the email
-        const emailResponse = await fetch(
-          "https://itlpvpdwgiwbdpqheemw.supabase.co/functions/v1/process-billing-notifications",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": req.headers.get("Authorization") || `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`
-            },
-            body: JSON.stringify({
-              to: employee.email,
-              subject: template.subject,
-              content: template.content,
-              recipientName: employee.name,
-              billingValue: 0, // This would be replaced with actual value if available
-              dueDate: new Date().toISOString(),
-              currentInstallment: 1,
-              totalInstallments: 1,
-              description: `Notificação mensal para ${employee.name}`
-            })
+
+      // For each employee, send email
+      for (const employee of employees || []) {
+        try {
+          console.log(`📧 Sending email to ${employee.name} (${employee.email})`);
+          
+          // Call the send-email function
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/send-email`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseServiceKey}`
+              },
+              body: JSON.stringify({
+                to: employee.email,
+                subject: template.subject,
+                content: template.content,
+                nome_funcionario: employee.name,
+              })
+            }
+          );
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Failed to send email to ${employee.email}: ${response.status} - ${errorText}`);
+          } else {
+            console.log(`✅ Email sent to ${employee.name} (${employee.email})`);
           }
-        );
-        
-        const emailResult = await emailResponse.json();
-        console.log(`Email response for ${employee.name}:`, emailResult);
-        
-        results.push({
-          employee: employee.name,
-          email: employee.email,
-          success: !emailResult.error,
-          error: emailResult.error
-        });
-        
-        if (!emailResult.error) {
-          sentCount++;
+        } catch (emailError) {
+          console.error(`Error sending email to ${employee.email}:`, emailError);
         }
-      } catch (emailError) {
-        console.error(`Error sending email to ${employee.email}:`, emailError);
-        results.push({
-          employee: employee.name,
-          email: employee.email,
-          success: false,
-          error: emailError instanceof Error ? emailError.message : String(emailError)
-        });
       }
-    }
-    
-    return new Response(
-      JSON.stringify({
-        message: `Processed ${employees?.length || 0} employees, sent ${sentCount} emails`,
-        results
-      }),
-      {
+
+      return new Response(JSON.stringify({ 
+        status: "success", 
+        message: "Employee notifications processed successfully", 
+        employeesCount: employees?.length || 0
+      }), {
         status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    } else {
+      console.log("⏱️ Not employee notification time yet, skipping");
+      const skipReason = !shouldSendToday 
+        ? "Not the right day of month" 
+        : "Not the right time of day";
+        
+      return new Response(JSON.stringify({ 
+        status: "success", 
+        message: "Not employee notification time yet", 
+        reason: skipReason,
+        currentDay,
+        sendDay: emailSendDay,
+        currentTime,
+        notificationTime: notificationHoursMinutes,
+        minutesDifference
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
+  } catch (error: any) {
+    console.error("❌ Error triggering employee notifications:", error);
     
-  } catch (error) {
-    console.error("Error processing employee notifications:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      JSON.stringify({ 
+        status: "error", 
+        message: error.toString() 
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

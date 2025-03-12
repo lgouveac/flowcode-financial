@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -45,9 +46,9 @@ export const EmployeeEmailSettings = ({
       const { data: globalData, error: globalError } = await supabase
         .from('global_settings')
         .select('id, employee_emails_send_day')
-        .single();
+        .maybeSingle();
 
-      if (globalError && globalError.code !== 'PGRST116') {
+      if (globalError) {
         console.error('Error fetching global settings:', globalError);
         return;
       }
@@ -98,7 +99,7 @@ export const EmployeeEmailSettings = ({
         if (error) throw error;
       }
 
-      // Save the time to employee_email_settings (separate from email_notification_settings)
+      // Save the time to employee_email_settings
       if (!employeeSettingsId) {
         // If no employee settings exist, create a new record
         const { error } = await supabase
