@@ -13,14 +13,19 @@ serve(async (req) => {
   }
 
   try {
+    console.log("🔔 Employee notification trigger function called");
+    
     // Call the Supabase PostgreSQL function
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseKey) {
+      console.error("❌ Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
       throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
     }
 
+    console.log("📊 Preparing to call check_employee_notifications function");
+    
     // Execute the check_employee_notifications PostgreSQL function
     const response = await fetch(
       `${supabaseUrl}/rest/v1/rpc/check_employee_notifications`,
@@ -35,8 +40,14 @@ serve(async (req) => {
       }
     );
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Database function error: ${response.status} - ${errorText}`);
+      throw new Error(`Error calling check_employee_notifications: ${response.status} - ${errorText}`);
+    }
+
     const result = await response.json();
-    console.log("Employee notification trigger result:", result);
+    console.log("✅ Employee notification trigger result:", result);
 
     return new Response(
       JSON.stringify({ success: true, message: "Employee notifications triggered", result }),
@@ -46,7 +57,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("Error triggering employee notifications:", error);
+    console.error("❌ Error triggering employee notifications:", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {

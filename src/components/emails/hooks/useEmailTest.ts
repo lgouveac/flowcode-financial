@@ -122,7 +122,7 @@ export const useEmailTest = (template: EmailTemplate) => {
 
 const prepareEmailData = (record: Record, template: EmailTemplate): EmailData => {
   let emailData: EmailData = {
-    to: 'client' in record ? record.client.email : record.email,
+    to: 'client' in record ? record.client.email || '' : record.email,
     subject: template.subject,
     content: template.content,
   };
@@ -133,6 +133,15 @@ const prepareEmailData = (record: Record, template: EmailTemplate): EmailData =>
       ...emailData,
       nome_funcionario: record.name,
     };
+    
+    // Add employee specific variables based on template subtype
+    if (template.subtype === 'invoice') {
+      emailData.valor_nota = 0; // Default value, would be replaced with actual data
+      emailData.data_nota = new Date().toISOString().split('T')[0]; // Default to today
+    } else if (template.subtype === 'hours') {
+      emailData.total_horas = 0; // Default value
+      emailData.periodo = `${new Date().getMonth() + 1}/${new Date().getFullYear()}`; // Current month/year
+    }
   } else if ('due_day' in record) {
     // Recurring billing case
     const dueDate = new Date();

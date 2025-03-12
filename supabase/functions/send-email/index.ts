@@ -17,13 +17,39 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, subject, content, ...variables } = await req.json();
+    console.log("📨 Received email request");
+    const data = await req.json();
+    console.log("📝 Email request data:", JSON.stringify(data));
+    
+    const { to, subject, content, ...variables } = data;
+    
+    if (!to || typeof to !== 'string') {
+      throw new Error("Recipient email (to) is required and must be a string");
+    }
+    
+    if (!subject || typeof subject !== 'string') {
+      throw new Error("Email subject is required and must be a string");
+    }
+    
+    if (!content || typeof content !== 'string') {
+      throw new Error("Email content is required and must be a string");
+    }
+    
+    console.log(`📧 Preparing email to: ${to}`);
+    console.log(`📑 Subject: ${subject}`);
+    console.log(`🔄 Variables:`, variables);
     
     // Replace variables in content
     let processedContent = content;
     Object.entries(variables).forEach(([key, value]) => {
+      // Format monetary values with R$ if they appear to be numbers
+      const formattedValue = 
+        ['valor_cobranca', 'valor_nota'].includes(key) && typeof value === 'number' 
+          ? `R$ ${Number(value).toFixed(2).replace('.', ',')}`
+          : String(value);
+      
       const regex = new RegExp(`{${key}}`, 'g');
-      processedContent = processedContent.replace(regex, String(value));
+      processedContent = processedContent.replace(regex, formattedValue);
     });
 
     // Convert line breaks to HTML paragraphs
@@ -52,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
       html: wrappedHtml,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    console.log("✅ Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {
       status: 200,
@@ -62,7 +88,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error sending email:", error);
+    console.error("❌ Error sending email:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
