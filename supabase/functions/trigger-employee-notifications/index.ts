@@ -23,7 +23,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get the current date
+    // Get the current date and time
     const now = new Date();
     const currentDay = now.getDate();
     
@@ -55,6 +55,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Current day: ${currentDay}, Email send day: ${emailSendDay}`);
     
     // Only continue if the current day matches the configured send day
+    // Note: We're removing the time check since the cron job is already scheduled to run at a specific time
     if (currentDay !== emailSendDay) {
       return new Response(
         JSON.stringify({ 
@@ -120,12 +121,12 @@ const handler = async (req: Request): Promise<Response> => {
         
         // Call the process-billing-notifications function to format and send the email
         const emailResponse = await fetch(
-          `${supabaseUrl}/functions/v1/process-billing-notifications`,
+          "https://itlpvpdwgiwbdpqheemw.supabase.co/functions/v1/process-billing-notifications",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${supabaseServiceKey}`
+              "Authorization": req.headers.get("Authorization") || `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`
             },
             body: JSON.stringify({
               to: employee.email,
