@@ -31,6 +31,7 @@ export const EmployeeEmailSettings = ({
   const [sendTime, setSendTime] = useState(currentTime);
   const [isLoading, setIsLoading] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [notificationSettingsId, setNotificationSettingsId] = useState<string | null>(null);
 
   // Fetch the current settings when the dialog opens
   useEffect(() => {
@@ -41,29 +42,62 @@ export const EmployeeEmailSettings = ({
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch global settings (for the day)
+      const { data: globalData, error: globalError } = await supabase
         .from('global_settings')
         .select('*')
         .single();
 
-      if (error) {
-        console.error('Error fetching settings:', error);
+      if (globalError && globalError.code !== 'PGRST116') {
+        console.error('Error fetching global settings:', globalError);
+        toast({
+          title: "Erro ao carregar configurações",
+          description: "Não foi possível obter as configurações globais.",
+          variant: "destructive",
+        });
         return;
       }
 
-      if (data) {
-        setSettingsId(data.id);
-        setSendDay(data.employee_emails_send_day || currentDay);
+      // Fetch notification settings (for the time)
+      const { data: notificationData, error: notificationError } = await supabase
+        .from('email_notification_settings')
+        .select('*')
+        .single();
+
+      if (notificationError && notificationError.code !== 'PGRST116') {
+        console.error('Error fetching notification settings:', notificationError);
+        toast({
+          title: "Erro ao carregar configurações",
+          description: "Não foi possível obter as configurações de notificação.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update state with fetched data
+      if (globalData) {
+        setSettingsId(globalData.id);
+        setSendDay(globalData.employee_emails_send_day || currentDay);
+      }
+
+      if (notificationData) {
+        setNotificationSettingsId(notificationData.id);
+        setSendTime(notificationData.notification_time ? notificationData.notification_time.substring(0, 5) : currentTime);
       }
     } catch (error) {
       console.error('Error in fetchSettings:', error);
+      toast({
+        title: "Erro ao carregar configurações",
+        description: "Ocorreu um erro ao carregar as configurações.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // First, save the day to global_settings
+      // Save the day to global_settings
       if (!settingsId) {
         // If no settings exist, create a new record
         const { error } = await supabase
@@ -81,29 +115,22 @@ export const EmployeeEmailSettings = ({
         if (error) throw error;
       }
 
-      // Check if notification settings exist
-      const { data: existingSettings, error: checkError } = await supabase
-        .from('email_notification_settings')
-        .select('id')
-        .limit(1);
-
-      if (checkError) throw checkError;
-
-      if (existingSettings && existingSettings.length > 0) {
-        // Update existing notification settings
-        const { error: updateError } = await supabase
-          .from('email_notification_settings')
-          .update({ notification_time: sendTime })
-          .eq('id', existingSettings[0].id);
-
-        if (updateError) throw updateError;
-      } else {
-        // Create new notification settings if none exist
-        const { error: insertError } = await supabase
+      // Save the time to email_notification_settings
+      if (!notificationSettingsId) {
+        // If no notification settings exist, create a new record
+        const { error } = await supabase
           .from('email_notification_settings')
           .insert({ notification_time: sendTime });
 
-        if (insertError) throw insertError;
+        if (error) throw error;
+      } else {
+        // Update existing notification settings
+        const { error } = await supabase
+          .from('email_notification_settings')
+          .update({ notification_time: sendTime })
+          .eq('id', notificationSettingsId);
+
+        if (error) throw error;
       }
 
       toast({
