@@ -30,7 +30,7 @@ export interface Payment {
   payment_method: string;
   client: {
     name: string;
-    email: string;
+    email?: string;
     partner_name?: string;
   };
 }

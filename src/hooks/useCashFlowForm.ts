@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { Payment } from "@/types/payment";
 
+// This interface now properly extends Payment with the updated clients type
 interface PaymentWithClient extends Payment {
   clients: {
     name: string;

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -45,7 +44,9 @@ export const useBillingData = () => {
       .select(`
         *,
         clients (
-          name
+          name,
+          email,
+          partner_name
         )
       `)
       .order('created_at', { ascending: false });
@@ -61,7 +62,8 @@ export const useBillingData = () => {
     }
 
     console.log("Payments fetched:", data);
-    setPayments(data || []);
+    // Cast the data to Payment[] since we've updated our types to match what the API returns
+    setPayments(data || [] as Payment[]);
   };
 
   const fetchClients = async () => {

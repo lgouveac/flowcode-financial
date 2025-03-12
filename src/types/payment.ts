@@ -14,7 +14,7 @@ export interface Payment {
   total_installments?: number;
   clients?: {
     name: string;
-    email: string;
+    email?: string;
     partner_name?: string;
   };
 }
