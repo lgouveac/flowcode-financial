@@ -19,7 +19,7 @@ export const TableHeader = ({ onSettingsClick }: TableHeaderProps) => {
           onClick={onSettingsClick}
           title="Configurações de email"
         >
-          <Settings className="h-4 w-4" />
+          <Settings className="h-4 w-4 text-foreground" />
         </Button>
       </div>
     </div>
