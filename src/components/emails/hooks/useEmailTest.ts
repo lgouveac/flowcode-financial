@@ -34,7 +34,8 @@ export const useEmailTest = (template: EmailTemplate) => {
             payment_method,
             clients (
               name,
-              email
+              email,
+              partner_name
             )
           `)
           .eq("status", "pending")
@@ -55,7 +56,8 @@ export const useEmailTest = (template: EmailTemplate) => {
             payment_method,
             clients (
               name,
-              email
+              email,
+              partner_name
             )
           `)
           .eq("status", "pending")
@@ -139,6 +141,7 @@ const prepareEmailData = (record: Record, template: EmailTemplate): EmailData =>
     emailData = {
       ...emailData,
       nome_cliente: record.client.name,
+      nome_responsavel: record.client.partner_name || 'Responsável',
       valor_cobranca: record.amount,
       data_vencimento: dueDate.toISOString(),
       plano_servico: record.description,
@@ -151,6 +154,7 @@ const prepareEmailData = (record: Record, template: EmailTemplate): EmailData =>
     emailData = {
       ...emailData,
       nome_cliente: record.client.name,
+      nome_responsavel: record.client.partner_name || 'Responsável',
       valor_cobranca: record.amount,
       data_vencimento: record.due_date,
       descricao_servico: record.description,
