@@ -38,19 +38,19 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
     
     if (settingsError) {
-      console.error("Error fetching settings:", settingsError);
-      throw new Error(`Error fetching settings: ${settingsError.message}`);
+      console.error("Error fetching global settings:", settingsError);
+      throw new Error(`Error fetching global settings: ${settingsError.message}`);
     }
 
-    // Get the notification time from email_notification_settings
+    // Get the notification time from employee_email_settings
     const { data: timeSettings, error: timeError } = await supabase
-      .from("email_notification_settings")
+      .from("employee_email_settings")
       .select("notification_time")
       .single();
     
     if (timeError && timeError.code !== "PGRST116") {
-      console.error("Error fetching time settings:", timeError);
-      throw new Error(`Error fetching time settings: ${timeError.message}`);
+      console.error("Error fetching employee time settings:", timeError);
+      throw new Error(`Error fetching employee time settings: ${timeError.message}`);
     }
 
     const emailSendDay = settings?.employee_emails_send_day || 5;

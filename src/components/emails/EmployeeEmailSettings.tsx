@@ -31,7 +31,7 @@ export const EmployeeEmailSettings = ({
   const [sendTime, setSendTime] = useState(currentTime);
   const [isLoading, setIsLoading] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
-  const [notificationSettingsId, setNotificationSettingsId] = useState<string | null>(null);
+  const [employeeSettingsId, setEmployeeSettingsId] = useState<string | null>(null);
 
   // Fetch the current settings when the dialog opens
   useEffect(() => {
@@ -58,19 +58,19 @@ export const EmployeeEmailSettings = ({
         setSendDay(globalData.employee_emails_send_day || currentDay);
       }
 
-      // Fetch email notification settings for the time
+      // Fetch employee email notification settings for the time
       const { data: timeData, error: timeError } = await supabase
-        .from('email_notification_settings')
+        .from('employee_email_settings')
         .select('id, notification_time')
         .single();
 
       if (timeError && timeError.code !== 'PGRST116') {
-        console.error('Error fetching time settings:', timeError);
+        console.error('Error fetching employee time settings:', timeError);
         return;
       }
 
       if (timeData) {
-        setNotificationSettingsId(timeData.id);
+        setEmployeeSettingsId(timeData.id);
         setSendTime(timeData.notification_time || currentTime);
       }
     } catch (error) {
@@ -99,20 +99,20 @@ export const EmployeeEmailSettings = ({
         if (error) throw error;
       }
 
-      // Save the time to email_notification_settings
-      if (!notificationSettingsId) {
-        // If no notification settings exist, create a new record
+      // Save the time to employee_email_settings (separate from email_notification_settings)
+      if (!employeeSettingsId) {
+        // If no employee settings exist, create a new record
         const { error } = await supabase
-          .from('email_notification_settings')
+          .from('employee_email_settings')
           .insert({ notification_time: sendTime });
 
         if (error) throw error;
       } else {
-        // Update existing notification settings
+        // Update existing employee settings
         const { error } = await supabase
-          .from('email_notification_settings')
+          .from('employee_email_settings')
           .update({ notification_time: sendTime })
-          .eq('id', notificationSettingsId);
+          .eq('id', employeeSettingsId);
 
         if (error) throw error;
       }
