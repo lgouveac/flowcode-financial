@@ -26,51 +26,41 @@ const handler = async (req: Request): Promise<Response> => {
     // Get the current date and time
     const now = new Date();
     const currentDay = now.getDate();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
     
-    // Get the email settings
+    // Get the email settings from global_settings
     const { data: settings, error: settingsError } = await supabase
       .from("global_settings")
       .select("employee_emails_send_day")
       .single();
     
     if (settingsError) {
+      console.error("Error fetching settings:", settingsError);
       throw new Error(`Error fetching settings: ${settingsError.message}`);
     }
 
-    // Get the notification time settings
+    // Get the notification time from email_notification_settings
     const { data: timeSettings, error: timeError } = await supabase
       .from("email_notification_settings")
       .select("notification_time")
       .single();
     
     if (timeError && timeError.code !== "PGRST116") {
+      console.error("Error fetching time settings:", timeError);
       throw new Error(`Error fetching time settings: ${timeError.message}`);
     }
 
     const emailSendDay = settings?.employee_emails_send_day || 5;
     
-    // Parse the notification time (HH:MM:SS format)
-    const notificationTime = timeSettings?.notification_time || "09:00:00";
-    const [sendHour, sendMinute] = notificationTime.split(":").map(Number);
-    
+    // Log the current day and configured day
     console.log(`Current day: ${currentDay}, Email send day: ${emailSendDay}`);
-    console.log(`Current time: ${currentHour}:${currentMinute}, Send time: ${sendHour}:${sendMinute}`);
     
     // Only continue if the current day matches the configured send day
-    // and the current time is within 5 minutes of the configured send time
-    const isCorrectDay = currentDay === emailSendDay;
-    const isCorrectTimeWindow = 
-      Math.abs(currentHour - sendHour) * 60 + Math.abs(currentMinute - sendMinute) <= 5;
-    
-    if (!isCorrectDay || !isCorrectTimeWindow) {
+    // Note: We're removing the time check since the cron job is already scheduled to run at a specific time
+    if (currentDay !== emailSendDay) {
       return new Response(
         JSON.stringify({ 
-          message: `Not sending emails now. Current day/time: ${currentDay} at ${currentHour}:${currentMinute}, ` +
-                  `Send day/time: ${emailSendDay} at ${sendHour}:${sendMinute}`,
-          matchDay: isCorrectDay,
-          matchTime: isCorrectTimeWindow
+          message: `Not sending emails now. Current day: ${currentDay}, Configured send day: ${emailSendDay}`,
+          match: false
         }),
         {
           status: 200,
@@ -78,6 +68,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
+    
+    console.log(`Day matched (${currentDay}). Proceeding with email sending...`);
     
     // Fetch email templates
     const { data: templates, error: templatesError } = await supabase
@@ -87,6 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("is_default", true);
       
     if (templatesError) {
+      console.error("Error fetching templates:", templatesError);
       throw new Error(`Error fetching templates: ${templatesError.message}`);
     }
 
@@ -103,15 +96,18 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("status", "active");
       
     if (employeesError) {
+      console.error("Error fetching employees:", employeesError);
       throw new Error(`Error fetching employees: ${employeesError.message}`);
     }
+    
+    console.log(`Found ${employees?.length || 0} active employees to notify`);
     
     // Count of successfully sent emails
     let sentCount = 0;
     const results = [];
     
     // Send emails to each employee based on their type (invoice or hours)
-    for (const employee of employees) {
+    for (const employee of employees || []) {
       const templateType = employee.type === "freelancer" ? "invoice" : "hours";
       const template = templateMap[templateType];
       
@@ -121,6 +117,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       try {
+        console.log(`Sending email to ${employee.name} (${employee.email})`);
+        
         // Call the process-billing-notifications function to format and send the email
         const emailResponse = await fetch(
           "https://itlpvpdwgiwbdpqheemw.supabase.co/functions/v1/process-billing-notifications",
@@ -128,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": req.headers.get("Authorization") || ""
+              "Authorization": req.headers.get("Authorization") || `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`
             },
             body: JSON.stringify({
               to: employee.email,
@@ -145,7 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
         
         const emailResult = await emailResponse.json();
-        console.log(`Email sent to ${employee.name} (${employee.email}):`, emailResult);
+        console.log(`Email response for ${employee.name}:`, emailResult);
         
         results.push({
           employee: employee.name,
@@ -157,20 +155,20 @@ const handler = async (req: Request): Promise<Response> => {
         if (!emailResult.error) {
           sentCount++;
         }
-      } catch (emailError: any) {
+      } catch (emailError) {
         console.error(`Error sending email to ${employee.email}:`, emailError);
         results.push({
           employee: employee.name,
           email: employee.email,
           success: false,
-          error: emailError.message
+          error: emailError instanceof Error ? emailError.message : String(emailError)
         });
       }
     }
     
     return new Response(
       JSON.stringify({
-        message: `Processed ${employees.length} employees, sent ${sentCount} emails`,
+        message: `Processed ${employees?.length || 0} employees, sent ${sentCount} emails`,
         results
       }),
       {
@@ -179,10 +177,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
     
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error processing employee notifications:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

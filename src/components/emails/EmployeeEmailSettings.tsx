@@ -63,6 +63,7 @@ export const EmployeeEmailSettings = ({
   const handleSave = async () => {
     setIsLoading(true);
     try {
+      // First, save the day to global_settings
       if (!settingsId) {
         // If no settings exist, create a new record
         const { error } = await supabase
@@ -80,22 +81,29 @@ export const EmployeeEmailSettings = ({
         if (error) throw error;
       }
 
-      // Update the notification time in email_notification_settings
-      const { error: timeError } = await supabase
+      // Check if notification settings exist
+      const { data: existingSettings, error: checkError } = await supabase
         .from('email_notification_settings')
-        .update({ notification_time: sendTime })
-        .eq('id', (await supabase.from('email_notification_settings').select('id').single()).data?.id);
+        .select('id')
+        .limit(1);
 
-      if (timeError) {
-        console.error('Error updating notification time:', timeError);
-        // If no records exist, create one
-        if (timeError.code === 'PGRST116') {
-          await supabase
-            .from('email_notification_settings')
-            .insert({ notification_time: sendTime });
-        } else {
-          throw timeError;
-        }
+      if (checkError) throw checkError;
+
+      if (existingSettings && existingSettings.length > 0) {
+        // Update existing notification settings
+        const { error: updateError } = await supabase
+          .from('email_notification_settings')
+          .update({ notification_time: sendTime })
+          .eq('id', existingSettings[0].id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Create new notification settings if none exist
+        const { error: insertError } = await supabase
+          .from('email_notification_settings')
+          .insert({ notification_time: sendTime });
+
+        if (insertError) throw insertError;
       }
 
       toast({
