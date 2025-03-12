@@ -26,8 +26,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Get the current date and time
     const now = new Date();
     const currentDay = now.getDate();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
     
-    // Get the email settings from global_settings
+    console.log(`Current time: ${currentHour}:${currentMinute}, Current day: ${currentDay}`);
+    
+    // Get the email settings from global_settings for the day
     const { data: settings, error: settingsError } = await supabase
       .from("global_settings")
       .select("employee_emails_send_day")
@@ -50,17 +54,30 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const emailSendDay = settings?.employee_emails_send_day || 5;
+    const notificationTime = timeSettings?.notification_time || "09:00";
+    
+    // Parse the notification time
+    const [hour, minute] = notificationTime.split(':').map(Number);
     
     // Log the current day and configured day
     console.log(`Current day: ${currentDay}, Email send day: ${emailSendDay}`);
+    console.log(`Current time: ${currentHour}:${currentMinute}, Configured time: ${hour}:${minute}`);
     
-    // Only continue if the current day matches the configured send day
-    // Note: We're removing the time check since the cron job is already scheduled to run at a specific time
-    if (currentDay !== emailSendDay) {
+    // Check if both the day and time (within a 5-minute window) match
+    const isTimeMatching = 
+      currentHour === hour && 
+      Math.abs(currentMinute - minute) <= 5;
+    
+    // Only continue if the current day and time match the configured settings
+    if (currentDay !== emailSendDay || !isTimeMatching) {
       return new Response(
         JSON.stringify({ 
-          message: `Not sending emails now. Current day: ${currentDay}, Configured send day: ${emailSendDay}`,
-          match: false
+          message: `Not sending emails now. Day or time doesn't match.`,
+          match: false,
+          currentDay,
+          emailSendDay,
+          currentTime: `${currentHour}:${currentMinute}`,
+          configuredTime: notificationTime
         }),
         {
           status: 200,
@@ -69,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    console.log(`Day matched (${currentDay}). Proceeding with email sending...`);
+    console.log(`Day and time matched. Proceeding with email sending...`);
     
     // Fetch email templates
     const { data: templates, error: templatesError } = await supabase
