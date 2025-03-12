@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { PencilIcon, CheckIcon, XIcon } from "lucide-react";
@@ -30,16 +29,6 @@ export const EditableCell = ({
     setTempValue(value);
   };
 
-  const handleSave = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(tempValue);
-    setIsEditing(false);
-    toast({
-      title: "Alteração salva",
-      description: "O valor foi atualizado com sucesso.",
-    });
-  };
-
   const handleCancel = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(false);
@@ -52,15 +41,27 @@ export const EditableCell = ({
     }
   };
 
+  const handleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange(tempValue);
+    setIsEditing(false);
+    toast({
+      title: "Alteração salva",
+      description: "O valor foi atualizado com sucesso.",
+    });
+  };
+
   if (isEditing) {
     return (
-      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-2 min-w-[200px]" onClick={(e) => e.stopPropagation()}>
         <Input
           value={tempValue}
           onChange={(e) => setTempValue(e.target.value)}
           type={type}
-          className={`h-8 ${className}`}
+          className={`h-8 text-base ${className}`}
           autoFocus
+          step={type === "number" ? "0.01" : undefined}
+          min={type === "number" ? "0" : undefined}
         />
         <div className="flex gap-1">
           <Button variant="ghost" size="sm" onClick={handleSave} className="h-8 w-8 p-0">
