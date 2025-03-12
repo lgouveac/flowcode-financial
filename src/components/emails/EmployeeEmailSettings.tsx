@@ -184,7 +184,7 @@ export const EmployeeEmailSettings = ({
               type="time"
               value={sendTime}
               onChange={(e) => setSendTime(e.target.value)}
-              className="col-span-3"
+              className="col-span-3 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
             />
           </div>
         </div>
