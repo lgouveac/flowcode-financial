@@ -125,9 +125,11 @@ export const EmployeeTable = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4">
         <TableHeader onSettingsClick={() => setSettingsOpen(true)} />
-        <ImportCSV />
+        <div className="flex items-center gap-2">
+          <ImportCSV />
+        </div>
       </div>
 
       {employees.length === 0 ? (
