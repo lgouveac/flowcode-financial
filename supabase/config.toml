@@ -7,5 +7,11 @@ verify_jwt = false
 [functions.trigger-notifications]
 verify_jwt = false
 
+[functions.trigger-employee-notifications]
+verify_jwt = false
+
 [functions.send-billing-email]
+verify_jwt = false
+
+[functions.trigger-billing-notifications]
 verify_jwt = false
