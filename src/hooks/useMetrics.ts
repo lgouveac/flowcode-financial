@@ -8,10 +8,12 @@ interface Metrics {
   totalExpenses: number;
   netProfit: number;
   activeClients: number;
+  expectedRevenue: number; // Nova métrica adicionada
   revenueChange: string;
   expensesChange: string;
   profitChange: string;
   clientsChange: string;
+  expectedRevenueChange: string; // Nova métrica de variação
 }
 
 export const useMetrics = (period: string = 'current') => {
@@ -20,10 +22,12 @@ export const useMetrics = (period: string = 'current') => {
     totalExpenses: 0,
     netProfit: 0,
     activeClients: 0,
+    expectedRevenue: 0, // Valor inicial para a nova métrica
     revenueChange: "0%",
     expensesChange: "0%",
     profitChange: "0%",
     clientsChange: "0",
+    expectedRevenueChange: "0%" // Valor inicial para a variação
   });
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -130,6 +134,34 @@ export const useMetrics = (period: string = 'current') => {
 
         if (previousClientsError) throw previousClientsError;
 
+        // Buscar faturamento esperado (pagamentos pendentes)
+        const { data: expectedPayments, error: expectedPaymentsError } = await supabase
+          .from('payments')
+          .select('amount')
+          .in('status', ['pending', 'billed', 'awaiting_invoice'])
+          .gte('due_date', dates.start)
+          .lt('due_date', dates.end);
+
+        if (expectedPaymentsError) throw expectedPaymentsError;
+
+        // Buscar faturamento esperado (recorrentes)
+        const { data: expectedRecurring, error: expectedRecurringError } = await supabase
+          .from('recurring_billing')
+          .select('amount')
+          .in('status', ['pending', 'billed', 'awaiting_invoice']);
+
+        if (expectedRecurringError) throw expectedRecurringError;
+
+        // Buscar faturamento esperado do período anterior (pagamentos pontuais)
+        const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
+          .from('payments')
+          .select('amount')
+          .in('status', ['pending', 'billed', 'awaiting_invoice'])
+          .gte('due_date', dates.compareStart)
+          .lt('due_date', dates.compareEnd);
+
+        if (prevExpectedPaymentsError) throw prevExpectedPaymentsError;
+
         // Calcular métricas do período atual
         const currentRevenue = currentData
           ?.filter(item => item.type === 'income')
@@ -148,6 +180,22 @@ export const useMetrics = (period: string = 'current') => {
           ?.filter(item => item.type === 'expense')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
+        // Calcular faturamento esperado atual
+        const currentExpectedPaymentsTotal = expectedPayments
+          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+        
+        const currentExpectedRecurringTotal = expectedRecurring
+          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+        
+        const currentExpectedRevenue = currentExpectedPaymentsTotal + currentExpectedRecurringTotal;
+
+        // Calcular faturamento esperado anterior
+        const previousExpectedPaymentsTotal = previousExpectedPayments
+          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+
+        // Para simplificar, usamos o mesmo valor recorrente para o período anterior
+        const previousExpectedRevenue = previousExpectedPaymentsTotal + currentExpectedRecurringTotal;
+
         const currentNetProfit = currentRevenue - currentExpenses;
         const previousNetProfit = previousRevenue - previousExpenses;
 
@@ -156,10 +204,12 @@ export const useMetrics = (period: string = 'current') => {
           totalExpenses: currentExpenses,
           netProfit: currentNetProfit,
           activeClients: currentClients?.length || 0,
+          expectedRevenue: currentExpectedRevenue,
           revenueChange: calculatePercentageChange(currentRevenue, previousRevenue),
           expensesChange: calculatePercentageChange(currentExpenses, previousExpenses),
           profitChange: calculatePercentageChange(currentNetProfit, previousNetProfit),
           clientsChange: `+${(currentClients?.length || 0) - (previousClients?.length || 0)}`,
+          expectedRevenueChange: calculatePercentageChange(currentExpectedRevenue, previousExpectedRevenue)
         });
       } catch (error) {
         console.error('Error fetching metrics:', error);

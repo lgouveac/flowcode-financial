@@ -28,6 +28,11 @@ export const Overview = () => {
     change: metrics.revenueChange,
     description: period === "current" ? "Mês atual" : "Período selecionado"
   }, {
+    title: "Faturamento Esperado",
+    value: formatCurrency(metrics.expectedRevenue),
+    change: metrics.expectedRevenueChange,
+    description: "Recebimentos pendentes"
+  }, {
     title: "Despesas Totais",
     value: formatCurrency(metrics.totalExpenses),
     change: metrics.expensesChange,
@@ -62,7 +67,7 @@ export const Overview = () => {
         </Select>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {stats.map((stat, i) => (
           <motion.div key={stat.title} 
             initial={{ opacity: 0, y: 20 }} 
