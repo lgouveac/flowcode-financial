@@ -10,7 +10,9 @@ interface TableHeaderProps {
 export const TableHeader = ({ onSettingsClick }: TableHeaderProps) => {
   return (
     <div className="flex items-center justify-between gap-4">
+      <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
       <div className="flex items-center gap-2">
+        <AddEmployeeDialog />
         <Button
           variant="outline"
           size="icon"
@@ -19,10 +21,6 @@ export const TableHeader = ({ onSettingsClick }: TableHeaderProps) => {
         >
           <Settings className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-semibold">Funcionários e Freelancers</h1>
-      </div>
-      <div className="flex items-center gap-2">
-        <AddEmployeeDialog />
       </div>
     </div>
   );
