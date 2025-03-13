@@ -15,7 +15,7 @@ interface RecurringBillingWithClient extends RecurringBilling {
   clients?: {
     name: string;
     email?: string;
-  };
+  } | null;
 }
 
 interface BillingTableProps {
