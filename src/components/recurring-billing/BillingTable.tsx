@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,14 +9,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Eye, Trash2 } from "lucide-react";
 import type { RecurringBilling } from "@/types/billing";
 
-// Define a client type
-type ClientInfo = {
-  name: string;
-  email?: string;
-};
-
 interface BillingTableProps {
-  billings: Array<RecurringBilling & { clients?: { name: string; email?: string } | null }>;
+  billings: Array<RecurringBilling & { 
+    clients?: { 
+      name: string; 
+      email?: string 
+    } | null 
+  }>;
   onRefresh?: () => void;
 }
 
