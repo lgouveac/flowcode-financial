@@ -50,12 +50,17 @@ export const variablesList: VariablesType = {
     invoice: [
       { name: '{nome_funcionario}', description: 'Nome do funcionário' },
       { name: '{valor_nota}', description: 'Valor da nota fiscal' },
-      { name: '{data_nota}', description: 'Data da nota fiscal' }
+      { name: '{valor_mensal}', description: 'Valor mensal do funcionário' },
+      { name: '{data_nota}', description: 'Data da nota fiscal' },
+      { name: '{mes_referencia}', description: 'Mês de referência' },
+      { name: '{posicao}', description: 'Cargo/função do funcionário' },
+      { name: '{observacoes}', description: 'Observações adicionais' }
     ],
     hours: [
       { name: '{nome_funcionario}', description: 'Nome do funcionário' },
       { name: '{total_horas}', description: 'Total de horas' },
-      { name: '{periodo}', description: 'Período de referência' }
+      { name: '{periodo}', description: 'Período de referência' },
+      { name: '{valor_mensal}', description: 'Valor mensal do funcionário' }
     ]
   }
 };

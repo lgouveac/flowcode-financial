@@ -152,40 +152,29 @@ serve(async (req) => {
         const monthDate = new Date(monthlyValue.month);
         const formattedMonth = monthDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
         
-        // Prepare content by replacing variables
-        let emailContent = emailTemplate.content;
+        // Prepare the variable data for the template
+        const templateData = {
+          nome_funcionario: employee.name,
+          valor_nota: monthlyValue.amount,
+          mes_referencia: formattedMonth,
+          data_nota: new Date().toLocaleDateString('pt-BR'),
+          posicao: employee.position || "",
+          observacoes: monthlyValue.notes || "",
+          periodo: formattedMonth,
+          total_horas: "0", // Default value for hours template
+          valor_mensal: monthlyValue.amount
+        };
         
-        // Replace variables in the template
-        emailContent = emailContent
-          .replace(/{nome}/g, employee.name)
-          .replace(/{nome_funcionario}/g, employee.name)
-          .replace(/{mes}/g, formattedMonth)
-          .replace(/{periodo}/g, formattedMonth)
-          .replace(/{valor}/g, `R$ ${Number(monthlyValue.amount).toFixed(2).replace('.', ',')}`)
-          .replace(/{valor_nota}/g, `R$ ${Number(monthlyValue.amount).toFixed(2).replace('.', ',')}`)
-          .replace(/{posicao}/g, employee.position || "")
-          .replace(/{observacoes}/g, monthlyValue.notes || "")
-          .replace(/{data_nota}/g, new Date().toLocaleDateString('pt-BR'));
-        
-        let emailSubject = emailTemplate.subject;
-        emailSubject = emailSubject
-          .replace(/{mes}/g, formattedMonth)
-          .replace(/{nome}/g, employee.name)
-          .replace(/{nome_funcionario}/g, employee.name);
-        
-        // Call the send-email function
+        // Call the send-email function with the template ID and data
         const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
           'send-email',
           {
             body: {
               to: employee.email,
-              subject: emailSubject,
-              content: emailContent,
-              // Also provide individual variables for additional processing
-              nome_funcionario: employee.name,
-              periodo: formattedMonth,
-              valor_nota: monthlyValue.amount,
-              data_nota: new Date().toLocaleDateString('pt-BR')
+              templateId: emailTemplate.id,
+              type: "employees",
+              subtype: "invoice",
+              data: templateData
             }
           }
         );

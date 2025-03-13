@@ -18,7 +18,7 @@ export const useTemplateVariables = () => {
     
     variables.forEach(variable => {
       const variableName = variable.name.replace(/[{}]/g, '');
-      if (data[variableName]) {
+      if (data[variableName] !== undefined) {
         const regex = new RegExp(variable.name.replace(/[{}]/g, '\\$&'), 'g');
         renderedContent = renderedContent.replace(regex, String(data[variableName]));
       }

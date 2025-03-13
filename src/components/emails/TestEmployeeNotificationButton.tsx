@@ -66,6 +66,7 @@ export const TestEmployeeNotificationButton = () => {
       disabled={isLoading}
       variant="outline"
       size="sm"
+      className="w-auto"
     >
       {isLoading ? (
         <>
