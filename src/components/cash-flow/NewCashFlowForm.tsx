@@ -72,7 +72,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent onClick={(e) => e.stopPropagation()} className="sm:max-w-[425px]">
+      <DialogContent onClick={(e) => e.stopPropagation()} className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Novo Lançamento</DialogTitle>
         </DialogHeader>
@@ -96,7 +96,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               isPaymentCategory={isPaymentCategory}
             />
             
-            {isPaymentCategory && Array.isArray(payments) && payments.length > 0 && (
+            {isPaymentCategory && Array.isArray(payments) && (
               <PaymentSelector
                 payments={payments}
                 selectedPayment={selectedPaymentObject}
