@@ -73,7 +73,7 @@ export const TestEmployeeNotificationButton = () => {
           Enviando...
         </>
       ) : (
-        "Testar Notificações"
+        "Enviar Notificações"
       )}
     </Button>
   );
