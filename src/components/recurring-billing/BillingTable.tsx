@@ -17,7 +17,7 @@ type ClientInfo = {
 };
 
 interface BillingTableProps {
-  billings: Array<RecurringBilling & { clients?: ClientInfo | null }>;
+  billings: Array<RecurringBilling & { clients?: { name: string; email?: string } | null }>;
   onRefresh?: () => void;
 }
 
