@@ -1,4 +1,3 @@
-
 -- Fix remaining cron jobs to use direct token instead of app.settings.service_key
 
 -- Unschedule the old notification job
