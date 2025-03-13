@@ -10,16 +10,19 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Eye, Trash2 } from "lucide-react";
 import type { RecurringBilling } from "@/types/billing";
 
-// Define a simpler client type to avoid potential circular references
-type ClientInfo = {
+// Define the client data structure separately
+type ClientData = {
   name: string;
   email?: string;
-} | null;
+};
+
+// Define the complete billing item structure
+interface BillingItem extends RecurringBilling {
+  clients?: ClientData | null;
+}
 
 interface BillingTableProps {
-  billings: Array<RecurringBilling & { 
-    clients?: ClientInfo;
-  }>;
+  billings: BillingItem[];
   onRefresh?: () => void;
 }
 
