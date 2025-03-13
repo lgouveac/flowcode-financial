@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { RecurringBilling } from "@/types/billing";
 import { Payment, EditablePaymentFields } from "@/types/payment";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
@@ -24,6 +24,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (open && billingId) {
@@ -55,9 +56,26 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       setBilling(billingData);
 
       // Fetch related payments
+      await fetchRelatedPayments(billingData);
+    } catch (error) {
+      console.error('Error fetching details:', error);
+      toast({
+        title: "Erro ao carregar detalhes",
+        description: "Não foi possível carregar os detalhes do recebimento.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchRelatedPayments = async (billingData: RecurringBilling) => {
+    try {
+      console.log("Fetching related payments for billing description:", billingData.description);
+      
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
-        .select('*')
+        .select('*, clients(name, email, partner_name)')
         .eq('description', billingData.description)
         .eq('client_id', billingData.client_id)
         .order('installment_number', { ascending: true });
@@ -70,14 +88,29 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       console.log("Received payments data:", paymentsData);
       setPayments(paymentsData || []);
     } catch (error) {
-      console.error('Error fetching details:', error);
+      console.error('Error fetching related payments:', error);
       toast({
-        title: "Erro ao carregar detalhes",
-        description: "Não foi possível carregar os detalhes do recebimento.",
+        title: "Erro ao carregar pagamentos",
+        description: "Não foi possível carregar os pagamentos relacionados.",
         variant: "destructive",
       });
+    }
+  };
+
+  const refreshData = async () => {
+    if (!billing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await fetchRelatedPayments(billing);
+      toast({
+        title: "Dados atualizados",
+        description: "Os pagamentos foram atualizados com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error refreshing data:', error);
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -191,7 +224,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         description: "As alterações foram salvas com sucesso.",
       });
       
-      // Update local state to reflect changes
+      // Update local state to reflect changes immediately
       setPayments(prevPayments => 
         prevPayments.map(payment => 
           payment.id === paymentId 
@@ -199,6 +232,11 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             : payment
         )
       );
+      
+      // Fetch fresh data from the server
+      if (billing) {
+        fetchRelatedPayments(billing);
+      }
     } catch (error) {
       console.error('Error updating payment:', error);
       toast({
@@ -308,7 +346,23 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             )}
             
             <div>
-              <h3 className="text-lg font-medium mb-3">Histórico de Pagamentos</h3>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-medium">Histórico de Pagamentos</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={refreshData}
+                  disabled={isRefreshing}
+                >
+                  {isRefreshing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
+                  <span className="ml-1">Atualizar</span>
+                </Button>
+              </div>
+              
               {payments.length > 0 ? (
                 <div className="border rounded-lg overflow-hidden">
                   <table className="w-full">
@@ -334,13 +388,34 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                               value={payment.description}
                               onChange={(e) => updatePayment(payment.id, { description: e.target.value })}
                               className="h-8 text-sm"
+                              onBlur={(e) => {
+                                // Only update if value actually changed
+                                if (e.target.value !== payment.description) {
+                                  updatePayment(payment.id, { description: e.target.value });
+                                }
+                              }}
                             />
                           </td>
                           <td className="p-3">
                             <Input
                               type="number"
                               value={payment.amount}
-                              onChange={(e) => updatePayment(payment.id, { amount: parseFloat(e.target.value) })}
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value)) {
+                                  setPayments(prevPayments =>
+                                    prevPayments.map(p =>
+                                      p.id === payment.id ? { ...p, amount: value } : p
+                                    )
+                                  );
+                                }
+                              }}
+                              onBlur={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value) && value !== payment.amount) {
+                                  updatePayment(payment.id, { amount: value });
+                                }
+                              }}
                               className="h-8 text-sm w-24"
                               step="0.01"
                             />
@@ -349,7 +424,18 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                             <Input
                               type="date"
                               value={payment.due_date}
-                              onChange={(e) => updatePayment(payment.id, { due_date: e.target.value })}
+                              onChange={(e) => {
+                                setPayments(prevPayments =>
+                                  prevPayments.map(p =>
+                                    p.id === payment.id ? { ...p, due_date: e.target.value } : p
+                                  )
+                                );
+                              }}
+                              onBlur={(e) => {
+                                if (e.target.value !== payment.due_date) {
+                                  updatePayment(payment.id, { due_date: e.target.value });
+                                }
+                              }}
                               className="h-8 text-sm"
                             />
                           </td>
@@ -357,16 +443,30 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                             <Input
                               type="date"
                               value={payment.payment_date || ''}
-                              onChange={(e) => updatePayment(payment.id, { payment_date: e.target.value || undefined })}
+                              onChange={(e) => {
+                                setPayments(prevPayments =>
+                                  prevPayments.map(p =>
+                                    p.id === payment.id ? { ...p, payment_date: e.target.value || undefined } : p
+                                  )
+                                );
+                              }}
+                              onBlur={(e) => {
+                                const newValue = e.target.value || undefined;
+                                if (newValue !== payment.payment_date) {
+                                  updatePayment(payment.id, { payment_date: newValue });
+                                }
+                              }}
                               className="h-8 text-sm"
                             />
                           </td>
                           <td className="p-3">
                             <Select
                               value={payment.payment_method}
-                              onValueChange={(value: 'pix' | 'boleto' | 'credit_card') => 
-                                updatePayment(payment.id, { payment_method: value })
-                              }
+                              onValueChange={(value: 'pix' | 'boleto' | 'credit_card') => {
+                                if (value !== payment.payment_method) {
+                                  updatePayment(payment.id, { payment_method: value });
+                                }
+                              }}
                             >
                               <SelectTrigger className="h-8 text-sm w-[130px]">
                                 <SelectValue />
@@ -381,9 +481,11 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                           <td className="p-3">
                             <Select
                               value={payment.status}
-                              onValueChange={(value: Payment['status']) => 
-                                updatePayment(payment.id, { status: value })
-                              }
+                              onValueChange={(value: Payment['status']) => {
+                                if (value !== payment.status) {
+                                  updatePayment(payment.id, { status: value });
+                                }
+                              }}
                             >
                               <SelectTrigger className="h-8 text-sm w-[150px]">
                                 <SelectValue>
