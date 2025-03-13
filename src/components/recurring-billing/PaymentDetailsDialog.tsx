@@ -343,7 +343,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         ) : (
           <div className="space-y-6">
             {billing && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-medium">Informações Básicas</h3>
                   <div className="mt-2 space-y-2">
@@ -353,11 +353,8 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                     <p><span className="font-medium">Dia de Vencimento:</span> {billing.due_day}</p>
                     <p><span className="font-medium">Parcela Atual:</span> {billing.current_installment}/{billing.installments}</p>
                   </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-medium">Ações</h3>
-                  <div className="mt-2 space-y-3">
+                  
+                  <div className="mt-4">
                     <Button 
                       onClick={createPayment}
                       disabled={isCreatingPayment || billing.current_installment > billing.installments}
@@ -375,7 +372,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                     </Button>
                     
                     {billing.current_installment > billing.installments && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground mt-2">
                         Todas as parcelas já foram geradas.
                       </p>
                     )}
@@ -401,6 +398,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                   <span className="ml-1">Atualizar</span>
                 </Button>
               </div>
+              
               
               {payments.length > 0 ? (
                 <div className="border rounded-lg overflow-hidden">
@@ -577,6 +575,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         )}
       </DialogContent>
 
+      
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
