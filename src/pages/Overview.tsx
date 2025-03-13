@@ -22,30 +22,31 @@ export const Overview = () => {
     }).format(value);
   };
 
+  // Certificamos que todas as métricas terão valores zero se não existirem dados
   const stats = [{
     title: "Receita Total",
-    value: formatCurrency(metrics.totalRevenue),
-    change: metrics.revenueChange,
+    value: formatCurrency(metrics.totalRevenue || 0),
+    change: metrics.revenueChange || "0%",
     description: period === "current" ? "Mês atual" : "Período selecionado"
   }, {
     title: "Faturamento Esperado",
-    value: formatCurrency(metrics.expectedRevenue),
-    change: metrics.expectedRevenueChange,
+    value: formatCurrency(metrics.expectedRevenue || 0),
+    change: metrics.expectedRevenueChange || "0%",
     description: "Recebimentos pendentes"
   }, {
     title: "Despesas Totais",
-    value: formatCurrency(metrics.totalExpenses),
-    change: metrics.expensesChange,
+    value: formatCurrency(metrics.totalExpenses || 0),
+    change: metrics.expensesChange || "0%",
     description: period === "current" ? "Mês atual" : "Período selecionado"
   }, {
     title: "Lucro Líquido",
-    value: formatCurrency(metrics.netProfit),
-    change: metrics.profitChange,
+    value: formatCurrency(metrics.netProfit || 0),
+    change: metrics.profitChange || "0%",
     description: period === "current" ? "Mês atual" : "Período selecionado"
   }, {
     title: "Clientes Ativos",
-    value: metrics.activeClients.toString(),
-    change: metrics.clientsChange,
+    value: (metrics.activeClients || 0).toString(),
+    change: metrics.clientsChange || "0",
     description: "Últimos 30 dias"
   }];
 

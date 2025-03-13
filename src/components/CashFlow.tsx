@@ -34,19 +34,23 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   // Use the custom period for fetching data
   const { cashFlow, onNewCashFlow, chartData } = useCashFlow(customPeriod);
 
+  // Garantimos que cashFlow e chartData são sempre arrays, mesmo quando vazios
+  const safeChartData = Array.isArray(chartData) ? chartData : [];
+  const safeCashFlow = Array.isArray(cashFlow) ? cashFlow : [];
+
   // Log data for debugging
   useEffect(() => {
     console.log('CashFlow component period:', customPeriod);
-    console.log('CashFlow component cashFlow data:', cashFlow);
-    console.log('CashFlow component chartData:', chartData);
-  }, [customPeriod, cashFlow, chartData]);
+    console.log('CashFlow component cashFlow data:', safeCashFlow);
+    console.log('CashFlow component chartData:', safeChartData);
+  }, [customPeriod, safeCashFlow, safeChartData]);
 
   return (
     <div className="space-y-8">
       {showChart ? (
         <>
           <CashFlowChart 
-            chartData={chartData}
+            chartData={safeChartData}
             period={selectedPeriod}
             setPeriod={setSelectedPeriod}
             year={selectedYear}
@@ -55,13 +59,13 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
             setMonth={setSelectedMonth}
           />
           <CashFlowTable 
-            cashFlow={cashFlow}
+            cashFlow={safeCashFlow}
             onNewCashFlow={onNewCashFlow}
           />
         </>
       ) : (
         <CashFlowTable 
-          cashFlow={cashFlow}
+          cashFlow={safeCashFlow}
           onNewCashFlow={onNewCashFlow}
         />
       )}
