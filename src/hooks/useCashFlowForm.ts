@@ -20,6 +20,10 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
   useEffect(() => {
     if (category === 'payment') {
       fetchPendingPayments();
+    } else {
+      // Clear payments data if we're not showing payment options
+      setPayments([]);
+      setSelectedPayment('');
     }
   }, [category]);
 

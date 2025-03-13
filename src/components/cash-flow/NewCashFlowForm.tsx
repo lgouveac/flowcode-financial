@@ -6,7 +6,7 @@ import { PaymentSelector } from "./PaymentSelector";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Payment } from "@/types/payment";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 interface NewCashFlowFormProps {
   open: boolean;
@@ -42,7 +42,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
 
   const isPaymentCategory = category === 'payment';
 
-  // Find the selected payment object from the payments array
+  // Safely find the selected payment object from the payments array
   const getSelectedPaymentObject = () => {
     if (!isPaymentCategory || !selectedPayment || !payments) {
       return null;
