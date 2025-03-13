@@ -16,13 +16,13 @@ type ClientInfo = {
   email?: string;
 };
 
-// Define an extended type that includes the joined client data
-interface BillingWithClientData extends RecurringBilling {
+// Define a type for billing records with joined client data
+type BillingWithClientData = RecurringBilling & {
   clients: ClientInfo | null;
-}
+};
 
 interface BillingTableProps {
-  billings: BillingWithClientData[];
+  billings: Array<RecurringBilling & { clients?: ClientInfo | null }>;
   onRefresh?: () => void;
 }
 
