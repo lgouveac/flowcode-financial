@@ -20,3 +20,5 @@ export interface Payment {
 }
 
 export type NewPayment = Omit<Payment, 'id' | 'created_at' | 'updated_at'>;
+
+export type EditablePaymentFields = Pick<Payment, 'description' | 'amount' | 'due_date' | 'payment_date' | 'payment_method' | 'status'>;

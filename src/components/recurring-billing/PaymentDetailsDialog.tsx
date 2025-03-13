@@ -2,11 +2,14 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { RecurringBilling } from "@/types/billing";
-import { Payment } from "@/types/payment";
+import { Payment, EditablePaymentFields } from "@/types/payment";
 import { Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface PaymentDetailsDialogProps {
   billingId: string | null;
@@ -20,6 +23,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && billingId) {
@@ -169,6 +173,44 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
+  const updatePayment = async (paymentId: string, updatedFields: Partial<EditablePaymentFields>) => {
+    setIsUpdatingPayment(paymentId);
+    
+    try {
+      console.log("Updating payment:", paymentId, updatedFields);
+      
+      const { error } = await supabase
+        .from('payments')
+        .update(updatedFields)
+        .eq('id', paymentId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Pagamento atualizado",
+        description: "As alterações foram salvas com sucesso.",
+      });
+      
+      // Update local state to reflect changes
+      setPayments(prevPayments => 
+        prevPayments.map(payment => 
+          payment.id === paymentId 
+            ? { ...payment, ...updatedFields } 
+            : payment
+        )
+      );
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      toast({
+        title: "Erro ao atualizar pagamento",
+        description: "Não foi possível salvar as alterações.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingPayment(null);
+    }
+  };
+
   // This is a manual dialog close handler that ensures proper cleanup
   const handleDialogClose = () => {
     // Reset state when dialog closes
@@ -176,6 +218,35 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setPayments([]);
     // Call the parent's onClose handler
     onClose();
+  };
+
+  // Helper function to get status badge variant
+  const getStatusBadgeVariant = (status: Payment['status']) => {
+    switch (status) {
+      case 'paid':
+        return 'default';
+      case 'pending':
+        return 'secondary';
+      case 'overdue':
+        return 'destructive';
+      case 'cancelled':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
+  };
+
+  // Helper function to get status label
+  const getStatusLabel = (status: Payment['status']) => {
+    const statusLabels: Record<Payment['status'], string> = {
+      pending: 'Pendente',
+      billed: 'Faturado',
+      awaiting_invoice: 'Aguardando Fatura',
+      paid: 'Pago',
+      overdue: 'Atrasado',
+      cancelled: 'Cancelado'
+    };
+    return statusLabels[status];
   };
 
   return (
@@ -247,17 +318,90 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                         <th className="text-left p-3 font-medium">Descrição</th>
                         <th className="text-left p-3 font-medium">Valor</th>
                         <th className="text-left p-3 font-medium">Vencimento</th>
+                        <th className="text-left p-3 font-medium">Data Pgto.</th>
+                        <th className="text-left p-3 font-medium">Método</th>
                         <th className="text-left p-3 font-medium">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {payments.map((payment) => (
                         <tr key={payment.id} className="border-t">
-                          <td className="p-3">{payment.installment_number}/{payment.total_installments}</td>
-                          <td className="p-3">{payment.description}</td>
-                          <td className="p-3">R$ {payment.amount.toFixed(2)}</td>
-                          <td className="p-3">{new Date(payment.due_date).toLocaleDateString('pt-BR')}</td>
-                          <td className="p-3 capitalize">{payment.status}</td>
+                          <td className="p-3">
+                            {payment.installment_number}/{payment.total_installments}
+                          </td>
+                          <td className="p-3">
+                            <Input
+                              value={payment.description}
+                              onChange={(e) => updatePayment(payment.id, { description: e.target.value })}
+                              className="h-8 text-sm"
+                            />
+                          </td>
+                          <td className="p-3">
+                            <Input
+                              type="number"
+                              value={payment.amount}
+                              onChange={(e) => updatePayment(payment.id, { amount: parseFloat(e.target.value) })}
+                              className="h-8 text-sm w-24"
+                              step="0.01"
+                            />
+                          </td>
+                          <td className="p-3">
+                            <Input
+                              type="date"
+                              value={payment.due_date}
+                              onChange={(e) => updatePayment(payment.id, { due_date: e.target.value })}
+                              className="h-8 text-sm"
+                            />
+                          </td>
+                          <td className="p-3">
+                            <Input
+                              type="date"
+                              value={payment.payment_date || ''}
+                              onChange={(e) => updatePayment(payment.id, { payment_date: e.target.value || undefined })}
+                              className="h-8 text-sm"
+                            />
+                          </td>
+                          <td className="p-3">
+                            <Select
+                              value={payment.payment_method}
+                              onValueChange={(value: 'pix' | 'boleto' | 'credit_card') => 
+                                updatePayment(payment.id, { payment_method: value })
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-sm w-[130px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pix">PIX</SelectItem>
+                                <SelectItem value="boleto">Boleto</SelectItem>
+                                <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-3">
+                            <Select
+                              value={payment.status}
+                              onValueChange={(value: Payment['status']) => 
+                                updatePayment(payment.id, { status: value })
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-sm w-[150px]">
+                                <SelectValue>
+                                  <Badge variant={getStatusBadgeVariant(payment.status)}>
+                                    {getStatusLabel(payment.status)}
+                                  </Badge>
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pendente</SelectItem>
+                                <SelectItem value="billed">Faturado</SelectItem>
+                                <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                                <SelectItem value="paid">Pago</SelectItem>
+                                <SelectItem value="overdue">Atrasado</SelectItem>
+                                <SelectItem value="cancelled">Cancelado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
