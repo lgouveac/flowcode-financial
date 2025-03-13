@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,8 @@ interface BillingTableProps {
   billings: Array<RecurringBilling & { 
     clients?: { 
       name: string; 
-      email?: string 
-    } | null 
+      email?: string;
+    } | null;
   }>;
   onRefresh?: () => void;
 }
