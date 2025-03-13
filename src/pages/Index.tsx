@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { PlusIcon, UserIcon, BarChartIcon, WalletIcon, ReceiptIcon, UsersIcon, MailIcon, MoonIcon, SunIcon } from "lucide-react";
+import { MoonIcon, SunIcon } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
@@ -11,12 +11,12 @@ const Index = () => {
   const { theme, setTheme } = useTheme();
 
   const navigation = [
-    { path: "/", icon: BarChartIcon, label: "Visão Geral" },
-    { path: "/clients", icon: UserIcon, label: "Clientes" },
-    { path: "/employees", icon: UsersIcon, label: "Funcionários" },
-    { path: "/receivables", icon: ReceiptIcon, label: "Recebimentos" },
-    { path: "/emails", icon: MailIcon, label: "E-mails" },
-    { path: "/cashflow", icon: WalletIcon, label: "Fluxo de Caixa" },
+    { path: "/", label: "Visão Geral" },
+    { path: "/clients", label: "Clientes" },
+    { path: "/employees", label: "Funcionários" },
+    { path: "/receivables", label: "Recebimentos" },
+    { path: "/emails", label: "E-mails" },
+    { path: "/cashflow", label: "Fluxo de Caixa" },
   ];
 
   const isActive = (path: string) => {
@@ -30,7 +30,7 @@ const Index = () => {
       <header className="bg-secondary border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <nav className="flex -mb-px space-x-8">
-            {navigation.map(({ path, icon: Icon, label }) => (
+            {navigation.map(({ path, label }) => (
               <Link
                 key={path}
                 to={path}
@@ -40,7 +40,6 @@ const Index = () => {
                     : 'border-transparent text-muted-foreground hover:border-primary/30'
                 }`}
               >
-                <Icon className="mr-2 h-4 w-4" />
                 {label}
               </Link>
             ))}
