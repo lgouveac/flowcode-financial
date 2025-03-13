@@ -358,7 +358,8 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                     <Button 
                       onClick={createPayment}
                       disabled={isCreatingPayment || billing.current_installment > billing.installments}
-                      className="w-full"
+                      className="w-auto"
+                      size="sm"
                       type="button"
                     >
                       {isCreatingPayment ? (
