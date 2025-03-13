@@ -86,6 +86,27 @@ serve(async (req) => {
     }
     */
 
+    // Get active employees with their monthly values
+    const { data: employeesWithValues, error: employeesError } = await supabase
+      .from("employees")
+      .select(`
+        id, 
+        name, 
+        email, 
+        position, 
+        status,
+        employee_monthly_values!inner(amount, month, notes)
+      `)
+      .eq("status", "active")
+      .eq("employee_monthly_values.month", `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+
+    if (employeesError) {
+      console.error("❌ Error fetching employees with values:", employeesError);
+      throw new Error(`Failed to fetch employees with values: ${employeesError.message}`);
+    }
+
+    console.log(`👥 Found ${employeesWithValues?.length || 0} active employees with values`);
+
     // Get the default email template for employees
     const { data: emailTemplate, error: templateError } = await supabase
       .from("email_templates")
@@ -108,42 +129,14 @@ serve(async (req) => {
 
     console.log("📝 Found email template:", emailTemplate.name);
 
-    // Get active employees
-    const { data: employees, error: employeesError } = await supabase
-      .from("employees")
-      .select("*")
-      .eq("status", "active");
-
-    if (employeesError) {
-      console.error("❌ Error fetching employees:", employeesError);
-      throw new Error(`Failed to fetch employees: ${employeesError.message}`);
-    }
-
-    console.log(`👥 Found ${employees?.length || 0} active employees`);
-
-    // Get employee monthly values for the current month
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-    
-    const { data: monthlyValues, error: valuesError } = await supabase
-      .from("employee_monthly_values")
-      .select("*")
-      .eq("month", currentMonth);
-
-    if (valuesError) {
-      console.error("❌ Error fetching monthly values:", valuesError);
-      throw new Error(`Failed to fetch monthly values: ${valuesError.message}`);
-    }
-
-    console.log(`💰 Found ${monthlyValues?.length || 0} monthly values for ${currentMonth}`);
-
     // Send emails to each employee
     const sentEmails = [];
     const emailErrors = [];
     
-    for (const employee of employees || []) {
+    for (const employee of employeesWithValues || []) {
       try {
-        // Find this employee's monthly value
-        const monthlyValue = monthlyValues?.find(mv => mv.employee_id === employee.id);
+        // Extract the monthly value for this employee
+        const monthlyValue = employee.employee_monthly_values[0];
         
         if (!monthlyValue) {
           console.log(`⚠️ No monthly value found for employee: ${employee.name} (${employee.id})`);
@@ -159,8 +152,7 @@ serve(async (req) => {
         // Prepare content by replacing variables
         let emailContent = emailTemplate.content;
         
-        // Match variables to those in the email template types.ts file
-        // Note: Variable names might be different in template vs. function
+        // Replace variables in the template
         emailContent = emailContent
           .replace(/{nome}/g, employee.name)
           .replace(/{nome_funcionario}/g, employee.name)
@@ -179,40 +171,28 @@ serve(async (req) => {
           .replace(/{nome_funcionario}/g, employee.name);
         
         // Call the send-email function
-        const response = await fetch(
-          `${supabaseUrl}/functions/v1/send-email`,
+        const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
+          'send-email',
           {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${supabaseKey}`,
-            },
-            body: JSON.stringify({
+            body: {
               to: employee.email,
               subject: emailSubject,
               content: emailContent,
               // Also provide individual variables for additional processing
-              employee_name: employee.name,
               nome_funcionario: employee.name,
-              month: formattedMonth,
               periodo: formattedMonth,
-              amount: monthlyValue.amount,
               valor_nota: monthlyValue.amount,
-              position: employee.position || "",
-              notes: monthlyValue.notes || "",
               data_nota: new Date().toLocaleDateString('pt-BR')
-            }),
+            }
           }
         );
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Error sending email: ${response.status} - ${errorText}`);
+        if (emailError) {
+          throw new Error(`Error sending email: ${emailError.message}`);
         }
 
-        const result = await response.json();
-        console.log(`✅ Email sent to ${employee.name}: ${JSON.stringify(result)}`);
-        sentEmails.push({ employee: employee.name, result });
+        console.log(`✅ Email sent to ${employee.name}: ${JSON.stringify(emailResponse)}`);
+        sentEmails.push({ employee: employee.name, result: emailResponse });
       } catch (error) {
         console.error(`❌ Error processing employee ${employee.name}:`, error);
         emailErrors.push({ employee: employee.name, error: error.message });
@@ -227,7 +207,7 @@ serve(async (req) => {
         errors: emailErrors,
         totalSent: sentEmails.length,
         totalErrors: emailErrors.length,
-        totalEmployees: employees?.length || 0
+        totalEmployees: employeesWithValues?.length || 0
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
