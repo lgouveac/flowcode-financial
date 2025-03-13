@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import type { Payment } from "@/types/payment";
@@ -125,92 +125,119 @@ export const PaymentTable = ({ payments, onRefresh }: PaymentTableProps) => {
   };
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Cliente</TableHead>
-          <TableHead>Descrição</TableHead>
-          <TableHead>Valor</TableHead>
-          <TableHead>Vencimento</TableHead>
-          <TableHead>Data Pgto.</TableHead>
-          <TableHead>Método</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {oneTimePayments.map((payment) => (
-          <TableRow key={payment.id}>
-            <TableCell>{payment.clients?.name}</TableCell>
-            <TableCell>
-              <EditableCell
-                value={payment.description}
-                onChange={(value) => handleUpdatePayment(payment.id, 'description', value)}
-              />
-            </TableCell>
-            <TableCell>
-              <EditableCell
-                value={payment.amount.toString()}
-                onChange={(value) => handleUpdatePayment(payment.id, 'amount', parseFloat(value))}
-                type="number"
-              />
-            </TableCell>
-            <TableCell>
-              <input
-                type="date"
-                value={payment.due_date}
-                onChange={(e) => handleUpdatePayment(payment.id, 'due_date', e.target.value)}
-                className="w-full bg-transparent"
-              />
-            </TableCell>
-            <TableCell>
-              <input
-                type="date"
-                value={payment.payment_date || ''}
-                onChange={(e) => handleUpdatePayment(payment.id, 'payment_date', e.target.value)}
-                className={`w-full bg-transparent ${payment.status === 'paid' ? '' : 'opacity-50'}`}
-                disabled={payment.status !== 'paid'}
-              />
-            </TableCell>
-            <TableCell>
-              <Select
-                value={payment.payment_method}
-                onValueChange={(value) => handleUpdatePayment(payment.id, 'payment_method', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <Select
-                value={payment.status}
-                onValueChange={(value) => handleUpdatePayment(payment.id, 'status', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    <Badge variant={getStatusBadgeVariant(payment.status)}>
-                      {getStatusLabel(payment.status)}
-                    </Badge>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="billed">Faturado</SelectItem>
-                  <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                  <SelectItem value="paid">Pago</SelectItem>
-                  <SelectItem value="overdue">Atrasado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Descrição</TableHead>
+            <TableHead>Valor</TableHead>
+            <TableHead>Vencimento</TableHead>
+            <TableHead>Data Pgto.</TableHead>
+            <TableHead>Método</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Ações</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {oneTimePayments.map((payment) => (
+            <TableRow key={payment.id}>
+              <TableCell>{payment.clients?.name}</TableCell>
+              <TableCell>
+                <EditableCell
+                  value={payment.description}
+                  onChange={(value) => handleUpdatePayment(payment.id, 'description', value)}
+                />
+              </TableCell>
+              <TableCell>
+                <EditableCell
+                  value={payment.amount.toString()}
+                  onChange={(value) => handleUpdatePayment(payment.id, 'amount', parseFloat(value))}
+                  type="number"
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="date"
+                  value={payment.due_date}
+                  onChange={(e) => handleUpdatePayment(payment.id, 'due_date', e.target.value)}
+                  className="w-full bg-transparent"
+                />
+              </TableCell>
+              <TableCell>
+                <input
+                  type="date"
+                  value={payment.payment_date || ''}
+                  onChange={(e) => handleUpdatePayment(payment.id, 'payment_date', e.target.value)}
+                  className={`w-full bg-transparent ${payment.status === 'paid' ? '' : 'opacity-50'}`}
+                  disabled={payment.status !== 'paid'}
+                />
+              </TableCell>
+              <TableCell>
+                <Select
+                  value={payment.payment_method}
+                  onValueChange={(value) => handleUpdatePayment(payment.id, 'payment_method', value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="boleto">Boleto</SelectItem>
+                    <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                <Select
+                  value={payment.status}
+                  onValueChange={(value) => handleUpdatePayment(payment.id, 'status', value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      <Badge variant={getStatusBadgeVariant(payment.status)}>
+                        {getStatusLabel(payment.status)}
+                      </Badge>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="billed">Faturado</SelectItem>
+                    <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                    <SelectItem value="paid">Pago</SelectItem>
+                    <SelectItem value="overdue">Atrasado</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={() => handleDeleteClick(payment.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este pagamento? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

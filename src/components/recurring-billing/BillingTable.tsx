@@ -1,119 +1,33 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { RecurringBilling } from "@/types/billing";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EditableCell } from "@/components/EditableCell";
+import { Button } from "@/components/ui/button";
+import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useState, useEffect } from "react";
-import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
+import type { RecurringBilling } from "@/types/billing";
 
 interface BillingTableProps {
-  billings: Array<RecurringBilling & { clients?: { name: string } }>;
+  billings: RecurringBilling[];
   onRefresh?: () => void;
 }
 
 export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
   const { toast } = useToast();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<RecurringBilling['status'] | 'all'>('all');
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{
-    billingId: string;
-    field: string;
-    value: any;
-  } | null>(null);
-  const [selectedBillingId, setSelectedBillingId] = useState<string | null>(null);
-  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [selectedBilling, setSelectedBilling] = useState<RecurringBilling | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [billingToDelete, setBillingToDelete] = useState<string | null>(null);
 
-  const filteredBillings = billings.filter(billing => {
-    const matchesSearch = search.toLowerCase() === '' || 
-      billing.clients?.name.toLowerCase().includes(search.toLowerCase()) ||
-      billing.description.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || billing.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const handleUpdateBilling = async (billingId: string, field: string, value: any) => {
-    // If it's a status change that needs confirmation
-    if (field === 'status' && (value === 'cancelled' || value === 'overdue')) {
-      setPendingAction({ billingId, field, value });
-      setShowConfirmDialog(true);
-      return;
-    }
-
-    // Prevent changing status to paid directly
-    if (field === 'status' && value === 'paid') {
-      toast({
-        title: "Operação não permitida",
-        description: "O status 'Pago' só pode ser definido na seção de Movimentações.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const updates: any = { [field]: value };
-    
-    try {
-      const { error } = await supabase
-        .from('recurring_billing')
-        .update(updates)
-        .eq('id', billingId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Recebimento atualizado",
-        description: "As informações foram atualizadas com sucesso.",
-      });
-    } catch (error) {
-      console.error('Error updating billing:', error);
-      toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível atualizar o recebimento.",
-        variant: "destructive",
-      });
-    }
+  const handleViewDetails = (billing: RecurringBilling) => {
+    setSelectedBilling(billing);
+    setShowDetailsDialog(true);
   };
 
-  const confirmUpdate = async () => {
-    if (!pendingAction) return;
-    
-    await handleUpdateBilling(
-      pendingAction.billingId,
-      pendingAction.field,
-      pendingAction.value
-    );
-    
-    setShowConfirmDialog(false);
-    setPendingAction(null);
-  };
-
-  const handleRowClick = (billingId: string, e: React.MouseEvent) => {
-    // Prevent opening the dialog if clicked on a form element
-    if (
-      e.target instanceof HTMLInputElement || 
-      e.target instanceof HTMLSelectElement ||
-      e.target instanceof HTMLButtonElement ||
-      (e.target as HTMLElement).closest('.editable-cell') !== null
-    ) {
-      return;
-    }
-    
-    setSelectedBillingId(billingId);
-    setShowPaymentDetails(true);
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent, billingId: string) => {
-    e.stopPropagation();
+  const handleDeleteClick = (billingId: string) => {
     setBillingToDelete(billingId);
     setShowDeleteConfirm(true);
   };
@@ -122,6 +36,18 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
     if (!billingToDelete) return;
 
     try {
+      // First delete any related payment records
+      const { error: paymentsError } = await supabase
+        .from('payments')
+        .delete()
+        .eq('recurring_billing_id', billingToDelete);
+
+      if (paymentsError) {
+        console.error('Error deleting related payments:', paymentsError);
+        // Continue anyway as there might not be any related payments
+      }
+
+      // Then delete the recurring billing record
       const { error } = await supabase
         .from('recurring_billing')
         .delete()
@@ -134,15 +60,15 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
         description: "O recebimento recorrente foi excluído com sucesso.",
       });
       
-      // Call the refresh function provided by the parent component
+      // Call the refresh function if provided
       if (onRefresh) {
         onRefresh();
       }
     } catch (error) {
-      console.error('Error deleting billing:', error);
+      console.error('Error deleting recurring billing:', error);
       toast({
         title: "Erro ao excluir",
-        description: "Não foi possível excluir o recebimento.",
+        description: "Não foi possível excluir o recebimento recorrente.",
         variant: "destructive",
       });
     } finally {
@@ -151,226 +77,113 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
     }
   };
 
-  const getStatusBadgeVariant = (status: RecurringBilling['status']) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return 'default';
+        return <Badge>Pago</Badge>;
       case 'pending':
-        return 'secondary';
+        return <Badge variant="secondary">Pendente</Badge>;
       case 'overdue':
-        return 'destructive';
+        return <Badge variant="destructive">Atrasado</Badge>;
       case 'cancelled':
-        return 'outline';
+        return <Badge variant="outline">Cancelado</Badge>;
       default:
-        return 'secondary';
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const getStatusLabel = (status: RecurringBilling['status']) => {
-    const statusLabels: Record<RecurringBilling['status'], string> = {
-      pending: 'Pendente',
-      billed: 'Faturado',
-      awaiting_invoice: 'Aguardando Fatura',
-      paid: 'Pago',
-      overdue: 'Atrasado',
-      cancelled: 'Cancelado'
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('pt-BR').format(date);
+  };
+
+  const getPaymentMethodLabel = (method: string) => {
+    const methodLabels: Record<string, string> = {
+      pix: 'PIX',
+      boleto: 'Boleto',
+      credit_card: 'Cartão de Crédito'
     };
-    return statusLabels[status];
-  };
-
-  const handleDialogClose = () => {
-    setShowPaymentDetails(false);
-    setSelectedBillingId(null);
-    
-    // Refresh data when dialog is closed (in case changes were made)
-    if (onRefresh) {
-      onRefresh();
-    }
+    return methodLabels[method] || method;
   };
 
   return (
-    <div className="space-y-4 pt-4 pl-4">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Input
-          placeholder="Buscar por cliente ou descrição..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="sm:max-w-[300px]"
-        />
-        <Select
-          value={statusFilter}
-          onValueChange={(value: RecurringBilling['status'] | 'all') => setStatusFilter(value)}
-        >
-          <SelectTrigger className="sm:max-w-[200px]">
-            <SelectValue placeholder="Filtrar por status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="pending">Pendente</SelectItem>
-            <SelectItem value="paid">Pago</SelectItem>
-            <SelectItem value="overdue">Atrasado</SelectItem>
-            <SelectItem value="cancelled">Cancelado</SelectItem>
-            <SelectItem value="billed">Faturado</SelectItem>
-            <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
+    <>
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Cliente</TableHead>
             <TableHead>Descrição</TableHead>
-            <TableHead>Parcela</TableHead>
             <TableHead>Valor</TableHead>
-            <TableHead>Dia do Vencimento</TableHead>
-            <TableHead>Data Pgto.</TableHead>
+            <TableHead>Dia Venc.</TableHead>
+            <TableHead>Pagamento</TableHead>
             <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Parcela</TableHead>
             <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredBillings.map((billing) => (
-            <TableRow 
-              key={billing.id} 
-              className="group hover:bg-muted/50 cursor-pointer"
-              onClick={(e) => handleRowClick(billing.id, e)}
-            >
+          {billings.map((billing) => (
+            <TableRow key={billing.id}>
               <TableCell>{billing.clients?.name}</TableCell>
-              <TableCell className="relative">
-                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
-                  <EditableCell
-                    value={billing.description}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
-                  />
-                </div>
-              </TableCell>
+              <TableCell>{billing.description}</TableCell>
+              <TableCell>R$ {billing.amount.toFixed(2)}</TableCell>
+              <TableCell>{billing.due_day}</TableCell>
+              <TableCell>{billing.payment_date ? formatDate(billing.payment_date) : '-'}</TableCell>
+              <TableCell>{getPaymentMethodLabel(billing.payment_method)}</TableCell>
+              <TableCell>{getStatusBadge(billing.status)}</TableCell>
               <TableCell>
                 {billing.current_installment}/{billing.installments}
               </TableCell>
-              <TableCell className="relative">
-                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
-                  <EditableCell
-                    value={billing.amount.toString()}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
-                    type="number"
-                  />
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleViewDetails(billing)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteClick(billing.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
                 </div>
-              </TableCell>
-              <TableCell className="relative">
-                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
-                  <EditableCell
-                    value={billing.due_day.toString()}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
-                    type="number"
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="relative">
-                <div onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="date"
-                    value={billing.payment_date || ''}
-                    onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
-                    className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
-                    disabled={billing.status !== 'paid'}
-                  />
-                </div>
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <Select
-                  value={billing.payment_method}
-                  onValueChange={(value) => handleUpdateBilling(billing.id, 'payment_method', value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="boleto">Boleto</SelectItem>
-                    <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <Select
-                  value={billing.status}
-                  onValueChange={(value) => handleUpdateBilling(billing.id, 'status', value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      <Badge variant={getStatusBadgeVariant(billing.status)}>
-                        {getStatusLabel(billing.status)}
-                      </Badge>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="billed">Faturado</SelectItem>
-                    <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                    <SelectItem value="overdue">Atrasado</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => handleDeleteClick(e, billing.id)}
-                  className="opacity-50 hover:opacity-100"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar alteração</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja alterar o status desta cobrança para 
-              {pendingAction?.value === 'cancelled' ? ' cancelada' : ' atrasada'}?
-              Esta ação pode ter implicações importantes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingAction(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmUpdate}>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {selectedBilling && (
+        <PaymentDetailsDialog
+          billing={selectedBilling}
+          open={showDetailsDialog}
+          onClose={() => {
+            setShowDetailsDialog(false);
+            setSelectedBilling(null);
+          }}
+        />
+      )}
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este recebimento recorrente?
-              Esta ação não pode ser desfeita e pode afetar outros registros relacionados.
+              Tem certeza que deseja excluir este recebimento recorrente? Esta ação não pode ser desfeita e também excluirá todos os pagamentos associados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setBillingToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {selectedBillingId && (
-        <PaymentDetailsDialog
-          billingId={selectedBillingId}
-          open={showPaymentDetails}
-          onClose={handleDialogClose}
-        />
-      )}
-    </div>
+    </>
   );
 };
