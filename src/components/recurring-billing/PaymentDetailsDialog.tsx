@@ -71,13 +71,14 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
 
   const fetchRelatedPayments = async (billingData: RecurringBilling) => {
     try {
-      console.log("Fetching related payments for billing description:", billingData.description);
+      console.log("Fetching related payments for billing:", billingData.description, "client:", billingData.client_id);
       
+      // Fixed query to match payments by client_id and partial description match
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select('*, clients(name, email, partner_name)')
-        .eq('description', billingData.description)
         .eq('client_id', billingData.client_id)
+        .ilike('description', `${billingData.description}%`) // Using ilike with % wildcard to match partial description
         .order('installment_number', { ascending: true });
 
       if (paymentsError) {
