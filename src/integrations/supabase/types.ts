@@ -509,6 +509,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      trigger_billing_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       trigger_notifications: {
         Args: Record<PropertyKey, never>
         Returns: Json
