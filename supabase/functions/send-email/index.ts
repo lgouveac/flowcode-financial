@@ -21,7 +21,52 @@ const handler = async (req: Request): Promise<Response> => {
     const data = await req.json();
     console.log("📝 Email request data:", JSON.stringify(data));
     
-    const { to, subject, content, ...variables } = data;
+    let to, subject, content, variables;
+    
+    // Check if we're using direct content or template ID
+    if (data.templateId) {
+      console.log(`🔍 Using template ID: ${data.templateId}`);
+      
+      // Get template from database using supabase
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      
+      if (!supabaseKey) {
+        throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
+      }
+      
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.43.2");
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Fetch the template
+      const { data: template, error: templateError } = await supabase
+        .from("email_templates")
+        .select("*")
+        .eq("id", data.templateId)
+        .single();
+      
+      if (templateError) {
+        console.error("❌ Error fetching template:", templateError);
+        throw new Error(`Failed to fetch template: ${templateError.message}`);
+      }
+      
+      if (!template) {
+        throw new Error(`Template with ID ${data.templateId} not found`);
+      }
+      
+      console.log(`📄 Found template: ${template.name}`);
+      
+      to = data.to;
+      subject = template.subject;
+      content = template.content;
+      variables = data.data || {};
+    } else {
+      // Legacy direct content method
+      to = data.to;
+      subject = data.subject;
+      content = data.content;
+      variables = data;
+    }
     
     if (!to || typeof to !== 'string') {
       throw new Error("Recipient email (to) is required and must be a string");
@@ -39,17 +84,25 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`📑 Subject: ${subject}`);
     console.log(`🔄 Variables:`, variables);
     
-    // Replace variables in content
+    // Replace variables in subject and content
+    let processedSubject = subject;
     let processedContent = content;
+    
     Object.entries(variables).forEach(([key, value]) => {
-      // Format monetary values with R$ if they appear to be numbers
+      // Format monetary values with R$ if they appear to be numbers and are monetary fields
+      const isMonetary = ['valor_cobranca', 'valor_nota', 'valor_mensal'].includes(key);
       const formattedValue = 
-        ['valor_cobranca', 'valor_nota'].includes(key) && typeof value === 'number' 
+        isMonetary && typeof value === 'number' 
           ? `R$ ${Number(value).toFixed(2).replace('.', ',')}`
           : String(value);
       
-      const regex = new RegExp(`{${key}}`, 'g');
-      processedContent = processedContent.replace(regex, formattedValue);
+      // Replace in subject
+      const subjectRegex = new RegExp(`{${key}}`, 'g');
+      processedSubject = processedSubject.replace(subjectRegex, formattedValue);
+      
+      // Replace in content
+      const contentRegex = new RegExp(`{${key}}`, 'g');
+      processedContent = processedContent.replace(contentRegex, formattedValue);
     });
 
     // Convert line breaks to HTML paragraphs
@@ -74,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "financeiro@flowcode.cc",
       to: [to],
-      subject: subject,
+      subject: processedSubject,
       html: wrappedHtml,
     });
 
