@@ -41,6 +41,8 @@ serve(async (req) => {
       throw new Error(`Failed to fetch global settings: ${globalError.message}`);
     }
 
+    console.log("📊 Global settings:", globalSettings);
+
     // Get employee email settings for notification time
     const { data: emailSettings, error: emailError } = await supabase
       .from("employee_email_settings")
@@ -53,6 +55,8 @@ serve(async (req) => {
       throw new Error(`Failed to fetch employee email settings: ${emailError.message}`);
     }
 
+    console.log("📧 Email settings:", emailSettings);
+
     // Get the current date
     const now = new Date();
     const currentDay = now.getDate();
@@ -62,6 +66,9 @@ serve(async (req) => {
     
     console.log(`📅 Current day: ${currentDay}, Configured send day: ${sendDay}`);
     
+    // FOR TESTING: Comment out the day check to allow running at any time
+    // If you want to test, comment this block
+    /*
     if (currentDay !== sendDay) {
       console.log("⏭️ Not the configured day to send employee emails. Skipping.");
       return new Response(
@@ -77,6 +84,7 @@ serve(async (req) => {
         }
       );
     }
+    */
 
     // Get the default email template for employees
     const { data: emailTemplate, error: templateError } = await supabase
@@ -97,6 +105,8 @@ serve(async (req) => {
       console.error("❌ No default email template found for employees");
       throw new Error("No default email template found for employee emails");
     }
+
+    console.log("📝 Found email template:", emailTemplate.name);
 
     // Get active employees
     const { data: employees, error: employeesError } = await supabase
@@ -148,16 +158,25 @@ serve(async (req) => {
         
         // Prepare content by replacing variables
         let emailContent = emailTemplate.content;
+        
+        // Match variables to those in the email template types.ts file
+        // Note: Variable names might be different in template vs. function
         emailContent = emailContent
           .replace(/{nome}/g, employee.name)
+          .replace(/{nome_funcionario}/g, employee.name)
           .replace(/{mes}/g, formattedMonth)
+          .replace(/{periodo}/g, formattedMonth)
           .replace(/{valor}/g, `R$ ${Number(monthlyValue.amount).toFixed(2).replace('.', ',')}`)
+          .replace(/{valor_nota}/g, `R$ ${Number(monthlyValue.amount).toFixed(2).replace('.', ',')}`)
           .replace(/{posicao}/g, employee.position || "")
-          .replace(/{observacoes}/g, monthlyValue.notes || "");
+          .replace(/{observacoes}/g, monthlyValue.notes || "")
+          .replace(/{data_nota}/g, new Date().toLocaleDateString('pt-BR'));
         
         let emailSubject = emailTemplate.subject;
         emailSubject = emailSubject
-          .replace(/{mes}/g, formattedMonth);
+          .replace(/{mes}/g, formattedMonth)
+          .replace(/{nome}/g, employee.name)
+          .replace(/{nome_funcionario}/g, employee.name);
         
         // Call the send-email function
         const response = await fetch(
@@ -172,11 +191,16 @@ serve(async (req) => {
               to: employee.email,
               subject: emailSubject,
               content: emailContent,
+              // Also provide individual variables for additional processing
               employee_name: employee.name,
+              nome_funcionario: employee.name,
               month: formattedMonth,
+              periodo: formattedMonth,
               amount: monthlyValue.amount,
+              valor_nota: monthlyValue.amount,
               position: employee.position || "",
-              notes: monthlyValue.notes || ""
+              notes: monthlyValue.notes || "",
+              data_nota: new Date().toLocaleDateString('pt-BR')
             }),
           }
         );
