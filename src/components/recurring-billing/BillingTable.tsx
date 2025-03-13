@@ -10,16 +10,19 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Eye, Trash2 } from "lucide-react";
 import type { RecurringBilling } from "@/types/billing";
 
+// Define a client type to avoid circular references
+type ClientInfo = {
+  name: string;
+  email?: string;
+};
+
 // Define an extended type that includes the joined client data
-interface RecurringBillingWithClient extends RecurringBilling {
-  clients?: {
-    name: string;
-    email?: string;
-  } | null;
+interface BillingWithClientData extends RecurringBilling {
+  clients: ClientInfo | null;
 }
 
 interface BillingTableProps {
-  billings: RecurringBillingWithClient[];
+  billings: BillingWithClientData[];
   onRefresh?: () => void;
 }
 
