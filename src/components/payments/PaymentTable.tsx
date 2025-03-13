@@ -5,14 +5,21 @@ import { EditableCell } from "../EditableCell";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import type { Payment } from "@/types/payment";
 
 interface PaymentTableProps {
   payments: Array<Payment & { clients?: { name: string } }>;
+  onRefresh?: () => void;
 }
 
-export const PaymentTable = ({ payments }: PaymentTableProps) => {
+export const PaymentTable = ({ payments, onRefresh }: PaymentTableProps) => {
   const { toast } = useToast();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
 
   // Only show payments that don't have an installment number (one-time payments)
   const oneTimePayments = payments.filter(payment => 
@@ -37,6 +44,11 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
         title: "Pagamento atualizado",
         description: "As informações foram atualizadas com sucesso.",
       });
+      
+      // Call the refresh function if provided
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error('Error updating payment:', error);
       toast({
@@ -44,6 +56,44 @@ export const PaymentTable = ({ payments }: PaymentTableProps) => {
         description: "Não foi possível atualizar o pagamento.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteClick = (paymentId: string) => {
+    setPaymentToDelete(paymentId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!paymentToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .delete()
+        .eq('id', paymentToDelete);
+
+      if (error) throw error;
+
+      toast({
+        title: "Pagamento excluído",
+        description: "O pagamento foi excluído com sucesso.",
+      });
+      
+      // Call the refresh function if provided
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o pagamento.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteConfirm(false);
+      setPaymentToDelete(null);
     }
   };
 

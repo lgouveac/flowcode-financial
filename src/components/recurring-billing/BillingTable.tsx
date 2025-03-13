@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { RecurringBilling } from "@/types/billing";
 import { Badge } from "@/components/ui/badge";
@@ -8,14 +7,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string } }>;
+  onRefresh?: () => void;
 }
 
-export const BillingTable = ({ billings }: BillingTableProps) => {
+export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RecurringBilling['status'] | 'all'>('all');
@@ -27,6 +29,8 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
   } | null>(null);
   const [selectedBillingId, setSelectedBillingId] = useState<string | null>(null);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [billingToDelete, setBillingToDelete] = useState<string | null>(null);
 
   const filteredBillings = billings.filter(billing => {
     const matchesSearch = search.toLowerCase() === '' || 
@@ -108,6 +112,45 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
     setShowPaymentDetails(true);
   };
 
+  const handleDeleteClick = (e: React.MouseEvent, billingId: string) => {
+    e.stopPropagation();
+    setBillingToDelete(billingId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!billingToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('recurring_billing')
+        .delete()
+        .eq('id', billingToDelete);
+
+      if (error) throw error;
+
+      toast({
+        title: "Recebimento excluído",
+        description: "O recebimento recorrente foi excluído com sucesso.",
+      });
+      
+      // Call the refresh function provided by the parent component
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error deleting billing:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o recebimento.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteConfirm(false);
+      setBillingToDelete(null);
+    }
+  };
+
   const getStatusBadgeVariant = (status: RecurringBilling['status']) => {
     switch (status) {
       case 'paid':
@@ -138,6 +181,11 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
   const handleDialogClose = () => {
     setShowPaymentDetails(false);
     setSelectedBillingId(null);
+    
+    // Refresh data when dialog is closed (in case changes were made)
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   return (
@@ -179,6 +227,7 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
             <TableHead>Data Pgto.</TableHead>
             <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -265,6 +314,16 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
                   </SelectContent>
                 </Select>
               </TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => handleDeleteClick(e, billing.id)}
+                  className="opacity-50 hover:opacity-100"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -283,6 +342,24 @@ export const BillingTable = ({ billings }: BillingTableProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingAction(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmUpdate}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este recebimento recorrente?
+              Esta ação não pode ser desfeita e pode afetar outros registros relacionados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBillingToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -18,6 +18,11 @@ export const RecurringBilling = () => {
     fetchPayments();
   };
 
+  // Subscribe to changes from child components
+  const handleRefreshData = () => {
+    handleSuccess();
+  };
+
   return (
     <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
@@ -44,10 +49,10 @@ export const RecurringBilling = () => {
           <TabsTrigger value="onetime">Pontuais</TabsTrigger>
         </TabsList>
         <TabsContent value="recurring" className="border rounded-lg">
-          <BillingTable billings={billings} />
+          <BillingTable billings={billings} onRefresh={handleRefreshData} />
         </TabsContent>
         <TabsContent value="onetime" className="border rounded-lg">
-          <PaymentTable payments={payments} />
+          <PaymentTable payments={payments} onRefresh={handleRefreshData} />
         </TabsContent>
       </Tabs>
 

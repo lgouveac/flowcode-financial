@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,9 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { RecurringBilling } from "@/types/billing";
 import { Payment, EditablePaymentFields } from "@/types/payment";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PaymentDetailsDialogProps {
   billingId: string | null;
@@ -25,6 +25,8 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   const [isUpdatingPayment, setIsUpdatingPayment] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && billingId) {
@@ -250,6 +252,42 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
+  const handleDeletePayment = (paymentId: string) => {
+    setPaymentToDelete(paymentId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeletePayment = async () => {
+    if (!paymentToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .delete()
+        .eq('id', paymentToDelete);
+
+      if (error) throw error;
+
+      // Update the UI by removing the deleted payment
+      setPayments(payments.filter(p => p.id !== paymentToDelete));
+      
+      toast({
+        title: "Pagamento excluído",
+        description: "O pagamento foi excluído com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      toast({
+        title: "Erro ao excluir pagamento",
+        description: "Não foi possível excluir o pagamento.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteConfirm(false);
+      setPaymentToDelete(null);
+    }
+  };
+
   // This is a manual dialog close handler that ensures proper cleanup
   const handleDialogClose = () => {
     // Reset state when dialog closes
@@ -376,6 +414,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                         <th className="text-left p-3 font-medium">Data Pgto.</th>
                         <th className="text-left p-3 font-medium">Método</th>
                         <th className="text-left p-3 font-medium">Status</th>
+                        <th className="text-left p-3 font-medium">Ações</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -505,6 +544,16 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                               </SelectContent>
                             </Select>
                           </td>
+                          <td className="p-3">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeletePayment(payment.id)}
+                              className="opacity-50 hover:opacity-100"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -527,6 +576,24 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
           </div>
         )}
       </DialogContent>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este pagamento?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPaymentToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeletePayment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
