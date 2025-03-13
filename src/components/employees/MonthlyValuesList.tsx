@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -8,19 +7,20 @@ import { NewMonthlyValueDialog } from "./NewMonthlyValueDialog";
 import { useState } from "react";
 import { EditMonthlyValueDialog } from "./EditMonthlyValueDialog";
 import { EmployeeMonthlyValue } from "@/types/employee";
-
 interface MonthlyValuesListProps {
   employeeId: string;
 }
-
-export const MonthlyValuesList = ({ employeeId }: MonthlyValuesListProps) => {
-  const { monthlyValues, isLoading } = useEmployeeMonthlyValues(employeeId);
+export const MonthlyValuesList = ({
+  employeeId
+}: MonthlyValuesListProps) => {
+  const {
+    monthlyValues,
+    isLoading
+  } = useEmployeeMonthlyValues(employeeId);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
   const [editingValue, setEditingValue] = useState<EmployeeMonthlyValue | null>(null);
-
   if (isLoading) {
-    return (
-      <Card>
+    return <Card>
         <CardHeader>
           <CardTitle>Valores Mensais</CardTitle>
         </CardHeader>
@@ -29,27 +29,21 @@ export const MonthlyValuesList = ({ employeeId }: MonthlyValuesListProps) => {
             <p className="text-muted-foreground">Carregando valores mensais...</p>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <>
+  return <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Valores Mensais</CardTitle>
+          <CardTitle className="text-sm">Valores Mensais</CardTitle>
           <Button onClick={() => setIsNewDialogOpen(true)} variant="outline" size="sm">
             <PlusCircle className="h-4 w-4 mr-2" />
             Adicionar Valor
           </Button>
         </CardHeader>
         <CardContent>
-          {monthlyValues.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
+          {monthlyValues.length === 0 ? <div className="text-center py-4 text-muted-foreground">
               Nenhum valor mensal cadastrado
-            </div>
-          ) : (
-            <Table>
+            </div> : <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Mês</TableHead>
@@ -58,40 +52,28 @@ export const MonthlyValuesList = ({ employeeId }: MonthlyValuesListProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monthlyValues.map((value) => (
-                  <TableRow
-                    key={value.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setEditingValue(value)}
-                  >
+                {monthlyValues.map(value => <TableRow key={value.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEditingValue(value)}>
                     <TableCell>
-                      {new Date(value.month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                      {new Date(value.month).toLocaleDateString('pt-BR', {
+                  month: 'long',
+                  year: 'numeric'
+                })}
                     </TableCell>
                     <TableCell>
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value.amount)}
+                      {new Intl.NumberFormat('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL'
+                }).format(value.amount)}
                     </TableCell>
                     <TableCell>{value.notes || '-'}</TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>)}
               </TableBody>
-            </Table>
-          )}
+            </Table>}
         </CardContent>
       </Card>
 
-      <NewMonthlyValueDialog
-        open={isNewDialogOpen}
-        onClose={() => setIsNewDialogOpen(false)}
-        employeeId={employeeId}
-      />
+      <NewMonthlyValueDialog open={isNewDialogOpen} onClose={() => setIsNewDialogOpen(false)} employeeId={employeeId} />
 
-      {editingValue && (
-        <EditMonthlyValueDialog
-          monthlyValue={editingValue}
-          open={true}
-          onClose={() => setEditingValue(null)}
-        />
-      )}
-    </>
-  );
+      {editingValue && <EditMonthlyValueDialog monthlyValue={editingValue} open={true} onClose={() => setEditingValue(null)} />}
+    </>;
 };
