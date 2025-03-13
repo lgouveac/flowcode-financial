@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { EditEmployeeDialog } from "./EditEmployeeDialog";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ import { EmployeeTableRow } from "./employees/EmployeeTableRow";
 import { Button } from "./ui/button";
 import { ImportCSV } from "./import/ImportCSV";
 import { useToast } from "./ui/use-toast";
+import { TestEmployeeNotificationButton } from "./emails/TestEmployeeNotificationButton";
 
 interface Employee {
   id: string;
@@ -129,6 +131,7 @@ export const EmployeeTable = () => {
         <TableHeader onSettingsClick={() => setSettingsOpen(true)} />
         <div className="flex items-center gap-2">
           <ImportCSV />
+          <TestEmployeeNotificationButton />
         </div>
       </div>
 

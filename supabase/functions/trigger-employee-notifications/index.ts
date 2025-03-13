@@ -16,6 +16,12 @@ serve(async (req) => {
   try {
     console.log("🔔 Employee notification trigger function called");
     
+    // Check if this is a test request
+    const isTestMode = new URL(req.url).searchParams.get('test') === 'true';
+    if (isTestMode) {
+      console.log("🧪 Running in TEST MODE - day check will be bypassed");
+    }
+    
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -66,10 +72,8 @@ serve(async (req) => {
     
     console.log(`📅 Current day: ${currentDay}, Configured send day: ${sendDay}`);
     
-    // FOR TESTING: Comment out the day check to allow running at any time
-    // If you want to test, comment this block
-    /*
-    if (currentDay !== sendDay) {
+    // Skip day check if in test mode
+    if (!isTestMode && currentDay !== sendDay) {
       console.log("⏭️ Not the configured day to send employee emails. Skipping.");
       return new Response(
         JSON.stringify({ 
@@ -84,7 +88,6 @@ serve(async (req) => {
         }
       );
     }
-    */
 
     // Get active employees with their monthly values
     const { data: employeesWithValues, error: employeesError } = await supabase
@@ -202,7 +205,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Employee notification process completed", 
+        message: isTestMode ? "Employee notification test completed" : "Employee notification process completed", 
         sentEmails, 
         errors: emailErrors,
         totalSent: sentEmails.length,
