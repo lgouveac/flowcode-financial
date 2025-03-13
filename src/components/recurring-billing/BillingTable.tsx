@@ -10,12 +10,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Eye, Trash2 } from "lucide-react";
 import type { RecurringBilling } from "@/types/billing";
 
+// Define a simpler client type to avoid potential circular references
+type ClientInfo = {
+  name: string;
+  email?: string;
+} | null;
+
 interface BillingTableProps {
   billings: Array<RecurringBilling & { 
-    clients?: { 
-      name: string; 
-      email?: string;
-    } | null;
+    clients?: ClientInfo;
   }>;
   onRefresh?: () => void;
 }
