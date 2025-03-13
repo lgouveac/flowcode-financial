@@ -97,7 +97,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
         amount: Number(amount),
         date,
         payment_id: category === 'payment' ? selectedPayment : null,
-        status: 'pending',
+        status: 'pending' as const // Use a type assertion to specify the exact enum value
       };
 
       console.log("Saving cash flow:", newCashFlow);
