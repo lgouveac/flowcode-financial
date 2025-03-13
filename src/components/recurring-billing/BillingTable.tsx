@@ -10,20 +10,28 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Eye, Trash2 } from "lucide-react";
 import type { RecurringBilling } from "@/types/billing";
 
+// Define an extended type that includes the joined client data
+interface RecurringBillingWithClient extends RecurringBilling {
+  clients?: {
+    name: string;
+    email?: string;
+  };
+}
+
 interface BillingTableProps {
-  billings: RecurringBilling[];
+  billings: RecurringBillingWithClient[];
   onRefresh?: () => void;
 }
 
 export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
   const { toast } = useToast();
-  const [selectedBilling, setSelectedBilling] = useState<RecurringBilling | null>(null);
+  const [selectedBillingId, setSelectedBillingId] = useState<string | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [billingToDelete, setBillingToDelete] = useState<string | null>(null);
 
-  const handleViewDetails = (billing: RecurringBilling) => {
-    setSelectedBilling(billing);
+  const handleViewDetails = (billingId: string) => {
+    setSelectedBillingId(billingId);
     setShowDetailsDialog(true);
   };
 
@@ -141,7 +149,7 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleViewDetails(billing)}
+                    onClick={() => handleViewDetails(billing.id)}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -159,13 +167,13 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
         </TableBody>
       </Table>
 
-      {selectedBilling && (
+      {selectedBillingId && (
         <PaymentDetailsDialog
-          billing={selectedBilling}
+          billingId={selectedBillingId}
           open={showDetailsDialog}
           onClose={() => {
             setShowDetailsDialog(false);
-            setSelectedBilling(null);
+            setSelectedBillingId(null);
           }}
         />
       )}
