@@ -96,7 +96,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               isPaymentCategory={isPaymentCategory}
             />
             
-            {isPaymentCategory && Array.isArray(payments) && (
+            {isPaymentCategory && Array.isArray(payments) && payments.length > 0 && (
               <PaymentSelector
                 payments={payments}
                 selectedPayment={selectedPaymentObject}

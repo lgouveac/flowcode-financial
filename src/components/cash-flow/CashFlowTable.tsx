@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import type { CashFlow } from "@/types/cashflow";
+import { Trash2 } from "lucide-react";
 
 interface CashFlowTableProps {
   cashFlow: CashFlow[];
@@ -83,6 +84,33 @@ export const CashFlowTable = ({
     await handleUpdateCashFlow(id, 'type', newType);
   };
 
+  // Delete cash flow entry
+  const handleDeleteCashFlow = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('cash_flow')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Excluído com sucesso",
+        description: "A movimentação foi excluída.",
+      });
+      
+      // Refresh data to show updated list
+      onNewCashFlow();
+    } catch (error) {
+      console.error('Error deleting cash flow:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a movimentação.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="relative z-10">
       <div className="flex items-center justify-between mb-6">
@@ -120,6 +148,7 @@ export const CashFlowTable = ({
                 <th className="text-left py-2 px-4">Categoria</th>
                 <th className="text-left py-2 px-4">Descrição</th>
                 <th className="text-right py-2 px-4">Valor</th>
+                <th className="text-center py-2 px-4">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -157,6 +186,16 @@ export const CashFlowTable = ({
                       type="number"
                       className="text-right"
                     />
+                  </td>
+                  <td className="py-2 px-4 text-center">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDeleteCashFlow(flow.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </td>
                 </tr>
               ))}

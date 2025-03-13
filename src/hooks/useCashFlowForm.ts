@@ -97,6 +97,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
         amount: Number(amount),
         date,
         payment_id: category === 'payment' ? selectedPayment : null,
+        status: 'pending',
       };
 
       console.log("Saving cash flow:", newCashFlow);
@@ -116,6 +117,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
       }
 
       if (category === 'payment' && selectedPayment) {
+        // Atualizar o status do pagamento para 'paid'
         const { error: paymentError } = await supabase
           .from('payments')
           .update({ 
