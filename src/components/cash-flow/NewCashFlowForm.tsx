@@ -35,23 +35,23 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
   } = useCashFlowForm({ onSuccess, onClose });
   
   // For debugging
-  const [loadState, setLoadState] = useState("initial");
-  
   useEffect(() => {
-    console.log("NewCashFlowForm payments state:", payments);
+    console.log("NewCashFlowForm payments:", payments);
     console.log("Selected payment ID:", selectedPayment);
-    setLoadState("loaded");
   }, [payments, selectedPayment]);
 
   const isPaymentCategory = category === 'payment';
 
-  // Prepare the selected payment object for the selector
-  const selectedPaymentObject = isPaymentCategory && selectedPayment && payments
-    ? payments.find(p => p.id === selectedPayment)
-    : null;
-    
-  console.log("Selected payment object:", selectedPaymentObject);
-
+  // Find the selected payment object from the payments array
+  const getSelectedPaymentObject = () => {
+    if (!isPaymentCategory || !selectedPayment || !payments) {
+      return null;
+    }
+    return payments.find(p => p.id === selectedPayment) || null;
+  };
+  
+  const selectedPaymentObject = getSelectedPaymentObject();
+  
   // Handle payment selection
   const handlePaymentSelect = (payment: Payment | null) => {
     console.log("Payment selected:", payment);

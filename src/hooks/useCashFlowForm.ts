@@ -1,10 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { Payment } from "@/types/payment";
-
-// Remove the PaymentWithClient interface since we don't need it anymore
-// The Payment type already has the correct clients structure
 
 export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) => {
   const { toast } = useToast();
