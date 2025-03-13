@@ -34,7 +34,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
     handleSubmit
   } = useCashFlowForm({ onSuccess, onClose });
   
-  // For debugging
+  // Debug logs
   useEffect(() => {
     console.log("NewCashFlowForm payments:", payments);
     console.log("Selected payment ID:", selectedPayment);
@@ -96,7 +96,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               isPaymentCategory={isPaymentCategory}
             />
             
-            {isPaymentCategory && (
+            {isPaymentCategory && Array.isArray(payments) && payments.length > 0 && (
               <PaymentSelector
                 payments={payments}
                 selectedPayment={selectedPaymentObject}

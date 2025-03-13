@@ -17,6 +17,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Clear payment data when category changes
   useEffect(() => {
     if (category === 'payment') {
       fetchPendingPayments();

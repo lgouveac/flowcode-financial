@@ -21,11 +21,11 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
   // Ensure payments is always an array
   const safePayments = Array.isArray(payments) ? payments : [];
 
-  // Add debug logs
+  // Debug logs
   useEffect(() => {
-    console.log('PaymentSelector received payments:', payments);
+    console.log('PaymentSelector rendered with payments:', safePayments);
     console.log('PaymentSelector selected payment:', selectedPayment);
-  }, [payments, selectedPayment]);
+  }, [safePayments, selectedPayment]);
 
   return (
     <div className="space-y-2">
@@ -51,8 +51,8 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
         </PopoverTrigger>
         <PopoverContent className="w-full p-0">
           {safePayments.length > 0 ? (
-            <Command value={searchTerm} onValueChange={setSearchTerm}>
-              <CommandInput placeholder="Buscar pagamento..." />
+            <Command className="w-full">
+              <CommandInput placeholder="Buscar pagamento..." value={searchTerm} onValueChange={setSearchTerm} />
               <CommandEmpty>Nenhum pagamento encontrado.</CommandEmpty>
               <CommandGroup>
                 {safePayments.map((payment) => (
