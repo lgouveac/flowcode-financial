@@ -113,8 +113,90 @@ export const EmployeeTable = () => {
     },
   });
 
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // First check for related monthly values
+      const { data: monthlyValues, error: monthlyError } = await supabase
+        .from("employee_monthly_values")
+        .select("id")
+        .eq("employee_id", id);
+        
+      if (monthlyError) {
+        console.error("Error checking monthly values:", monthlyError);
+        throw monthlyError;
+      }
+      
+      // If there are monthly values, delete them first
+      if (monthlyValues && monthlyValues.length > 0) {
+        const { error: deleteMonthlyError } = await supabase
+          .from("employee_monthly_values")
+          .delete()
+          .eq("employee_id", id);
+          
+        if (deleteMonthlyError) {
+          console.error("Error deleting monthly values:", deleteMonthlyError);
+          throw deleteMonthlyError;
+        }
+      }
+      
+      // Check for related cash flow entries
+      const { data: cashFlowEntries, error: cashFlowError } = await supabase
+        .from("cash_flow")
+        .select("id")
+        .eq("employee_id", id);
+        
+      if (cashFlowError) {
+        console.error("Error checking cash flow entries:", cashFlowError);
+        throw cashFlowError;
+      }
+      
+      // If there are cash flow entries, update them to remove the employee reference
+      if (cashFlowEntries && cashFlowEntries.length > 0) {
+        const { error: updateCashFlowError } = await supabase
+          .from("cash_flow")
+          .update({ employee_id: null })
+          .eq("employee_id", id);
+          
+        if (updateCashFlowError) {
+          console.error("Error updating cash flow entries:", updateCashFlowError);
+          throw updateCashFlowError;
+        }
+      }
+      
+      // Finally, delete the employee
+      const { error } = await supabase
+        .from("employees")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error deleting employee:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      toast({
+        title: "Sucesso",
+        description: "Funcionário excluído com sucesso.",
+      });
+    },
+    onError: (error) => {
+      console.error("Delete mutation error:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o funcionário.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEmployeeChange = (id: string, field: keyof Employee, value: any) => {
     updateEmployeeMutation.mutate({ id, field, value });
+  };
+
+  const handleEmployeeDelete = (id: string) => {
+    deleteEmployeeMutation.mutate(id);
   };
 
   if (isLoading) {
@@ -150,6 +232,7 @@ export const EmployeeTable = () => {
                   <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground">Status</th>
                   <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground hidden md:table-cell">Método de Pagamento</th>
                   <th className="py-3 px-4 text-left text-sm font-medium text-muted-foreground hidden lg:table-cell">Última NF</th>
+                  <th className="py-3 px-4 text-right text-sm font-medium text-muted-foreground">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,6 +242,7 @@ export const EmployeeTable = () => {
                     employee={employee}
                     onClick={setSelectedEmployee}
                     onStatusChange={(value) => handleEmployeeChange(employee.id, "status", value)}
+                    onDelete={handleEmployeeDelete}
                   />
                 ))}
               </tbody>
