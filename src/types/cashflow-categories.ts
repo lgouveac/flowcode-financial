@@ -1,33 +1,31 @@
 
-export const CATEGORIES = {
-  income: [{
-    value: 'payment',
-    label: 'Pagamento'
-  }, {
-    value: 'investment',
-    label: 'Investimento'
-  }, {
-    value: 'other_income',
-    label: 'Outros'
-  }],
-  expense: [{
-    value: 'employee',
-    label: 'Funcionário'
-  }, {
-    value: 'tax',
-    label: 'Imposto'
-  }, {
-    value: 'pro_labore',
-    label: 'Pró-labore'
-  }, {
-    value: 'dividend',
-    label: 'Dividendos'
-  }, {
-    value: 'supplier',
-    label: 'Fornecedor'
-  }, {
-    value: 'other_expense',
-    label: 'Outros'
-  }]
-} as const;
+interface Category {
+  value: string;
+  label: string;
+}
 
+type CategoryGroup = {
+  [key: string]: Category[];
+};
+
+export const CATEGORIES: CategoryGroup = {
+  income: [
+    { value: 'payment', label: 'Recebimento' },
+    { value: 'service', label: 'Serviço' },
+    { value: 'investment', label: 'Investimento' },
+    { value: 'refund', label: 'Reembolso' },
+    { value: 'other', label: 'Outro' },
+  ],
+  expense: [
+    { value: 'employee', label: 'Funcionário' },
+    { value: 'service', label: 'Serviço' },
+    { value: 'subscription', label: 'Assinatura' },
+    { value: 'material', label: 'Material' },
+    { value: 'tax', label: 'Imposto' },
+    { value: 'food', label: 'Alimentação' },
+    { value: 'transport', label: 'Transporte' },
+    { value: 'utility', label: 'Utilidade' },
+    { value: 'rent', label: 'Aluguel' },
+    { value: 'other', label: 'Outro' },
+  ],
+};

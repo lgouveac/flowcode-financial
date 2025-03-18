@@ -16,6 +16,7 @@ interface FormFieldsProps {
   onAmountChange: (value: string) => void;
   onDateChange: (value: string) => void;
   isPaymentCategory: boolean;
+  isEmployeeCategory: boolean;
 }
 
 export const FormFields = ({
@@ -30,7 +31,11 @@ export const FormFields = ({
   onAmountChange,
   onDateChange,
   isPaymentCategory,
+  isEmployeeCategory,
 }: FormFieldsProps) => {
+  // Determine if description and amount should be disabled
+  const disableFields = isPaymentCategory || isEmployeeCategory;
+
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -83,7 +88,7 @@ export const FormFields = ({
             value={amount} 
             onChange={e => onAmountChange(e.target.value)}
             required
-            disabled={isPaymentCategory}
+            disabled={disableFields}
             className="bg-background" 
           />
         </div>
@@ -95,7 +100,7 @@ export const FormFields = ({
           value={description} 
           onChange={e => onDescriptionChange(e.target.value)}
           required
-          disabled={isPaymentCategory}
+          disabled={disableFields}
           className="bg-background"
         />
       </div>

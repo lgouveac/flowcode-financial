@@ -3,9 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FormFields } from "./FormFields";
 import { useCashFlowForm } from "@/hooks/useCashFlowForm";
 import { PaymentSelector } from "./PaymentSelector";
+import { EmployeeSelector } from "./EmployeeSelector";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Payment } from "@/types/payment";
+import { Employee } from "@/components/emails/types/emailTest";
 import { useEffect } from "react";
 
 interface NewCashFlowFormProps {
@@ -28,7 +30,10 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
     setDate,
     selectedPayment,
     setSelectedPayment,
+    selectedEmployee,
+    setSelectedEmployee,
     payments,
+    employees,
     isSubmitting,
     isLoading,
     handleSubmit
@@ -38,9 +43,12 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
   useEffect(() => {
     console.log("NewCashFlowForm payments:", payments);
     console.log("Selected payment ID:", selectedPayment);
-  }, [payments, selectedPayment]);
+    console.log("NewCashFlowForm employees:", employees);
+    console.log("Selected employee ID:", selectedEmployee);
+  }, [payments, selectedPayment, employees, selectedEmployee]);
 
   const isPaymentCategory = category === 'payment';
+  const isEmployeeCategory = category === 'employee';
 
   // Safely find the selected payment object from the payments array
   const getSelectedPaymentObject = () => {
@@ -50,7 +58,16 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
     return payments.find(p => p.id === selectedPayment) || null;
   };
   
+  // Safely find the selected employee object from the employees array
+  const getSelectedEmployeeObject = () => {
+    if (!isEmployeeCategory || !selectedEmployee || !employees) {
+      return null;
+    }
+    return employees.find(e => e.id === selectedEmployee) || null;
+  };
+  
   const selectedPaymentObject = getSelectedPaymentObject();
+  const selectedEmployeeObject = getSelectedEmployeeObject();
   
   // Handle payment selection
   const handlePaymentSelect = (payment: Payment | null) => {
@@ -67,6 +84,19 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
       setSelectedPayment('');
       setDescription('');
       setAmount('');
+    }
+  };
+
+  // Handle employee selection
+  const handleEmployeeSelect = (employee: Employee | null) => {
+    console.log("Employee selected:", employee);
+    if (employee) {
+      setSelectedEmployee(employee.id);
+      setDescription(`Pagamento para ${employee.name}`);
+      // We don't set amount for employees as it needs to be entered manually
+    } else {
+      setSelectedEmployee('');
+      setDescription('');
     }
   };
 
@@ -94,6 +124,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               onAmountChange={setAmount}
               onDateChange={setDate}
               isPaymentCategory={isPaymentCategory}
+              isEmployeeCategory={isEmployeeCategory}
             />
             
             {isPaymentCategory && Array.isArray(payments) && payments.length > 0 && (
@@ -103,8 +134,23 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
                 onSelect={handlePaymentSelect}
               />
             )}
+
+            {isEmployeeCategory && Array.isArray(employees) && employees.length > 0 && (
+              <EmployeeSelector
+                employees={employees}
+                selectedEmployee={selectedEmployeeObject}
+                onSelect={handleEmployeeSelect}
+              />
+            )}
           </div>
-          <Button type="submit" disabled={isSubmitting || (isPaymentCategory && !selectedPayment)}>
+          <Button 
+            type="submit" 
+            disabled={
+              isSubmitting || 
+              (isPaymentCategory && !selectedPayment) ||
+              (isEmployeeCategory && !selectedEmployee)
+            }
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

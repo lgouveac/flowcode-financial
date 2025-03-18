@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { Payment } from "@/types/payment";
+import type { Employee } from "@/components/emails/types/emailTest";
 
 export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void; onClose: () => void }) => {
   const { toast } = useToast();
@@ -12,7 +13,9 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState('');
   const [selectedPayment, setSelectedPayment] = useState<string>('');
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,12 +24,56 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
   useEffect(() => {
     if (category === 'payment') {
       fetchPendingPayments();
+    } else if (category === 'employee') {
+      fetchEmployees();
     } else {
-      // Clear payments data if we're not showing payment options
+      // Clear data if we're not showing payment options
       setPayments([]);
       setSelectedPayment('');
+      setEmployees([]);
+      setSelectedEmployee('');
     }
   }, [category]);
+
+  const fetchEmployees = async () => {
+    console.log('Fetching employees...');
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, name, email')
+        .eq('status', 'active')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching employees:', error);
+        setError(error.message);
+        toast({
+          title: "Erro ao carregar funcionários",
+          description: "Não foi possível carregar a lista de funcionários.",
+          variant: "destructive",
+        });
+        setEmployees([]);
+        return;
+      }
+
+      console.log('Fetched employees:', data);
+      setEmployees(data || []);
+    } catch (err) {
+      console.error('Exception fetching employees:', err);
+      setError('Unexpected error occurred');
+      toast({
+        title: "Erro ao carregar funcionários",
+        description: "Ocorreu um erro inesperado.",
+        variant: "destructive",
+      });
+      setEmployees([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchPendingPayments = async () => {
     console.log('Fetching pending payments...');
@@ -86,6 +133,15 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
       });
       return;
     }
+
+    if (category === 'employee' && !selectedEmployee) {
+      toast({
+        title: "Selecione um funcionário",
+        description: "É necessário selecionar um funcionário para continuar.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSubmitting(true);
 
@@ -97,7 +153,8 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
         amount: Number(amount),
         date,
         payment_id: category === 'payment' ? selectedPayment : null,
-        status: 'pending' as const // Use a type assertion to specify the exact enum value
+        employee_id: category === 'employee' ? selectedEmployee : null,
+        status: 'pending' as const
       };
 
       console.log("Saving cash flow:", newCashFlow);
@@ -169,7 +226,10 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
     setDate,
     selectedPayment,
     setSelectedPayment,
+    selectedEmployee,
+    setSelectedEmployee,
     payments,
+    employees,
     isSubmitting,
     isLoading,
     error,

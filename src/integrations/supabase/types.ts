@@ -16,6 +16,7 @@ export type Database = {
           created_at: string | null
           date: string
           description: string
+          employee_id: string | null
           id: string
           payment_id: string | null
           status: Database["public"]["Enums"]["cash_flow_status"] | null
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string | null
           date: string
           description: string
+          employee_id?: string | null
           id?: string
           payment_id?: string | null
           status?: Database["public"]["Enums"]["cash_flow_status"] | null
@@ -40,6 +42,7 @@ export type Database = {
           created_at?: string | null
           date?: string
           description?: string
+          employee_id?: string | null
           id?: string
           payment_id?: string | null
           status?: Database["public"]["Enums"]["cash_flow_status"] | null
@@ -47,6 +50,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cash_flow_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cash_flow_payment_id_fkey"
             columns: ["payment_id"]
