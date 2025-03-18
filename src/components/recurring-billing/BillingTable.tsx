@@ -1,3 +1,4 @@
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { RecurringBilling } from "@/types/billing";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,12 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [billingToDelete, setBillingToDelete] = useState<string | null>(null);
+  const [showInstallmentConfirm, setShowInstallmentConfirm] = useState(false);
+  const [pendingInstallment, setPendingInstallment] = useState<{
+    billingId: string;
+    currentInstallment: number;
+    totalInstallments: number;
+  } | null>(null);
 
   const filteredBillings = billings.filter(billing => {
     const matchesSearch = search.toLowerCase() === '' || 
@@ -74,6 +81,10 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
         title: "Recebimento atualizado",
         description: "As informações foram atualizadas com sucesso.",
       });
+      
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error('Error updating billing:', error);
       toast({
@@ -81,6 +92,54 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
         description: "Não foi possível atualizar o recebimento.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleUpdateInstallments = (billingId: string, currentInstallment: number, totalInstallments: number) => {
+    // Validation
+    if (totalInstallments < currentInstallment) {
+      toast({
+        title: "Valor inválido",
+        description: "O total de parcelas não pode ser menor que a parcela atual.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Show confirmation dialog
+    setPendingInstallment({ billingId, currentInstallment, totalInstallments });
+    setShowInstallmentConfirm(true);
+  };
+
+  const confirmInstallmentUpdate = async () => {
+    if (!pendingInstallment) return;
+    
+    try {
+      const { error } = await supabase
+        .from('recurring_billing')
+        .update({ installments: pendingInstallment.totalInstallments })
+        .eq('id', pendingInstallment.billingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Total de parcelas atualizado",
+        description: "O número total de parcelas foi atualizado com sucesso.",
+      });
+      
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error updating installments:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar o total de parcelas.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowInstallmentConfirm(false);
+      setPendingInstallment(null);
     }
   };
 
@@ -246,8 +305,29 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
                   />
                 </div>
               </TableCell>
-              <TableCell>
-                {billing.current_installment}/{billing.installments}
+              <TableCell className="relative">
+                <div className="editable-cell flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                  <EditableCell
+                    value={billing.current_installment.toString()}
+                    onChange={(value) => {
+                      const newValue = parseInt(value);
+                      if (isNaN(newValue) || newValue < 1) return;
+                      if (newValue > billing.installments) return;
+                      handleUpdateBilling(billing.id, 'current_installment', newValue);
+                    }}
+                    type="number"
+                  />
+                  <span>/</span>
+                  <EditableCell
+                    value={billing.installments.toString()}
+                    onChange={(value) => {
+                      const newValue = parseInt(value);
+                      if (isNaN(newValue) || newValue < 1) return;
+                      handleUpdateInstallments(billing.id, billing.current_installment, newValue);
+                    }}
+                    type="number"
+                  />
+                </div>
               </TableCell>
               <TableCell className="relative">
                 <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
@@ -342,6 +422,22 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingAction(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmUpdate}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showInstallmentConfirm} onOpenChange={setShowInstallmentConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar alteração no total de parcelas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja alterar o total de parcelas para {pendingInstallment?.totalInstallments}?
+              Esta ação afetará todos os pagamentos futuros deste recebimento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingInstallment(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmInstallmentUpdate}>Confirmar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
