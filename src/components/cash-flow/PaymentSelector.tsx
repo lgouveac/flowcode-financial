@@ -18,7 +18,9 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
   
   // Ensure payments is always an array with only valid payment statuses
   const safePayments = Array.isArray(payments) 
-    ? payments.filter(payment => ['pending', 'billed', 'awaiting_invoice'].includes(payment.status))
+    ? payments.filter(payment => 
+        ['pending', 'billed', 'awaiting_invoice'].includes(payment.status)
+      )
     : [];
 
   // Debug logs

@@ -81,7 +81,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
     setError(null);
     
     try {
-      // Strictly fetch only payments with status pending, billed, or awaiting_invoice (Recebimentos)
+      // Use an explicit IN clause to strictly filter by allowed statuses
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -115,8 +115,17 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
         return;
       }
 
-      console.log('Fetched pending payments:', data);
-      setPayments(data || []);
+      console.log('Fetched pending payments (filtered at database):', data);
+      
+      // Additional safety check to ensure only valid statuses are included
+      const filteredPayments = Array.isArray(data) 
+        ? data.filter(payment => 
+            ['pending', 'billed', 'awaiting_invoice'].includes(payment.status)
+          )
+        : [];
+        
+      console.log('Final filtered payments:', filteredPayments);
+      setPayments(filteredPayments);
     } catch (err) {
       console.error('Exception fetching payments:', err);
       setError('Unexpected error occurred');
