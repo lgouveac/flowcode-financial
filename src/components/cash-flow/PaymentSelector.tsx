@@ -27,8 +27,8 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
 
   // Filter payments based on search term
   const filteredPayments = safePayments.filter(payment => 
-    (payment.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.amount.toString().includes(searchTerm))
+    payment.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payment.amount.toString().includes(searchTerm)
   );
 
   return (
