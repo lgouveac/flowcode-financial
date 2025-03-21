@@ -81,8 +81,8 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
     setError(null);
     
     try {
-      // Use explicit filter for valid payment statuses
-      const validStatuses = ['pending', 'billed', 'awaiting_invoice'];
+      // Fix: Use explicitly typed values for the enum
+      const validStatuses: ("pending" | "billed" | "awaiting_invoice")[] = ['pending', 'billed', 'awaiting_invoice'];
       
       const { data, error } = await supabase
         .from('payments')
@@ -121,7 +121,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
       
       // Double check the returned data to ensure only valid statuses
       const filteredPayments = Array.isArray(data) 
-        ? data.filter(payment => validStatuses.includes(payment.status))
+        ? data.filter(payment => validStatuses.includes(payment.status as any))
         : [];
         
       console.log('Final filtered payments to use:', filteredPayments);
