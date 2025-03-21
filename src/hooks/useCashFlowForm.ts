@@ -81,6 +81,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
     setError(null);
     
     try {
+      // Only fetch payments with status pending, billed, or awaiting_invoice (Recebimentos)
       const { data, error } = await supabase
         .from('payments')
         .select(`
