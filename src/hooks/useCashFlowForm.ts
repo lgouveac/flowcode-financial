@@ -120,6 +120,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
       }
 
       console.log('Raw database response for payments:', data);
+      console.log('Number of payments returned from database:', data?.length || 0);
       
       if (!Array.isArray(data)) {
         console.error('Unexpected data format, expected array but got:', typeof data);
@@ -136,6 +137,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
         
       console.log('Final filtered payments to use:', filteredPayments);
       console.log('Number of payments after filtering:', filteredPayments.length);
+      console.log('Payments statuses in result:', filteredPayments.map(p => p.status));
       
       // Set the filtered payments
       setPayments(filteredPayments);

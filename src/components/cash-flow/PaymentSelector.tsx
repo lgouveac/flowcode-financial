@@ -33,6 +33,7 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
     console.log('Valid payment statuses:', validStatuses);
     console.log('PaymentSelector filtered payments to:', safePayments);
     console.log('Number of safe payments:', safePayments.length);
+    console.log('Payments statuses in selector:', safePayments.map(p => p.status));
     console.log('PaymentSelector selected payment:', selectedPayment);
   }, [payments, safePayments, selectedPayment]);
 
