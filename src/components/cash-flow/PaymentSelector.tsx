@@ -16,16 +16,23 @@ interface PaymentSelectorProps {
 export const PaymentSelector = ({ payments, selectedPayment, onSelect }: PaymentSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   
+  // Define valid statuses explicitly
+  const validStatuses: ("pending" | "billed" | "awaiting_invoice")[] = ['pending', 'billed', 'awaiting_invoice'];
+  
   // Only use payments with the correct status
-  const validStatuses = ['pending', 'billed', 'awaiting_invoice'];
   const safePayments = Array.isArray(payments) 
-    ? payments.filter(payment => validStatuses.includes(payment.status))
+    ? payments.filter(payment => 
+        payment && 
+        payment.status && 
+        validStatuses.includes(payment.status as any))
     : [];
 
   // Debug logs
   useEffect(() => {
     console.log('PaymentSelector received payments:', payments);
+    console.log('Valid payment statuses:', validStatuses);
     console.log('PaymentSelector filtered payments to:', safePayments);
+    console.log('Number of safe payments:', safePayments.length);
     console.log('PaymentSelector selected payment:', selectedPayment);
   }, [payments, safePayments, selectedPayment]);
 
@@ -70,6 +77,7 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
                   <div className="flex-1">
                     <div className="font-medium">{payment.description}</div>
                     <div className="text-sm text-muted-foreground">R$ {payment.amount.toFixed(2)}</div>
+                    <div className="text-xs text-muted-foreground">Status: {payment.status}</div>
                   </div>
                   {selectedPayment?.id === payment.id && (
                     <Check className="h-4 w-4 text-primary" />
