@@ -16,18 +16,18 @@ interface PaymentSelectorProps {
 export const PaymentSelector = ({ payments, selectedPayment, onSelect }: PaymentSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Ensure payments is always an array with only valid payment statuses
+  // Only use payments with the correct status
+  const validStatuses = ['pending', 'billed', 'awaiting_invoice'];
   const safePayments = Array.isArray(payments) 
-    ? payments.filter(payment => 
-        ['pending', 'billed', 'awaiting_invoice'].includes(payment.status)
-      )
+    ? payments.filter(payment => validStatuses.includes(payment.status))
     : [];
 
   // Debug logs
   useEffect(() => {
-    console.log('PaymentSelector rendered with filtered payments:', safePayments);
+    console.log('PaymentSelector received payments:', payments);
+    console.log('PaymentSelector filtered payments to:', safePayments);
     console.log('PaymentSelector selected payment:', selectedPayment);
-  }, [safePayments, selectedPayment]);
+  }, [payments, safePayments, selectedPayment]);
 
   // Filter payments based on search term
   const filteredPayments = safePayments.filter(payment => 

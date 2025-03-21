@@ -81,7 +81,9 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
     setError(null);
     
     try {
-      // Use an explicit IN clause to strictly filter by allowed statuses
+      // Use explicit filter for valid payment statuses
+      const validStatuses = ['pending', 'billed', 'awaiting_invoice'];
+      
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -101,7 +103,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
             partner_name
           )
         `)
-        .in('status', ['pending', 'billed', 'awaiting_invoice']);
+        .in('status', validStatuses);
 
       if (error) {
         console.error('Error fetching payments:', error);
@@ -115,16 +117,16 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
         return;
       }
 
-      console.log('Fetched pending payments (filtered at database):', data);
+      console.log('Raw database response for payments:', data);
       
-      // Additional safety check to ensure only valid statuses are included
+      // Double check the returned data to ensure only valid statuses
       const filteredPayments = Array.isArray(data) 
-        ? data.filter(payment => 
-            ['pending', 'billed', 'awaiting_invoice'].includes(payment.status)
-          )
+        ? data.filter(payment => validStatuses.includes(payment.status))
         : [];
         
-      console.log('Final filtered payments:', filteredPayments);
+      console.log('Final filtered payments to use:', filteredPayments);
+      
+      // Set the filtered payments
       setPayments(filteredPayments);
     } catch (err) {
       console.error('Exception fetching payments:', err);

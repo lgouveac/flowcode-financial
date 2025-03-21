@@ -41,26 +41,26 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
   
   // Debug logs
   useEffect(() => {
-    console.log("NewCashFlowForm payments:", payments);
+    console.log("NewCashFlowForm received payments:", payments);
     console.log("Selected payment ID:", selectedPayment);
-    console.log("NewCashFlowForm employees:", employees);
+    console.log("NewCashFlowForm received employees:", employees);
     console.log("Selected employee ID:", selectedEmployee);
   }, [payments, selectedPayment, employees, selectedEmployee]);
 
   const isPaymentCategory = category === 'payment';
   const isEmployeeCategory = category === 'employee';
 
-  // Safely find the selected payment object from the payments array
-  const getSelectedPaymentObject = () => {
-    if (!isPaymentCategory || !selectedPayment || !payments) {
+  // Find the selected payment object from the payments array
+  const getSelectedPaymentObject = (): Payment | null => {
+    if (!isPaymentCategory || !selectedPayment || !Array.isArray(payments)) {
       return null;
     }
     return payments.find(p => p.id === selectedPayment) || null;
   };
   
-  // Safely find the selected employee object from the employees array
-  const getSelectedEmployeeObject = () => {
-    if (!isEmployeeCategory || !selectedEmployee || !employees) {
+  // Find the selected employee object from the employees array
+  const getSelectedEmployeeObject = (): Employee | null => {
+    if (!isEmployeeCategory || !selectedEmployee || !Array.isArray(employees)) {
       return null;
     }
     return employees.find(e => e.id === selectedEmployee) || null;
@@ -127,7 +127,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               isEmployeeCategory={isEmployeeCategory}
             />
             
-            {isPaymentCategory && Array.isArray(payments) && payments.length > 0 && (
+            {isPaymentCategory && (
               <PaymentSelector
                 payments={payments}
                 selectedPayment={selectedPaymentObject}
@@ -135,7 +135,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               />
             )}
 
-            {isEmployeeCategory && Array.isArray(employees) && employees.length > 0 && (
+            {isEmployeeCategory && (
               <EmployeeSelector
                 employees={employees}
                 selectedEmployee={selectedEmployeeObject}
