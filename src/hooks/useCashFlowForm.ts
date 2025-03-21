@@ -86,6 +86,7 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
       
       console.log('Querying payments with statuses:', validStatuses);
       
+      // Modified query to ensure we're only getting payments with valid statuses
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -128,7 +129,20 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
         return;
       }
       
-      // Apply additional safety filter to ensure only valid statuses are included
+      // Log each payment and its status for debugging
+      if (data && data.length > 0) {
+        console.log('Individual payments and statuses:');
+        data.forEach((payment, index) => {
+          console.log(`Payment ${index + 1}:`, { 
+            id: payment.id,
+            description: payment.description,
+            status: payment.status,
+            amount: payment.amount
+          });
+        });
+      }
+      
+      // Double check to ensure only valid statuses are included
       const filteredPayments = data.filter(payment => 
         payment && 
         payment.status && 

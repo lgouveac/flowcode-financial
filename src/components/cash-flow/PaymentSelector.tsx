@@ -33,6 +33,19 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
     console.log('Valid payment statuses:', validStatuses);
     console.log('PaymentSelector filtered payments to:', safePayments);
     console.log('Number of safe payments:', safePayments.length);
+    
+    // Log each payment individually for deeper inspection
+    if (Array.isArray(payments)) {
+      console.log('Individual payments before filtering:');
+      payments.forEach((payment, index) => {
+        console.log(`Payment ${index + 1}:`, { 
+          id: payment?.id || 'undefined', 
+          description: payment?.description || 'undefined',
+          status: payment?.status || 'undefined'
+        });
+      });
+    }
+    
     console.log('Payments statuses in selector:', safePayments.map(p => p.status));
     console.log('PaymentSelector selected payment:', selectedPayment);
   }, [payments, safePayments, selectedPayment]);
