@@ -63,6 +63,15 @@ export const CompanyForm = ({ formData, setFormData }: CompanyFormProps) => {
           />
         </div>
       </div>
+      <div className="grid gap-2">
+        <Label htmlFor="responsible_name">Nome do responsável</Label>
+        <Input
+          id="responsible_name"
+          value={formData.responsible_name || ''}
+          onChange={(e) => setFormData({ ...formData, responsible_name: e.target.value })}
+          placeholder="Se for diferente do sócio"
+        />
+      </div>
     </>
   );
 };

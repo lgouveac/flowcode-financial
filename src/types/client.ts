@@ -16,6 +16,7 @@ export interface Client {
   address: string;
   due_date: string;
   payment_method: "pix" | "boleto" | "credit_card";
+  responsible_name?: string; // New field for the person responsible
 }
 
 // New type for creating a client - includes only the required fields
@@ -23,4 +24,3 @@ export type NewClient = Omit<Client, 'id' | 'total_billing' | 'status'> & {
   total_billing?: number;
   status?: "active" | "inactive" | "overdue";
 };
-

@@ -51,6 +51,15 @@ export const PersonalForm = ({ formData, setFormData }: PersonalFormProps) => {
           required
         />
       </div>
+      <div className="grid gap-2 sm:col-span-2">
+        <Label htmlFor="responsible_name">Nome do responsável</Label>
+        <Input
+          id="responsible_name"
+          value={formData.responsible_name || ''}
+          onChange={(e) => setFormData({ ...formData, responsible_name: e.target.value })}
+          placeholder="Nome da pessoa responsável"
+        />
+      </div>
     </div>
   );
 };

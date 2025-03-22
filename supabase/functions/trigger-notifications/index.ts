@@ -119,7 +119,9 @@ const handler = async (req: Request): Promise<Response> => {
         clients!inner (
           id,
           name,
-          email
+          email,
+          responsible_name,
+          partner_name
         )
       `)
       .eq('status', 'pending');
@@ -191,6 +193,9 @@ const handler = async (req: Request): Promise<Response> => {
           if (billing.payment_method === 'boleto') paymentMethodStr = 'Boleto';
           if (billing.payment_method === 'credit_card') paymentMethodStr = 'Cartão de Crédito';
           
+          // Determine responsible name (use responsible_name if available, otherwise partner_name)
+          const responsibleName = billing.clients.responsible_name || billing.clients.partner_name || 'Responsável';
+          
           // Send the email
           try {
             const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
@@ -201,6 +206,7 @@ const handler = async (req: Request): Promise<Response> => {
                   subject: template.subject,
                   content: template.content,
                   recipientName: billing.clients.name,
+                  responsibleName: responsibleName,
                   billingValue: billing.amount,
                   dueDate: dueDateStr,
                   daysUntilDue: interval.days_before,

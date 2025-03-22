@@ -155,6 +155,16 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="responsible_name">Nome do Responsável</Label>
+            <Input
+              id="responsible_name"
+              value={formData.responsible_name || ''}
+              onChange={(e) => setFormData({ ...formData, responsible_name: e.target.value })}
+              placeholder="Nome da pessoa responsável pelos pagamentos"
+            />
+          </div>
+
           {formData.type === "pj" && (
             <>
               <div className="space-y-2">
