@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -169,6 +168,56 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
     }
   };
 
+  // New function to delete a payment
+  const deletePayment = async (paymentId: string) => {
+    console.log('Deleting payment with ID:', paymentId);
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const { error } = await supabase
+        .from('payments')
+        .delete()
+        .eq('id', paymentId);
+
+      if (error) {
+        console.error('Error deleting payment:', error);
+        setError(error.message);
+        toast({
+          title: "Erro ao excluir pagamento",
+          description: "Não foi possível excluir o pagamento selecionado.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Pagamento excluído",
+        description: "O pagamento foi excluído com sucesso.",
+      });
+      
+      // Refresh the payments list
+      fetchPendingPayments();
+      
+      // If the deleted payment was selected, clear the selection
+      if (selectedPayment === paymentId) {
+        setSelectedPayment('');
+        setDescription('');
+        setAmount('');
+      }
+    } catch (err) {
+      console.error('Exception deleting payment:', err);
+      setError('Unexpected error occurred');
+      toast({
+        title: "Erro ao excluir pagamento",
+        description: "Ocorreu um erro inesperado.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation(); // Stop propagation to prevent any parent form submission
@@ -282,5 +331,6 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
     isLoading,
     error,
     handleSubmit,
+    deletePayment, // Add the new function to the return object
   };
 };

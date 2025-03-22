@@ -4,17 +4,38 @@ import { Payment } from "@/types/payment";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 interface PaymentSelectorProps {
   payments: Payment[] | null | undefined;
   selectedPayment: Payment | null;
   onSelect: (payment: Payment | null) => void;
+  onDelete?: (paymentId: string) => Promise<void>;
 }
 
-export const PaymentSelector = ({ payments, selectedPayment, onSelect }: PaymentSelectorProps) => {
+export const PaymentSelector = ({ 
+  payments, 
+  selectedPayment, 
+  onSelect, 
+  onDelete 
+}: PaymentSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Define valid statuses explicitly
   const validStatuses: ("pending" | "billed" | "awaiting_invoice")[] = ['pending', 'billed', 'awaiting_invoice'];
@@ -56,6 +77,35 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
     payment.amount.toString().includes(searchTerm)
   );
 
+  // Handle delete confirmation
+  const handleDeleteConfirm = async () => {
+    if (!paymentToDelete || !onDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      await onDelete(paymentToDelete);
+      
+      // If the deleted payment was selected, deselect it
+      if (selectedPayment?.id === paymentToDelete) {
+        onSelect(null);
+      }
+      
+      setPaymentToDelete(null);
+    } catch (error) {
+      console.error("Error deleting payment:", error);
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  // Handle delete click
+  const handleDeleteClick = (e: React.MouseEvent, paymentId: string) => {
+    e.stopPropagation(); // Prevent selection when clicking delete
+    setPaymentToDelete(paymentId);
+    setDeleteDialogOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <Label>Pagamento</Label>
@@ -94,7 +144,17 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
                     <div className="text-xs text-muted-foreground">Status: {payment.status}</div>
                   </div>
                   {selectedPayment?.id === payment.id && (
-                    <Check className="h-4 w-4 text-primary" />
+                    <Check className="h-4 w-4 text-primary mr-2" />
+                  )}
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={(e) => handleDeleteClick(e, payment.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
               ))
@@ -110,6 +170,28 @@ export const PaymentSelector = ({ payments, selectedPayment, onSelect }: Payment
           Nenhum pagamento disponível.
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este pagamento? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

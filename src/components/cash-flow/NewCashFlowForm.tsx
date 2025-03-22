@@ -36,7 +36,8 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
     employees,
     isSubmitting,
     isLoading,
-    handleSubmit
+    handleSubmit,
+    deletePayment // Add the deletePayment function
   } = useCashFlowForm({ onSuccess, onClose });
   
   // Debug logs
@@ -132,6 +133,7 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
                 payments={payments}
                 selectedPayment={selectedPaymentObject}
                 onSelect={handlePaymentSelect}
+                onDelete={deletePayment}
               />
             )}
 
