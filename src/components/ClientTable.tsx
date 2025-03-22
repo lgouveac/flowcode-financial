@@ -10,12 +10,25 @@ import { ClientRow } from "./client/ClientRow";
 import { EditClientDialog } from "./EditClientDialog";
 import { ImportCSV } from "./import/ImportCSV";
 import type { Client, NewClient } from "@/types/client";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const ClientTable = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const { toast } = useToast();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchClients = async () => {
     const { data, error } = await supabase
@@ -100,6 +113,81 @@ export const ClientTable = () => {
     setShowEditDialog(true);
   };
 
+  const handleDeleteClient = (client: Client) => {
+    setClientToDelete(client);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteClient = async () => {
+    if (!clientToDelete) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      // Verificar se há pagamentos relacionados ao cliente
+      const { data: payments, error: paymentsError } = await supabase
+        .from('payments')
+        .select('id')
+        .eq('client_id', clientToDelete.id)
+        .limit(1);
+        
+      if (paymentsError) {
+        throw new Error(`Erro ao verificar pagamentos: ${paymentsError.message}`);
+      }
+      
+      // Verificar se há cobranças recorrentes relacionadas ao cliente
+      const { data: billings, error: billingsError } = await supabase
+        .from('recurring_billing')
+        .select('id')
+        .eq('client_id', clientToDelete.id)
+        .limit(1);
+        
+      if (billingsError) {
+        throw new Error(`Erro ao verificar cobranças recorrentes: ${billingsError.message}`);
+      }
+      
+      // Se existem pagamentos ou cobranças, não permitimos a exclusão
+      if ((payments && payments.length > 0) || (billings && billings.length > 0)) {
+        toast({
+          title: "Não é possível excluir",
+          description: "Este cliente possui pagamentos ou cobranças recorrentes associados. Remova-os primeiro.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Excluir o cliente
+      const { error: deleteError } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientToDelete.id);
+        
+      if (deleteError) {
+        throw new Error(`Erro ao excluir cliente: ${deleteError.message}`);
+      }
+      
+      // Atualizar a lista de clientes
+      setClients(clients.filter(client => client.id !== clientToDelete.id));
+      
+      toast({
+        title: "Cliente excluído",
+        description: "O cliente foi excluído com sucesso.",
+      });
+      
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Não foi possível excluir o cliente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+      setClientToDelete(null);
+    }
+  };
+
   return (
     <div className="space-y-4 p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -136,6 +224,7 @@ export const ClientTable = () => {
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">Faturamento Total</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">Último Pagamento</th>
+                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -145,6 +234,7 @@ export const ClientTable = () => {
                   client={client}
                   onUpdate={handleChange}
                   onClick={() => handleClientClick(client)}
+                  onDelete={handleDeleteClient}
                 />
               ))}
             </tbody>
@@ -158,6 +248,29 @@ export const ClientTable = () => {
         onClose={() => setShowEditDialog(false)}
         onSuccess={fetchClients}
       />
+      
+      {/* Diálogo de confirmação para excluir cliente */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o cliente "{clientToDelete?.name}"? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteClient}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

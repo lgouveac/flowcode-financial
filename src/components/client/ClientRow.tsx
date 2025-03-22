@@ -1,15 +1,24 @@
 
 import { Client } from "@/types/client";
 import { EditableCell } from "@/components/EditableCell";
-import { MailIcon, PhoneIcon } from "lucide-react";
+import { MailIcon, PhoneIcon, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ClientRowProps {
   client: Client;
   onUpdate: (id: string, field: keyof Client, value: string | number) => void;
   onClick: () => void;
+  onDelete?: (client: Client) => void;
 }
 
-export const ClientRow = ({ client, onUpdate, onClick }: ClientRowProps) => {
+export const ClientRow = ({ client, onUpdate, onClick, onDelete }: ClientRowProps) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(client);
+    }
+  };
+
   return (
     <tr 
       className="border-b transition-colors hover:bg-muted/50 cursor-pointer" 
@@ -67,7 +76,17 @@ export const ClientRow = ({ client, onUpdate, onClick }: ClientRowProps) => {
           type="date"
         />
       </td>
+      <td className="py-2 px-4 text-right">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-destructive"
+          onClick={handleDeleteClick}
+          title="Excluir cliente"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </td>
     </tr>
   );
 };
-
