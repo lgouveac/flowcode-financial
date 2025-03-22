@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,34 +14,34 @@ serve(async (req) => {
   }
 
   try {
-    // Call the Supabase PostgreSQL function
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
+    console.log("Starting billing notifications direct edge function");
+    
+    // Initialize Supabase client using service role key
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    
     if (!supabaseKey) {
       throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
     }
-
-    // Execute the check_billing_notifications PostgreSQL function
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/rpc/check_billing_notifications`,
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Just redirect to the main trigger-notifications function to avoid duplication
+    const { data, error } = await supabase.functions.invoke(
+      "trigger-notifications",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabaseKey}`,
-          "apikey": supabaseKey,
-        },
         body: JSON.stringify({}),
       }
     );
 
-    // Parse the response for any errors
-    const result = await response.json();
-    console.log("Billing notification trigger result:", result);
+    if (error) {
+      console.error("Error invoking trigger-notifications:", error);
+      throw error;
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Billing notifications triggered", result }),
+      JSON.stringify(data),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
