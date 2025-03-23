@@ -12,6 +12,7 @@ import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsM
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [employeeSettingsOpen, setEmployeeSettingsOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   return (
     <div className="container py-6 space-y-6">
@@ -33,7 +34,7 @@ export default function Emails() {
         </TabsList>
         
         <TabsContent value="templates">
-          <TemplateSection title="Templates de Email" />
+          <TemplateSection />
         </TabsContent>
         
         <TabsContent value="settings" className="space-y-6">
@@ -54,7 +55,23 @@ export default function Emails() {
         </TabsContent>
       </Tabs>
 
-      <TestEmailDialog open={testEmailOpen} onClose={() => setTestEmailOpen(false)} />
+      {selectedTemplate ? (
+        <TestEmailDialog 
+          open={testEmailOpen} 
+          onClose={() => setTestEmailOpen(false)} 
+          template={{
+            id: selectedTemplate,
+            name: "",
+            subject: "",
+            content: "",
+            type: "clients",
+            subtype: "recurring",
+            created_at: "",
+            updated_at: ""
+          }}
+        />
+      ) : null}
+      
       <EmployeeEmailSettings 
         open={employeeSettingsOpen} 
         onClose={() => setEmployeeSettingsOpen(false)} 

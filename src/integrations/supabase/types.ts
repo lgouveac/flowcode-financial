@@ -132,6 +132,33 @@ export type Database = {
         }
         Relationships: []
       }
+      email_cc_recipients: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          email: string
+          id: string
+          is_active: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          email: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_notification_intervals: {
         Row: {
           created_at: string | null

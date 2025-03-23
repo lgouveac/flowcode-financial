@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Send } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -38,7 +38,7 @@ export const EmailCCRecipientsManager = () => {
         throw error;
       }
 
-      setRecipients(data || []);
+      setRecipients(data as EmailCCRecipient[] || []);
     } catch (error: any) {
       console.error("Error fetching CC recipients:", error);
       toast({
@@ -72,7 +72,7 @@ export const EmailCCRecipientsManager = () => {
         .insert({
           email: newEmail,
           description: newDescription,
-          is_active: true,
+          is_active: true
         })
         .select();
 
