@@ -1,11 +1,14 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, prepareTemplateData, logMessage, logError } from "./utils.ts";
+import { 
+  fetchGlobalSettings, 
+  fetchEmailSettings, 
+  fetchEmployeesWithValues, 
+  fetchEmailTemplate, 
+  sendEmployeeEmail 
+} from "./email-service.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -23,48 +26,24 @@ serve(async (req) => {
       // If no JSON body or parse error, assume not test mode
     }
     
-    console.log("🔔 Employee notification trigger function called", isTestMode ? "in TEST MODE" : "");
+    logMessage(`Employee notification trigger function called ${isTestMode ? "in TEST MODE" : ""}`, "🔔");
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseKey) {
-      console.error("❌ Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
+      logError("Missing SUPABASE_SERVICE_ROLE_KEY environment variable", new Error("Missing key"));
       throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    console.log("🔍 Checking for employee notifications to send");
+    logMessage("Checking for employee notifications to send", "🔍");
     
-    // Get global settings for employee emails send day
-    const { data: globalSettings, error: globalError } = await supabase
-      .from("global_settings")
-      .select("employee_emails_send_day")
-      .limit(1)
-      .maybeSingle();
-
-    if (globalError) {
-      console.error("❌ Error fetching global settings:", globalError);
-      throw new Error(`Failed to fetch global settings: ${globalError.message}`);
-    }
-
-    console.log("📊 Global settings:", globalSettings);
-
-    // Get employee email settings for notification time
-    const { data: emailSettings, error: emailError } = await supabase
-      .from("employee_email_settings")
-      .select("notification_time")
-      .limit(1)
-      .maybeSingle();
-
-    if (emailError) {
-      console.error("❌ Error fetching employee email settings:", emailError);
-      throw new Error(`Failed to fetch employee email settings: ${emailError.message}`);
-    }
-
-    console.log("📧 Email settings:", emailSettings);
+    // Get configuration settings
+    const globalSettings = await fetchGlobalSettings(supabase);
+    const emailSettings = await fetchEmailSettings(supabase);
 
     // Get the current date
     const now = new Date();
@@ -73,11 +52,11 @@ serve(async (req) => {
     // Only proceed if today is the configured day to send emails or in test mode
     const sendDay = globalSettings?.employee_emails_send_day || 5; // Default to 5th day of month
     
-    console.log(`📅 Current day: ${currentDay}, Configured send day: ${sendDay}`);
+    logMessage(`Current day: ${currentDay}, Configured send day: ${sendDay}`, "📅");
     
     // Skip day check if in test mode
     if (!isTestMode && currentDay !== sendDay) {
-      console.log("⏭️ Not the configured day to send employee emails. Skipping.");
+      logMessage("Not the configured day to send employee emails. Skipping.", "⏭️");
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -92,104 +71,42 @@ serve(async (req) => {
       );
     }
 
+    // Get the current month in YYYY-MM-01 format
+    const currentMonth = now.toISOString().substring(0, 7) + "-01";
+    
     // Get active employees with their monthly values
-    const { data: employeesWithValues, error: employeesError } = await supabase
-      .from("employees")
-      .select(`
-        id, 
-        name, 
-        email, 
-        position, 
-        status,
-        employee_monthly_values!inner(amount, month, notes)
-      `)
-      .eq("status", "active")
-      .eq("employee_monthly_values.month", now.toISOString().substring(0, 7) + "-01");
-
-    if (employeesError) {
-      console.error("❌ Error fetching employees with values:", employeesError);
-      throw new Error(`Failed to fetch employees with values: ${employeesError.message}`);
-    }
-
-    console.log(`👥 Found ${employeesWithValues?.length || 0} active employees with values`);
+    const employeesWithValues = await fetchEmployeesWithValues(supabase, currentMonth);
 
     // Get the default email template for employees
-    const { data: emailTemplate, error: templateError } = await supabase
-      .from("email_templates")
-      .select("*")
-      .eq("type", "employees")
-      .eq("subtype", "invoice")
-      .eq("is_default", true)
-      .limit(1)
-      .maybeSingle();
-
-    if (templateError) {
-      console.error("❌ Error fetching email template:", templateError);
-      throw new Error(`Failed to fetch email template: ${templateError.message}`);
-    }
-
-    if (!emailTemplate) {
-      console.error("❌ No default email template found for employees");
-      throw new Error("No default email template found for employee emails");
-    }
-
-    console.log("📝 Found email template:", emailTemplate.name);
+    const emailTemplate = await fetchEmailTemplate(supabase);
 
     // Send emails to each employee
     const sentEmails = [];
     const emailErrors = [];
     
-    for (const employee of employeesWithValues || []) {
+    for (const employee of employeesWithValues) {
       try {
         // Extract the monthly value for this employee
         const monthlyValue = employee.employee_monthly_values[0];
         
         if (!monthlyValue) {
-          console.log(`⚠️ No monthly value found for employee: ${employee.name} (${employee.id})`);
+          logMessage(`No monthly value found for employee: ${employee.name} (${employee.id})`, "⚠️");
           continue;
         }
         
-        console.log(`📧 Sending email to ${employee.name} (${employee.email}) for amount: ${monthlyValue.amount}`);
-        
-        // Format the month for display (e.g., "March 2025")
-        const monthDate = new Date(monthlyValue.month);
-        const formattedMonth = monthDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-        
         // Prepare the variable data for the template
-        const templateData = {
-          nome_funcionario: employee.name,
-          valor_nota: monthlyValue.amount,
-          mes_referencia: formattedMonth,
-          data_nota: new Date().toLocaleDateString('pt-BR'),
-          posicao: employee.position || "",
-          observacoes: monthlyValue.notes || "",
-          periodo: formattedMonth,
-          total_horas: "0", // Default value for hours template
-          valor_mensal: monthlyValue.amount
-        };
+        const templateData = prepareTemplateData(employee, monthlyValue);
         
-        // Call the send-email function with the template ID and data
-        const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
-          'send-email',
-          {
-            body: {
-              to: employee.email,
-              templateId: emailTemplate.id,
-              type: "employees",
-              subtype: "invoice",
-              data: templateData
-            }
-          }
-        );
-
-        if (emailError) {
-          throw new Error(`Error sending email: ${emailError.message}`);
+        // Send email
+        const result = await sendEmployeeEmail(supabase, employee, emailTemplate, templateData);
+        
+        if (result.success) {
+          sentEmails.push({ employee: employee.name, result: result.result });
+        } else {
+          emailErrors.push({ employee: employee.name, error: result.error });
         }
-
-        console.log(`✅ Email sent to ${employee.name}: ${JSON.stringify(emailResponse)}`);
-        sentEmails.push({ employee: employee.name, result: emailResponse });
       } catch (error) {
-        console.error(`❌ Error processing employee ${employee.name}:`, error);
+        logError(`Error processing employee ${employee.name}`, error);
         emailErrors.push({ employee: employee.name, error: error.message });
       }
     }
@@ -210,7 +127,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("❌ Error in employee notification process:", error);
+    logError("Error in employee notification process", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       {

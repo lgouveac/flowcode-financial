@@ -26,6 +26,7 @@ export const TestEmployeeNotificationButton = () => {
       );
 
       if (error) {
+        console.error("Error response from notification function:", error);
         throw error;
       }
 
