@@ -13,12 +13,12 @@ export const TestEmployeeNotificationButton = () => {
     try {
       setIsLoading(true);
       
-      // Use URL params in the function name instead of the query object
+      // Call the edge function with test=true parameter
       const { data, error } = await supabase.functions.invoke(
-        "trigger-employee-notifications?test=true",
+        "trigger-employee-notifications",
         {
-          method: "GET",
-          body: undefined, 
+          method: "POST",
+          body: { test: true }, 
           headers: {
             "Content-Type": "application/json",
           }

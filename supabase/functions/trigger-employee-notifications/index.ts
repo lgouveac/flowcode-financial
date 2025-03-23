@@ -14,13 +14,16 @@ serve(async (req) => {
   }
 
   try {
-    console.log("🔔 Employee notification trigger function called");
-    
-    // Check if this is a test request
-    const isTestMode = new URL(req.url).searchParams.get('test') === 'true';
-    if (isTestMode) {
-      console.log("🧪 Running in TEST MODE - day check will be bypassed");
+    // Parse request body
+    let isTestMode = false;
+    try {
+      const { test } = await req.json();
+      isTestMode = !!test;
+    } catch (e) {
+      // If no JSON body or parse error, assume not test mode
     }
+    
+    console.log("🔔 Employee notification trigger function called", isTestMode ? "in TEST MODE" : "");
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
@@ -67,7 +70,7 @@ serve(async (req) => {
     const now = new Date();
     const currentDay = now.getDate();
     
-    // Only proceed if today is the configured day to send emails
+    // Only proceed if today is the configured day to send emails or in test mode
     const sendDay = globalSettings?.employee_emails_send_day || 5; // Default to 5th day of month
     
     console.log(`📅 Current day: ${currentDay}, Configured send day: ${sendDay}`);
@@ -101,7 +104,7 @@ serve(async (req) => {
         employee_monthly_values!inner(amount, month, notes)
       `)
       .eq("status", "active")
-      .eq("employee_monthly_values.month", `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`);
+      .eq("employee_monthly_values.month", now.toISOString().substring(0, 7) + "-01");
 
     if (employeesError) {
       console.error("❌ Error fetching employees with values:", employeesError);
