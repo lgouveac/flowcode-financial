@@ -18,7 +18,11 @@ export const TestEmployeeNotificationButton = () => {
         "trigger-employee-notifications",
         {
           method: "POST",
-          body: { test: true }, 
+          body: { 
+            test: true,
+            forceDay: true, // Force the day check to pass regardless of current day
+            debug: true // Enable extra debugging
+          }, 
           headers: {
             "Content-Type": "application/json",
           }
