@@ -21,7 +21,7 @@ const handler = async (req: Request): Promise<Response> => {
     const data = await req.json();
     console.log("📝 Email request data:", JSON.stringify(data));
     
-    let to, subject, content, variables;
+    let to, cc, subject, content, variables;
     
     // Check if we're using direct content or template ID
     if (data.templateId) {
@@ -57,12 +57,14 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`📄 Found template: ${template.name}`);
       
       to = data.to;
+      cc = data.cc || [];
       subject = template.subject;
       content = template.content;
       variables = data.data || {};
     } else {
       // Legacy direct content method
       to = data.to;
+      cc = data.cc || [];
       subject = data.subject;
       content = data.content;
       variables = data;
@@ -80,7 +82,15 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Email content is required and must be a string");
     }
     
+    // Ensure cc is an array
+    if (cc && !Array.isArray(cc)) {
+      cc = [cc];
+    }
+    
     console.log(`📧 Preparing email to: ${to}`);
+    if (cc && cc.length > 0) {
+      console.log(`📧 CC: ${cc.join(', ')}`);
+    }
     console.log(`📑 Subject: ${subject}`);
     console.log(`🔄 Variables:`, variables);
     
@@ -124,12 +134,19 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    const emailResponse = await resend.emails.send({
+    const emailRequest: any = {
       from: "financeiro@flowcode.cc",
       to: [to],
       subject: processedSubject,
       html: wrappedHtml,
-    });
+    };
+    
+    // Add CC if provided
+    if (cc && cc.length > 0) {
+      emailRequest.cc = cc;
+    }
+
+    const emailResponse = await resend.emails.send(emailRequest);
 
     console.log("✅ Email sent successfully:", emailResponse);
 

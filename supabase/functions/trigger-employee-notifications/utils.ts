@@ -85,3 +85,25 @@ export const isTimeMatch = (currentTimeStr: string, configuredTimeStr: string, t
 export const formatTime = (date: Date): string => {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
+
+// Fetch CC recipients for email notifications
+export const fetchCCRecipients = async (supabase: any): Promise<string[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("email_cc_recipients")
+      .select("email")
+      .eq("is_active", true);
+    
+    if (error) {
+      logError("Error fetching CC recipients", error);
+      return [];
+    }
+    
+    const emails = data.map((recipient: any) => recipient.email);
+    logMessage(`Found ${emails.length} CC recipients: ${emails.join(", ")}`, "📧");
+    return emails;
+  } catch (error) {
+    logError("Error fetching CC recipients", error);
+    return [];
+  }
+};

@@ -106,13 +106,48 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("📋 Subject:", processedSubject);
     
     try {
-      // Send the email
-      const emailResponse = await resend.emails.send({
+      // Fetch CC recipients from the database
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      
+      if (!supabaseKey) {
+        throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
+      }
+      
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.43.2");
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Fetch CC recipients
+      const { data: ccData, error: ccError } = await supabase
+        .from("email_cc_recipients")
+        .select("email")
+        .eq("is_active", true);
+      
+      if (ccError) {
+        console.error("❌ Error fetching CC recipients:", ccError);
+        throw ccError;
+      }
+      
+      const ccRecipients = ccData?.map(item => item.email) || [];
+      if (ccRecipients.length > 0) {
+        console.log(`📧 Added ${ccRecipients.length} CC recipients: ${ccRecipients.join(', ')}`);
+      }
+      
+      // Prepare email request
+      const emailRequest: any = {
         from: "financeiro@flowcode.cc",
         to: [data.to],
         subject: processedSubject,
         html: htmlContent,
-      });
+      };
+      
+      // Add CC if we have recipients
+      if (ccRecipients.length > 0) {
+        emailRequest.cc = ccRecipients;
+      }
+      
+      // Send the email
+      const emailResponse = await resend.emails.send(emailRequest);
 
       // Add to cache to prevent duplicates
       recordEmailSent(cacheKey);

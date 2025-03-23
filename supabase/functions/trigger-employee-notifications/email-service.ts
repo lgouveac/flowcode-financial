@@ -1,6 +1,6 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
-import { logMessage, logError } from "./utils.ts";
+import { logMessage, logError, fetchCCRecipients } from "./utils.ts";
 
 // Send email to employee using the provided template and data
 export async function sendEmployeeEmail(
@@ -12,11 +12,15 @@ export async function sendEmployeeEmail(
   try {
     logMessage(`Sending email to ${employee.name} (${employee.email})`, "📧");
     
+    // Fetch CC recipients
+    const ccRecipients = await fetchCCRecipients(supabase);
+    
     const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
       'send-email',
       {
         body: {
           to: employee.email,
+          cc: ccRecipients,
           templateId: emailTemplate.id,
           type: "employees",
           subtype: "invoice",
