@@ -1,7 +1,16 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
-import { corsHeaders, prepareTemplateData, logMessage, logError, isConfiguredDay, formatYearMonth } from "./utils.ts";
+import { 
+  corsHeaders, 
+  prepareTemplateData, 
+  logMessage, 
+  logError, 
+  isConfiguredDay, 
+  formatYearMonth, 
+  isTimeMatch, 
+  formatTime 
+} from "./utils.ts";
 import { 
   fetchGlobalSettings, 
   fetchEmailSettings, 
@@ -53,6 +62,7 @@ serve(async (req) => {
     // Get the current date
     const now = new Date();
     const currentDay = now.getDate();
+    const currentTime = formatTime(now);
     
     // Only proceed if today is the configured day to send emails or in test mode
     const sendDay = globalSettings?.employee_emails_send_day || 5; // Default to 5th day of month
@@ -60,9 +70,9 @@ serve(async (req) => {
     if (debugMode) {
       logMessage(`Global Settings: ${JSON.stringify(globalSettings)}`, "🛠️");
       logMessage(`Email Settings: ${JSON.stringify(emailSettings)}`, "🛠️");
+      logMessage(`Current day: ${currentDay}, Configured send day: ${sendDay}`, "📅");
+      logMessage(`Current time: ${currentTime}, Configured time: ${emailSettings?.notification_time || 'not set'}`, "🕒");
     }
-    
-    logMessage(`Current day: ${currentDay}, Configured send day: ${sendDay}`, "📅");
     
     // Skip day check if in test mode or force day is true
     if (!isTestMode && !forceDay && !isConfiguredDay(currentDay, sendDay)) {
@@ -86,13 +96,8 @@ serve(async (req) => {
     // If we have configured notification time and we're not in test mode, check time
     if (emailSettings?.notification_time && !isTestMode && !forceDay) {
       const configuredTime = emailSettings.notification_time;
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       
-      logMessage(`Current time: ${currentTime}, Configured time: ${configuredTime}`, "🕒");
-      
-      // Simple string comparison to check if the current time matches the configured time (ignoring seconds)
-      // Only process if the hours and minutes match
-      if (!currentTime.startsWith(configuredTime.substring(0, 5))) {
+      if (!isTimeMatch(currentTime, configuredTime, 1)) {
         logMessage("Not the configured time to send employee emails. Skipping.", "⏭️");
         return new Response(
           JSON.stringify({ 
@@ -176,6 +181,8 @@ serve(async (req) => {
         totalEmployees: employeesWithValues?.length || 0,
         currentDay,
         configuredDay: sendDay,
+        currentTime,
+        configuredTime: emailSettings?.notification_time,
         currentMonth,
         isTestMode,
         forceDay

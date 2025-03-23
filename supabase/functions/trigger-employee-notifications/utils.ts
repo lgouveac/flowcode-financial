@@ -49,7 +49,39 @@ export const formatYearMonth = (date: Date): string => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
 };
 
-// Check if today is the configured day to send emails
+// Check if today is the configured day to send emails - IMPROVED VERSION
 export const isConfiguredDay = (currentDay: number, configuredDay: number): boolean => {
+  logMessage(`Checking day match: current day ${currentDay}, configured day ${configuredDay}`, "📅");
   return currentDay === configuredDay;
+};
+
+// Compare time strings with tolerance (in minutes)
+export const isTimeMatch = (currentTimeStr: string, configuredTimeStr: string, toleranceMinutes = 1): boolean => {
+  try {
+    if (!configuredTimeStr) return false;
+    
+    // Parse time strings (assumed format: "HH:MM" or "HH:MM:SS")
+    const currentParts = currentTimeStr.split(':').map(Number);
+    const configuredParts = configuredTimeStr.split(':').map(Number);
+    
+    // Calculate minutes since midnight for both times
+    const currentMinutes = currentParts[0] * 60 + currentParts[1];
+    const configuredMinutes = configuredParts[0] * 60 + configuredParts[1];
+    
+    // Check if current time is within tolerance range of configured time
+    const diff = Math.abs(currentMinutes - configuredMinutes);
+    const result = diff <= toleranceMinutes;
+    
+    logMessage(`Time check: current=${currentTimeStr}, configured=${configuredTimeStr}, difference=${diff} minutes, match=${result}`, "🕒");
+    
+    return result;
+  } catch (error) {
+    logError("Error comparing times", error);
+    return false;
+  }
+};
+
+// Format time to HH:MM format
+export const formatTime = (date: Date): string => {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
