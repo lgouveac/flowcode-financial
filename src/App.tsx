@@ -11,7 +11,7 @@ import { ClientTable } from "@/components/ClientTable";
 import { EmployeeTable } from "@/components/EmployeeTable";
 import { RecurringBilling } from "@/components/RecurringBilling";
 import { CashFlow } from "@/components/CashFlow";
-import { Emails } from "./pages/Emails";
+import Emails from "./pages/Emails"; // Changed from named to default import
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

@@ -8,11 +8,24 @@ import { TestEmailDialog } from "@/components/emails/TestEmailDialog";
 import { EmployeeEmailSettings } from "@/components/emails/EmployeeEmailSettings";
 import { TestEmployeeNotificationButton } from "@/components/emails/TestEmployeeNotificationButton";
 import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsManager";
+import { EmailTemplate } from "@/types/email";
+import { createTemplate } from "@/services/templateService";
 
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [employeeSettingsOpen, setEmployeeSettingsOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false);
+
+  const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
+    try {
+      await createTemplate(template);
+      return true;
+    } catch (error) {
+      console.error("Error saving template:", error);
+      return false;
+    }
+  };
 
   return (
     <div className="container py-6 space-y-6">
@@ -34,11 +47,11 @@ export default function Emails() {
         </TabsList>
         
         <TabsContent value="templates">
-          <TemplateSection />
+          <TemplateSection type="clients" onSaveTemplate={handleSaveTemplate} />
         </TabsContent>
         
         <TabsContent value="settings" className="space-y-6">
-          <NotificationSettings />
+          <NotificationSettings open={notificationSettingsOpen} onClose={() => setNotificationSettingsOpen(false)} />
           <div className="flex justify-between items-center mt-8">
             <h2 className="text-xl font-semibold">Notificações para Funcionários</h2>
             <Button variant="outline" onClick={() => setEmployeeSettingsOpen(true)}>
