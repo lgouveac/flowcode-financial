@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -252,8 +253,9 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
+  // Modified to include the MouseEvent parameter and properly handle event propagation
   const handleDeletePayment = (event: React.MouseEvent, paymentId: string) => {
-    // Add event prevention to stop propagation and prevent default
+    // Stop event propagation to prevent dialog from closing
     event.preventDefault();
     event.stopPropagation();
     
@@ -561,6 +563,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                               size="icon"
                               onClick={(e) => handleDeletePayment(e, payment.id)}
                               className="opacity-50 hover:opacity-100"
+                              type="button"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -588,9 +591,9 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         )}
       </DialogContent>
 
-      
+      {/* AlertDialog must be outside the DialogContent to prevent event bubbling issues */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
@@ -599,8 +602,21 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPaymentToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeletePayment} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setPaymentToDelete(null);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                confirmDeletePayment();
+              }} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
