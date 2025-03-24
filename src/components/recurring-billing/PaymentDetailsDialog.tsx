@@ -252,7 +252,12 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
-  const handleDeletePayment = (paymentId: string) => {
+  const handleDeletePayment = (event: React.MouseEvent, paymentId: string) => {
+    // Add event prevention to stop propagation and prevent default
+    event.preventDefault();
+    event.stopPropagation();
+    
+    console.log("Delete requested for payment:", paymentId);
     setPaymentToDelete(paymentId);
     setShowDeleteConfirm(true);
   };
@@ -261,13 +266,20 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     if (!paymentToDelete) return;
 
     try {
+      console.log("Confirming delete for payment:", paymentToDelete);
+      
       const { error } = await supabase
         .from('payments')
         .delete()
         .eq('id', paymentToDelete);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting payment:', error);
+        throw error;
+      }
 
+      console.log("Payment deleted successfully");
+      
       // Update the UI by removing the deleted payment
       setPayments(payments.filter(p => p.id !== paymentToDelete));
       
@@ -547,7 +559,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDeletePayment(payment.id)}
+                              onClick={(e) => handleDeletePayment(e, payment.id)}
                               className="opacity-50 hover:opacity-100"
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
