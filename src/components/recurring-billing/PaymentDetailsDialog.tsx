@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,9 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   const [isUpdatingPayment, setIsUpdatingPayment] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteRestricted, setShowDeleteRestricted] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [restrictedMessage, setRestrictedMessage] = useState("");
 
   useEffect(() => {
     if (open && billingId) {
@@ -253,11 +254,32 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
-  // Modified to include the MouseEvent parameter and properly handle event propagation
+  // Modified to check payment status before showing delete confirmation
   const handleDeletePayment = (event: React.MouseEvent, paymentId: string) => {
     // Stop event propagation to prevent dialog from closing
     event.preventDefault();
     event.stopPropagation();
+    
+    // Find the payment to check its status
+    const payment = payments.find(p => p.id === paymentId);
+    
+    if (!payment) {
+      console.error("Payment not found:", paymentId);
+      return;
+    }
+    
+    // Check if payment is in a status that cannot be deleted
+    if (payment.status === 'paid' || payment.status === 'cancelled') {
+      console.log("Cannot delete payment with status:", payment.status);
+      
+      // Set appropriate message based on status
+      const statusName = payment.status === 'paid' ? 'pago' : 'cancelado';
+      setRestrictedMessage(`Não é possível excluir um pagamento com status "${statusName}". Altere o status antes de tentar excluir.`);
+      
+      // Show restricted dialog instead
+      setShowDeleteRestricted(true);
+      return;
+    }
     
     console.log("Delete requested for payment:", paymentId);
     setPaymentToDelete(paymentId);
@@ -334,7 +356,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       billed: 'Faturado',
       awaiting_invoice: 'Aguardando Fatura',
       paid: 'Pago',
-      overdue: 'Atrasado',
+      overdue: 'Pago',
       cancelled: 'Cancelado'
     };
     return statusLabels[status];
@@ -618,6 +640,29 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* New AlertDialog for restricted deletion */}
+      <AlertDialog open={showDeleteRestricted} onOpenChange={setShowDeleteRestricted}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Operação não permitida</AlertDialogTitle>
+            <AlertDialogDescription>
+              {restrictedMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowDeleteRestricted(false);
+              }}
+            >
+              Entendi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { RecurringBilling } from "@/types/billing";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +22,8 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RecurringBilling['status'] | 'all'>('all');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showDeleteRestricted, setShowDeleteRestricted] = useState(false);
+  const [restrictedMessage, setRestrictedMessage] = useState("");
   const [pendingAction, setPendingAction] = useState<{
     billingId: string;
     field: string;
@@ -173,6 +174,28 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
 
   const handleDeleteClick = (e: React.MouseEvent, billingId: string) => {
     e.stopPropagation();
+    
+    // Find the billing to check its status
+    const billing = billings.find(b => b.id === billingId);
+    
+    if (!billing) {
+      console.error("Billing not found:", billingId);
+      return;
+    }
+    
+    // Check if billing is in a status that cannot be deleted
+    if (billing.status === 'paid' || billing.status === 'cancelled') {
+      console.log("Cannot delete billing with status:", billing.status);
+      
+      // Set appropriate message based on status
+      const statusName = billing.status === 'paid' ? 'pago' : 'cancelado';
+      setRestrictedMessage(`Não é possível excluir um recebimento com status "${statusName}". Altere o status antes de tentar excluir.`);
+      
+      // Show restricted dialog
+      setShowDeleteRestricted(true);
+      return;
+    }
+    
     setBillingToDelete(billingId);
     setShowDeleteConfirm(true);
   };
@@ -455,6 +478,23 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
             <AlertDialogCancel onClick={() => setBillingToDelete(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* New alert dialog for restricted deletion */}
+      <AlertDialog open={showDeleteRestricted} onOpenChange={setShowDeleteRestricted}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Operação não permitida</AlertDialogTitle>
+            <AlertDialogDescription>
+              {restrictedMessage}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowDeleteRestricted(false)}>
+              Entendi
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

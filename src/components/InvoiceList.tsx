@@ -2,9 +2,11 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, Trash2 } from "lucide-react";
 import { AddInvoiceDialog } from "./AddInvoiceDialog";
 import { EditableCell } from "./EditableCell";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Invoice {
   id: string;
@@ -35,6 +37,10 @@ const mockInvoices: Invoice[] = [
 
 export const InvoiceList = () => {
   const [invoices, setInvoices] = useState(mockInvoices);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteRestricted, setShowDeleteRestricted] = useState(false);
+  const { toast } = useToast();
 
   const handleChange = (id: string, field: keyof Invoice, value: string) => {
     setInvoices(prevInvoices =>
@@ -42,6 +48,48 @@ export const InvoiceList = () => {
         invoice.id === id ? { ...invoice, [field]: value } : invoice
       )
     );
+  };
+
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    // Find the invoice to check its status
+    const invoice = invoices.find(inv => inv.id === id);
+    
+    if (!invoice) {
+      console.error("Invoice not found:", id);
+      return;
+    }
+    
+    // Check if invoice is in a status that cannot be deleted
+    if (invoice.status === 'paid') {
+      toast({
+        title: "Operação não permitida",
+        description: "Não é possível excluir uma fatura que já foi paga.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setInvoiceToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (!invoiceToDelete) return;
+    
+    setInvoices(prevInvoices => 
+      prevInvoices.filter(invoice => invoice.id !== invoiceToDelete)
+    );
+    
+    toast({
+      title: "Fatura excluída",
+      description: "A fatura foi excluída com sucesso."
+    });
+    
+    setInvoiceToDelete(null);
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -60,6 +108,7 @@ export const InvoiceList = () => {
                 <th className="p-4 text-sm font-medium text-muted-foreground">Vencimento</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Status</th>
                 <th className="p-4 text-sm font-medium text-muted-foreground">Data Pagamento</th>
+                <th className="p-4 text-sm font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -105,11 +154,42 @@ export const InvoiceList = () => {
                       type="date"
                     />
                   </td>
+                  <td className="p-4">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => handleDeleteClick(invoice.id, e)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir esta fatura?
+                Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setInvoiceToDelete(null)}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDelete} 
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
