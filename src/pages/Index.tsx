@@ -41,6 +41,14 @@ const Index = () => {
       .substring(0, 2);
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+      title: "Logout realizado",
+      description: "Você foi desconectado com sucesso.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-secondary border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
@@ -96,7 +104,7 @@ const Index = () => {
                   <span className="text-xs text-muted-foreground">{user?.email}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()} className="text-destructive focus:text-destructive">
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                   <LogOutIcon className="mr-2 h-4 w-4" />
                   Sair
                 </DropdownMenuItem>
