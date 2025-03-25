@@ -1,14 +1,18 @@
 
 import { Button } from "@/components/ui/button";
-import { MoonIcon, SunIcon } from "lucide-react";
+import { MoonIcon, SunIcon, LogOutIcon, UserIcon } from "lucide-react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/components/auth/AuthContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const Index = () => {
   const { toast } = useToast();
   const location = useLocation();
   const { theme, setTheme } = useTheme();
+  const { user, signOut, profile } = useAuth();
 
   const navigation = [
     { path: "/", label: "Visão Geral" },
@@ -23,6 +27,18 @@ const Index = () => {
     if (path === "/" && location.pathname === "/") return true;
     if (path !== "/" && location.pathname.startsWith(path)) return true;
     return false;
+  };
+
+  // Obter as iniciais do nome do usuário para o avatar
+  const getInitials = () => {
+    if (!profile?.full_name) return 'U';
+    
+    return profile.full_name
+      .split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
   };
 
   return (
@@ -44,19 +60,49 @@ const Index = () => {
               </Link>
             ))}
           </nav>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 hover:bg-muted"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          >
-            {theme === "light" ? (
-              <MoonIcon className="h-4 w-4" />
-            ) : (
-              <SunIcon className="h-4 w-4" />
-            )}
-            <span className="sr-only">Alternar tema</span>
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 hover:bg-muted"
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            >
+              {theme === "light" ? (
+                <MoonIcon className="h-4 w-4" />
+              ) : (
+                <SunIcon className="h-4 w-4" />
+              )}
+              <span className="sr-only">Alternar tema</span>
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="h-9 rounded-full p-0 hover:bg-muted"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                      {getInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled className="flex flex-col items-start">
+                  <span className="font-medium">{profile?.full_name || 'Usuário'}</span>
+                  <span className="text-xs text-muted-foreground">{user?.email}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()} className="text-destructive focus:text-destructive">
+                  <LogOutIcon className="mr-2 h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
