@@ -69,13 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setLoading(false);
                 
                 // Navigate after authentication is complete
-                if (event === 'SIGNED_IN') {
-                  navigate('/', { replace: true });
-                }
-              })
-              .catch(error => {
-                console.error('Error processing profile:', error);
-                setLoading(false);
+                navigate('/', { replace: true });
               });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
@@ -108,17 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setProfile(data);
             }
             setLoading(false);
-          })
-          .catch(error => {
-            console.error('Unexpected error during profile fetch:', error);
-            setLoading(false);
           });
       } else {
         setLoading(false);
       }
-    }).catch(error => {
-      console.error('Error checking session:', error);
-      setLoading(false);
     });
 
     return () => {
@@ -233,7 +220,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setLoading(false);
-      // Use navigate after state is updated
+      
+      // Navigate only after state updates are complete
       if (!error) {
         navigate('/auth/login');
       }

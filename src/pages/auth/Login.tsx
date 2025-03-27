@@ -52,7 +52,7 @@ export default function Login() {
         console.error('Login error:', error);
         // Error is already handled in the signIn function
       } else {
-        console.log('Login successful');
+        console.log('Login successful, auth state change should trigger redirection');
         // Let the auth state change handle navigation
       }
     } catch (err) {

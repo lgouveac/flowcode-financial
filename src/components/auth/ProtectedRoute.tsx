@@ -19,8 +19,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     }
   }, [user, loading, location, navigate]);
 
+  // Show loading spinner while checking authentication
   if (loading) {
-    // Show a loading spinner with a max timeout
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -31,12 +31,13 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     );
   }
 
+  // If user is not authenticated, redirect to login as a fallback
   if (!user) {
-    // This is a fallback. The useEffect should handle the redirection
     console.log('ProtectedRoute - No user found (fallback), redirecting to login');
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
+  // User is authenticated, render the protected content
   console.log('ProtectedRoute - User authenticated, rendering children');
   return <>{children}</>;
 }
