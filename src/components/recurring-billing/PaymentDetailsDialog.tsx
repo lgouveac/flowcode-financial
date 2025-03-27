@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,8 @@ import { CalendarIcon, Check, CreditCard, File, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { EmailTemplate } from "@/types/email";
+import type { EmailTemplate, EmailTemplateType, EmailTemplateSubtype } from "@/types/email";
+import { validateTemplateType, validateTemplateSubtype } from "@/utils/templateValidation";
 
 interface PaymentDetailsDialogProps {
   billingId: string;
@@ -134,7 +134,20 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       }
 
       console.log("Email templates:", data);
-      setTemplates(data || []);
+      
+      // Process the templates to ensure they match the EmailTemplate type
+      const processedTemplates = (data || []).reduce<EmailTemplate[]>((acc, template) => {
+        if (validateTemplateType(template.type) && validateTemplateSubtype(template.subtype)) {
+          acc.push({
+            ...template,
+            type: template.type as EmailTemplateType,
+            subtype: template.subtype as EmailTemplateSubtype,
+          });
+        }
+        return acc;
+      }, []);
+      
+      setTemplates(processedTemplates);
     } catch (error) {
       console.error("Error in fetchEmailTemplates:", error);
     }
@@ -170,7 +183,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
           toast({
             title: "Aviso",
             description: "Recebimento atualizado, mas não foi possível atualizar o responsável.",
-            variant: "warning",
+            variant: "destructive", // Changed from 'warning' to 'destructive'
           });
           return;
         }
@@ -199,7 +212,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       toast({
         title: "Aviso",
         description: "Selecione um template e verifique se o cliente possui email.",
-        variant: "warning",
+        variant: "destructive", // Changed from 'warning' to 'destructive'
       });
       return;
     }
