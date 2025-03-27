@@ -33,6 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('AuthProvider initialized');
+    
     // Add a safety timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
       if (loading) {
@@ -43,31 +45,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Configure the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
 
         if (event === 'SIGNED_IN' && session) {
-          try {
-            // Fetch user profile
-            const { data, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
+          // Use setTimeout to avoid potential deadlocks with Supabase client
+          setTimeout(async () => {
+            try {
+              // Fetch user profile
+              const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
 
-            if (error) {
-              console.error('Error fetching profile:', error);
-            } else {
-              console.log('Profile fetched successfully:', data);
-              setProfile(data);
+              if (error) {
+                console.error('Error fetching profile:', error);
+              } else {
+                console.log('Profile fetched successfully:', data);
+                setProfile(data);
+              }
+            } catch (error) {
+              console.error('Error processing profile:', error);
+            } finally {
+              setLoading(false);
             }
-          } catch (error) {
-            console.error('Error processing profile:', error);
-          } finally {
-            setLoading(false);
-          }
+          }, 0);
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setLoading(false);
@@ -98,16 +103,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
             setLoading(false);
           })
-          .catch(err => {
-            console.error('Unexpected error during profile fetch:', err);
+          .catch(error => {
+            console.error('Unexpected error during profile fetch:', error);
             setLoading(false);
           });
       } else {
         setLoading(false);
       }
-    })
-    .catch(err => {
-      console.error('Error checking session:', err);
+    }).catch(error => {
+      console.error('Error checking session:', error);
       setLoading(false);
     });
 
@@ -119,13 +123,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('Attempting to sign in with:', email);
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('Sign in error:', error.message);
         toast({
           title: 'Erro ao fazer login',
           description: error.message,
@@ -135,14 +142,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
+      console.log('Sign in successful:', data.user?.email);
       toast({
         title: 'Login realizado com sucesso',
         description: 'Bem-vindo de volta!',
       });
       
-      navigate('/');
+      // No need to manually navigate - the auth state change will trigger a redirect
       return { error: null };
     } catch (error: any) {
+      console.error('Unexpected sign in error:', error.message);
       toast({
         title: 'Erro ao fazer login',
         description: error.message,
@@ -197,15 +206,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
+      console.log('Signing out user');
       setLoading(true);
-      await supabase.auth.signOut();
-      navigate('/auth/login');
-      toast({
-        title: 'Logout realizado',
-        description: 'Você foi desconectado com sucesso.',
-      });
+      
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Error signing out:', error.message);
+        toast({
+          title: 'Erro ao fazer logout',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        console.log('Sign out successful');
+        navigate('/auth/login');
+        toast({
+          title: 'Logout realizado',
+          description: 'Você foi desconectado com sucesso.',
+        });
+      }
+      
       setLoading(false);
     } catch (error: any) {
+      console.error('Unexpected error during sign out:', error.message);
       toast({
         title: 'Erro ao fazer logout',
         description: error.message,

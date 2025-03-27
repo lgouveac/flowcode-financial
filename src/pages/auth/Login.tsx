@@ -14,24 +14,48 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
   // Get the location the user came from, or redirect to the home page
   const from = (location.state as any)?.from?.pathname || '/';
+  
+  // If user is already logged in, redirect to homepage
+  if (user) {
+    navigate('/', { replace: true });
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsLoading(true);
+    console.log('Submitting login form with email:', email);
     
-    const { error } = await signIn(email, password);
-    
-    setIsLoading(false);
-    
-    if (!error) {
-      navigate(from, { replace: true });
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        console.error('Login error:', error);
+      } else {
+        console.log('Login successful, navigating to:', from);
+        // This was causing an issue - navigation is now handled by auth state change
+        // navigate(from, { replace: true });
+      }
+    } catch (err) {
+      console.error('Unexpected login error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
