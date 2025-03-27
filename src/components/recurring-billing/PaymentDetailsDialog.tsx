@@ -2,340 +2,254 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { RecurringBilling } from "@/types/billing";
-import { Payment, EditablePaymentFields } from "@/types/payment";
-import { Loader2, RefreshCw, Trash2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { RecurringBilling } from "@/types/billing";
+import type { Payment } from "@/types/payment";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format } from "date-fns";
+import { CalendarIcon, Check, CreditCard, File, Send } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import type { EmailTemplate } from "@/types/email";
 
 interface PaymentDetailsDialogProps {
-  billingId: string | null;
+  billingId: string;
   open: boolean;
   onClose: () => void;
 }
 
 export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetailsDialogProps) => {
-  const { toast } = useToast();
-  const [billing, setBilling] = useState<RecurringBilling | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [billing, setBilling] = useState<RecurringBilling & { clients?: { name: string; email?: string; responsible_name?: string } }>();
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
-  const [isUpdatingPayment, setIsUpdatingPayment] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showDeleteRestricted, setShowDeleteRestricted] = useState(false);
-  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
-  const [restrictedMessage, setRestrictedMessage] = useState("");
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [editingClient, setEditingClient] = useState<{ id: string; name: string; responsible_name?: string } | null>(null);
+  const { toast } = useToast();
+
+  // For editing fields
+  const [editMode, setEditMode] = useState(false);
+  const [editedBilling, setEditedBilling] = useState<Partial<RecurringBilling>>({});
+  const [editedResponsible, setEditedResponsible] = useState<string>("");
 
   useEffect(() => {
-    if (open && billingId) {
+    if (open) {
       fetchBillingDetails();
+      fetchEmailTemplates();
     }
   }, [open, billingId]);
 
   const fetchBillingDetails = async () => {
-    if (!billingId) return;
-    
-    setIsLoading(true);
-    
+    setLoading(true);
     try {
       console.log("Fetching billing details for ID:", billingId);
       
       // Fetch billing details - include responsible_name
       const { data: billingData, error: billingError } = await supabase
         .from('recurring_billing')
-        .select('*, clients(name, email, responsible_name)')
+        .select('*, clients(id, name, email, responsible_name)')
         .eq('id', billingId)
         .single();
 
       if (billingError) {
-        console.error('Error fetching billing details:', billingError);
-        throw billingError;
+        console.error("Error fetching billing details:", billingError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os detalhes do recebimento.",
+          variant: "destructive",
+        });
+        return;
       }
-      
-      console.log("Received billing data:", billingData);
-      setBilling(billingData);
 
-      // Fetch related payments
-      await fetchRelatedPayments(billingData);
-    } catch (error) {
-      console.error('Error fetching details:', error);
-      toast({
-        title: "Erro ao carregar detalhes",
-        description: "Não foi possível carregar os detalhes do recebimento.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchRelatedPayments = async (billingData: RecurringBilling) => {
-    try {
-      console.log("Fetching related payments for billing:", billingData.description, "client:", billingData.client_id);
-      
-      // Fixed query to match payments by client_id and partial description match
+      // Fetch associated payments
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
-        .select('*, clients(name, email, partner_name)')
+        .select('*')
         .eq('client_id', billingData.client_id)
-        .ilike('description', `${billingData.description}%`) // Using ilike with % wildcard to match partial description
-        .order('installment_number', { ascending: true });
+        .order('due_date', { ascending: false });
 
       if (paymentsError) {
-        console.error('Error fetching payments:', paymentsError);
-        throw paymentsError;
+        console.error("Error fetching payments:", paymentsError);
+      }
+
+      console.log("Billing details:", billingData);
+      console.log("Associated payments:", paymentsData);
+
+      setBilling(billingData as any);
+      setEditedBilling({
+        description: billingData.description,
+        amount: billingData.amount,
+        due_day: billingData.due_day,
+        installments: billingData.installments,
+        current_installment: billingData.current_installment,
+        payment_method: billingData.payment_method,
+        status: billingData.status,
+        start_date: billingData.start_date,
+        end_date: billingData.end_date
+      });
+      
+      // Set responsible name for editing
+      setEditedResponsible(billingData.clients?.responsible_name || "");
+      
+      // Set client info for editing
+      if (billingData.clients) {
+        setEditingClient({
+          id: billingData.clients.id,
+          name: billingData.clients.name,
+          responsible_name: billingData.clients.responsible_name
+        });
       }
       
-      console.log("Received payments data:", paymentsData);
       setPayments(paymentsData || []);
     } catch (error) {
-      console.error('Error fetching related payments:', error);
+      console.error("Error in fetchBillingDetails:", error);
       toast({
-        title: "Erro ao carregar pagamentos",
-        description: "Não foi possível carregar os pagamentos relacionados.",
+        title: "Erro",
+        description: "Ocorreu um erro ao carregar os detalhes.",
         variant: "destructive",
       });
-    }
-  };
-
-  const refreshData = async () => {
-    if (!billing) return;
-    
-    setIsRefreshing(true);
-    try {
-      await fetchRelatedPayments(billing);
-      toast({
-        title: "Dados atualizados",
-        description: "Os pagamentos foram atualizados com sucesso.",
-      });
-    } catch (error) {
-      console.error('Error refreshing data:', error);
     } finally {
-      setIsRefreshing(false);
+      setLoading(false);
     }
   };
 
-  const createPayment = async (event: React.MouseEvent) => {
-    // Prevent default behavior and stop propagation
-    event.preventDefault();
-    event.stopPropagation();
-    
-    // Safety check
-    if (!billing) {
-      console.error("Cannot create payment: billing data is null");
-      return;
-    }
-    
-    console.log("Creating payment for billing:", billing);
-    setIsCreatingPayment(true);
-    
+  const fetchEmailTemplates = async () => {
     try {
-      // Calculate next due date based on the due_day
-      const today = new Date();
-      let dueDate = new Date(today.getFullYear(), today.getMonth(), billing.due_day);
-      
-      // If the calculated due date is in the past, move to next month
-      if (dueDate < today) {
-        dueDate = new Date(today.getFullYear(), today.getMonth() + 1, billing.due_day);
-      }
-      
-      const formattedDueDate = dueDate.toISOString().split('T')[0];
-      console.log("Calculated due date:", formattedDueDate);
-      
-      // Create payment object with correct types
-      const newPayment = {
-        client_id: billing.client_id,
-        description: `${billing.description} (${billing.current_installment}/${billing.installments})`,
-        amount: billing.amount,
-        due_date: formattedDueDate,
-        payment_method: billing.payment_method,
-        status: 'pending' as const, // Explicitly typed as a literal
-        installment_number: billing.current_installment,
-        total_installments: billing.installments
-      };
-      
-      console.log("Preparing to insert payment:", newPayment);
-      
-      // Insert the new payment
       const { data, error } = await supabase
-        .from('payments')
-        .insert(newPayment)
-        .select();
+        .from('email_templates')
+        .select('*')
+        .eq('type', 'clients')
+        .eq('subtype', 'recurring');
 
       if (error) {
-        console.error('Error inserting payment:', error);
-        throw error;
+        console.error("Error fetching email templates:", error);
+        return;
       }
-      
-      console.log("Payment created successfully:", data);
-      
-      // Update current installment in recurring_billing
-      if (billing.current_installment < billing.installments) {
-        console.log("Updating current installment from", billing.current_installment, "to", billing.current_installment + 1);
-        
-        const { error: updateError } = await supabase
-          .from('recurring_billing')
-          .update({ 
-            current_installment: billing.current_installment + 1
-          })
-          .eq('id', billingId);
 
-        if (updateError) {
-          console.error('Error updating recurring billing:', updateError);
-          throw updateError;
-        }
-        
-        console.log("Current installment updated successfully");
+      console.log("Email templates:", data);
+      setTemplates(data || []);
+    } catch (error) {
+      console.error("Error in fetchEmailTemplates:", error);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      // Update billing record
+      const { error: billingError } = await supabase
+        .from('recurring_billing')
+        .update(editedBilling)
+        .eq('id', billingId);
+
+      if (billingError) {
+        console.error("Error updating billing:", billingError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível atualizar o recebimento.",
+          variant: "destructive",
+        });
+        return;
       }
-      
+
+      // Update client's responsible name if changed
+      if (editingClient && editedResponsible !== (billing?.clients?.responsible_name || "")) {
+        const { error: clientError } = await supabase
+          .from('clients')
+          .update({ responsible_name: editedResponsible })
+          .eq('id', editingClient.id);
+
+        if (clientError) {
+          console.error("Error updating client responsible name:", clientError);
+          toast({
+            title: "Aviso",
+            description: "Recebimento atualizado, mas não foi possível atualizar o responsável.",
+            variant: "warning",
+          });
+          return;
+        }
+      }
+
       toast({
-        title: "Pagamento criado",
-        description: "O pagamento foi criado com sucesso.",
+        title: "Sucesso",
+        description: "Recebimento atualizado com sucesso.",
       });
       
       // Refresh the data
       fetchBillingDetails();
+      setEditMode(false);
     } catch (error) {
-      console.error('Error creating payment:', error);
+      console.error("Error in handleSaveChanges:", error);
       toast({
-        title: "Erro ao criar pagamento",
-        description: "Não foi possível criar o pagamento.",
+        title: "Erro",
+        description: "Ocorreu um erro ao salvar as alterações.",
         variant: "destructive",
       });
-    } finally {
-      setIsCreatingPayment(false);
     }
   };
 
-  const updatePayment = async (paymentId: string, updatedFields: Partial<EditablePaymentFields>) => {
-    setIsUpdatingPayment(paymentId);
-    
-    try {
-      console.log("Updating payment:", paymentId, updatedFields);
-      
-      const { error } = await supabase
-        .from('payments')
-        .update(updatedFields)
-        .eq('id', paymentId);
-
-      if (error) throw error;
-      
+  const handleSendEmail = async () => {
+    if (!selectedTemplate || !billing?.clients?.email) {
       toast({
-        title: "Pagamento atualizado",
-        description: "As alterações foram salvas com sucesso.",
+        title: "Aviso",
+        description: "Selecione um template e verifique se o cliente possui email.",
+        variant: "warning",
       });
-      
-      // Update local state to reflect changes immediately
-      setPayments(prevPayments => 
-        prevPayments.map(payment => 
-          payment.id === paymentId 
-            ? { ...payment, ...updatedFields } 
-            : payment
-        )
-      );
-      
-      // Fetch fresh data from the server
-      if (billing) {
-        fetchRelatedPayments(billing);
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const template = templates.find(t => t.id === selectedTemplate);
+      if (!template) {
+        throw new Error("Template not found");
       }
-    } catch (error) {
-      console.error('Error updating payment:', error);
-      toast({
-        title: "Erro ao atualizar pagamento",
-        description: "Não foi possível salvar as alterações.",
-        variant: "destructive",
+
+      const dueDate = new Date();
+      dueDate.setDate(billing.due_day);
+
+      const { error } = await supabase.functions.invoke('send-billing-email', {
+        body: {
+          to: billing.clients.email,
+          subject: template.subject,
+          content: template.content,
+          recipientName: billing.clients.name,
+          billingValue: billing.amount,
+          dueDate: dueDate.toISOString().split('T')[0],
+          currentInstallment: billing.current_installment,
+          totalInstallments: billing.installments,
+          paymentMethod: billing.payment_method === 'pix' ? 'PIX' : 
+                         billing.payment_method === 'boleto' ? 'Boleto' : 'Cartão de Crédito'
+        }
       });
-    } finally {
-      setIsUpdatingPayment(null);
-    }
-  };
-
-  // Modified to check payment status before showing delete confirmation
-  const handleDeletePayment = (event: React.MouseEvent, paymentId: string) => {
-    // Stop event propagation to prevent dialog from closing
-    event.preventDefault();
-    event.stopPropagation();
-    
-    // Find the payment to check its status
-    const payment = payments.find(p => p.id === paymentId);
-    
-    if (!payment) {
-      console.error("Payment not found:", paymentId);
-      return;
-    }
-    
-    // Check if payment is in a status that cannot be deleted
-    if (payment.status === 'paid' || payment.status === 'cancelled') {
-      console.log("Cannot delete payment with status:", payment.status);
-      
-      // Set appropriate message based on status
-      const statusName = payment.status === 'paid' ? 'pago' : 'cancelado';
-      setRestrictedMessage(`Não é possível excluir um pagamento com status "${statusName}". Altere o status antes de tentar excluir.`);
-      
-      // Show restricted dialog instead
-      setShowDeleteRestricted(true);
-      return;
-    }
-    
-    console.log("Delete requested for payment:", paymentId);
-    setPaymentToDelete(paymentId);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDeletePayment = async () => {
-    if (!paymentToDelete) return;
-
-    try {
-      console.log("Confirming delete for payment:", paymentToDelete);
-      
-      const { error } = await supabase
-        .from('payments')
-        .delete()
-        .eq('id', paymentToDelete);
 
       if (error) {
-        console.error('Error deleting payment:', error);
         throw error;
       }
 
-      console.log("Payment deleted successfully");
-      
-      // Update the UI by removing the deleted payment
-      setPayments(payments.filter(p => p.id !== paymentToDelete));
-      
       toast({
-        title: "Pagamento excluído",
-        description: "O pagamento foi excluído com sucesso.",
+        title: "Sucesso",
+        description: "Email enviado com sucesso.",
       });
     } catch (error) {
-      console.error('Error deleting payment:', error);
+      console.error("Error sending email:", error);
       toast({
-        title: "Erro ao excluir pagamento",
-        description: "Não foi possível excluir o pagamento.",
+        title: "Erro",
+        description: "Não foi possível enviar o email.",
         variant: "destructive",
       });
     } finally {
-      setShowDeleteConfirm(false);
-      setPaymentToDelete(null);
+      setSendingEmail(false);
     }
   };
 
-  // This is a manual dialog close handler that ensures proper cleanup
-  const handleDialogClose = () => {
-    // Reset state when dialog closes
-    setBilling(null);
-    setPayments([]);
-    // Call the parent's onClose handler
-    onClose();
-  };
-
-  // Helper function to get status badge variant
-  const getStatusBadgeVariant = (status: Payment['status']) => {
+  const getStatusBadgeVariant = (status: RecurringBilling['status'] | Payment['status']) => {
     switch (status) {
       case 'paid':
         return 'default';
@@ -350,325 +264,396 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
-  // Helper function to get status label
-  const getStatusLabel = (status: Payment['status']) => {
-    const statusLabels: Record<Payment['status'], string> = {
+  const getStatusLabel = (status: RecurringBilling['status'] | Payment['status']) => {
+    const statusLabels: Record<string, string> = {
       pending: 'Pendente',
       billed: 'Faturado',
       awaiting_invoice: 'Aguardando Fatura',
       paid: 'Pago',
-      overdue: 'Pago',
+      overdue: 'Atrasado',
       cancelled: 'Cancelado'
     };
-    return statusLabels[status];
+    return statusLabels[status] || status;
   };
 
+  const getPaymentMethodLabel = (method: 'pix' | 'boleto' | 'credit_card') => {
+    const methodLabels: Record<string, string> = {
+      pix: 'PIX',
+      boleto: 'Boleto',
+      credit_card: 'Cartão de Crédito'
+    };
+    return methodLabels[method] || method;
+  };
+
+  if (loading) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detalhes do Recebimento</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-6">
+            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!billing) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detalhes do Recebimento</DialogTitle>
+            <DialogDescription>
+              Recebimento não encontrado ou ocorreu um erro ao carregar os detalhes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <DialogClose asChild>
+              <Button variant="outline">Fechar</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleDialogClose()}>
-      <DialogContent className="max-w-3xl" onClick={(e) => e.stopPropagation()}>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Detalhes do Recebimento Recorrente</DialogTitle>
+          <DialogTitle>Detalhes do Recebimento</DialogTitle>
           <DialogDescription>
-            Detalhes e histórico de pagamentos para este recebimento recorrente
+            {editMode ? 
+              "Edite os campos do recebimento e clique em Salvar para confirmar as alterações." :
+              "Visualize e gerencie os detalhes deste recebimento recorrente."}
           </DialogDescription>
         </DialogHeader>
-        
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {billing && (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium">Informações Básicas</h3>
-                  <div className="mt-2 space-y-2">
-                    <p><span className="font-medium">Cliente:</span> {(billing as any).clients?.name}</p>
-                    <p><span className="font-medium">Responsável:</span> {(billing as any).clients?.responsible_name || "Não informado"}</p>
-                    <p><span className="font-medium">Descrição:</span> {billing.description}</p>
-                    <p><span className="font-medium">Valor:</span> R$ {billing.amount.toFixed(2)}</p>
-                    <p><span className="font-medium">Dia de Vencimento:</span> {billing.due_day}</p>
-                    <p><span className="font-medium">Parcela Atual:</span> {billing.current_installment}/{billing.installments}</p>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <Button 
-                      onClick={createPayment}
-                      disabled={isCreatingPayment || billing.current_installment > billing.installments}
-                      className="w-auto"
-                      size="sm"
-                      type="button"
-                    >
-                      {isCreatingPayment ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Gerando...
-                        </>
-                      ) : (
-                        "Gerar Próximo Pagamento"
-                      )}
-                    </Button>
-                    
-                    {billing.current_installment > billing.installments && (
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Todas as parcelas já foram geradas.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-medium">Histórico de Pagamentos</h3>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={refreshData}
-                  disabled={isRefreshing}
-                >
-                  {isRefreshing ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                  <span className="ml-1">Atualizar</span>
+
+        <div className="space-y-6">
+          <div className="flex justify-end">
+            {editMode ? (
+              <div className="space-x-2">
+                <Button variant="outline" onClick={() => setEditMode(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveChanges}>
+                  Salvar
                 </Button>
               </div>
-              
-              
-              {payments.length > 0 ? (
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="text-left p-3 font-medium">Parcela</th>
-                        <th className="text-left p-3 font-medium">Descrição</th>
-                        <th className="text-left p-3 font-medium">Valor</th>
-                        <th className="text-left p-3 font-medium">Vencimento</th>
-                        <th className="text-left p-3 font-medium">Data Pgto.</th>
-                        <th className="text-left p-3 font-medium">Método</th>
-                        <th className="text-left p-3 font-medium">Status</th>
-                        <th className="text-left p-3 font-medium">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payments.map((payment) => (
-                        <tr key={payment.id} className="border-t">
-                          <td className="p-3">
-                            {payment.installment_number}/{payment.total_installments}
-                          </td>
-                          <td className="p-3">
-                            <Input
-                              value={payment.description}
-                              onChange={(e) => updatePayment(payment.id, { description: e.target.value })}
-                              className="h-8 text-sm"
-                              onBlur={(e) => {
-                                // Only update if value actually changed
-                                if (e.target.value !== payment.description) {
-                                  updatePayment(payment.id, { description: e.target.value });
-                                }
-                              }}
-                            />
-                          </td>
-                          <td className="p-3">
-                            <Input
-                              type="number"
-                              value={payment.amount}
-                              onChange={(e) => {
-                                const value = parseFloat(e.target.value);
-                                if (!isNaN(value)) {
-                                  setPayments(prevPayments =>
-                                    prevPayments.map(p =>
-                                      p.id === payment.id ? { ...p, amount: value } : p
-                                    )
-                                  );
-                                }
-                              }}
-                              onBlur={(e) => {
-                                const value = parseFloat(e.target.value);
-                                if (!isNaN(value) && value !== payment.amount) {
-                                  updatePayment(payment.id, { amount: value });
-                                }
-                              }}
-                              className="h-8 text-sm w-24"
-                              step="0.01"
-                            />
-                          </td>
-                          <td className="p-3">
-                            <Input
-                              type="date"
-                              value={payment.due_date}
-                              onChange={(e) => {
-                                setPayments(prevPayments =>
-                                  prevPayments.map(p =>
-                                    p.id === payment.id ? { ...p, due_date: e.target.value } : p
-                                  )
-                                );
-                              }}
-                              onBlur={(e) => {
-                                if (e.target.value !== payment.due_date) {
-                                  updatePayment(payment.id, { due_date: e.target.value });
-                                }
-                              }}
-                              className="h-8 text-sm"
-                            />
-                          </td>
-                          <td className="p-3">
-                            <Input
-                              type="date"
-                              value={payment.payment_date || ''}
-                              onChange={(e) => {
-                                setPayments(prevPayments =>
-                                  prevPayments.map(p =>
-                                    p.id === payment.id ? { ...p, payment_date: e.target.value || undefined } : p
-                                  )
-                                );
-                              }}
-                              onBlur={(e) => {
-                                const newValue = e.target.value || undefined;
-                                if (newValue !== payment.payment_date) {
-                                  updatePayment(payment.id, { payment_date: newValue });
-                                }
-                              }}
-                              className="h-8 text-sm"
-                            />
-                          </td>
-                          <td className="p-3">
-                            <Select
-                              value={payment.payment_method}
-                              onValueChange={(value: 'pix' | 'boleto' | 'credit_card') => {
-                                if (value !== payment.payment_method) {
-                                  updatePayment(payment.id, { payment_method: value });
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="h-8 text-sm w-[130px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pix">PIX</SelectItem>
-                                <SelectItem value="boleto">Boleto</SelectItem>
-                                <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="p-3">
-                            <Select
-                              value={payment.status}
-                              onValueChange={(value: Payment['status']) => {
-                                if (value !== payment.status) {
-                                  updatePayment(payment.id, { status: value });
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="h-8 text-sm w-[150px]">
-                                <SelectValue>
-                                  <Badge variant={getStatusBadgeVariant(payment.status)}>
-                                    {getStatusLabel(payment.status)}
-                                  </Badge>
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pendente</SelectItem>
-                                <SelectItem value="billed">Faturado</SelectItem>
-                                <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                                <SelectItem value="paid">Pago</SelectItem>
-                                <SelectItem value="overdue">Atrasado</SelectItem>
-                                <SelectItem value="cancelled">Cancelado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="p-3">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => handleDeletePayment(e, payment.id)}
-                              className="opacity-50 hover:opacity-100"
-                              type="button"
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            ) : (
+              <Button onClick={() => setEditMode(true)}>
+                Editar
+              </Button>
+            )}
+          </div>
+
+          <Tabs defaultValue="details">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="details">Detalhes</TabsTrigger>
+              <TabsTrigger value="payments">Pagamentos</TabsTrigger>
+              <TabsTrigger value="notification">Notificação</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="details" className="space-y-4 pt-4">
+              {editMode ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="client-name">Cliente</Label>
+                      <Input 
+                        id="client-name" 
+                        value={editingClient?.name || ""} 
+                        disabled 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="responsible-name">Responsável</Label>
+                      <Input 
+                        id="responsible-name" 
+                        value={editedResponsible} 
+                        onChange={(e) => setEditedResponsible(e.target.value)} 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Descrição</Label>
+                      <Input 
+                        id="description" 
+                        value={editedBilling.description || ""} 
+                        onChange={(e) => setEditedBilling({...editedBilling, description: e.target.value})} 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="amount">Valor (R$)</Label>
+                      <Input 
+                        id="amount" 
+                        type="number" 
+                        value={editedBilling.amount || 0} 
+                        onChange={(e) => setEditedBilling({...editedBilling, amount: parseFloat(e.target.value)})} 
+                        step="0.01"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="due-day">Dia de Vencimento</Label>
+                      <Input 
+                        id="due-day" 
+                        type="number" 
+                        value={editedBilling.due_day || 1} 
+                        onChange={(e) => setEditedBilling({...editedBilling, due_day: parseInt(e.target.value)})}
+                        min="1"
+                        max="31" 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="payment-method">Método de Pagamento</Label>
+                      <Select 
+                        value={editedBilling.payment_method} 
+                        onValueChange={(value: 'pix' | 'boleto' | 'credit_card') => 
+                          setEditedBilling({...editedBilling, payment_method: value})
+                        }
+                      >
+                        <SelectTrigger id="payment-method">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="boleto">Boleto</SelectItem>
+                          <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status</Label>
+                      <Select 
+                        value={editedBilling.status} 
+                        onValueChange={(value: RecurringBilling['status']) => 
+                          setEditedBilling({...editedBilling, status: value})
+                        }
+                      >
+                        <SelectTrigger id="status">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pendente</SelectItem>
+                          <SelectItem value="billed">Faturado</SelectItem>
+                          <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                          <SelectItem value="overdue">Atrasado</SelectItem>
+                          <SelectItem value="cancelled">Cancelado</SelectItem>
+                          <SelectItem value="paid">Pago</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="current-installment">Parcela Atual</Label>
+                      <Input 
+                        id="current-installment" 
+                        type="number" 
+                        value={editedBilling.current_installment || 1} 
+                        onChange={(e) => setEditedBilling({...editedBilling, current_installment: parseInt(e.target.value)})}
+                        min="1" 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="total-installments">Total de Parcelas</Label>
+                      <Input 
+                        id="total-installments" 
+                        type="number" 
+                        value={editedBilling.installments || 1} 
+                        onChange={(e) => setEditedBilling({...editedBilling, installments: parseInt(e.target.value)})}
+                        min="1" 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="start-date">Data de Início</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {editedBilling.start_date ? format(new Date(editedBilling.start_date), "PPP") : "Selecione"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={editedBilling.start_date ? new Date(editedBilling.start_date) : undefined}
+                            onSelect={(date) => setEditedBilling({...editedBilling, start_date: date ? format(date, "yyyy-MM-dd") : undefined})}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="end-date">Data de Término</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start text-left font-normal"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {editedBilling.end_date ? format(new Date(editedBilling.end_date), "PPP") : "Indefinido"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={editedBilling.end_date ? new Date(editedBilling.end_date) : undefined}
+                            onSelect={(date) => setEditedBilling({...editedBilling, end_date: date ? format(date, "yyyy-MM-dd") : undefined})}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  Nenhum pagamento gerado ainda.
-                </p>
+                <div className="space-y-6">
+                  <div className="rounded-md border p-6 space-y-4">
+                    <h3 className="text-lg font-medium">Informações Básicas</h3>
+                    <div className="mt-2 space-y-2">
+                      <p><span className="font-medium">Cliente:</span> {(billing as any).clients?.name}</p>
+                      <p><span className="font-medium">Responsável:</span> {(billing as any).clients?.responsible_name || "Não informado"}</p>
+                      <p><span className="font-medium">Descrição:</span> {billing.description}</p>
+                      <p><span className="font-medium">Valor:</span> R$ {billing.amount.toFixed(2)}</p>
+                      <p><span className="font-medium">Dia de Vencimento:</span> {billing.due_day}</p>
+                      <p><span className="font-medium">Método de Pagamento:</span> {getPaymentMethodLabel(billing.payment_method)}</p>
+                      <p>
+                        <span className="font-medium">Status:</span>{" "}
+                        <Badge variant={getStatusBadgeVariant(billing.status)}>
+                          {getStatusLabel(billing.status)}
+                        </Badge>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border p-6 space-y-4">
+                    <h3 className="text-lg font-medium">Informações de Parcelamento</h3>
+                    <div className="mt-2 space-y-2">
+                      <p><span className="font-medium">Parcela Atual:</span> {billing.current_installment} de {billing.installments}</p>
+                      <p><span className="font-medium">Data de Início:</span> {billing.start_date ? format(new Date(billing.start_date), "dd/MM/yyyy") : "Não definido"}</p>
+                      <p><span className="font-medium">Data de Término:</span> {billing.end_date ? format(new Date(billing.end_date), "dd/MM/yyyy") : "Indefinido"}</p>
+                      {billing.payment_date && (
+                        <p><span className="font-medium">Data de Pagamento:</span> {format(new Date(billing.payment_date), "dd/MM/yyyy")}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
-            </div>
-            
-            <div className="flex justify-end">
-              <DialogClose asChild>
-                <Button variant="outline" onClick={handleDialogClose} type="button">
-                  Fechar
-                </Button>
-              </DialogClose>
-            </div>
-          </div>
-        )}
+            </TabsContent>
+
+            <TabsContent value="payments" className="space-y-4 pt-4">
+              <div className="rounded-md border overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="p-3 text-left font-medium">Descrição</th>
+                      <th className="p-3 text-left font-medium">Valor</th>
+                      <th className="p-3 text-left font-medium">Vencimento</th>
+                      <th className="p-3 text-left font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.length > 0 ? payments.map((payment) => (
+                      <tr key={payment.id} className="border-t">
+                        <td className="p-3">{payment.description}</td>
+                        <td className="p-3">R$ {payment.amount.toFixed(2)}</td>
+                        <td className="p-3">{format(new Date(payment.due_date), "dd/MM/yyyy")}</td>
+                        <td className="p-3">
+                          <Badge variant={getStatusBadgeVariant(payment.status)}>
+                            {getStatusLabel(payment.status)}
+                          </Badge>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={4} className="p-3 text-center text-muted-foreground">
+                          Nenhum pagamento encontrado.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="notification" className="space-y-4 pt-4">
+              <div className="space-y-6">
+                <div className="rounded-md border p-6 space-y-4">
+                  <h3 className="text-lg font-medium">Enviar Notificação</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email-template">Template de Email</Label>
+                      <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                        <SelectTrigger id="email-template">
+                          <SelectValue placeholder="Selecione um template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templates.map((template) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              {template.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p><span className="font-medium">Email do Cliente:</span> {billing.clients?.email || "Não disponível"}</p>
+                    </div>
+
+                    <Button 
+                      className="w-full"
+                      onClick={handleSendEmail} 
+                      disabled={!selectedTemplate || !billing.clients?.email || sendingEmail}
+                    >
+                      {sendingEmail ? (
+                        <>
+                          <div className="h-4 w-4 mr-2 animate-spin rounded-full border-b-2 border-current"></div>
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4 mr-2" />
+                          Enviar Email
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-md border p-6 space-y-4">
+                  <h3 className="text-lg font-medium">Exportar Documentos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button variant="outline" className="w-full">
+                      <File className="h-4 w-4 mr-2" />
+                      Gerar PDF
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Gerar Boleto
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </DialogContent>
-
-      {/* AlertDialog must be outside the DialogContent to prevent event bubbling issues */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este pagamento?
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setPaymentToDelete(null);
-            }}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                confirmDeletePayment();
-              }} 
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* New AlertDialog for restricted deletion */}
-      <AlertDialog open={showDeleteRestricted} onOpenChange={setShowDeleteRestricted}>
-        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Operação não permitida</AlertDialogTitle>
-            <AlertDialogDescription>
-              {restrictedMessage}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowDeleteRestricted(false);
-              }}
-            >
-              Entendi
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Dialog>
   );
 };

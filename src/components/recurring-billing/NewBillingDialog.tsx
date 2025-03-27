@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -12,7 +13,7 @@ import { NewPaymentForm } from "../payments/NewPaymentForm";
 import { EmailTemplate } from "@/types/email";
 
 interface NewBillingDialogProps {
-  clients: Array<{ id: string; name: string }>;
+  clients: Array<{ id: string; name: string; responsible_name?: string }>;
   onSuccess: () => void;
   templates?: EmailTemplate[];
 }
@@ -22,11 +23,32 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
   const [paymentType, setPaymentType] = useState<'recurring' | 'onetime'>('recurring');
   const { toast } = useToast();
 
-  const handleNewBilling = async (billing: RecurringBilling) => {
+  const handleNewBilling = async (billing: RecurringBilling & { email_template?: string; responsible_name?: string }) => {
     console.log("Creating new billing:", billing);
+    
+    // First, update the client's responsible_name if needed
+    if (billing.responsible_name && billing.client_id) {
+      try {
+        const { error: clientError } = await supabase
+          .from('clients')
+          .update({ responsible_name: billing.responsible_name })
+          .eq('id', billing.client_id);
+          
+        if (clientError) {
+          console.error('Error updating client responsible name:', clientError);
+        }
+      } catch (err) {
+        console.error('Error updating client:', err);
+      }
+    }
+    
+    // Extract responsible_name before sending to avoid DB error
+    const { responsible_name, ...billingData } = billing;
+    
+    // Create the billing record
     const { data, error } = await supabase
       .from('recurring_billing')
-      .insert([billing])
+      .insert([billingData])
       .select()
       .single();
 
@@ -54,11 +76,31 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
     });
   };
 
-  const handleNewPayment = async (payment: Payment) => {
+  const handleNewPayment = async (payment: Payment & { responsible_name?: string }) => {
     console.log("Creating new payment:", payment);
+    
+    // First, update the client's responsible_name if needed
+    if (payment.responsible_name && payment.client_id) {
+      try {
+        const { error: clientError } = await supabase
+          .from('clients')
+          .update({ responsible_name: payment.responsible_name })
+          .eq('id', payment.client_id);
+          
+        if (clientError) {
+          console.error('Error updating client responsible name:', clientError);
+        }
+      } catch (err) {
+        console.error('Error updating client:', err);
+      }
+    }
+    
+    // Extract responsible_name before sending to avoid DB error
+    const { responsible_name, ...paymentData } = payment;
+    
     const { data, error } = await supabase
       .from('payments')
-      .insert([payment])
+      .insert([paymentData])
       .select()
       .single();
 

@@ -9,11 +9,14 @@ import { ClientSelector } from "./ClientSelector";
 import { BillingDetails } from "./BillingDetails";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
 import { EmailPreview } from "./EmailPreview";
+import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NewRecurringBillingFormProps {
-  onSubmit: (billing: RecurringBilling & { email_template?: string }) => void;
+  onSubmit: (billing: RecurringBilling & { email_template?: string; responsible_name?: string }) => void;
   onClose: () => void;
-  clients: Array<{ id: string; name: string, partner_name?: string }>;
+  clients: Array<{ id: string; name: string, partner_name?: string; responsible_name?: string }>;
   templates?: EmailTemplate[];
 }
 
@@ -24,12 +27,78 @@ export const NewRecurringBillingForm = ({
   templates = [] 
 }: NewRecurringBillingFormProps) => {
   const { formData, updateFormData, validateForm } = useRecurringBillingForm();
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [responsibleName, setResponsibleName] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // When client selection changes, try to get or update responsible name
+  useEffect(() => {
+    if (selectedClientId) {
+      const client = clients.find(c => c.id === selectedClientId);
+      if (client) {
+        setResponsibleName(client.responsible_name || client.partner_name || "");
+      } else {
+        setResponsibleName("");
+      }
+    }
+  }, [selectedClientId, clients]);
+
+  const handleClientSelect = async (clientId: string) => {
+    setSelectedClientId(clientId);
+    updateFormData({ client_id: clientId });
+    
+    setLoading(true);
+    try {
+      // Fetch most recent client data to get responsible_name
+      const { data, error } = await supabase
+        .from('clients')
+        .select('name, responsible_name, partner_name')
+        .eq('id', clientId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching client details:', error);
+        return;
+      }
+      
+      if (data) {
+        setResponsibleName(data.responsible_name || data.partner_name || "");
+      }
+    } catch (err) {
+      console.error('Error in handleClientSelect:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Submitting recurring billing form with data:", formData);
+    
     if (!validateForm()) return;
-    onSubmit(formData as RecurringBilling & { email_template?: string });
+    
+    // Update responsible name in client if it changed
+    if (responsibleName && selectedClientId) {
+      const client = clients.find(c => c.id === selectedClientId);
+      if (client && client.responsible_name !== responsibleName) {
+        // Try to update the client's responsible name
+        const { error } = await supabase
+          .from('clients')
+          .update({ responsible_name: responsibleName })
+          .eq('id', selectedClientId);
+          
+        if (error) {
+          console.error('Failed to update client responsible name:', error);
+        }
+      }
+    }
+    
+    // Send both formData and responsible_name
+    onSubmit({
+      ...(formData as RecurringBilling & { email_template?: string }),
+      responsible_name: responsibleName
+    });
+    
     onClose();
   };
 
@@ -42,8 +111,19 @@ export const NewRecurringBillingForm = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <ClientSelector 
         clients={clients}
-        onSelect={(clientId) => updateFormData({ client_id: clientId })}
+        onSelect={handleClientSelect}
       />
+      
+      <div className="space-y-2">
+        <Label htmlFor="responsible_name">Responsável</Label>
+        <Input
+          id="responsible_name"
+          value={responsibleName}
+          onChange={(e) => setResponsibleName(e.target.value)}
+          placeholder="Nome do responsável"
+          disabled={loading}
+        />
+      </div>
 
       <div className="space-y-2">
         <Label>Template de Email</Label>
@@ -90,7 +170,7 @@ export const NewRecurringBillingForm = ({
           selectedTemplate={formData.email_template}
           templates={templates}
           clientName={selectedClient?.name}
-          responsibleName={selectedClient?.partner_name}
+          responsibleName={responsibleName || selectedClient?.partner_name}
           amount={formData.amount}
           dueDay={formData.due_day}
           description={formData.description}

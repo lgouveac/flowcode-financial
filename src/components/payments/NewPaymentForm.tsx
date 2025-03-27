@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { EmailTemplate } from "@/types/email";
 import type { NewPayment } from "@/types/payment";
 import { EmailPreview } from "../recurring-billing/EmailPreview";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NewPaymentFormProps {
-  clients: Array<{ id: string; name: string; partner_name?: string }>;
-  onSubmit: (payment: NewPayment & { email_template?: string }) => void;
+  clients: Array<{ id: string; name: string; partner_name?: string; responsible_name?: string }>;
+  onSubmit: (payment: NewPayment & { email_template?: string; responsible_name?: string }) => void;
   onClose: () => void;
   templates?: EmailTemplate[];
 }
@@ -24,13 +25,59 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
     payment_method: 'pix',
     status: 'pending'
   });
+  const [responsibleName, setResponsibleName] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // When client selection changes, update responsible name
+  useEffect(() => {
+    if (formData.client_id) {
+      const client = clients.find(c => c.id === formData.client_id);
+      if (client) {
+        setResponsibleName(client.responsible_name || client.partner_name || "");
+      } else {
+        setResponsibleName("");
+      }
+    }
+  }, [formData.client_id, clients]);
+
+  const handleClientSelect = async (clientId: string) => {
+    setFormData({ ...formData, client_id: clientId });
+    
+    setLoading(true);
+    try {
+      // Fetch most recent client data to get responsible_name
+      const { data, error } = await supabase
+        .from('clients')
+        .select('name, responsible_name, partner_name')
+        .eq('id', clientId)
+        .single();
+        
+      if (error) {
+        console.error('Error fetching client details:', error);
+        return;
+      }
+      
+      if (data) {
+        setResponsibleName(data.responsible_name || data.partner_name || "");
+      }
+    } catch (err) {
+      console.error('Error in handleClientSelect:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.client_id || !formData.description || !formData.amount || !formData.due_date) {
       return;
     }
-    onSubmit(formData);
+    
+    // Send both formData and responsible_name
+    onSubmit({
+      ...formData,
+      responsible_name: responsibleName
+    });
   };
 
   const selectedClient = clients.find(client => client.id === formData.client_id);
@@ -45,7 +92,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
           <Label htmlFor="client">Cliente</Label>
           <Select
             value={formData.client_id}
-            onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+            onValueChange={(value) => handleClientSelect(value)}
           >
             <SelectTrigger id="client">
               <SelectValue placeholder="Selecione um cliente" />
@@ -58,6 +105,17 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
               ))}
             </SelectContent>
           </Select>
+        </div>
+        
+        <div className="grid gap-2">
+          <Label htmlFor="responsible_name">Responsável</Label>
+          <Input
+            id="responsible_name"
+            value={responsibleName}
+            onChange={(e) => setResponsibleName(e.target.value)}
+            placeholder="Nome do responsável"
+            disabled={loading}
+          />
         </div>
 
         <div className="grid gap-2">
@@ -143,7 +201,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             selectedTemplate={formData.email_template}
             templates={templates}
             clientName={selectedClient.name}
-            responsibleName={selectedClient.partner_name}
+            responsibleName={responsibleName || selectedClient.partner_name}
             amount={formData.amount}
             dueDate={formData.due_date}
             description={formData.description}
