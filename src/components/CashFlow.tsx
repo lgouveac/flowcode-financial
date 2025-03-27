@@ -40,34 +40,43 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   const safeChartData = Array.isArray(chartData) ? chartData : [];
   const safeCashFlow = Array.isArray(cashFlow) ? cashFlow : [];
 
-  // Calculate summary totals with precise number handling
+  // Calculate summary totals with precise decimal handling
   const summary = safeCashFlow.reduce((acc, flow) => {
-    const amount = parseFloat(String(flow.amount)); // Ensure we're working with numbers
+    // Convert to string first, then parse to handle any format issues
+    const rawAmount = String(flow.amount).replace(',', '.');
+    const amount = parseFloat(rawAmount);
     
+    // Skip NaN values
     if (!isNaN(amount)) {
       if (flow.type === 'income') {
-        acc.income += amount;
+        // Use toFixed(2) to limit to 2 decimal places and parseFloat to convert back to number
+        acc.income = parseFloat((acc.income + amount).toFixed(2));
       } else {
-        acc.expense += amount;
+        acc.expense = parseFloat((acc.expense + amount).toFixed(2));
       }
     }
     return acc;
   }, { income: 0, expense: 0 });
 
-  // Log the details for debugging
+  // Log the details for debugging with more precision
   console.log('Summary calculation details:', { 
     expense: summary.expense.toFixed(2),
     income: summary.income.toFixed(2),
-    expenseItems: safeCashFlow.filter(flow => flow.type === 'expense').map(flow => ({
-      description: flow.description,
-      amount: flow.amount,
-      type: flow.type
-    }))
+    total: safeCashFlow.length,
+    expenseItems: safeCashFlow
+      .filter(flow => flow.type === 'expense')
+      .map(flow => ({
+        description: flow.description,
+        amount: flow.amount,
+        amountType: typeof flow.amount,
+        parsedAmount: parseFloat(String(flow.amount).replace(',', '.')),
+        type: flow.type
+      }))
   });
 
-  const balance = summary.income - summary.expense;
+  const balance = parseFloat((summary.income - summary.expense).toFixed(2));
 
-  // Format currency
+  // Format currency with consistent decimal places
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -80,9 +89,9 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   // Log data for debugging
   useEffect(() => {
     console.log('CashFlow component period:', customPeriod);
-    console.log('CashFlow component cashFlow data:', safeCashFlow);
-    console.log('CashFlow component chartData:', safeChartData);
-  }, [customPeriod, safeCashFlow, safeChartData]);
+    console.log('CashFlow component cashFlow data length:', safeCashFlow.length);
+    console.log('CashFlow component summary:', summary);
+  }, [customPeriod, safeCashFlow, summary]);
 
   return (
     <div className="space-y-8">

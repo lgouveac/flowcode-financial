@@ -127,42 +127,69 @@ export const useCashFlow = (period: string = 'current') => {
       // Log the raw data from database
       console.log('Cash flow data from database:', data);
 
-      // Transform the data to ensure type safety and proper number handling
-      const transformedData: CashFlow[] = (data || []).map(item => ({
-        ...item,
-        type: validateCashFlowType(item.type),
-        id: item.id,
-        description: item.description,
-        amount: typeof item.amount === 'string' ? parseFloat(item.amount) : Number(item.amount),
-        date: item.date,
-        category: item.category,
-        payment_id: item.payment_id || undefined,
-        created_at: item.created_at || undefined,
-        updated_at: item.updated_at || undefined
-      }));
+      // Transform the data for accurate number handling
+      const transformedData: CashFlow[] = (data || []).map(item => {
+        // Handle amount with care to ensure it's a proper number
+        let amount: number;
+        
+        if (typeof item.amount === 'string') {
+          // Convert comma to dot if needed and parse
+          amount = parseFloat(item.amount.replace(',', '.'));
+        } else if (typeof item.amount === 'number') {
+          amount = item.amount;
+        } else {
+          // Default to 0 if we can't parse a valid number
+          amount = 0;
+        }
+        
+        // Ensure we have at most 2 decimal places to avoid floating point errors
+        amount = parseFloat(amount.toFixed(2));
+        
+        return {
+          ...item,
+          type: validateCashFlowType(item.type),
+          id: item.id,
+          description: item.description,
+          amount: amount,
+          date: item.date,
+          category: item.category,
+          payment_id: item.payment_id || undefined,
+          created_at: item.created_at || undefined,
+          updated_at: item.updated_at || undefined
+        };
+      });
 
-      // Extra validation step to ensure all amounts are numbers
+      // Extra validation step to ensure all amounts are valid numbers
       const validatedData = transformedData.map(item => ({
         ...item,
-        amount: isNaN(item.amount) ? 0 : item.amount
+        amount: isNaN(item.amount) ? 0 : parseFloat(item.amount.toFixed(2))
       }));
 
       setCashFlow(validatedData);
-      console.log('Transformed cash flow data:', validatedData);
+      
+      // Log detailed information for debugging
+      console.log('Transformed cash flow data:', {
+        totalItems: validatedData.length,
+        sampleItems: validatedData.slice(0, 3)
+      });
 
       // Log the total expenses for debugging
       const totalExpenses = validatedData
         .filter(item => item.type === 'expense')
-        .reduce((sum, item) => sum + item.amount, 0);
+        .reduce((sum, item) => parseFloat((sum + item.amount).toFixed(2)), 0);
       
       console.log('Total expenses calculated:', totalExpenses.toFixed(2));
-      console.log('Individual expense items:', validatedData.filter(item => item.type === 'expense').map(item => ({
-        description: item.description,
-        amount: item.amount,
-        category: item.category
-      })));
+      console.log('Individual expense items:', validatedData
+        .filter(item => item.type === 'expense')
+        .map(item => ({
+          description: item.description,
+          amount: item.amount.toFixed(2),
+          amountType: typeof item.amount,
+          category: item.category
+        }))
+      );
 
-      // Process data for the chart
+      // Process data for the chart with precise number handling
       const chartDataMap = new Map();
       
       validatedData.forEach((flow) => {
@@ -177,12 +204,12 @@ export const useCashFlow = (period: string = 'current') => {
         };
 
         if (flow.type === 'income') {
-          currentData.entrada += Number(flow.amount);
+          currentData.entrada = parseFloat((currentData.entrada + flow.amount).toFixed(2));
         } else {
-          currentData.saida += Number(flow.amount);
+          currentData.saida = parseFloat((currentData.saida + flow.amount).toFixed(2));
         }
 
-        currentData.saldo = currentData.entrada - currentData.saida;
+        currentData.saldo = parseFloat((currentData.entrada - currentData.saida).toFixed(2));
         chartDataMap.set(date, currentData);
       });
 
@@ -200,7 +227,7 @@ export const useCashFlow = (period: string = 'current') => {
         return dayA - dayB;
       });
       
-      console.log('Processed chart data:', newChartData);
+      console.log('Processed chart data sample:', newChartData.slice(0, 3));
       setChartData(newChartData);
 
     } catch (error) {

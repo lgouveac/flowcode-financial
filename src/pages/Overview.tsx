@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMetrics } from "@/hooks/useMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const Overview = () => {
   const [period, setPeriod] = useState("current");
@@ -15,6 +15,7 @@ export const Overview = () => {
     isLoading
   } = useMetrics(period);
 
+  // Format currency with consistent decimal places
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -25,7 +26,9 @@ export const Overview = () => {
   };
 
   // Ensure accurate calculation by using proper number handling
-  console.log('Overview metrics before display:', metrics);
+  useEffect(() => {
+    console.log('Overview metrics before display:', metrics);
+  }, [metrics]);
 
   // Certificamos que todas as métricas terão valores zero se não existirem dados
   const stats = [{
