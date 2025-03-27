@@ -33,13 +33,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Add a safety timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log('Auth loading timeout reached. Forcing loading state to false.');
+        setLoading(false);
+      }
+    }, 5000); // 5 seconds timeout
+
     // Configure the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
 
         if (event === 'SIGNED_IN' && session) {
           try {
@@ -58,9 +65,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           } catch (error) {
             console.error('Error processing profile:', error);
+          } finally {
+            setLoading(false);
           }
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
+          setLoading(false);
           console.log('User signed out');
         }
       }
@@ -87,19 +97,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setProfile(data);
             }
             setLoading(false);
+          })
+          .catch(err => {
+            console.error('Unexpected error during profile fetch:', err);
+            setLoading(false);
           });
       } else {
         setLoading(false);
       }
+    })
+    .catch(err => {
+      console.error('Error checking session:', err);
+      setLoading(false);
     });
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(loadingTimeout);
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -111,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           description: error.message,
           variant: 'destructive',
         });
+        setLoading(false);
         return { error };
       }
 
@@ -127,12 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: 'destructive',
       });
+      setLoading(false);
       return { error };
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -150,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           description: error.message,
           variant: 'destructive',
         });
+        setLoading(false);
         return { error };
       }
 
@@ -158,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: 'Verifique seu e-mail para confirmar sua conta.',
       });
       
+      setLoading(false);
       return { error: null };
     } catch (error: any) {
       toast({
@@ -165,29 +190,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: 'destructive',
       });
+      setLoading(false);
       return { error };
     }
   };
 
   const signOut = async () => {
     try {
+      setLoading(true);
       await supabase.auth.signOut();
       navigate('/auth/login');
       toast({
         title: 'Logout realizado',
         description: 'Você foi desconectado com sucesso.',
       });
+      setLoading(false);
     } catch (error: any) {
       toast({
         title: 'Erro ao fazer logout',
         description: error.message,
         variant: 'destructive',
       });
+      setLoading(false);
     }
   };
 
   const resetPassword = async (email: string) => {
     try {
+      setLoading(true);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
@@ -198,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           description: error.message,
           variant: 'destructive',
         });
+        setLoading(false);
         return { error };
       }
 
@@ -206,6 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: 'Verifique seu e-mail para redefinir sua senha.',
       });
       
+      setLoading(false);
       return { error: null };
     } catch (error: any) {
       toast({
@@ -213,6 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: 'destructive',
       });
+      setLoading(false);
       return { error };
     }
   };
