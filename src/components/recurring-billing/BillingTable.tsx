@@ -306,7 +306,6 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
             <TableHead>Parcela</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Dia do Vencimento</TableHead>
-            <TableHead>Data Pgto.</TableHead>
             <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Ações</TableHead>
@@ -367,17 +366,6 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
                     value={billing.due_day.toString()}
                     onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
                     type="number"
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="relative">
-                <div onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="date"
-                    value={billing.payment_date || ''}
-                    onChange={(e) => handleUpdateBilling(billing.id, 'payment_date', e.target.value)}
-                    className={`w-full bg-transparent ${billing.status === 'paid' ? '' : 'opacity-50'}`}
-                    disabled={billing.status !== 'paid'}
                   />
                 </div>
               </TableCell>
