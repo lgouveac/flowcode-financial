@@ -226,7 +226,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } else {
         console.log('Sign out successful');
-        navigate('/auth/login');
         toast({
           title: 'Logout realizado',
           description: 'Você foi desconectado com sucesso.',
@@ -234,6 +233,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setLoading(false);
+      // Use navigate after state is updated
+      if (!error) {
+        navigate('/auth/login');
+      }
     } catch (error: any) {
       console.error('Unexpected error during sign out:', error.message);
       toast({
