@@ -1,3 +1,4 @@
+
 import { 
   createContext, 
   useContext, 
@@ -32,16 +33,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Configurar o listener de alterações na autenticação
+    // Configure the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
 
         if (event === 'SIGNED_IN' && session) {
           try {
-            // Buscar o perfil do usuário
+            // Fetch user profile
             const { data, error } = await supabase
               .from('profiles')
               .select('*')
@@ -49,26 +51,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .single();
 
             if (error) {
-              console.error('Erro ao buscar perfil:', error);
+              console.error('Error fetching profile:', error);
             } else {
+              console.log('Profile fetched successfully:', data);
               setProfile(data);
             }
           } catch (error) {
-            console.error('Erro ao processar perfil:', error);
+            console.error('Error processing profile:', error);
           }
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
+          console.log('User signed out');
         }
       }
     );
 
-    // Verificar se já existe uma sessão
+    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Existing session check:', session ? 'Found session' : 'No session');
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Buscar o perfil do usuário se já estiver logado
+        // Fetch user profile if already logged in
         supabase
           .from('profiles')
           .select('*')
@@ -76,8 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .single()
           .then(({ data, error }) => {
             if (error) {
-              console.error('Erro ao buscar perfil inicial:', error);
+              console.error('Error fetching initial profile:', error);
             } else {
+              console.log('Initial profile fetch successful:', data);
               setProfile(data);
             }
             setLoading(false);

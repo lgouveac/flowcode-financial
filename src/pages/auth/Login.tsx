@@ -7,17 +7,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { testSupabaseConnection } from '@/utils/supabaseTest';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
-  // Obter o local de onde o usuário veio, ou redirecionar para a página inicial
+  // Get the location the user came from, or redirect to the home page
   const from = (location.state as any)?.from?.pathname || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,6 +35,29 @@ export default function Login() {
     if (!error) {
       navigate(from, { replace: true });
     }
+  };
+
+  const handleTestConnection = async () => {
+    setIsLoading(true);
+    const result = await testSupabaseConnection();
+    setTestResult(result);
+    setIsLoading(false);
+    
+    if (result.success) {
+      toast({
+        title: "Conexão com Supabase OK",
+        description: "A conexão com Supabase está funcionando corretamente.",
+        variant: "default",
+      });
+    } else {
+      toast({
+        title: "Erro na conexão com Supabase",
+        description: result.message || "Não foi possível conectar com o Supabase.",
+        variant: "destructive",
+      });
+    }
+    
+    console.log('Supabase connection test result:', result);
   };
 
   return (
@@ -107,6 +134,20 @@ export default function Login() {
                 "Entrar"
               )}
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleTestConnection}
+              disabled={isLoading}
+            >
+              Testar Conexão com Supabase
+            </Button>
+            {testResult && (
+              <div className={`text-sm mt-2 p-2 rounded ${testResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {testResult.success ? 'Conexão OK' : `Erro: ${testResult.message}`}
+              </div>
+            )}
             <p className="text-center text-sm text-muted-foreground">
               Não tem uma conta?{" "}
               <Link to="/auth/register" className="text-primary hover:underline">
