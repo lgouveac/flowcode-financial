@@ -45,54 +45,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Configure the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
+      (event, newSession) => {
+        console.log('Auth state changed:', event, newSession?.user?.email);
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
 
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && newSession) {
           // Use setTimeout to avoid potential deadlocks with Supabase client
-          setTimeout(async () => {
-            try {
-              // Fetch user profile
-              const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
-              if (error) {
-                console.error('Error fetching profile:', error);
-              } else {
-                console.log('Profile fetched successfully:', data);
-                setProfile(data);
-              }
-            } catch (error) {
-              console.error('Error processing profile:', error);
-            } finally {
-              setLoading(false);
-            }
+          setTimeout(() => {
+            // Fetch user profile
+            supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', newSession.user.id)
+              .single()
+              .then(({ data, error }) => {
+                if (error) {
+                  console.error('Error fetching profile:', error);
+                } else {
+                  console.log('Profile fetched successfully:', data);
+                  setProfile(data);
+                }
+                setLoading(false);
+                
+                // Navigate after authentication is complete
+                if (event === 'SIGNED_IN') {
+                  navigate('/', { replace: true });
+                }
+              })
+              .catch(error => {
+                console.error('Error processing profile:', error);
+                setLoading(false);
+              });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setLoading(false);
           console.log('User signed out');
+          navigate('/auth/login');
         }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Existing session check:', session ? 'Found session' : 'No session');
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      console.log('Existing session check:', initialSession ? 'Found session' : 'No session');
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
       
-      if (session?.user) {
+      if (initialSession?.user) {
         // Fetch user profile if already logged in
         supabase
           .from('profiles')
           .select('*')
-          .eq('id', session.user.id)
+          .eq('id', initialSession.user.id)
           .single()
           .then(({ data, error }) => {
             if (error) {
@@ -119,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
       clearTimeout(loadingTimeout);
     };
-  }, []);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     try {

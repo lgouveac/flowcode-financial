@@ -1,19 +1,26 @@
 
 import { ReactNode, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Log authentication state for debugging
     console.log('ProtectedRoute - Auth state:', { user, loading });
-  }, [user, loading]);
+
+    // If not loading and no user, redirect to login
+    if (!loading && !user) {
+      console.log('ProtectedRoute - No user found, redirecting to login');
+      navigate('/auth/login', { state: { from: location }, replace: true });
+    }
+  }, [user, loading, location, navigate]);
 
   if (loading) {
-    // Show a loading spinner for a maximum of 3 seconds
+    // Show a loading spinner with a max timeout
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -25,9 +32,9 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    console.log('ProtectedRoute - No user found, redirecting to login');
-    // Redirect to login and remember where the user was trying to go
-    return <Navigate to="/auth/login" state={{ from: location }} />;
+    // This is a fallback. The useEffect should handle the redirection
+    console.log('ProtectedRoute - No user found (fallback), redirecting to login');
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
   console.log('ProtectedRoute - User authenticated, rendering children');

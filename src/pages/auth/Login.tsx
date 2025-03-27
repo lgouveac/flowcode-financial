@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/components/auth/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const { signIn, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -23,9 +23,12 @@ export default function Login() {
   const from = (location.state as any)?.from?.pathname || '/';
   
   // If user is already logged in, redirect to homepage
-  if (user) {
-    navigate('/', { replace: true });
-  }
+  useEffect(() => {
+    if (user && !loading) {
+      console.log('User already logged in, redirecting to homepage');
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,10 +50,10 @@ export default function Login() {
       
       if (error) {
         console.error('Login error:', error);
+        // Error is already handled in the signIn function
       } else {
-        console.log('Login successful, navigating to:', from);
-        // This was causing an issue - navigation is now handled by auth state change
-        // navigate(from, { replace: true });
+        console.log('Login successful');
+        // Let the auth state change handle navigation
       }
     } catch (err) {
       console.error('Unexpected login error:', err);
@@ -122,7 +125,7 @@ export default function Login() {
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isLoading}
+              disabled={isLoading || loading}
             >
               {isLoading ? (
                 <>
