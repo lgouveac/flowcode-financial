@@ -53,9 +53,17 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
       return acc;
     }
     
-    // Ensure amount is a number
-    const numAmount = typeof flow.amount === 'number' ? flow.amount : 
-                      typeof flow.amount === 'string' ? parseFloat(flow.amount.replace(',', '.')) : 0;
+    // Ensure amount is a number - handle all possible types safely
+    let numAmount = 0;
+    if (typeof flow.amount === 'number') {
+      numAmount = flow.amount;
+    } else if (typeof flow.amount === 'string') {
+      // For string values, replace comma with dot and parse
+      numAmount = parseFloat(flow.amount.replace(',', '.'));
+    } else {
+      console.warn('Unexpected amount type:', typeof flow.amount, flow);
+      return acc;
+    }
     
     // Skip NaN values
     if (isNaN(numAmount)) {

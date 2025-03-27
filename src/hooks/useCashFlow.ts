@@ -173,6 +173,24 @@ export const useCashFlow = (period: string = 'current') => {
 
       setCashFlow(validatedData);
       
+      // Calculate and log total February 2024 expenses
+      if (period.includes('2024-2') || (period === 'current' && new Date().getMonth() === 1 && new Date().getFullYear() === 2024)) {
+        const februaryExpenses = validatedData
+          .filter(item => item.type === 'expense' && item.date.startsWith('2024-02'))
+          .reduce((sum, item) => sum + item.amount, 0);
+        
+        console.log('Total February 2024 expenses:', februaryExpenses.toFixed(2));
+        console.log('Individual February 2024 expense items:', validatedData
+          .filter(item => item.type === 'expense' && item.date.startsWith('2024-02'))
+          .map(item => ({
+            description: item.description,
+            date: item.date,
+            amount: item.amount.toFixed(2),
+            category: item.category
+          }))
+        );
+      }
+      
       // Log detailed information for debugging
       console.log('Transformed cash flow data:', {
         totalItems: validatedData.length,
