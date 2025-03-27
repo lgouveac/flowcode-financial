@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { CashFlowChart } from "./cash-flow/CashFlowChart";
 import { CashFlowTable } from "./cash-flow/CashFlowTable";
 import { useCashFlow } from "@/hooks/useCashFlow";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowDownIcon, ArrowUpIcon, DollarSignIcon } from "lucide-react";
 
 interface CashFlowProps {
   showChart?: boolean;
@@ -38,6 +40,26 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   const safeChartData = Array.isArray(chartData) ? chartData : [];
   const safeCashFlow = Array.isArray(cashFlow) ? cashFlow : [];
 
+  // Calculate summary totals
+  const summary = safeCashFlow.reduce((acc, flow) => {
+    if (flow.type === 'income') {
+      acc.income += Number(flow.amount);
+    } else {
+      acc.expense += Number(flow.amount);
+    }
+    return acc;
+  }, { income: 0, expense: 0 });
+
+  const balance = summary.income - summary.expense;
+
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
   // Log data for debugging
   useEffect(() => {
     console.log('CashFlow component period:', customPeriod);
@@ -47,6 +69,47 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
 
   return (
     <div className="space-y-8">
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Entradas
+            </CardTitle>
+            <ArrowUpIcon className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{formatCurrency(summary.income)}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Saídas
+            </CardTitle>
+            <ArrowDownIcon className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{formatCurrency(summary.expense)}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Saldo
+            </CardTitle>
+            <DollarSignIcon className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-semibold ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {formatCurrency(balance)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {showChart ? (
         <>
           <CashFlowChart 
