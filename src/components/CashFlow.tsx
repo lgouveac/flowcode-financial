@@ -40,25 +40,38 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   const safeChartData = Array.isArray(chartData) ? chartData : [];
   const safeCashFlow = Array.isArray(cashFlow) ? cashFlow : [];
 
+  // Adicionar log para dados iniciais
+  useEffect(() => {
+    console.log('Initial cashFlow data:', safeCashFlow);
+  }, [safeCashFlow]);
+
   // Calculate summary totals with precise decimal handling
   const summary = safeCashFlow.reduce((acc, flow) => {
-    if (typeof flow.amount !== 'number') {
-      console.warn('Non-numeric amount found:', flow);
+    // Skip if flow is invalid or flow.amount is not a valid number
+    if (!flow || flow.amount === undefined || flow.amount === null) {
+      console.warn('Invalid cash flow item:', flow);
       return acc;
     }
     
+    // Ensure amount is a number
+    const numAmount = typeof flow.amount === 'number' ? flow.amount : 
+                      typeof flow.amount === 'string' ? parseFloat(flow.amount.replace(',', '.')) : 0;
+    
     // Skip NaN values
-    if (isNaN(flow.amount)) {
+    if (isNaN(numAmount)) {
       console.warn('NaN amount found:', flow);
       return acc;
     }
     
     if (flow.type === 'income') {
       // Use toFixed(2) to limit to 2 decimal places and parseFloat to convert back to number
-      acc.income = parseFloat((acc.income + flow.amount).toFixed(2));
+      acc.income = parseFloat((acc.income + numAmount).toFixed(2));
+    } else if (flow.type === 'expense') {
+      acc.expense = parseFloat((acc.expense + numAmount).toFixed(2));
     } else {
-      acc.expense = parseFloat((acc.expense + flow.amount).toFixed(2));
+      console.warn('Unknown flow type:', flow.type, flow);
     }
+    
     return acc;
   }, { income: 0, expense: 0 });
 
@@ -73,7 +86,6 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
         description: flow.description,
         amount: flow.amount,
         amountType: typeof flow.amount,
-        parsedAmount: parseFloat(String(flow.amount)),
         type: flow.type
       }))
   });

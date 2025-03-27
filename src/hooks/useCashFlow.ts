@@ -132,14 +132,19 @@ export const useCashFlow = (period: string = 'current') => {
         // Handle amount with care to ensure it's a proper number
         let amount: number;
         
-        if (typeof item.amount === 'string') {
-          // Convert comma to dot if needed and parse
-          // Fix: Ensure we're only calling replace on strings
-          amount = parseFloat(item.amount.toString().replace(',', '.'));
+        // First ensure that the item.amount exists
+        if (item.amount === null || item.amount === undefined) {
+          // Default to 0 if amount is null or undefined
+          amount = 0;
+        } else if (typeof item.amount === 'string') {
+          // If it's a string, replace comma with dot and parse
+          amount = parseFloat(item.amount.replace(',', '.'));
         } else if (typeof item.amount === 'number') {
+          // If it's already a number, use it directly
           amount = item.amount;
         } else {
-          // Default to 0 if we can't parse a valid number
+          // For any other type, default to 0
+          console.warn('Unexpected amount type:', typeof item.amount, item.amount);
           amount = 0;
         }
         
