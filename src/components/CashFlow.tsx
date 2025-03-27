@@ -119,47 +119,6 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
 
   return (
     <div className="space-y-8">
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Entradas
-            </CardTitle>
-            <ArrowUpIcon className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{formatCurrency(summary.income)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Saídas
-            </CardTitle>
-            <ArrowDownIcon className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{formatCurrency(summary.expense)}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Saldo
-            </CardTitle>
-            <DollarSignIcon className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-semibold ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {formatCurrency(balance)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {showChart ? (
         <>
           <CashFlowChart 
@@ -171,16 +130,101 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
             month={selectedMonth}
             setMonth={setSelectedMonth}
           />
+          
+          {/* Summary Cards - Moved here as requested */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Entradas
+                </CardTitle>
+                <ArrowUpIcon className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-semibold">{formatCurrency(summary.income)}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Saídas
+                </CardTitle>
+                <ArrowDownIcon className="h-4 w-4 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-semibold">{formatCurrency(summary.expense)}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Saldo
+                </CardTitle>
+                <DollarSignIcon className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-semibold ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {formatCurrency(balance)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
           <CashFlowTable 
             cashFlow={safeCashFlow}
             onNewCashFlow={onNewCashFlow}
           />
         </>
       ) : (
-        <CashFlowTable 
-          cashFlow={safeCashFlow}
-          onNewCashFlow={onNewCashFlow}
-        />
+        <>
+          {/* Summary Cards for non-chart view */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Entradas
+                </CardTitle>
+                <ArrowUpIcon className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-semibold">{formatCurrency(summary.income)}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Saídas
+                </CardTitle>
+                <ArrowDownIcon className="h-4 w-4 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-semibold">{formatCurrency(summary.expense)}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Saldo
+                </CardTitle>
+                <DollarSignIcon className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-semibold ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {formatCurrency(balance)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <CashFlowTable 
+            cashFlow={safeCashFlow}
+            onNewCashFlow={onNewCashFlow}
+          />
+        </>
       )}
     </div>
   );
