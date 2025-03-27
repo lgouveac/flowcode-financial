@@ -505,6 +505,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                             selected={editedBilling.start_date ? new Date(editedBilling.start_date) : undefined}
                             onSelect={(date) => setEditedBilling({...editedBilling, start_date: date ? format(date, "yyyy-MM-dd") : undefined})}
                             initialFocus
+                            className={cn("p-3 pointer-events-auto")}
                           />
                         </PopoverContent>
                       </Popover>
@@ -528,6 +529,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                             selected={editedBilling.end_date ? new Date(editedBilling.end_date) : undefined}
                             onSelect={(date) => setEditedBilling({...editedBilling, end_date: date ? format(date, "yyyy-MM-dd") : undefined})}
                             initialFocus
+                            className={cn("p-3 pointer-events-auto")}
                           />
                         </PopoverContent>
                       </Popover>
@@ -541,14 +543,14 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                     <div className="mt-2 space-y-2">
                       <p><span className="font-medium">Cliente:</span> {(billing as any).clients?.name}</p>
                       <p><span className="font-medium">Responsável:</span> {(billing as any).clients?.responsible_name || "Não informado"}</p>
-                      <p><span className="font-medium">Descrição:</span> {billing.description}</p>
-                      <p><span className="font-medium">Valor:</span> R$ {billing.amount.toFixed(2)}</p>
-                      <p><span className="font-medium">Dia de Vencimento:</span> {billing.due_day}</p>
-                      <p><span className="font-medium">Método de Pagamento:</span> {getPaymentMethodLabel(billing.payment_method)}</p>
+                      <p><span className="font-medium">Descrição:</span> {billing?.description}</p>
+                      <p><span className="font-medium">Valor:</span> R$ {billing?.amount.toFixed(2)}</p>
+                      <p><span className="font-medium">Dia de Vencimento:</span> {billing?.due_day}</p>
+                      <p><span className="font-medium">Método de Pagamento:</span> {getPaymentMethodLabel(billing?.payment_method || 'pix')}</p>
                       <p>
                         <span className="font-medium">Status:</span>{" "}
-                        <Badge variant={getStatusBadgeVariant(billing.status)}>
-                          {getStatusLabel(billing.status)}
+                        <Badge variant={getStatusBadgeVariant(billing?.status || 'pending')}>
+                          {getStatusLabel(billing?.status || 'pending')}
                         </Badge>
                       </p>
                     </div>
@@ -557,10 +559,10 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                   <div className="rounded-md border p-6 space-y-4">
                     <h3 className="text-lg font-medium">Informações de Parcelamento</h3>
                     <div className="mt-2 space-y-2">
-                      <p><span className="font-medium">Parcela Atual:</span> {billing.current_installment} de {billing.installments}</p>
-                      <p><span className="font-medium">Data de Início:</span> {billing.start_date ? format(new Date(billing.start_date), "dd/MM/yyyy") : "Não definido"}</p>
-                      <p><span className="font-medium">Data de Término:</span> {billing.end_date ? format(new Date(billing.end_date), "dd/MM/yyyy") : "Indefinido"}</p>
-                      {billing.payment_date && (
+                      <p><span className="font-medium">Parcela Atual:</span> {billing?.current_installment} de {billing?.installments}</p>
+                      <p><span className="font-medium">Data de Início:</span> {billing?.start_date ? format(new Date(billing.start_date), "dd/MM/yyyy") : "Não definido"}</p>
+                      <p><span className="font-medium">Data de Término:</span> {billing?.end_date ? format(new Date(billing.end_date), "dd/MM/yyyy") : "Indefinido"}</p>
+                      {billing?.payment_date && (
                         <p><span className="font-medium">Data de Pagamento:</span> {format(new Date(billing.payment_date), "dd/MM/yyyy")}</p>
                       )}
                     </div>
