@@ -20,6 +20,7 @@ import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
+import EmailConfirmed from "./pages/auth/EmailConfirmed";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="forgot-password" element={<ForgotPassword />} />
                 <Route path="reset-password" element={<ResetPassword />} />
                 <Route path="verify-email" element={<VerifyEmail />} />
+                <Route path="email-confirmed" element={<EmailConfirmed />} />
               </Route>
 
               {/* Rotas protegidas */}
