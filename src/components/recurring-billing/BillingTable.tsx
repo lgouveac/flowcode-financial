@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 
 interface BillingTableProps {
-  billings: Array<RecurringBilling & { clients?: { name: string } }>;
+  billings: Array<RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
   onRefresh?: () => void;
 }
 
@@ -302,6 +302,7 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
         <TableHeader>
           <TableRow>
             <TableHead>Cliente</TableHead>
+            <TableHead>Responsável</TableHead>
             <TableHead>Descrição</TableHead>
             <TableHead>Parcela</TableHead>
             <TableHead>Valor</TableHead>
@@ -312,13 +313,22 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredBillings.map((billing) => (
+          {billings.filter(billing => {
+            const matchesSearch = search.toLowerCase() === '' || 
+              billing.clients?.name.toLowerCase().includes(search.toLowerCase()) ||
+              billing.description.toLowerCase().includes(search.toLowerCase());
+            
+            const matchesStatus = statusFilter === 'all' || billing.status === statusFilter;
+            
+            return matchesSearch && matchesStatus;
+          }).map((billing) => (
             <TableRow 
               key={billing.id} 
               className="group hover:bg-muted/50 cursor-pointer"
               onClick={(e) => handleRowClick(billing.id, e)}
             >
               <TableCell>{billing.clients?.name}</TableCell>
+              <TableCell>{billing.clients?.responsible_name || "—"}</TableCell>
               <TableCell className="relative">
                 <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
                   <EditableCell

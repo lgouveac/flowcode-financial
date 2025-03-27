@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -44,10 +45,10 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     try {
       console.log("Fetching billing details for ID:", billingId);
       
-      // Fetch billing details
+      // Fetch billing details - include responsible_name
       const { data: billingData, error: billingError } = await supabase
         .from('recurring_billing')
-        .select('*, clients(name, email)')
+        .select('*, clients(name, email, responsible_name)')
         .eq('id', billingId)
         .single();
 
@@ -384,6 +385,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                   <h3 className="text-lg font-medium">Informações Básicas</h3>
                   <div className="mt-2 space-y-2">
                     <p><span className="font-medium">Cliente:</span> {(billing as any).clients?.name}</p>
+                    <p><span className="font-medium">Responsável:</span> {(billing as any).clients?.responsible_name || "Não informado"}</p>
                     <p><span className="font-medium">Descrição:</span> {billing.description}</p>
                     <p><span className="font-medium">Valor:</span> R$ {billing.amount.toFixed(2)}</p>
                     <p><span className="font-medium">Dia de Vencimento:</span> {billing.due_day}</p>
