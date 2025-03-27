@@ -42,18 +42,22 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
 
   // Calculate summary totals with precise decimal handling
   const summary = safeCashFlow.reduce((acc, flow) => {
-    // Convert to string first, then parse to handle any format issues
-    const rawAmount = String(flow.amount).replace(',', '.');
-    const amount = parseFloat(rawAmount);
+    if (typeof flow.amount !== 'number') {
+      console.warn('Non-numeric amount found:', flow);
+      return acc;
+    }
     
     // Skip NaN values
-    if (!isNaN(amount)) {
-      if (flow.type === 'income') {
-        // Use toFixed(2) to limit to 2 decimal places and parseFloat to convert back to number
-        acc.income = parseFloat((acc.income + amount).toFixed(2));
-      } else {
-        acc.expense = parseFloat((acc.expense + amount).toFixed(2));
-      }
+    if (isNaN(flow.amount)) {
+      console.warn('NaN amount found:', flow);
+      return acc;
+    }
+    
+    if (flow.type === 'income') {
+      // Use toFixed(2) to limit to 2 decimal places and parseFloat to convert back to number
+      acc.income = parseFloat((acc.income + flow.amount).toFixed(2));
+    } else {
+      acc.expense = parseFloat((acc.expense + flow.amount).toFixed(2));
     }
     return acc;
   }, { income: 0, expense: 0 });
@@ -69,7 +73,7 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
         description: flow.description,
         amount: flow.amount,
         amountType: typeof flow.amount,
-        parsedAmount: parseFloat(String(flow.amount).replace(',', '.')),
+        parsedAmount: parseFloat(String(flow.amount)),
         type: flow.type
       }))
   });

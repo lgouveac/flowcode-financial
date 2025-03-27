@@ -134,7 +134,8 @@ export const useCashFlow = (period: string = 'current') => {
         
         if (typeof item.amount === 'string') {
           // Convert comma to dot if needed and parse
-          amount = parseFloat(item.amount.replace(',', '.'));
+          // Fix: Ensure we're only calling replace on strings
+          amount = parseFloat(item.amount.toString().replace(',', '.'));
         } else if (typeof item.amount === 'number') {
           amount = item.amount;
         } else {
