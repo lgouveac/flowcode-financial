@@ -53,7 +53,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             <SelectContent>
               {clients.map((client) => (
                 <SelectItem key={client.id} value={client.id}>
-                  {client.name}
+                  {client.name} {client.partner_name ? `(${client.partner_name})` : ''}
                 </SelectItem>
               ))}
             </SelectContent>

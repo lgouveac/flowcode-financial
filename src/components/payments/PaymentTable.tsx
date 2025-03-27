@@ -12,7 +12,7 @@ import { Trash2 } from "lucide-react";
 import type { Payment } from "@/types/payment";
 
 interface PaymentTableProps {
-  payments: Array<Payment & { clients?: { name: string } }>;
+  payments: Array<Payment & { clients?: { name: string; partner_name?: string } }>;
   onRefresh?: () => void;
 }
 
@@ -129,18 +129,20 @@ export const PaymentTable = ({ payments, onRefresh }: PaymentTableProps) => {
       <TableHeader>
         <TableRow>
           <TableHead>Cliente</TableHead>
+          <TableHead>Responsável</TableHead>
           <TableHead>Descrição</TableHead>
           <TableHead>Valor</TableHead>
           <TableHead>Vencimento</TableHead>
-          <TableHead>Data Pgto.</TableHead>
           <TableHead>Método</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {oneTimePayments.map((payment) => (
           <TableRow key={payment.id}>
             <TableCell>{payment.clients?.name}</TableCell>
+            <TableCell>{payment.clients?.partner_name || "-"}</TableCell>
             <TableCell>
               <EditableCell
                 value={payment.description}
@@ -160,15 +162,6 @@ export const PaymentTable = ({ payments, onRefresh }: PaymentTableProps) => {
                 value={payment.due_date}
                 onChange={(e) => handleUpdatePayment(payment.id, 'due_date', e.target.value)}
                 className="w-full bg-transparent"
-              />
-            </TableCell>
-            <TableCell>
-              <input
-                type="date"
-                value={payment.payment_date || ''}
-                onChange={(e) => handleUpdatePayment(payment.id, 'payment_date', e.target.value)}
-                className={`w-full bg-transparent ${payment.status === 'paid' ? '' : 'opacity-50'}`}
-                disabled={payment.status !== 'paid'}
               />
             </TableCell>
             <TableCell>
@@ -208,9 +201,40 @@ export const PaymentTable = ({ payments, onRefresh }: PaymentTableProps) => {
                 </SelectContent>
               </Select>
             </TableCell>
+            <TableCell>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDeleteClick(payment.id)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
+      
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este pagamento?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPaymentToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Table>
   );
 };
