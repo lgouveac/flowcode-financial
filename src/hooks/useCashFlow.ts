@@ -127,13 +127,13 @@ export const useCashFlow = (period: string = 'current') => {
       // Log the raw data from database
       console.log('Cash flow data from database:', data);
 
-      // Transform the data to ensure type safety
+      // Transform the data to ensure type safety and proper number handling
       const transformedData: CashFlow[] = (data || []).map(item => ({
         ...item,
         type: validateCashFlowType(item.type),
         id: item.id,
         description: item.description,
-        amount: item.amount,
+        amount: typeof item.amount === 'string' ? parseFloat(item.amount) : Number(item.amount),
         date: item.date,
         category: item.category,
         payment_id: item.payment_id || undefined,
@@ -141,13 +141,31 @@ export const useCashFlow = (period: string = 'current') => {
         updated_at: item.updated_at || undefined
       }));
 
-      setCashFlow(transformedData);
-      console.log('Transformed cash flow data:', transformedData);
+      // Extra validation step to ensure all amounts are numbers
+      const validatedData = transformedData.map(item => ({
+        ...item,
+        amount: isNaN(item.amount) ? 0 : item.amount
+      }));
+
+      setCashFlow(validatedData);
+      console.log('Transformed cash flow data:', validatedData);
+
+      // Log the total expenses for debugging
+      const totalExpenses = validatedData
+        .filter(item => item.type === 'expense')
+        .reduce((sum, item) => sum + item.amount, 0);
+      
+      console.log('Total expenses calculated:', totalExpenses.toFixed(2));
+      console.log('Individual expense items:', validatedData.filter(item => item.type === 'expense').map(item => ({
+        description: item.description,
+        amount: item.amount,
+        category: item.category
+      })));
 
       // Process data for the chart
       const chartDataMap = new Map();
       
-      transformedData.forEach((flow) => {
+      validatedData.forEach((flow) => {
         const dateObj = new Date(flow.date);
         const date = dateObj.toLocaleDateString('pt-BR');
         

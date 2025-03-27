@@ -18,9 +18,14 @@ export const Overview = () => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(value);
   };
+
+  // Ensure accurate calculation by using proper number handling
+  console.log('Overview metrics before display:', metrics);
 
   // Certificamos que todas as métricas terão valores zero se não existirem dados
   const stats = [{

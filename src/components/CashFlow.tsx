@@ -40,15 +40,30 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   const safeChartData = Array.isArray(chartData) ? chartData : [];
   const safeCashFlow = Array.isArray(cashFlow) ? cashFlow : [];
 
-  // Calculate summary totals
+  // Calculate summary totals with precise number handling
   const summary = safeCashFlow.reduce((acc, flow) => {
-    if (flow.type === 'income') {
-      acc.income += Number(flow.amount);
-    } else {
-      acc.expense += Number(flow.amount);
+    const amount = parseFloat(String(flow.amount)); // Ensure we're working with numbers
+    
+    if (!isNaN(amount)) {
+      if (flow.type === 'income') {
+        acc.income += amount;
+      } else {
+        acc.expense += amount;
+      }
     }
     return acc;
   }, { income: 0, expense: 0 });
+
+  // Log the details for debugging
+  console.log('Summary calculation details:', { 
+    expense: summary.expense.toFixed(2),
+    income: summary.income.toFixed(2),
+    expenseItems: safeCashFlow.filter(flow => flow.type === 'expense').map(flow => ({
+      description: flow.description,
+      amount: flow.amount,
+      type: flow.type
+    }))
+  });
 
   const balance = summary.income - summary.expense;
 
@@ -56,7 +71,9 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL'
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(value);
   };
 
