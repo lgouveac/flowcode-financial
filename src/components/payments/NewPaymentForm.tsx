@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { EmailTemplate } from "@/types/email";
 import type { NewPayment } from "@/types/payment";
+import { EmailPreview } from "../recurring-billing/EmailPreview";
 
 interface NewPaymentFormProps {
-  clients: Array<{ id: string; name: string }>;
+  clients: Array<{ id: string; name: string; partner_name?: string }>;
   onSubmit: (payment: NewPayment & { email_template?: string }) => void;
   onClose: () => void;
   templates?: EmailTemplate[];
@@ -138,19 +139,16 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
         </div>
 
         {formData.email_template && selectedClient && (
-          <div className="grid gap-2">
-            <Label>Prévia do Email</Label>
-            <div className="bg-background border rounded-md p-4 whitespace-pre-wrap text-sm">
-              {/* Preview template content with replaced variables */}
-              {templates.find(t => t.id === formData.email_template)?.content
-                .replace('{nome_cliente}', selectedClient.name)
-                .replace('{valor_cobranca}', formData.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }))
-                .replace('{data_vencimento}', new Date(formData.due_date).toLocaleDateString('pt-BR'))
-                .replace('{descricao_servico}', formData.description)
-                .replace('{forma_pagamento}', formData.payment_method === 'pix' ? 'PIX' : formData.payment_method === 'boleto' ? 'Boleto' : 'Cartão de Crédito')
-              }
-            </div>
-          </div>
+          <EmailPreview
+            selectedTemplate={formData.email_template}
+            templates={templates}
+            clientName={selectedClient.name}
+            responsibleName={selectedClient.partner_name}
+            amount={formData.amount}
+            dueDate={formData.due_date}
+            description={formData.description}
+            paymentMethod={formData.payment_method}
+          />
         )}
       </div>
 

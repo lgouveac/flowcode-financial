@@ -10,7 +10,7 @@ interface NewPaymentDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  clients: Array<{ id: string; name: string }>;
+  clients: Array<{ id: string; name: string; partner_name?: string }>;
   templates?: EmailTemplate[];
 }
 
@@ -28,7 +28,8 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients, templates 
           amount: payment.amount,
           due_date: payment.due_date,
           payment_method: payment.payment_method,
-          status: payment.status
+          status: payment.status,
+          email_template: payment.email_template
         }]);
 
       if (error) {
@@ -74,4 +75,3 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients, templates 
     </Dialog>
   );
 };
-

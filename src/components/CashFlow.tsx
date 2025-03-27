@@ -59,7 +59,7 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
       numAmount = flow.amount;
     } else if (typeof flow.amount === 'string') {
       // For string values, replace comma with dot and parse
-      numAmount = parseFloat(flow.amount.replace(',', '.'));
+      numAmount = parseFloat(String(flow.amount).replace(',', '.'));
     } else {
       console.warn('Unexpected amount type:', typeof flow.amount, flow);
       return acc;

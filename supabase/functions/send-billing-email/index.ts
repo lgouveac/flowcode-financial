@@ -118,46 +118,43 @@ const handler = async (req: Request): Promise<Response> => {
       const supabase = createClient(supabaseUrl, supabaseKey);
       
       // Fetch CC recipients
-      const { data: ccData, error: ccError } = await supabase
-        .from("email_cc_recipients")
-        .select("email")
-        .eq("is_active", true);
+      const { data: ccRecipients, error: ccError } = await supabase
+        .from('email_cc_recipients')
+        .select('email')
+        .eq('is_active', true);
       
       if (ccError) {
-        console.error("❌ Error fetching CC recipients:", ccError);
+        console.error("Error fetching CC recipients:", ccError);
         throw ccError;
       }
       
-      const ccRecipients = ccData?.map(item => item.email) || [];
-      if (ccRecipients.length > 0) {
-        console.log(`📧 Added ${ccRecipients.length} CC recipients: ${ccRecipients.join(', ')}`);
-      }
+      // Extract email addresses from CC recipients
+      const ccEmails = ccRecipients?.map(recipient => recipient.email) || [];
+      console.log("CC recipients:", ccEmails);
       
-      // Prepare email request
-      const emailRequest: any = {
-        from: "financeiro@flowcode.cc",
+      // Send email
+      const { data: emailResult, error } = await resend.emails.send({
+        from: "Financeiro <contato@xpertagro.com>",
         to: [data.to],
+        cc: ccEmails,
         subject: processedSubject,
         html: htmlContent,
-      };
+      });
       
-      // Add CC if we have recipients
-      if (ccRecipients.length > 0) {
-        emailRequest.cc = ccRecipients;
+      if (error) {
+        console.error("Error sending email:", error);
+        throw error;
       }
       
-      // Send the email
-      const emailResponse = await resend.emails.send(emailRequest);
-
-      // Add to cache to prevent duplicates
+      // Record that we've sent this email
       recordEmailSent(cacheKey);
       
-      console.log("✅ Email sent successfully:", JSON.stringify(emailResponse));
-
-      // Return a response with the expected structure
+      console.log("✅ Email sent successfully:", emailResult);
+      
       return new Response(JSON.stringify({ 
         status: "success", 
-        content: emailResponse  // Always include the 'content' field
+        message: "Email sent successfully",
+        content: emailResult
       }), {
         status: 200,
         headers: {
@@ -165,40 +162,24 @@ const handler = async (req: Request): Promise<Response> => {
           ...corsHeaders,
         },
       });
-    } catch (emailError: any) {
-      console.error("❌ Resend API error:", emailError);
-      console.error("- Error code:", emailError.statusCode);
-      console.error("- Error message:", emailError.message);
-      
-      // Return a response with the expected structure even for errors
-      return new Response(
-        JSON.stringify({ 
-          status: "error", 
-          content: {
-            statusCode: emailError.statusCode,
-            message: emailError.message
-          }
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+    } catch (error) {
+      console.error("Error sending email:", error);
+      throw error;
     }
   } catch (error: any) {
-    console.error("❌ General error sending email:", error);
+    console.error("Error in send-billing-email function:", error);
     
-    // Return a response with the expected structure even for general errors
-    return new Response(
-      JSON.stringify({ 
-        status: "error", 
-        content: { error: error.toString() }
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ 
+      status: "error", 
+      message: error.message || "An error occurred while processing the email request.",
+      error: error
+    }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
+    });
   }
 };
 
