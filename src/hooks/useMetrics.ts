@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -8,12 +7,23 @@ interface Metrics {
   totalExpenses: number;
   netProfit: number;
   activeClients: number;
-  expectedRevenue: number; // Nova métrica adicionada
+  expectedRevenue: number;
   revenueChange: string;
   expensesChange: string;
   profitChange: string;
   clientsChange: string;
-  expectedRevenueChange: string; // Nova métrica de variação
+  expectedRevenueChange: string;
+  // New metrics for category breakdown
+  investmentExpenses: number;
+  proLaboreExpenses: number;
+  profitDistributionExpenses: number;
+  operationalExpenses: number;
+  adjustedProfit: number;
+  // Changes for new metrics
+  investmentChange: string;
+  proLaboreChange: string;
+  profitDistributionChange: string;
+  profitDistributionChange: string;
 }
 
 export const useMetrics = (period: string = 'current') => {
@@ -22,12 +32,22 @@ export const useMetrics = (period: string = 'current') => {
     totalExpenses: 0,
     netProfit: 0,
     activeClients: 0,
-    expectedRevenue: 0, // Valor inicial para a nova métrica
+    expectedRevenue: 0,
     revenueChange: "0%",
     expensesChange: "0%",
     profitChange: "0%",
     clientsChange: "0",
-    expectedRevenueChange: "0%" // Valor inicial para a variação
+    expectedRevenueChange: "0%",
+    // Initialize new metrics
+    investmentExpenses: 0,
+    proLaboreExpenses: 0,
+    profitDistributionExpenses: 0,
+    operationalExpenses: 0,
+    adjustedProfit: 0,
+    // Initialize changes
+    investmentChange: "0%",
+    proLaboreChange: "0%",
+    profitDistributionChange: "0%"
   });
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -102,7 +122,7 @@ export const useMetrics = (period: string = 'current') => {
         // Buscar dados do período atual
         const { data: currentData, error: currentError } = await supabase
           .from('cash_flow')
-          .select('type, amount')
+          .select('type, amount, category')
           .gte('date', dates.start)
           .lt('date', dates.end);
 
@@ -111,7 +131,7 @@ export const useMetrics = (period: string = 'current') => {
         // Buscar dados do período anterior para comparação
         const { data: previousData, error: previousError } = await supabase
           .from('cash_flow')
-          .select('type, amount')
+          .select('type, amount, category')
           .gte('date', dates.compareStart)
           .lt('date', dates.compareEnd);
 
@@ -171,6 +191,38 @@ export const useMetrics = (period: string = 'current') => {
           ?.filter(item => item.type === 'expense')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
+        // Calculate category-specific expenses for current period
+        const currentInvestmentExpenses = currentData
+          ?.filter(item => item.type === 'expense' && item.category === 'investment')
+          .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          
+        const currentProLaboreExpenses = currentData
+          ?.filter(item => item.type === 'expense' && item.category === 'pro_labore')
+          .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          
+        const currentProfitDistributionExpenses = currentData
+          ?.filter(item => item.type === 'expense' && item.category === 'profit_distribution')
+          .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          
+        // Calculate operational expenses (excluding special categories)
+        const currentOperationalExpenses = currentExpenses - (currentInvestmentExpenses + currentProLaboreExpenses + currentProfitDistributionExpenses);
+        
+        // Calculate adjusted profit
+        const adjustedProfit = currentRevenue - currentOperationalExpenses;
+
+        // Calculate category-specific expenses for previous period
+        const previousInvestmentExpenses = previousData
+          ?.filter(item => item.type === 'expense' && item.category === 'investment')
+          .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          
+        const previousProLaboreExpenses = previousData
+          ?.filter(item => item.type === 'expense' && item.category === 'pro_labore')
+          .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          
+        const previousProfitDistributionExpenses = previousData
+          ?.filter(item => item.type === 'expense' && item.category === 'profit_distribution')
+          .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+
         // Calcular métricas do período anterior
         const previousRevenue = previousData
           ?.filter(item => item.type === 'income')
@@ -209,7 +261,17 @@ export const useMetrics = (period: string = 'current') => {
           expensesChange: calculatePercentageChange(currentExpenses, previousExpenses),
           profitChange: calculatePercentageChange(currentNetProfit, previousNetProfit),
           clientsChange: `+${(currentClients?.length || 0) - (previousClients?.length || 0)}`,
-          expectedRevenueChange: calculatePercentageChange(currentExpectedRevenue, previousExpectedRevenue)
+          expectedRevenueChange: calculatePercentageChange(currentExpectedRevenue, previousExpectedRevenue),
+          // Add new metrics
+          investmentExpenses: currentInvestmentExpenses,
+          proLaboreExpenses: currentProLaboreExpenses,
+          profitDistributionExpenses: currentProfitDistributionExpenses,
+          operationalExpenses: currentOperationalExpenses,
+          adjustedProfit: adjustedProfit,
+          // Add changes for new metrics
+          investmentChange: calculatePercentageChange(currentInvestmentExpenses, previousInvestmentExpenses),
+          proLaboreChange: calculatePercentageChange(currentProLaboreExpenses, previousProLaboreExpenses),
+          profitDistributionChange: calculatePercentageChange(currentProfitDistributionExpenses, previousProfitDistributionExpenses)
         });
       } catch (error) {
         console.error('Error fetching metrics:', error);
