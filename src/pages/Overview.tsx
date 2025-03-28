@@ -1,6 +1,4 @@
-
 import { motion } from "framer-motion";
-import { CashFlow } from "@/components/CashFlow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMetrics } from "@/hooks/useMetrics";
@@ -71,7 +69,7 @@ export const Overview = () => {
     title: "Investimentos",
     value: formatCurrency(metrics.investmentExpenses || 0),
     change: metrics.investmentChange || "0%",
-    description: "Total de investimentos",
+    description: "CDBs e outros investimentos",
     category: "investment",
     icon: <Wallet className="h-4 w-4 text-purple-500" />
   }, {
@@ -85,7 +83,7 @@ export const Overview = () => {
     title: "Distribuição de Lucros",
     value: formatCurrency(metrics.profitDistributionExpenses || 0),
     change: metrics.profitDistributionChange || "0%",
-    description: "Lucros distribuídos",
+    description: "Retiradas e lucros distribuídos",
     category: "profit_distribution",
     icon: <CoinsIcon className="h-4 w-4 text-yellow-600" />
   }];
