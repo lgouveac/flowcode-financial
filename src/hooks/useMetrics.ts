@@ -114,6 +114,32 @@ export const useMetrics = (period: string = 'current') => {
     }
   };
 
+  // Helper function to identify category types flexibly
+  const categorizeExpense = (item: { category: string }) => {
+    const category = (item.category || "").toLowerCase();
+    
+    // Match investment categories
+    if (category.includes("invest") || category === "investment") {
+      return "investment";
+    }
+    
+    // Match pro labore categories
+    if (category.includes("pro_labore") || category.includes("pro labore") || 
+        category.includes("prolabore") || category === "salary" && category.includes("socio")) {
+      return "pro_labore";
+    }
+    
+    // Match profit distribution categories
+    if (category.includes("profit") || category.includes("distribution") || 
+        category.includes("lucro") || category.includes("distribuicao") || 
+        category.includes("dividendo")) {
+      return "profit_distribution";
+    }
+    
+    // Otherwise it's operational
+    return "operational";
+  };
+
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
@@ -191,17 +217,17 @@ export const useMetrics = (period: string = 'current') => {
           ?.filter(item => item.type === 'expense')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
-        // Calculate category-specific expenses for current period
+        // Calculate category-specific expenses for current period using flexible matching
         const currentInvestmentExpenses = currentData
-          ?.filter(item => item.type === 'expense' && item.category === 'investment')
+          ?.filter(item => item.type === 'expense' && categorizeExpense(item) === 'investment')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
           
         const currentProLaboreExpenses = currentData
-          ?.filter(item => item.type === 'expense' && item.category === 'pro_labore')
+          ?.filter(item => item.type === 'expense' && categorizeExpense(item) === 'pro_labore')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
           
         const currentProfitDistributionExpenses = currentData
-          ?.filter(item => item.type === 'expense' && item.category === 'profit_distribution')
+          ?.filter(item => item.type === 'expense' && categorizeExpense(item) === 'profit_distribution')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
           
         // Calculate operational expenses (excluding special categories)
@@ -212,15 +238,15 @@ export const useMetrics = (period: string = 'current') => {
 
         // Calculate category-specific expenses for previous period
         const previousInvestmentExpenses = previousData
-          ?.filter(item => item.type === 'expense' && item.category === 'investment')
+          ?.filter(item => item.type === 'expense' && categorizeExpense(item) === 'investment')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
           
         const previousProLaboreExpenses = previousData
-          ?.filter(item => item.type === 'expense' && item.category === 'pro_labore')
+          ?.filter(item => item.type === 'expense' && categorizeExpense(item) === 'pro_labore')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
           
         const previousProfitDistributionExpenses = previousData
-          ?.filter(item => item.type === 'expense' && item.category === 'profit_distribution')
+          ?.filter(item => item.type === 'expense' && categorizeExpense(item) === 'profit_distribution')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
         // Calcular métricas do período anterior

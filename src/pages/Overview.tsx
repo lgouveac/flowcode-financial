@@ -250,7 +250,5 @@ export const Overview = () => {
           </Alert>
         )}
       </div>
-
-      <CashFlow period={period} showChart={true} />
     </div>;
 };
