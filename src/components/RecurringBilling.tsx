@@ -8,13 +8,14 @@ import { NotificationSettings } from "./emails/NotificationSettings";
 import { Settings, Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import { useBillingData } from "@/hooks/useBillingData";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NewPaymentDialog } from "./payments/NewPaymentDialog";
 
 export const RecurringBilling = () => {
   const { billings, payments, clients, templates, fetchBillings, fetchPayments } = useBillingData();
   const [showSettings, setShowSettings] = useState(false);
   const [showNewPaymentDialog, setShowNewPaymentDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("recurring");
 
   const handleSuccess = () => {
     fetchBillings();
@@ -46,7 +47,11 @@ export const RecurringBilling = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="recurring" className="w-full">
+      <Tabs 
+        defaultValue="recurring" 
+        className="w-full"
+        onValueChange={(value) => setActiveTab(value)}
+      >
         <TabsList className="grid w-full max-w-[400px] grid-cols-2">
           <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
           <TabsTrigger value="onetime">Pontuais</TabsTrigger>
@@ -60,10 +65,6 @@ export const RecurringBilling = () => {
         <TabsContent value="onetime" className="border rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-medium">Recebimentos Pontuais</h2>
-            <Button onClick={() => setShowNewPaymentDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Recebimento
-            </Button>
           </div>
           <PaymentTable payments={payments} onRefresh={handleRefreshData} />
         </TabsContent>
