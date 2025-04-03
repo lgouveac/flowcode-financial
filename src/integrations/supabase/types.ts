@@ -188,6 +188,8 @@ export type Database = {
           days_before: number
           due_date: string
           id: string
+          payment_id: string | null
+          payment_type: string | null
           sent_at: string
         }
         Insert: {
@@ -197,6 +199,8 @@ export type Database = {
           days_before: number
           due_date: string
           id?: string
+          payment_id?: string | null
+          payment_type?: string | null
           sent_at?: string
         }
         Update: {
@@ -206,9 +210,19 @@ export type Database = {
           days_before?: number
           due_date?: string
           id?: string
+          payment_id?: string | null
+          payment_type?: string | null
           sent_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_notification_log_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_notification_settings: {
         Row: {
