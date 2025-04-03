@@ -1,72 +1,97 @@
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQueryClient } from "@tanstack/react-query";
+import { EmployeeEmailSettings } from "./emails/EmployeeEmailSettings";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Skeleton } from "./ui/skeleton";
+import { TestEmployeeNotificationButton } from "./emails/TestEmployeeNotificationButton";
+import { EmptyMonthlyValuesHelper } from "./employees/EmptyMonthlyValuesHelper";
 
 export const EmployeeSettings = () => {
-  const [sendDay, setSendDay] = useState<string>("");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["employee-settings"],
+    queryFn: async () => {
+      // Fetch global settings
+      const { data: globalSettings, error: globalError } = await supabase
+        .from("global_settings")
+        .select("employee_emails_send_day")
+        .single();
 
-  const handleSave = async () => {
-    try {
-      const { error } = await supabase
-        .from('global_settings')
-        .upsert({ employee_emails_send_day: parseInt(sendDay) });
+      if (globalError) {
+        console.error("Error fetching global settings:", globalError);
+        throw globalError;
+      }
 
-      if (error) throw error;
+      // Fetch email settings
+      const { data: emailSettings, error: emailError } = await supabase
+        .from("employee_email_settings")
+        .select("notification_time")
+        .single();
 
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações de envio de e-mail foram atualizadas com sucesso.",
-      });
+      if (emailError) {
+        console.error("Error fetching email settings:", emailError);
+        throw emailError;
+      }
 
-      queryClient.invalidateQueries({ queryKey: ["global_settings"] });
-    } catch (error) {
-      console.error("Error saving settings:", error);
-      toast({
-        title: "Erro ao salvar",
-        description: "Não foi possível salvar as configurações. Tente novamente.",
-        variant: "destructive",
-      });
+      return {
+        sendDay: globalSettings?.employee_emails_send_day || 5,
+        notificationTime: emailSettings?.notification_time || "09:00"
+      };
     }
-  };
+  });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Configurações de E-mail</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label>Dia do mês para envio dos e-mails</Label>
-          <div className="flex items-end gap-4">
-            <div className="w-40">
-              <Select value={sendDay} onValueChange={setSendDay}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o dia" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                    <SelectItem key={day} value={day.toString()}>
-                      Dia {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+    <div className="space-y-10">
+      <Card>
+        <CardHeader>
+          <CardTitle>Configurações de Email</CardTitle>
+          <CardDescription>
+            Configure quando e como os emails serão enviados aos funcionários
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-[250px]" />
+              <Skeleton className="h-10 w-[200px]" />
+              <Skeleton className="h-10 w-[200px]" />
             </div>
-            <Button onClick={handleSave}>Salvar</Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Os e-mails para funcionários fixos e freelancers serão enviados neste dia do mês.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-medium">Configurações Atuais:</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enviar no dia {settings?.sendDay} de cada mês às {settings?.notificationTime?.substring(0, 5)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <TestEmployeeNotificationButton />
+                </div>
+              </div>
+              
+              <EmployeeEmailSettings 
+                open={false}
+                onClose={() => {}}
+                currentDay={settings?.sendDay}
+                currentTime={settings?.notificationTime?.substring(0, 5)}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Diagnóstico de Notificações</CardTitle>
+          <CardDescription>
+            Verifique quais funcionários podem receber notificações
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmptyMonthlyValuesHelper />
+        </CardContent>
+      </Card>
+    </div>
   );
 };

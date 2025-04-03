@@ -1,109 +1,72 @@
 
-// Helper utilities for the employee notification system
-
+// CORS headers for cross-origin requests
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Format the current month for display (e.g., "March 2025")
-export const formatMonth = (date: Date): string => {
-  return date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
-};
-
-// Format date in DD/MM/YYYY format
-export const formatDate = (date: Date): string => {
-  return date.toLocaleDateString('pt-BR');
-};
-
-// Prepare template data for emails
-export const prepareTemplateData = (employee: any, monthlyValue: any): Record<string, string> => {
-  const monthDate = new Date(monthlyValue.month);
-  const formattedMonth = formatMonth(monthDate);
-  
+// Helper for preparing template data from employee and monthly value
+export function prepareTemplateData(employee: any, monthlyValue: any) {
   return {
     nome_funcionario: employee.name,
     valor_nota: monthlyValue.amount,
-    mes_referencia: formattedMonth,
-    data_nota: formatDate(new Date()),
-    posicao: employee.position || "",
-    observacoes: monthlyValue.notes || "",
-    periodo: formattedMonth,
-    total_horas: "0", // Default value for hours template
-    valor_mensal: monthlyValue.amount
+    data_nota: new Date().toISOString().split('T')[0]
   };
-};
+}
 
-// Log message with emoji and timestamp
-export const logMessage = (message: string, emoji = "📝"): void => {
-  console.log(`${emoji} [${new Date().toISOString()}] ${message}`);
-};
+// Logging helpers
+export function logMessage(message: string, emoji = "ℹ️") {
+  console.log(`${emoji} ${message}`);
+}
 
-// Log error with emoji and timestamp
-export const logError = (message: string, error: any): void => {
-  console.error(`❌ [${new Date().toISOString()}] ${message}:`, error);
-};
-
-// Format a date object to YYYY-MM-01 format (first day of month)
-export const formatYearMonth = (date: Date): string => {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
-};
-
-// Check if today is the configured day to send emails - IMPROVED VERSION
-export const isConfiguredDay = (currentDay: number, configuredDay: number): boolean => {
-  logMessage(`Checking day match: current day ${currentDay}, configured day ${configuredDay}`, "📅");
-  return currentDay === configuredDay;
-};
-
-// Compare time strings with tolerance (in minutes)
-export const isTimeMatch = (currentTimeStr: string, configuredTimeStr: string, toleranceMinutes = 1): boolean => {
-  try {
-    if (!configuredTimeStr) return false;
-    
-    // Parse time strings (assumed format: "HH:MM" or "HH:MM:SS")
-    const currentParts = currentTimeStr.split(':').map(Number);
-    const configuredParts = configuredTimeStr.split(':').map(Number);
-    
-    // Calculate minutes since midnight for both times
-    const currentMinutes = currentParts[0] * 60 + currentParts[1];
-    const configuredMinutes = configuredParts[0] * 60 + configuredParts[1];
-    
-    // Check if current time is within tolerance range of configured time
-    const diff = Math.abs(currentMinutes - configuredMinutes);
-    const result = diff <= toleranceMinutes;
-    
-    logMessage(`Time check: current=${currentTimeStr}, configured=${configuredTimeStr}, difference=${diff} minutes, match=${result}`, "🕒");
-    
-    return result;
-  } catch (error) {
-    logError("Error comparing times", error);
-    return false;
+export function logError(message: string, error: Error) {
+  console.error(`❌ ${message}:`, error.message);
+  if (error.stack) {
+    console.error(error.stack);
   }
-};
+}
 
-// Format time to HH:MM format
-export const formatTime = (date: Date): string => {
+// Format date as YYYY-MM-01 for first day of current month
+export function formatYearMonth(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
+// Check if current day matches configured day (or is test mode)
+export function isConfiguredDay(currentDay: number, configuredDay: number): boolean {
+  return currentDay === configuredDay;
+}
+
+// Format time as HH:MM for comparison
+export function formatTime(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-};
+}
 
-// Fetch CC recipients for email notifications
-export const fetchCCRecipients = async (supabase: any): Promise<string[]> => {
+// Check if current time is within range of notification time
+export function isTimeMatch(currentTime: string, notificationTime: string, minuteRange: number = 5): boolean {
+  const [currHour, currMinute] = currentTime.split(':').map(Number);
+  const [notifHour, notifMinute] = notificationTime.split(':').map(Number);
+  
+  const currMinutes = currHour * 60 + currMinute;
+  const notifMinutes = notifHour * 60 + notifMinute;
+  
+  return Math.abs(currMinutes - notifMinutes) <= minuteRange;
+}
+
+// Fetch CC recipients for employee emails
+export async function fetchCCRecipients(supabase: any) {
   try {
-    const { data, error } = await supabase
+    const { data: recipients, error } = await supabase
       .from("email_cc_recipients")
       .select("email")
       .eq("is_active", true);
     
     if (error) {
-      logError("Error fetching CC recipients", error);
-      return [];
+      throw error;
     }
     
-    const emails = data.map((recipient: any) => recipient.email);
-    logMessage(`Found ${emails.length} CC recipients: ${emails.join(", ")}`, "📧");
-    return emails;
+    return recipients.map((r: any) => r.email);
   } catch (error) {
     logError("Error fetching CC recipients", error);
-    return [];
+    return []; // Return empty array if there's an error
   }
-};
+}

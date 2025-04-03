@@ -1,46 +1,59 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { useEmployeeMonthlyValues } from "@/hooks/useEmployeeMonthlyValues";
 
 interface NewMonthlyValueDialogProps {
-  employeeId: string;
   open: boolean;
   onClose: () => void;
+  employeeId: string;
 }
 
-export const NewMonthlyValueDialog = ({ employeeId, open, onClose }: NewMonthlyValueDialogProps) => {
+export const NewMonthlyValueDialog = ({ open, onClose, employeeId }: NewMonthlyValueDialogProps) => {
+  const { toast } = useToast();
+  const { addMonthlyValue } = useEmployeeMonthlyValues(employeeId);
+
   const [month, setMonth] = useState("");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
-  const { addMonthlyValue } = useEmployeeMonthlyValues(employeeId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    try {
+      // Format the month to ensure it's the first day of the month
+      const formattedMonth = new Date(month + '-01').toISOString().split('T')[0];
+      
+      await addMonthlyValue({
+        employee_id: employeeId,
+        month: formattedMonth, // Use the formatted date
+        amount: Number(amount),
+        notes,
+      });
 
-    await addMonthlyValue({
-      employee_id: employeeId,
-      month: new Date(month).toISOString(),
-      amount: Number(amount),
-      notes,
-    });
-
-    onClose();
+      onClose();
+    } catch (error: any) {
+      console.error("Error adding monthly value:", error);
+      toast({
+        title: "Erro ao adicionar valor mensal",
+        description: error.message || "Não foi possível adicionar o valor mensal.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Adicionar Valor Mensal</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="month">Mês de Referência</Label>
+            <Label htmlFor="month">Mês (YYYY-MM)</Label>
             <Input
               id="month"
               type="month"
@@ -49,38 +62,25 @@ export const NewMonthlyValueDialog = ({ employeeId, open, onClose }: NewMonthlyV
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="amount">Valor</Label>
             <Input
               id="amount"
               type="number"
-              step="0.01"
-              min="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               required
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="notes">Observações</Label>
-            <Textarea
+            <Input
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Observações opcionais..."
             />
           </div>
-
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              Adicionar
-            </Button>
-          </div>
+          <Button type="submit">Adicionar</Button>
         </form>
       </DialogContent>
     </Dialog>

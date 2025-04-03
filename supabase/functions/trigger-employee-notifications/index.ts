@@ -128,6 +128,51 @@ serve(async (req) => {
 
     if (debugMode) {
       logMessage(`Found ${employeesWithValues.length} employees with values for month ${currentMonth}`, "👥");
+      
+      // Perform additional diagnostic queries in debug mode
+      const { data: allEmployees, error: empError } = await supabase
+        .from("employees")
+        .select("id, name, email, status")
+        .eq("status", "active");
+        
+      if (empError) {
+        logError("Error fetching all employees", empError);
+      } else {
+        logMessage(`Total active employees: ${allEmployees?.length || 0}`, "👤");
+        
+        for (const emp of allEmployees || []) {
+          logMessage(`Active employee: ${emp.name} (${emp.email})`, "👤");
+          
+          // Check if this employee has monthly values for the current month
+          const { data: monthlyValues, error: mvError } = await supabase
+            .from("employee_monthly_values")
+            .select("*")
+            .eq("employee_id", emp.id)
+            .eq("month", currentMonth);
+            
+          if (mvError) {
+            logError(`Error fetching monthly values for ${emp.name}`, mvError);
+          } else if (monthlyValues && monthlyValues.length > 0) {
+            logMessage(`${emp.name} has ${monthlyValues.length} monthly value(s) for ${currentMonth}: ${JSON.stringify(monthlyValues.map(mv => ({ id: mv.id, amount: mv.amount })))}`, "💰");
+          } else {
+            logMessage(`${emp.name} has NO monthly values for ${currentMonth}`, "❌");
+            
+            // Check all monthly values for this employee to help troubleshoot
+            const { data: allValues, error: allMvError } = await supabase
+              .from("employee_monthly_values")
+              .select("*")
+              .eq("employee_id", emp.id);
+              
+            if (allMvError) {
+              logError(`Error fetching all monthly values for ${emp.name}`, allMvError);
+            } else if (allValues && allValues.length > 0) {
+              logMessage(`${emp.name} has values for other months: ${JSON.stringify(allValues.map(mv => ({ id: mv.id, month: mv.month, amount: mv.amount })))}`, "📅");
+            } else {
+              logMessage(`${emp.name} has NO monthly values at all`, "❌");
+            }
+          }
+        }
+      }
     }
 
     // Get the default email template for employees

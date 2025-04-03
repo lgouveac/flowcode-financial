@@ -13,6 +13,21 @@ export const TestEmployeeNotificationButton = () => {
     try {
       setIsLoading(true);
       
+      // First, let's check if we can find Paulo's monthly values
+      const currentMonth = new Date().toISOString().slice(0, 7) + '-01';
+      console.log("Checking monthly values for month:", currentMonth);
+      
+      const { data: monthlyValues, error: monthlyError } = await supabase
+        .from('employee_monthly_values')
+        .select('*, employees!inner(*)')
+        .eq('month', currentMonth);
+        
+      if (monthlyError) {
+        console.error("Error fetching monthly values:", monthlyError);
+      } else {
+        console.log("Found monthly values:", monthlyValues);
+      }
+      
       // Call the edge function with test=true parameter
       const { data, error } = await supabase.functions.invoke(
         "trigger-employee-notifications",
@@ -48,9 +63,14 @@ export const TestEmployeeNotificationButton = () => {
           variant: "destructive",
         });
       } else {
+        // Make the message more specific about what might be wrong
+        const noValuesMessage = monthlyValues?.length === 0 
+          ? "Não há valores mensais cadastrados para o mês atual." 
+          : "Não há funcionários ativos com valores mensais para o mês atual.";
+          
         toast({
           title: "Nenhuma notificação enviada",
-          description: "Não há funcionários com valores mensais para notificar.",
+          description: noValuesMessage,
         });
       }
     } catch (error) {
