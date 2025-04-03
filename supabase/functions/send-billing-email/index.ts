@@ -22,17 +22,21 @@ const resend = new Resend(resendApiKey);
 setupCacheCleanup();
 
 interface EmailRequest {
-  to: string;
-  subject: string;
-  content: string;
-  recipientName: string;
-  responsibleName?: string;
-  billingValue: number;
-  dueDate: string;
-  daysUntilDue: number;
-  currentInstallment?: number;
-  totalInstallments?: number;
-  paymentMethod?: string;
+  to?: string;
+  subject?: string;
+  content?: string;
+  templateId?: string;
+  data?: {
+    recipientName: string;
+    responsibleName?: string;
+    billingValue: number;
+    dueDate: string;
+    daysUntilDue: number;
+    currentInstallment?: number;
+    totalInstallments?: number;
+    paymentMethod?: string;
+    descricaoServico?: string;
+  };
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -45,26 +49,71 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("📨 Received email request");
     console.log("🔑 ResendAPI Key available:", !!resendApiKey);
     
-    const data: EmailRequest = await req.json();
-    console.log("📝 Request data:", JSON.stringify({
-      to: data.to,
-      subject: data.subject,
-      recipientName: data.recipientName,
-      responsibleName: data.responsibleName,
-      billingValue: data.billingValue,
-      dueDate: data.dueDate,
-      daysUntilDue: data.daysUntilDue,
-      currentInstallment: data.currentInstallment || 1,
-      totalInstallments: data.totalInstallments || 1,
-      paymentMethod: data.paymentMethod || 'PIX'
-    }));
+    const requestData: EmailRequest = await req.json();
+    
+    let subject = '';
+    let content = '';
+    let to = requestData.to;
+    let emailData: EmailData;
+    
+    // Check if we're using template ID or direct content
+    if (requestData.templateId) {
+      console.log(`🔍 Using template ID: ${requestData.templateId}`);
+      
+      // Initialize Supabase client to fetch the template
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Missing Supabase configuration");
+      }
+      
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.43.2");
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Fetch the template
+      const { data: template, error: templateError } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('id', requestData.templateId)
+        .single();
+      
+      if (templateError) {
+        console.error("❌ Error fetching template:", templateError);
+        throw new Error(`Failed to fetch template: ${templateError.message}`);
+      }
+      
+      if (!template) {
+        throw new Error(`Template with ID ${requestData.templateId} not found`);
+      }
+      
+      console.log(`📄 Found template: ${template.name}`);
+      
+      subject = template.subject;
+      content = template.content;
+      emailData = requestData.data || {};
+    } else {
+      // Legacy direct content method
+      subject = requestData.subject || '';
+      content = requestData.content || '';
+      emailData = requestData.data || {
+        recipientName: '',
+        billingValue: 0,
+        dueDate: '',
+        daysUntilDue: 0
+      };
+    }
+    
+    if (!to) {
+      throw new Error("Recipient email (to) is required");
+    }
     
     // Generate a cache key based on recipient, date, and content
     const cacheKey = generateCacheKey(
-      data.to, 
-      data.dueDate, 
-      data.currentInstallment || 1, 
-      data.daysUntilDue
+      to, 
+      emailData.dueDate, 
+      emailData.currentInstallment || 1, 
+      emailData.daysUntilDue
     );
     
     // Check if we've sent this email recently
@@ -84,26 +133,14 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
     
-    // Normalize data for email processing
-    const emailData: EmailData = {
-      recipientName: data.recipientName,
-      responsibleName: data.responsibleName,
-      billingValue: data.billingValue,
-      dueDate: data.dueDate,
-      currentInstallment: typeof data.currentInstallment === 'number' ? data.currentInstallment : 1,
-      totalInstallments: typeof data.totalInstallments === 'number' ? data.totalInstallments : 1,
-      paymentMethod: data.paymentMethod || 'PIX'
-    };
+    console.log(`📧 Preparing email to: ${to}`);
     
     // Process email content and subject
-    const processedContent = processEmailContent(data.content, emailData);
-    const processedSubject = processEmailSubject(data.subject, emailData);
+    const processedContent = processEmailContent(content, emailData);
+    const processedSubject = processEmailSubject(subject, emailData);
     
     // Convert to HTML
     const htmlContent = convertToHtml(processedContent);
-    
-    console.log("📧 Processing email to:", data.to);
-    console.log("📋 Subject:", processedSubject);
     
     try {
       // Fetch CC recipients from the database
@@ -135,7 +172,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Send email
       const { data: emailResult, error } = await resend.emails.send({
         from: "Financeiro <contato@xpertagro.com>",
-        to: [data.to],
+        to: [to],
         cc: ccEmails,
         subject: processedSubject,
         html: htmlContent,

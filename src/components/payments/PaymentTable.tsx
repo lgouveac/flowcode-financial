@@ -1,240 +1,217 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { EditableCell } from "../EditableCell";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Send } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
-import type { Payment } from "@/types/payment";
 
-interface PaymentTableProps {
-  payments: Array<Payment & { clients?: { name: string; partner_name?: string } }>;
-  onRefresh?: () => void;
-}
-
-export const PaymentTable = ({ payments, onRefresh }: PaymentTableProps) => {
+export const PaymentTable = ({ payments = [] }) => {
   const { toast } = useToast();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
 
-  // Only show payments that don't have an installment number (one-time payments)
-  const oneTimePayments = payments.filter(payment => 
-    payment.installment_number === null
-  );
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
-  const handleUpdatePayment = async (paymentId: string, field: string, value: any) => {
-    try {
-      console.log('Updating payment:', { paymentId, field, value });
-      
-      const { error } = await supabase
-        .from('payments')
-        .update({ [field]: value })
-        .eq('id', paymentId);
-
-      if (error) {
-        console.error('Error updating payment:', error);
-        throw error;
-      }
-
-      toast({
-        title: "Pagamento atualizado",
-        description: "As informações foram atualizadas com sucesso.",
-      });
-      
-      // Call the refresh function if provided
-      if (onRefresh) {
-        onRefresh();
-      }
-    } catch (error) {
-      console.error('Error updating payment:', error);
-      toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível atualizar o pagamento.",
-        variant: "destructive",
-      });
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'paid':
+        return 'bg-green-500';
+      case 'pending':
+        return 'bg-yellow-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
-  const handleDeleteClick = (paymentId: string) => {
-    setPaymentToDelete(paymentId);
-    setShowDeleteConfirm(true);
+  const getPaymentMethodLabel = (method) => {
+    switch (method) {
+      case 'pix':
+        return 'PIX';
+      case 'boleto':
+        return 'Boleto';
+      case 'credit_card':
+        return 'Cartão de Crédito';
+      default:
+        return method;
+    }
   };
 
-  const confirmDelete = async () => {
-    if (!paymentToDelete) return;
-
+  const handleSendEmail = async (payment) => {
     try {
-      const { error } = await supabase
-        .from('payments')
-        .delete()
-        .eq('id', paymentToDelete);
-
-      if (error) throw error;
-
-      toast({
-        title: "Pagamento excluído",
-        description: "O pagamento foi excluído com sucesso.",
-      });
+      setSendingEmailId(payment.id);
       
-      // Call the refresh function if provided
-      if (onRefresh) {
-        onRefresh();
+      // Check if payment has an associated template
+      let templateId = payment.email_template;
+      
+      // If no template is selected, fetch the default oneTime template
+      if (!templateId) {
+        const { data: defaultTemplate, error: templateError } = await supabase
+          .from('email_templates')
+          .select('id')
+          .eq('type', 'clients')
+          .eq('subtype', 'oneTime')
+          .eq('is_default', true)
+          .single();
+          
+        if (templateError || !defaultTemplate) {
+          // Try to get the recurring template as fallback
+          const { data: recurringTemplate, error: recurringError } = await supabase
+            .from('email_templates')
+            .select('id')
+            .eq('type', 'clients')
+            .eq('subtype', 'recurring')
+            .eq('is_default', true)
+            .single();
+            
+          if (recurringError || !recurringTemplate) {
+            throw new Error('Nenhum template padrão encontrado. Por favor, crie um template para cobranças pontuais ou recorrentes.');
+          }
+          
+          templateId = recurringTemplate.id;
+        } else {
+          templateId = defaultTemplate.id;
+        }
       }
-    } catch (error) {
-      console.error('Error deleting payment:', error);
+      
+      // Get payment method as string
+      let paymentMethodStr = 'PIX';
+      if (payment.payment_method === 'boleto') paymentMethodStr = 'Boleto';
+      if (payment.payment_method === 'credit_card') paymentMethodStr = 'Cartão de Crédito';
+      
+      // Get days until due
+      const dueDate = new Date(payment.due_date);
+      const today = new Date();
+      const daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Get client data
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('name, email, responsible_name, partner_name')
+        .eq('id', payment.client_id)
+        .single();
+        
+      if (clientError) {
+        throw new Error(`Erro ao obter dados do cliente: ${clientError.message}`);
+      }
+      
+      // Determine responsible name
+      const responsibleName = clientData.responsible_name || clientData.partner_name || "Responsável";
+      
+      // Send email via the edge function
+      const { error: emailError } = await supabase.functions.invoke(
+        'send-billing-email',
+        {
+          body: JSON.stringify({
+            to: clientData.email,
+            templateId: templateId,
+            data: {
+              recipientName: clientData.name,
+              responsibleName: responsibleName,
+              billingValue: payment.amount,
+              dueDate: payment.due_date,
+              daysUntilDue: daysUntilDue,
+              descricaoServico: payment.description,
+              paymentMethod: paymentMethodStr
+            }
+          })
+        }
+      );
+      
+      if (emailError) {
+        throw new Error(`Erro ao enviar email: ${emailError.message}`);
+      }
+      
+      // Log the notification
+      const { error: logError } = await supabase
+        .from('email_notification_log')
+        .insert({
+          payment_id: payment.id,
+          client_id: payment.client_id,
+          days_before: daysUntilDue > 0 ? daysUntilDue : 0,
+          notification_date: new Date().toISOString().split('T')[0],
+          due_date: payment.due_date,
+          email: clientData.email,
+          payment_type: 'oneTime'
+        });
+        
+      if (logError) {
+        console.error("Erro ao registrar notificação:", logError);
+      }
+      
       toast({
-        title: "Erro ao excluir",
-        description: "Não foi possível excluir o pagamento.",
+        title: "Email enviado com sucesso",
+        description: `Email enviado para ${clientData.name}`,
+      });
+    } catch (error) {
+      console.error("Erro ao enviar email:", error);
+      toast({
+        title: "Erro ao enviar email",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
-      setShowDeleteConfirm(false);
-      setPaymentToDelete(null);
+      setSendingEmailId(null);
     }
-  };
-
-  const getStatusBadgeVariant = (status: Payment['status']) => {
-    switch (status) {
-      case 'paid':
-        return 'default';
-      case 'pending':
-        return 'secondary';
-      case 'overdue':
-        return 'destructive';
-      case 'cancelled':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusLabel = (status: Payment['status']) => {
-    const statusLabels: Record<Payment['status'], string> = {
-      pending: 'Pendente',
-      billed: 'Faturado',
-      awaiting_invoice: 'Aguardando Fatura',
-      paid: 'Pago',
-      overdue: 'Atrasado',
-      cancelled: 'Cancelado'
-    };
-    return statusLabels[status];
   };
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Cliente</TableHead>
-          <TableHead>Responsável</TableHead>
-          <TableHead>Descrição</TableHead>
-          <TableHead>Valor</TableHead>
-          <TableHead>Vencimento</TableHead>
-          <TableHead>Método</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Ações</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {oneTimePayments.map((payment) => (
-          <TableRow key={payment.id}>
-            <TableCell>{payment.clients?.name}</TableCell>
-            <TableCell>{payment.clients?.partner_name || "-"}</TableCell>
-            <TableCell>
-              <EditableCell
-                value={payment.description}
-                onChange={(value) => handleUpdatePayment(payment.id, 'description', value)}
-              />
-            </TableCell>
-            <TableCell>
-              <EditableCell
-                value={payment.amount.toString()}
-                onChange={(value) => handleUpdatePayment(payment.id, 'amount', parseFloat(value))}
-                type="number"
-              />
-            </TableCell>
-            <TableCell>
-              <input
-                type="date"
-                value={payment.due_date}
-                onChange={(e) => handleUpdatePayment(payment.id, 'due_date', e.target.value)}
-                className="w-full bg-transparent"
-              />
-            </TableCell>
-            <TableCell>
-              <Select
-                value={payment.payment_method}
-                onValueChange={(value) => handleUpdatePayment(payment.id, 'payment_method', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <Select
-                value={payment.status}
-                onValueChange={(value) => handleUpdatePayment(payment.id, 'status', value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    <Badge variant={getStatusBadgeVariant(payment.status)}>
-                      {getStatusLabel(payment.status)}
-                    </Badge>
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="billed">Faturado</SelectItem>
-                  <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                  <SelectItem value="paid">Pago</SelectItem>
-                  <SelectItem value="overdue">Atrasado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDeleteClick(payment.id)}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </TableCell>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Descrição</TableHead>
+            <TableHead>Valor</TableHead>
+            <TableHead>Vencimento</TableHead>
+            <TableHead>Método</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Ações</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-      
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este pagamento?
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPaymentToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete} 
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {payments.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                Nenhum recebimento encontrado
+              </TableCell>
+            </TableRow>
+          ) : (
+            payments.map((payment) => (
+              <TableRow key={payment.id}>
+                <TableCell>{payment.clients?.name || "Cliente não encontrado"}</TableCell>
+                <TableCell>{payment.description}</TableCell>
+                <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                <TableCell>{payment.due_date ? format(new Date(payment.due_date), "dd/MM/yyyy", { locale: ptBR }) : "-"}</TableCell>
+                <TableCell>{getPaymentMethodLabel(payment.payment_method)}</TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(payment.status)}>
+                    {payment.status === 'paid' ? 'Pago' : payment.status === 'pending' ? 'Pendente' : payment.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleSendEmail(payment)}
+                    disabled={sendingEmailId === payment.id}
+                  >
+                    <Send className="h-4 w-4 mr-1" />
+                    {sendingEmailId === payment.id ? 'Enviando...' : 'Enviar Email'}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 };
