@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemplateSection } from "@/components/emails/TemplateSection";
@@ -8,10 +9,13 @@ import { TestEmployeeNotificationButton } from "@/components/emails/TestEmployee
 import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsManager";
 import { EmailTemplate } from "@/types/email";
 import { createTemplate } from "@/services/templateService";
+
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [employeeSettingsOpen, setEmployeeSettingsOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [currentTemplateType, setCurrentTemplateType] = useState<'clients' | 'employees'>('clients');
+
   const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
     try {
       await createTemplate(template);
@@ -21,11 +25,11 @@ export default function Emails() {
       return false;
     }
   };
+  
   return <div className="container py-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Emails e Notificações</h1>
         <div className="space-x-3">
-          
           <TestEmployeeNotificationButton />
         </div>
       </div>
@@ -37,7 +41,22 @@ export default function Emails() {
         </TabsList>
         
         <TabsContent value="templates">
-          <TemplateSection type="clients" onSaveTemplate={handleSaveTemplate} />
+          <div className="mb-6">
+            <Tabs defaultValue="clients" onValueChange={(value) => setCurrentTemplateType(value as 'clients' | 'employees')}>
+              <TabsList>
+                <TabsTrigger value="clients">Templates de Cliente</TabsTrigger>
+                <TabsTrigger value="employees">Templates de Funcionário</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="clients">
+                <TemplateSection type="clients" onSaveTemplate={handleSaveTemplate} />
+              </TabsContent>
+              
+              <TabsContent value="employees">
+                <TemplateSection type="employees" onSaveTemplate={handleSaveTemplate} />
+              </TabsContent>
+            </Tabs>
+          </div>
         </TabsContent>
         
         <TabsContent value="cc-recipients">
