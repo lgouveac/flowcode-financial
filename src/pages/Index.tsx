@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { MoonIcon, SunIcon, LogOutIcon, UserIcon } from "lucide-react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -55,17 +55,18 @@ const Index = () => {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <nav className="flex -mb-px space-x-8">
             {navigation.map(({ path, label }) => (
-              <Link
+              <NavLink
                 key={path}
                 to={path}
-                className={`flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors hover:text-foreground ${
-                  isActive(path)
+                end={path === "/"}
+                className={({ isActive }) => `flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors hover:text-foreground ${
+                  isActive
                     ? 'border-primary text-primary'
                     : 'border-transparent text-muted-foreground hover:border-primary/30'
                 }`}
               >
                 {label}
-              </Link>
+              </NavLink>
             ))}
           </nav>
           <div className="flex items-center space-x-4">
