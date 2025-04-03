@@ -8,8 +8,15 @@ import { Send } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { Payment } from "@/types/payment";
 
-export const PaymentTable = ({ payments = [] }) => {
+// Add onRefresh to props
+interface PaymentTableProps {
+  payments?: Payment[];
+  onRefresh?: () => void;
+}
+
+export const PaymentTable = ({ payments = [], onRefresh }: PaymentTableProps) => {
   const { toast } = useToast();
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
 
@@ -129,17 +136,17 @@ export const PaymentTable = ({ payments = [] }) => {
         throw new Error(`Erro ao enviar email: ${emailError.message}`);
       }
       
-      // Log the notification
+      // Log the notification - fixed to match the database schema
       const { error: logError } = await supabase
         .from('email_notification_log')
         .insert({
           payment_id: payment.id,
           client_id: payment.client_id,
           days_before: daysUntilDue > 0 ? daysUntilDue : 0,
-          notification_date: new Date().toISOString().split('T')[0],
           due_date: payment.due_date,
-          email: clientData.email,
-          payment_type: 'oneTime'
+          payment_type: 'oneTime',
+          billing_id: payment.id, // Use payment_id for billing_id since it's required
+          sent_at: new Date().toISOString() // Use sent_at instead of notification_date
         });
         
       if (logError) {
@@ -150,6 +157,11 @@ export const PaymentTable = ({ payments = [] }) => {
         title: "Email enviado com sucesso",
         description: `Email enviado para ${clientData.name}`,
       });
+
+      // Call onRefresh if it exists
+      if (onRefresh) {
+        onRefresh();
+      }
     } catch (error) {
       console.error("Erro ao enviar email:", error);
       toast({
