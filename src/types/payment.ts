@@ -12,6 +12,7 @@ export interface Payment {
   updated_at?: string;
   installment_number?: number;
   total_installments?: number;
+  email_template?: string;
   clients?: {
     name: string;
     email?: string;
