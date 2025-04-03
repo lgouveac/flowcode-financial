@@ -298,7 +298,8 @@ async function processRecurringBillingNotifications(supabase: any, intervals: an
 
 // Process one-time payment notifications
 async function processOneTimePaymentNotifications(supabase: any, intervals: any[]) {
-  // Get the default template for one-time payments
+  // Try to get the default template for one-time payments, but don't abort if not found
+  // We'll use the recurring template as fallback if needed
   const { data: oneTimeTemplate, error: templateError } = await supabase
     .from('email_templates')
     .select('*')
@@ -308,9 +309,29 @@ async function processOneTimePaymentNotifications(supabase: any, intervals: any[
     .single();
     
   if (templateError) {
-    console.error("❌ Error fetching one-time email template:", templateError);
-    console.log("⚠️ Skipping one-time payment notifications due to missing template");
-    return 0;
+    console.log("⚠️ No default one-time email template found, will attempt to use recurring template as fallback");
+    
+    // Get the default recurring template as fallback
+    const { data: recurringTemplate, error: recurringError } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('type', 'clients')
+      .eq('subtype', 'recurring')
+      .eq('is_default', true)
+      .single();
+    
+    if (recurringError) {
+      console.error("❌ Error fetching fallback template:", recurringError);
+      console.log("⚠️ Skipping one-time payment notifications due to missing templates");
+      return 0;
+    }
+    
+    // Use recurring template as fallback
+    console.log("✅ Will use recurring template as fallback for one-time payments");
+    var templateToUse = recurringTemplate;
+  } else {
+    var templateToUse = oneTimeTemplate;
+    console.log("✅ Found default one-time payment template");
   }
   
   // Get all pending one-time payments with client information
@@ -394,8 +415,8 @@ async function processOneTimePaymentNotifications(supabase: any, intervals: any[
             {
               body: JSON.stringify({
                 to: payment.clients.email,
-                subject: oneTimeTemplate.subject,
-                content: oneTimeTemplate.content,
+                subject: templateToUse.subject,
+                content: templateToUse.content,
                 recipientName: payment.clients.name,
                 responsibleName: responsibleName,
                 billingValue: payment.amount,
