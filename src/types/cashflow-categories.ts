@@ -26,6 +26,9 @@ export const CATEGORIES: CategoryGroup = {
     { value: 'transport', label: 'Transporte' },
     { value: 'utility', label: 'Utilidade' },
     { value: 'rent', label: 'Aluguel' },
+    { value: 'investment', label: 'Investimento' },
+    { value: 'pro_labore', label: 'Pro Labore' },
+    { value: 'profit_distribution', label: 'Lucros' },
     { value: 'other', label: 'Outro' },
   ],
 };

@@ -64,9 +64,9 @@ export const Overview = () => {
     icon: <UserIcon className="h-4 w-4 text-blue-500" />
   }];
 
-  // Category-specific financial stats
+  // Category-specific financial stats with updated names
   const categoryStats = [{
-    title: "Investimentos",
+    title: "Investimento",
     value: formatCurrency(metrics.investmentExpenses || 0),
     change: metrics.investmentChange || "0%",
     description: "CDBs e outros investimentos",
@@ -80,7 +80,7 @@ export const Overview = () => {
     category: "pro_labore",
     icon: <UserIcon className="h-4 w-4 text-indigo-500" />
   }, {
-    title: "Distribuição de Lucros",
+    title: "Lucros",
     value: formatCurrency(metrics.profitDistributionExpenses || 0),
     change: metrics.profitDistributionChange || "0%",
     description: "Retiradas e lucros distribuídos",
@@ -116,9 +116,9 @@ export const Overview = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas Categorias</SelectItem>
-              <SelectItem value="investment">Investimentos</SelectItem>
+              <SelectItem value="investment">Investimento</SelectItem>
               <SelectItem value="pro_labore">Pro Labore</SelectItem>
-              <SelectItem value="profit_distribution">Distribuição de Lucros</SelectItem>
+              <SelectItem value="profit_distribution">Lucros</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -230,10 +230,10 @@ export const Overview = () => {
                   <p className="font-medium">Pro Labore:</p>
                   <p>- {formatCurrency(metrics.proLaboreExpenses || 0)}</p>
                   
-                  <p className="font-medium">Investimentos:</p>
+                  <p className="font-medium">Investimento:</p>
                   <p>- {formatCurrency(metrics.investmentExpenses || 0)}</p>
                   
-                  <p className="font-medium">Distribuição de Lucros:</p>
+                  <p className="font-medium">Lucros:</p>
                   <p>- {formatCurrency(metrics.profitDistributionExpenses || 0)}</p>
                   
                   <div className="col-span-2 border-t border-green-200 dark:border-green-800 my-2"></div>

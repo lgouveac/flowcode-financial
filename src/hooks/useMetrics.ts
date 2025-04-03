@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -119,20 +118,19 @@ export const useMetrics = (period: string = 'current') => {
     const category = (item.category || "").toLowerCase();
     
     // Match investment categories
-    if (category.includes("invest") || category === "investment" || category === "cdb") {
+    if (category.includes("invest") || category === "investment" || category === "investimento") {
       return "investment";
     }
     
-    // Match pro labore categories
+    // Match pro labore categories 
     if (category.includes("pro_labore") || category.includes("pro labore") || 
-        category.includes("prolabore") || (category.includes("salary") && category.includes("socio"))) {
+        category === "pro labore" || category.includes("prolabore")) {
       return "pro_labore";
     }
     
     // Match profit distribution categories
     if (category.includes("profit") || category.includes("distribution") || 
-        category.includes("lucro") || category.includes("distribuicao") || 
-        category.includes("dividendo") || category.includes("sócios retirada receita pf")) {
+        category.includes("lucro") || category === "lucros") {
       return "profit_distribution";
     }
     
