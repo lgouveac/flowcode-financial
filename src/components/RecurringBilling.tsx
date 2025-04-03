@@ -5,7 +5,7 @@ import { BillingTable } from "./recurring-billing/BillingTable";
 import { PaymentTable } from "./payments/PaymentTable";
 import { NewBillingDialog } from "./recurring-billing/NewBillingDialog";
 import { NotificationSettings } from "./emails/NotificationSettings";
-import { Settings, PlusIcon } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Button } from "./ui/button";
 import { useBillingData } from "@/hooks/useBillingData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -58,12 +58,7 @@ export const RecurringBilling = () => {
           />
         </TabsContent>
         <TabsContent value="onetime" className="border rounded-lg p-4">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => setShowNewPaymentDialog(true)}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Novo Recebimento
-            </Button>
-          </div>
+          {/* Removed the duplicate "Novo Recebimento" button from here */}
           <PaymentTable payments={payments} onRefresh={handleRefreshData} />
         </TabsContent>
       </Tabs>
