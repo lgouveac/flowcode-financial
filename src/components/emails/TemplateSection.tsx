@@ -8,6 +8,8 @@ import { EmailTemplate, variablesList } from "@/types/email";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { TestEmailDialog } from "./TestEmailDialog";
+import { SavedTemplatesTable } from "./SavedTemplatesTable";
+import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 
 interface TemplateSectionProps {
   type: 'clients' | 'employees';
@@ -26,6 +28,13 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
     subject: '',
     content: '',
   });
+
+  const { savedTemplates, isLoading, handleTemplateUpdate } = useEmailTemplates();
+
+  // Filter templates based on current type/subtype
+  const currentTemplates = savedTemplates.filter(
+    template => template.type === type && template.subtype === currentType
+  );
 
   const handleTypeChange = (type: string) => {
     setCurrentType(type);
@@ -134,7 +143,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
         </div>
 
         <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2">
+          <div className="col-span-2 space-y-6">
             <TemplateEditor
               type={type}
               currentType={currentType}
@@ -143,6 +152,12 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
               onSave={handleSaveTemplate}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
+            />
+
+            <SavedTemplatesTable
+              templates={currentTemplates}
+              onTemplateUpdate={handleTemplateUpdate}
+              isLoading={isLoading}
             />
           </div>
           <VariablesList
