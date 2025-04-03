@@ -103,7 +103,7 @@ export function convertToHtml(content: string): string {
   const paragraphs = content
     .split('\n')
     .filter(line => line.trim() !== '')
-    .map(line => `<p style="margin-bottom: 1em; line-height: 1.5;">${line}</p>`)
+    .map(line => `<p style="margin-bottom: 1em; line-height: 1.5; text-align: left;">${line}</p>`)
     .join('\n');
     
   return `
@@ -112,7 +112,7 @@ export function convertToHtml(content: string): string {
       <head>
         <meta charset="utf-8">
       </head>
-      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0; padding: 20px; text-align: left;">
         ${paragraphs}
       </body>
     </html>

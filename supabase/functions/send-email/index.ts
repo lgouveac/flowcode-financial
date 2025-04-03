@@ -119,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
     const htmlContent = processedContent
       .split('\n')
       .filter(line => line.trim() !== '') // Remove empty lines
-      .map(line => `<p style="margin-bottom: 1em; line-height: 1.5;">${line}</p>`)
+      .map(line => `<p style="margin-bottom: 1em; line-height: 1.5; text-align: left;">${line}</p>`)
       .join('\n');
 
     const wrappedHtml = `
@@ -128,14 +128,14 @@ const handler = async (req: Request): Promise<Response> => {
         <head>
           <meta charset="utf-8">
         </head>
-        <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0; padding: 20px; text-align: left;">
           ${htmlContent}
         </body>
       </html>
     `;
 
     const emailRequest: any = {
-      from: "financeiro@flowcode.cc",
+      from: "Financeiro FlowCode <financeiro@flowcode.cc>",
       to: [to],
       subject: processedSubject,
       html: wrappedHtml,

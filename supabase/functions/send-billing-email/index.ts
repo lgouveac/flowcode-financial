@@ -171,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       // Send email using the custom flowcode.cc domain
       const { data: emailResult, error } = await resend.emails.send({
-        from: "Financeiro <financeiro@flowcode.cc>",
+        from: "Financeiro FlowCode <financeiro@flowcode.cc>",
         to: [to],
         cc: ccEmails,
         subject: processedSubject,
