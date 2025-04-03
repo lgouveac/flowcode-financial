@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +7,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { CircleDollarSign, LineChart, Wallet, CircleArrowUp, CircleArrowDown, UserIcon, CoinsIcon } from "lucide-react";
 
 export const Overview = () => {
   const [period, setPeriod] = useState("current");
@@ -37,31 +37,26 @@ export const Overview = () => {
     value: formatCurrency(metrics.totalRevenue || 0),
     change: metrics.revenueChange || "0%",
     description: period === "current" ? "Mês atual" : "Período selecionado",
-    icon: <CircleDollarSign className="h-4 w-4 text-green-500" />
   }, {
     title: "Faturamento Esperado",
     value: formatCurrency(metrics.expectedRevenue || 0),
     change: metrics.expectedRevenueChange || "0%",
     description: "Recebimentos pendentes",
-    icon: <LineChart className="h-4 w-4 text-blue-500" />
   }, {
     title: "Despesas Totais",
     value: formatCurrency(metrics.totalExpenses || 0),
     change: metrics.expensesChange || "0%",
     description: period === "current" ? "Mês atual" : "Período selecionado",
-    icon: <CircleArrowDown className="h-4 w-4 text-red-500" />
   }, {
     title: "Lucro Líquido",
     value: formatCurrency(metrics.netProfit || 0),
     change: metrics.profitChange || "0%",
     description: period === "current" ? "Mês atual" : "Período selecionado",
-    icon: <CircleArrowUp className="h-4 w-4 text-green-500" />
   }, {
     title: "Clientes Ativos",
     value: (metrics.activeClients || 0).toString(),
     change: metrics.clientsChange || "0",
     description: "Últimos 30 dias",
-    icon: <UserIcon className="h-4 w-4 text-blue-500" />
   }];
 
   // Category-specific financial stats with updated names
@@ -71,21 +66,18 @@ export const Overview = () => {
     change: metrics.investmentChange || "0%",
     description: "CDBs e outros investimentos",
     category: "investment",
-    icon: <Wallet className="h-4 w-4 text-purple-500" />
   }, {
     title: "Pro Labore",
     value: formatCurrency(metrics.proLaboreExpenses || 0),
     change: metrics.proLaboreChange || "0%",
     description: "Pagamentos aos sócios",
     category: "pro_labore",
-    icon: <UserIcon className="h-4 w-4 text-indigo-500" />
   }, {
     title: "Lucros",
     value: formatCurrency(metrics.profitDistributionExpenses || 0),
     change: metrics.profitDistributionChange || "0%",
     description: "Retiradas e lucros distribuídos",
     category: "profit_distribution",
-    icon: <CoinsIcon className="h-4 w-4 text-yellow-600" />
   }];
 
   // Filter the category stats based on selected filter
@@ -139,7 +131,6 @@ export const Overview = () => {
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                {stat.icon}
               </CardHeader>
               <CardContent>
                 {isLoading ? <div className="space-y-2">
@@ -192,7 +183,6 @@ export const Overview = () => {
                     <CardTitle className="text-sm font-medium text-muted-foreground">
                       {stat.title}
                     </CardTitle>
-                    {stat.icon}
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-baseline gap-2">

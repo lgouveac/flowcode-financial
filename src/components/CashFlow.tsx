@@ -4,7 +4,6 @@ import { CashFlowChart } from "./cash-flow/CashFlowChart";
 import { CashFlowTable } from "./cash-flow/CashFlowTable";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownIcon, ArrowUpIcon, DollarSignIcon } from "lucide-react";
 
 interface CashFlowProps {
   showChart?: boolean;
@@ -138,7 +137,6 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Entradas
                 </CardTitle>
-                <ArrowUpIcon className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-semibold">{formatCurrency(summary.income)}</div>
@@ -150,7 +148,6 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Saídas
                 </CardTitle>
-                <ArrowDownIcon className="h-4 w-4 text-red-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-semibold">{formatCurrency(summary.expense)}</div>
@@ -162,7 +159,6 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Saldo
                 </CardTitle>
-                <DollarSignIcon className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
                 <div className={`text-2xl font-semibold ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -186,7 +182,6 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Entradas
                 </CardTitle>
-                <ArrowUpIcon className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-semibold">{formatCurrency(summary.income)}</div>
@@ -198,7 +193,6 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Saídas
                 </CardTitle>
-                <ArrowDownIcon className="h-4 w-4 text-red-500" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-semibold">{formatCurrency(summary.expense)}</div>
@@ -210,7 +204,6 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Saldo
                 </CardTitle>
-                <DollarSignIcon className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
                 <div className={`text-2xl font-semibold ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>

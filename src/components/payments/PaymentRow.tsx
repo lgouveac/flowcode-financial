@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Payment } from "@/types/payment";
@@ -65,7 +64,6 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent }) 
           onClick={handleSendEmail}
           disabled={sending}
         >
-          <Send className="h-4 w-4 mr-1" />
           {sending ? 'Enviando...' : 'Enviar Email'}
         </Button>
       </TableCell>
