@@ -97,38 +97,54 @@ export const createTemplate = async (newTemplate: Partial<EmailTemplate>) => {
     throw new Error('Invalid template type or subtype');
   }
 
-  if (newTemplate.is_default) {
-    const { error: updateError } = await supabase
+  // Debug log to help identify issues
+  console.log("Creating template with data:", newTemplate);
+
+  try {
+    // If this template is set as default, update other templates of the same type/subtype
+    if (newTemplate.is_default) {
+      const { error: updateError } = await supabase
+        .from('email_templates')
+        .update({ is_default: false })
+        .eq('type', newTemplate.type!)
+        .eq('subtype', newTemplate.subtype!);
+
+      if (updateError) {
+        console.error("Error updating other templates:", updateError);
+        throw updateError;
+      }
+    }
+
+    // Insert the new template
+    const { data, error } = await supabase
       .from('email_templates')
-      .update({ is_default: false })
-      .eq('type', newTemplate.type!)
-      .eq('subtype', newTemplate.subtype!);
+      .insert({
+        name: newTemplate.name || '',
+        subject: newTemplate.subject || '',
+        content: newTemplate.content || '',
+        type: newTemplate.type,
+        subtype: newTemplate.subtype,
+        is_default: newTemplate.is_default || false,
+      })
+      .select()
+      .single();
 
-    if (updateError) throw updateError;
+    if (error) {
+      console.error("Error creating template:", error);
+      throw error;
+    }
+
+    if (!validateTemplateType(data.type) || !validateTemplateSubtype(data.subtype)) {
+      throw new Error('Invalid template type or subtype in response');
+    }
+
+    return {
+      ...data,
+      type: data.type,
+      subtype: data.subtype,
+    } as EmailTemplate;
+  } catch (error) {
+    console.error("Template creation failed:", error);
+    throw error;
   }
-
-  const { data, error } = await supabase
-    .from('email_templates')
-    .insert({
-      name: newTemplate.name,
-      subject: newTemplate.subject,
-      content: newTemplate.content,
-      type: newTemplate.type,
-      subtype: newTemplate.subtype,
-      is_default: newTemplate.is_default || false,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  if (!validateTemplateType(data.type) || !validateTemplateSubtype(data.subtype)) {
-    throw new Error('Invalid template type or subtype in response');
-  }
-
-  return {
-    ...data,
-    type: data.type,
-    subtype: data.subtype,
-  } as EmailTemplate;
 };

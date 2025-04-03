@@ -13,4 +13,3 @@ export const validateTemplate = (template: Partial<EmailTemplate>): boolean => {
   if (!template.type || !template.subtype) return false;
   return validateTemplateType(template.type) && validateTemplateSubtype(template.subtype);
 };
-

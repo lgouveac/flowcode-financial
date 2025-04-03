@@ -92,15 +92,37 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
       return;
     }
 
-    const success = await onSaveTemplate(newTemplate);
-    
-    if (success) {
-      setNewTemplate({
-        type: type,
-        subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours',
-        name: '',
-        subject: '',
-        content: '',
+    try {
+      // Log template being saved
+      console.log("Saving template:", { ...newTemplate, subtype: currentType });
+      
+      const templateToSave = {
+        ...newTemplate,
+        subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours'
+      };
+      
+      const success = await onSaveTemplate(templateToSave);
+      
+      if (success) {
+        toast({
+          title: "Template salvo",
+          description: "O template foi salvo com sucesso!",
+        });
+        
+        setNewTemplate({
+          type: type,
+          subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+          name: '',
+          subject: '',
+          content: '',
+        });
+      }
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast({
+        title: "Erro ao salvar template",
+        description: "Ocorreu um erro ao salvar o template. Por favor, tente novamente.",
+        variant: "destructive",
       });
     }
   };

@@ -48,6 +48,7 @@ export const useEmailTemplates = () => {
   const fetchAndSetTemplates = async () => {
     try {
       const templates = await fetchTemplates();
+      console.log("Fetched templates:", templates);
       setSavedTemplates(templates);
       validateTemplates(templates);
     } catch (error) {
@@ -64,8 +65,8 @@ export const useEmailTemplates = () => {
 
   const handleTemplateUpdate = async (updatedTemplate: EmailTemplate) => {
     try {
-      const response = await updateTemplate(updatedTemplate);
-      console.log('Template update response:', response);
+      await updateTemplate(updatedTemplate);
+      console.log('Template updated successfully:', updatedTemplate);
       
       // Atualiza o template na lista
       setSavedTemplates(prev => prev.map(template => {
@@ -99,6 +100,7 @@ export const useEmailTemplates = () => {
   return {
     savedTemplates,
     isLoading,
-    handleTemplateUpdate
+    handleTemplateUpdate,
+    refreshTemplates: fetchAndSetTemplates
   };
 };

@@ -9,19 +9,31 @@ import { TestEmployeeNotificationButton } from "@/components/emails/TestEmployee
 import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsManager";
 import { EmailTemplate } from "@/types/email";
 import { createTemplate } from "@/services/templateService";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [employeeSettingsOpen, setEmployeeSettingsOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [currentTemplateType, setCurrentTemplateType] = useState<'clients' | 'employees'>('clients');
+  const { toast } = useToast();
 
   const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
     try {
+      console.log("Creating template with data:", template);
       await createTemplate(template);
+      toast({
+        title: "Template criado",
+        description: "O template foi criado com sucesso!",
+      });
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving template:", error);
+      toast({
+        title: "Erro ao criar template",
+        description: `Não foi possível criar o template: ${error.message || "Erro desconhecido"}`,
+        variant: "destructive",
+      });
       return false;
     }
   };
