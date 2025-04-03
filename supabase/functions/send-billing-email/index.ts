@@ -169,9 +169,9 @@ const handler = async (req: Request): Promise<Response> => {
       const ccEmails = ccRecipients?.map(recipient => recipient.email) || [];
       console.log("CC recipients:", ccEmails);
       
-      // Send email
+      // Send email using Resend's default domain instead of a custom domain
       const { data: emailResult, error } = await resend.emails.send({
-        from: "Financeiro <contato@xpertagro.com>",
+        from: "Financeiro <onboarding@resend.dev>",  // Using Resend's default domain
         to: [to],
         cc: ccEmails,
         subject: processedSubject,
