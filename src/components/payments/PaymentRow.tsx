@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,16 +38,27 @@ const paymentSchema = z.object({
   payment_method: z.enum(["pix", "boleto", "credit_card"], {
     required_error: "Método de pagamento é obrigatório",
   }),
-  status: z.enum(["pending", "billed", "awaiting_invoice", "paid", "overdue", "cancelled"], {
+  status: z.enum(["pending", "billed", "awaiting_invoice", "paid", "overdue", "cancelled", "partially_paid"], {
     required_error: "Status é obrigatório",
   }),
+  paid_amount: z.coerce.number().optional(),
 });
 
 export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, onPaymentUpdated }) => {
   const { toast } = useToast();
   const [sending, setSending] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [partialPaymentDialogOpen, setPartialPaymentDialogOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [partialAmount, setPartialAmount] = useState(payment.paid_amount || 0);
+
+  // For partial payment
+  const partialForm = useForm({
+    defaultValues: {
+      paid_amount: payment.paid_amount || 0,
+      payment_date: payment.payment_date ? new Date(payment.payment_date) : new Date(),
+    }
+  });
 
   const form = useForm<z.infer<typeof paymentSchema>>({
     resolver: zodResolver(paymentSchema),
@@ -58,6 +69,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
       payment_date: payment.payment_date ? new Date(payment.payment_date) : null,
       payment_method: payment.payment_method,
       status: payment.status,
+      paid_amount: payment.paid_amount || 0,
     },
   });
 
@@ -85,12 +97,58 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
     }
   };
 
+  const handlePartialPayment = async (data: any) => {
+    try {
+      setUpdating(true);
+      
+      if (data.paid_amount >= payment.amount) {
+        toast({
+          title: "Valor inválido",
+          description: "O valor pago não pode ser maior ou igual ao valor total.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Update the payment with partial payment info
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          status: 'partially_paid',
+          paid_amount: data.paid_amount,
+          payment_date: data.payment_date ? data.payment_date.toISOString().split('T')[0] : null
+        })
+        .eq('id', payment.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Pagamento parcial registrado",
+        description: `Valor de ${formatCurrency(data.paid_amount)} registrado com sucesso.`,
+      });
+      
+      setPartialPaymentDialogOpen(false);
+      onPaymentUpdated();
+    } catch (error) {
+      console.error("Erro ao registrar pagamento parcial:", error);
+      toast({
+        title: "Erro no registro",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const onSubmit = async (data: z.infer<typeof paymentSchema>) => {
     try {
       setUpdating(true);
       
       // Format dates for the database
-      const formattedData: EditablePaymentFields = {
+      const formattedData: EditablePaymentFields & { paid_amount?: number } = {
         description: data.description,
         amount: data.amount,
         due_date: data.due_date.toISOString().split('T')[0],
@@ -98,6 +156,11 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
         payment_method: data.payment_method,
         status: data.status,
       };
+      
+      // Include paid_amount if status is partially_paid
+      if (data.status === 'partially_paid') {
+        formattedData.paid_amount = data.paid_amount;
+      }
       
       const { error } = await supabase
         .from('payments')
@@ -127,19 +190,39 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
     }
   };
 
+  // Calculate the remaining amount for partially paid invoices
+  const remainingAmount = payment.status === 'partially_paid' && payment.paid_amount
+    ? payment.amount - payment.paid_amount
+    : payment.amount;
+
   return (
     <>
       <TableRow key={payment.id}>
         <TableCell>{payment.clients?.name || "Cliente não encontrado"}</TableCell>
         <TableCell>{payment.description}</TableCell>
-        <TableCell>{formatCurrency(payment.amount)}</TableCell>
+        <TableCell>
+          {payment.status === 'partially_paid' && payment.paid_amount ? (
+            <div>
+              <div>{formatCurrency(payment.amount)}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Pago: {formatCurrency(payment.paid_amount)} | 
+                Restante: {formatCurrency(remainingAmount)}
+              </div>
+            </div>
+          ) : (
+            formatCurrency(payment.amount)
+          )}
+        </TableCell>
         <TableCell>
           {payment.due_date ? format(new Date(payment.due_date), "dd/MM/yyyy", { locale: ptBR }) : "-"}
         </TableCell>
         <TableCell>{getPaymentMethodLabel(payment.payment_method)}</TableCell>
         <TableCell>
           <Badge className={getStatusColor(payment.status)}>
-            {payment.status === 'paid' ? 'Pago' : payment.status === 'pending' ? 'Pendente' : payment.status}
+            {payment.status === 'paid' ? 'Pago' : 
+             payment.status === 'pending' ? 'Pendente' : 
+             payment.status === 'partially_paid' ? 'Pago Parcial' : 
+             payment.status}
           </Badge>
         </TableCell>
         <TableCell>
@@ -151,6 +234,15 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
             >
               Editar
             </Button>
+            {payment.status === 'pending' && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setPartialPaymentDialogOpen(true)}
+              >
+                Parcial
+              </Button>
+            )}
             <Button 
               size="sm" 
               variant="outline"
@@ -163,6 +255,97 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
         </TableCell>
       </TableRow>
 
+      {/* Partial Payment Dialog */}
+      <Dialog open={partialPaymentDialogOpen} onOpenChange={setPartialPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Registrar Pagamento Parcial</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={partialForm.handleSubmit(handlePartialPayment)} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Valor Total</Label>
+              <div className="px-3 py-2 border rounded-md bg-muted/50">
+                {formatCurrency(payment.amount)}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="paid_amount">Valor Recebido</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5">R$</span>
+                <Input 
+                  id="paid_amount"
+                  type="number"
+                  step="0.01" 
+                  min="0.01" 
+                  max={payment.amount - 0.01}
+                  className="pl-8"
+                  {...partialForm.register('paid_amount', { 
+                    valueAsNumber: true,
+                    required: true
+                  })}
+                />
+              </div>
+              {partialForm.formState.errors.paid_amount && (
+                <p className="text-sm font-medium text-destructive">
+                  Valor pago é obrigatório
+                </p>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Data de Pagamento</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {partialForm.watch('payment_date') ? 
+                      format(partialForm.watch('payment_date'), "PPP", { locale: ptBR }) : 
+                      "Selecione uma data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={partialForm.watch('payment_date')}
+                    onSelect={(date) => partialForm.setValue('payment_date', date || new Date())}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Valor Restante</Label>
+              <div className="px-3 py-2 border rounded-md bg-muted/50">
+                {formatCurrency(payment.amount - (partialForm.watch('paid_amount') || 0))}
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setPartialPaymentDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit"
+                disabled={updating || partialForm.watch('paid_amount') <= 0 || partialForm.watch('paid_amount') >= payment.amount}
+              >
+                {updating ? 'Salvando...' : 'Salvar'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -329,6 +512,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
                         <SelectItem value="billed">Faturado</SelectItem>
                         <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
                         <SelectItem value="paid">Pago</SelectItem>
+                        <SelectItem value="partially_paid">Pago Parcial</SelectItem>
                         <SelectItem value="overdue">Atrasado</SelectItem>
                         <SelectItem value="cancelled">Cancelado</SelectItem>
                       </SelectContent>
@@ -337,6 +521,28 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
                   </FormItem>
                 )}
               />
+              
+              {form.watch('status') === 'partially_paid' && (
+                <FormField
+                  control={form.control}
+                  name="paid_amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor Pago (R$)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          min="0.01"
+                          max={form.watch('amount') - 0.01}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               
               <div className="flex justify-end space-x-2 pt-4">
                 <Button 

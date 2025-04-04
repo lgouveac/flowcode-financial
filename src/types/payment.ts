@@ -7,12 +7,13 @@ export interface Payment {
   due_date: string;
   payment_date?: string;
   payment_method: 'pix' | 'boleto' | 'credit_card';
-  status: 'pending' | 'billed' | 'awaiting_invoice' | 'paid' | 'overdue' | 'cancelled';
+  status: 'pending' | 'billed' | 'awaiting_invoice' | 'paid' | 'overdue' | 'cancelled' | 'partially_paid';
   created_at?: string;
   updated_at?: string;
   installment_number?: number;
   total_installments?: number;
   email_template?: string;
+  paid_amount?: number;
   clients?: {
     name: string;
     email?: string;
