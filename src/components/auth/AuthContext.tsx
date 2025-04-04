@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -7,7 +6,7 @@ import {
   ReactNode 
 } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
+import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -45,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Configure the auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
+      (event: AuthChangeEvent, newSession) => {
         console.log('Auth state changed:', event, newSession?.user?.email);
         
         // Update session and user state
@@ -74,24 +73,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 navigate('/', { replace: true });
               });
           }, 0);
-        } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          if (event === 'SIGNED_OUT') {
-            setProfile(null);
-            setLoading(false);
-            console.log('User signed out');
-            navigate('/auth/login');
-          } else {
-            console.log(`Auth event: ${event}`);
-          }
-        } else if (event === 'USER_DELETED') {
-          // Handle user deletion
-          setSession(null);
-          setUser(null);
+        } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setLoading(false);
-          console.log('User deleted');
+          console.log('User signed out');
           navigate('/auth/login');
-        } else if (!newSession && (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
+        } else if (event === 'USER_UPDATED') {
+          console.log(`Auth event: ${event}`);
+        } else if (event === 'INITIAL_SESSION') {
+          // Handle initial session - this will be handled by getSession() below
+          console.log('Initial session event');
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed event');
+        } else if (!newSession && event === 'INITIAL_SESSION') {
           // Session expired or invalid
           console.log('Session expired or invalid');
           setSession(null);
