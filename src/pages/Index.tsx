@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
-import { MoonIcon, SunIcon, LogOutIcon, UserIcon } from "lucide-react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { MoonIcon, SunIcon, LogOutIcon } from "lucide-react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -53,22 +53,29 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="bg-secondary border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <nav className="flex -mb-px space-x-8">
-            {navigation.map(({ path, label }) => (
-              <NavLink
-                key={path}
-                to={path}
-                end={path === "/"}
-                className={({ isActive }) => `flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors hover:text-foreground ${
-                  isActive
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:border-primary/30'
-                }`}
-              >
-                {label}
-              </NavLink>
-            ))}
-          </nav>
+          <div className="flex items-center">
+            <img 
+              src="/lovable-uploads/86bceaf8-2d8e-4f71-812c-f3e40ccf2e67.png" 
+              alt="FlowCode Logo" 
+              className="h-10 mr-4" 
+            />
+            <nav className="flex -mb-px space-x-8">
+              {navigation.map(({ path, label }) => (
+                <NavLink
+                  key={path}
+                  to={path}
+                  end={path === "/"}
+                  className={({ isActive }) => `flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors hover:text-foreground ${
+                    isActive
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:border-primary/30'
+                  }`}
+                >
+                  {label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
