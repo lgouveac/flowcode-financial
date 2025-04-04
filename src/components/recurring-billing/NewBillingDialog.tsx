@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { RecurringBilling } from "@/types/billing";
@@ -12,47 +11,32 @@ import { NewPaymentForm } from "../payments/NewPaymentForm";
 import { EmailTemplate } from "@/types/email";
 
 interface NewBillingDialogProps {
-  clients: Array<{ id: string; name: string; responsible_name?: string }>;
+  clients: Array<{ id: string; name: string; partner_name?: string; responsible_name?: string }>;
   onSuccess: () => void;
   templates?: EmailTemplate[];
 }
 
 export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBillingDialogProps) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [paymentType, setPaymentType] = useState<'recurring' | 'onetime'>('recurring');
+  const [open, setOpen] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(true);
   const { toast } = useToast();
 
-  const handleNewBilling = async (billing: RecurringBilling & { email_template?: string; responsible_name?: string }) => {
-    console.log("Creating new billing:", billing);
-    
-    // First, update the client's responsible_name if needed
-    if (billing.responsible_name && billing.client_id) {
-      try {
-        const { error: clientError } = await supabase
-          .from('clients')
-          .update({ responsible_name: billing.responsible_name })
-          .eq('id', billing.client_id);
-          
-        if (clientError) {
-          console.error('Error updating client responsible name:', clientError);
-        }
-      } catch (err) {
-        console.error('Error updating client:', err);
-      }
-    }
-    
-    // Extract responsible_name before sending to avoid DB error
-    const { responsible_name, ...billingData } = billing;
-    
-    // Create the billing record
+  const handleSuccess = () => {
+    setOpen(false);
+    onSuccess();
+  };
+
+  const handleNewRecurring = async (billing: Omit<RecurringBilling, 'id' | 'created_at' | 'updated_at' | 'current_installment'> & { email_template?: string }) => {
+    console.log("Creating new recurring billing:", billing);
+
     const { data, error } = await supabase
       .from('recurring_billing')
-      .insert([billingData])
+      .insert(billing)
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating billing:', error);
+      console.error('Error creating recurring billing:', error);
       toast({
         title: "Erro",
         description: "Não foi possível criar o recebimento recorrente.",
@@ -61,36 +45,35 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
       return;
     }
 
-    console.log("New billing created:", data);
-    setDialogOpen(false);
-    
-    // Give a small delay to ensure payments were created
-    setTimeout(() => {
-      onSuccess();
-    }, 500);
-    
     toast({
       title: "Sucesso",
       description: "Recebimento recorrente criado com sucesso.",
     });
+
+    handleSuccess();
   };
 
   const handleNewPayment = async (payment: NewPayment & { responsible_name?: string }) => {
     console.log("Creating new payment:", payment);
     
     // First, update the client's responsible_name if needed
-    if (payment.responsible_name && payment.client_id) {
-      try {
-        const { error: clientError } = await supabase
+    if (payment.client_id) {
+      const client = clients.find(c => c.id === payment.client_id);
+      if (client && payment.responsible_name !== (client.responsible_name || client.partner_name)) {
+        const { error: updateError } = await supabase
           .from('clients')
           .update({ responsible_name: payment.responsible_name })
           .eq('id', payment.client_id);
           
-        if (clientError) {
-          console.error('Error updating client responsible name:', clientError);
+        if (updateError) {
+          console.error('Error updating client responsible_name:', updateError);
+          toast({
+            title: "Erro",
+            description: "Erro ao atualizar o nome do responsável do cliente.",
+            variant: "destructive",
+          });
+          return;
         }
-      } catch (err) {
-        console.error('Error updating client:', err);
       }
     }
     
@@ -100,67 +83,69 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
     // Use single object insert, not array
     const { data, error } = await supabase
       .from('payments')
-      .insert(paymentData)
+      .insert(paymentData as any)
       .select()
       .single();
-
+      
     if (error) {
       console.error('Error creating payment:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível criar o recebimento pontual.",
+        description: "Não foi possível criar o recebimento.",
         variant: "destructive",
       });
       return;
     }
 
-    console.log("New payment created:", data);
-    setDialogOpen(false);
-    onSuccess();
-    
     toast({
       title: "Sucesso",
-      description: "Recebimento pontual criado com sucesso.",
+      description: "Recebimento criado com sucesso.",
     });
+
+    handleSuccess();
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Novo Recebimento
-        </Button>
+        <Button><PlusIcon className="h-4 w-4 mr-2" /> Novo Recebimento</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
-          <DialogTitle>Novo Recebimento</DialogTitle>
-          <DialogDescription>
-            Escolha o tipo de recebimento que deseja criar
-          </DialogDescription>
+          <DialogTitle>{isRecurring ? "Novo Recebimento Recorrente" : "Novo Recebimento Pontual"}</DialogTitle>
+          <div className="flex gap-2 mt-2">
+            <Button
+              variant={isRecurring ? "default" : "outline"}
+              onClick={() => setIsRecurring(true)}
+              size="sm"
+            >
+              Recorrente
+            </Button>
+            <Button
+              variant={!isRecurring ? "default" : "outline"}
+              onClick={() => setIsRecurring(false)}
+              size="sm"
+            >
+              Pontual
+            </Button>
+          </div>
         </DialogHeader>
-        <Tabs defaultValue={paymentType} onValueChange={(value) => setPaymentType(value as 'recurring' | 'onetime')}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="recurring">Recorrente</TabsTrigger>
-            <TabsTrigger value="onetime">Pontual</TabsTrigger>
-          </TabsList>
-          <TabsContent value="recurring">
-            <NewRecurringBillingForm
-              clients={clients}
-              onSubmit={handleNewBilling}
-              onClose={() => setDialogOpen(false)}
-              templates={templates}
-            />
-          </TabsContent>
-          <TabsContent value="onetime">
-            <NewPaymentForm
-              clients={clients}
-              onSubmit={handleNewPayment}
-              onClose={() => setDialogOpen(false)}
-              templates={templates}
-            />
-          </TabsContent>
-        </Tabs>
+
+        {isRecurring ? (
+          <NewRecurringBillingForm
+            clients={clients}
+            onSubmit={handleNewRecurring}
+            onClose={() => setOpen(false)}
+            templates={templates}
+          />
+        ) : (
+          <NewPaymentForm
+            clients={clients}
+            onSubmit={handleNewPayment}
+            onClose={() => setOpen(false)}
+            templates={templates}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

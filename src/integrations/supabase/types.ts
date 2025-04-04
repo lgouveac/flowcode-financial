@@ -422,6 +422,7 @@ export type Database = {
           email_template: string | null
           id: string
           installment_number: number | null
+          paid_amount: number | null
           payment_date: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           status: Database["public"]["Enums"]["billing_status"] | null
@@ -437,6 +438,7 @@ export type Database = {
           email_template?: string | null
           id?: string
           installment_number?: number | null
+          paid_amount?: number | null
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["billing_status"] | null
@@ -452,6 +454,7 @@ export type Database = {
           email_template?: string | null
           id?: string
           installment_number?: number | null
+          paid_amount?: number | null
           payment_date?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           status?: Database["public"]["Enums"]["billing_status"] | null
@@ -604,6 +607,7 @@ export type Database = {
         | "paid"
         | "overdue"
         | "cancelled"
+        | "partially_paid"
       cash_flow_status: "pending" | "approved" | "rejected"
       client_status: "active" | "inactive" | "overdue"
       client_type: "pf" | "pj"

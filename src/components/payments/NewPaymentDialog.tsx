@@ -32,7 +32,7 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients, templates 
           status: payment.status,
           email_template: payment.email_template,
           paid_amount: payment.paid_amount
-        });
+        } as any);
 
       if (error) {
         console.error("Error creating payment:", error);

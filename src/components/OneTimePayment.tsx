@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -56,7 +55,7 @@ export const OneTimePayment = () => {
     fetchClients();
   }, []);
 
-  const handleNewPayment = async (payment: Omit<Payment, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleNewPayment = async (payment: any) => {
     try {
       // We need to send one payment object, not an array
       const { data, error } = await supabase
