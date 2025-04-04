@@ -47,6 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         console.log('Auth state changed:', event, newSession?.user?.email);
+        
+        // Update session and user state
         setSession(newSession);
         setUser(newSession?.user ?? null);
 
@@ -72,10 +74,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 navigate('/', { replace: true });
               });
           }, 0);
-        } else if (event === 'SIGNED_OUT') {
+        } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          if (event === 'SIGNED_OUT') {
+            setProfile(null);
+            setLoading(false);
+            console.log('User signed out');
+            navigate('/auth/login');
+          } else {
+            console.log(`Auth event: ${event}`);
+          }
+        } else if (event === 'USER_DELETED') {
+          // Handle user deletion
+          setSession(null);
+          setUser(null);
           setProfile(null);
           setLoading(false);
-          console.log('User signed out');
+          console.log('User deleted');
+          navigate('/auth/login');
+        } else if (!newSession && (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
+          // Session expired or invalid
+          console.log('Session expired or invalid');
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
           navigate('/auth/login');
         }
       }
@@ -84,6 +106,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       console.log('Existing session check:', initialSession ? 'Found session' : 'No session');
+      
+      if (!initialSession) {
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      
+      // Check if token is still valid
+      const expiresAt = initialSession.expires_at;
+      const isExpired = expiresAt ? (expiresAt * 1000 < Date.now()) : false;
+      
+      if (isExpired) {
+        console.log('Session has expired, signing out');
+        supabase.auth.signOut().then(() => {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          navigate('/auth/login');
+        });
+        return;
+      }
+      
+      // Valid session
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
       
@@ -108,9 +154,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Set up session expiry check
+    const sessionCheckInterval = setInterval(() => {
+      if (session) {
+        const expiresAt = session.expires_at;
+        if (expiresAt && expiresAt * 1000 < Date.now()) {
+          console.log('Session has expired during runtime, attempting refresh');
+          supabase.auth.refreshSession().then(({ data, error }) => {
+            if (error || !data.session) {
+              console.log('Failed to refresh session, signing out', error);
+              supabase.auth.signOut().then(() => {
+                setSession(null);
+                setUser(null);
+                setProfile(null);
+                navigate('/auth/login');
+              });
+            } else {
+              console.log('Session refreshed successfully');
+              setSession(data.session);
+              setUser(data.session.user);
+            }
+          });
+        }
+      }
+    }, 60000); // Check every minute
+
     return () => {
       subscription.unsubscribe();
       clearTimeout(loadingTimeout);
+      clearInterval(sessionCheckInterval);
     };
   }, [navigate]);
 
