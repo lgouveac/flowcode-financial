@@ -1,3 +1,4 @@
+
 export const formatCurrency = (value: number): string => {
   if (value === undefined || value === null) return 'R$ 0,00';
   

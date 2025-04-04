@@ -20,17 +20,19 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients, templates 
   const handleSubmit = async (payment: NewPayment & { email_template?: string }) => {
     console.log("Submitting payment:", payment);
     try {
+      // Create a single payment object, not an array
       const { error } = await supabase
         .from('payments')
-        .insert([{
+        .insert({
           client_id: payment.client_id,
           description: payment.description,
           amount: payment.amount,
           due_date: payment.due_date,
           payment_method: payment.payment_method,
           status: payment.status,
-          email_template: payment.email_template
-        }]);
+          email_template: payment.email_template,
+          paid_amount: payment.paid_amount
+        });
 
       if (error) {
         console.error("Error creating payment:", error);

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { RecurringBilling } from "@/types/billing";
-import type { Payment } from "@/types/payment";
+import type { Payment, NewPayment } from "@/types/payment";
 import { NewRecurringBillingForm } from "./NewRecurringBillingForm";
 import { NewPaymentForm } from "../payments/NewPaymentForm";
 import { EmailTemplate } from "@/types/email";
@@ -76,7 +75,7 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
     });
   };
 
-  const handleNewPayment = async (payment: Payment & { responsible_name?: string }) => {
+  const handleNewPayment = async (payment: NewPayment & { responsible_name?: string }) => {
     console.log("Creating new payment:", payment);
     
     // First, update the client's responsible_name if needed
@@ -98,9 +97,10 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
     // Extract responsible_name before sending to avoid DB error
     const { responsible_name, ...paymentData } = payment;
     
+    // Use single object insert, not array
     const { data, error } = await supabase
       .from('payments')
-      .insert([paymentData])
+      .insert(paymentData)
       .select()
       .single();
 

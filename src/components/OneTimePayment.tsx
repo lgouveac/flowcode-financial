@@ -57,28 +57,38 @@ export const OneTimePayment = () => {
   }, []);
 
   const handleNewPayment = async (payment: Omit<Payment, 'id' | 'created_at' | 'updated_at'>) => {
-    const { data, error } = await supabase
-      .from('payments')
-      .insert([payment])
-      .select()
-      .single();
+    try {
+      // We need to send one payment object, not an array
+      const { data, error } = await supabase
+        .from('payments')
+        .insert(payment)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error creating payment:', error);
+      if (error) {
+        console.error('Error creating payment:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível criar o recebimento.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setPayments(prev => [...prev, data as Payment]);
+      setDialogOpen(false);
+      toast({
+        title: "Sucesso",
+        description: "Recebimento criado com sucesso.",
+      });
+    } catch (err) {
+      console.error('Unexpected error:', err);
       toast({
         title: "Erro",
-        description: "Não foi possível criar o recebimento.",
+        description: "Ocorreu um erro inesperado ao criar o recebimento.",
         variant: "destructive",
       });
-      return;
     }
-
-    setPayments(prev => [...prev, data as Payment]);
-    setDialogOpen(false);
-    toast({
-      title: "Sucesso",
-      description: "Recebimento criado com sucesso.",
-    });
   };
 
   return (
