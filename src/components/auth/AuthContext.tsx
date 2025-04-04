@@ -1,3 +1,4 @@
+
 import { 
   createContext, 
   useContext, 
@@ -80,19 +81,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           navigate('/auth/login');
         } else if (event === 'USER_UPDATED') {
           console.log(`Auth event: ${event}`);
-        } else if (event === 'INITIAL_SESSION') {
-          // Handle initial session - this will be handled by getSession() below
-          console.log('Initial session event');
-        } else if (event === 'TOKEN_REFRESHED') {
-          console.log('Token refreshed event');
-        } else if (!newSession && event === 'INITIAL_SESSION') {
-          // Session expired or invalid
-          console.log('Session expired or invalid');
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          navigate('/auth/login');
+        } else {
+          // For other events or when no session
+          if (!newSession) {
+            console.log('No valid session found for event:', event);
+            setSession(null);
+            setUser(null);
+            setProfile(null);
+            setLoading(false);
+            navigate('/auth/login');
+          } else {
+            console.log(`Other auth event: ${event}`);
+          }
         }
       }
     );
