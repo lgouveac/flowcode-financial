@@ -39,11 +39,62 @@ export const Overview = () => {
     console.log('Overview metrics before display:', metrics);
   }, [metrics]);
   
+  // Helper function to get period date ranges
+  const getPeriodDates = (selectedPeriod: string) => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    switch (selectedPeriod) {
+      case 'current':
+        return {
+          start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+          end: new Date(currentYear, currentMonth, 0).toISOString().split('T')[0], // Last day of current month
+        };
+      case 'last_month':
+        const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+        const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+        return {
+          start: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`,
+          end: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+        };
+      case 'last_3_months':
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(now.getMonth() - 3);
+        return {
+          start: threeMonthsAgo.toISOString().split('T')[0],
+          end: now.toISOString().split('T')[0],
+        };
+      case 'last_6_months':
+        const sixMonthsAgo = new Date(now);
+        sixMonthsAgo.setMonth(now.getMonth() - 6);
+        return {
+          start: sixMonthsAgo.toISOString().split('T')[0],
+          end: now.toISOString().split('T')[0],
+        };
+      case 'last_year':
+        const lastYear = new Date(now);
+        lastYear.setFullYear(now.getFullYear() - 1);
+        return {
+          start: lastYear.toISOString().split('T')[0],
+          end: now.toISOString().split('T')[0],
+        };
+      default:
+        return {
+          start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+          end: new Date(currentYear, currentMonth, 0).toISOString().split('T')[0],
+        };
+    }
+  };
+  
   // Function to fetch pending payments
   const fetchPendingPayments = async () => {
     setLoadingPayments(true);
     
     try {
+      // Get date range based on selected period
+      const dates = getPeriodDates(period);
+      
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -55,6 +106,8 @@ export const Overview = () => {
           )
         `)
         .in('status', ['pending', 'awaiting_invoice', 'billed'])
+        .gte('due_date', dates.start)
+        .lte('due_date', dates.end)
         .order('due_date', { ascending: true });
       
       if (error) {
@@ -291,7 +344,11 @@ export const Overview = () => {
       <Dialog open={pendingPaymentsOpen} onOpenChange={setPendingPaymentsOpen}>
         <DialogContent className="w-full max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Recebimentos Pendentes</DialogTitle>
+            <DialogTitle>Recebimentos Pendentes - {period === "current" ? "Mês Atual" : 
+                          period === "last_month" ? "Mês Anterior" : 
+                          period === "last_3_months" ? "Últimos 3 Meses" : 
+                          period === "last_6_months" ? "Últimos 6 Meses" : 
+                          "Último Ano"}</DialogTitle>
           </DialogHeader>
           
           {loadingPayments ? (
@@ -308,4 +365,3 @@ export const Overview = () => {
       </Dialog>
     </div>;
 };
-

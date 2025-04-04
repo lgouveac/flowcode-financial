@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -80,7 +81,8 @@ export const useMetrics = (period: string = 'current') => {
           compareEnd: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`,
         };
       case 'last_3_months':
-        const threeMonthsAgo = new Date(now.setMonth(now.getMonth() - 3));
+        const threeMonthsAgo = new Date(now);
+        threeMonthsAgo.setMonth(now.getMonth() - 3);
         return {
           start: threeMonthsAgo.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
@@ -88,7 +90,8 @@ export const useMetrics = (period: string = 'current') => {
           compareEnd: threeMonthsAgo.toISOString().split('T')[0],
         };
       case 'last_6_months':
-        const sixMonthsAgo = new Date(now.setMonth(now.getMonth() - 6));
+        const sixMonthsAgo = new Date(now);
+        sixMonthsAgo.setMonth(now.getMonth() - 6);
         return {
           start: sixMonthsAgo.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
@@ -96,7 +99,8 @@ export const useMetrics = (period: string = 'current') => {
           compareEnd: sixMonthsAgo.toISOString().split('T')[0],
         };
       case 'last_year':
-        const lastYear = new Date(now.setFullYear(now.getFullYear() - 1));
+        const lastYear = new Date(now);
+        lastYear.setFullYear(now.getFullYear() - 1);
         return {
           start: lastYear.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
@@ -178,7 +182,7 @@ export const useMetrics = (period: string = 'current') => {
 
         if (previousClientsError) throw previousClientsError;
 
-        // Buscar faturamento esperado (pagamentos pendentes)
+        // Buscar faturamento esperado (pagamentos pendentes) - FILTER BY SELECTED PERIOD
         const { data: expectedPayments, error: expectedPaymentsError } = await supabase
           .from('payments')
           .select('amount')
@@ -188,13 +192,30 @@ export const useMetrics = (period: string = 'current') => {
 
         if (expectedPaymentsError) throw expectedPaymentsError;
 
-        // Buscar faturamento esperado (recorrentes)
+        // Buscar faturamento esperado (recorrentes) - FILTER BY SELECTED PERIOD
         const { data: expectedRecurring, error: expectedRecurringError } = await supabase
           .from('recurring_billing')
-          .select('amount')
+          .select('amount, due_day')
           .in('status', ['pending', 'billed', 'awaiting_invoice']);
 
         if (expectedRecurringError) throw expectedRecurringError;
+
+        // Filter recurring payments based on due_day falling within the selected period
+        const filteredRecurring = expectedRecurring?.filter(item => {
+          if (!item.due_day) return false;
+          
+          // Create a date object using the due_day and check if it falls within the period
+          const startDate = new Date(dates.start);
+          const endDate = new Date(dates.end);
+          const currentYear = startDate.getFullYear();
+          const currentMonth = startDate.getMonth();
+          
+          // Create a date from the due_day in the current month
+          const dueDate = new Date(currentYear, currentMonth, item.due_day);
+          
+          // Check if the due date falls within our period
+          return dueDate >= startDate && dueDate < endDate;
+        }) || [];
 
         // Buscar faturamento esperado do período anterior (pagamentos pontuais)
         const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
@@ -256,11 +277,11 @@ export const useMetrics = (period: string = 'current') => {
           ?.filter(item => item.type === 'expense')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
-        // Calcular faturamento esperado atual
+        // Calcular faturamento esperado atual (only count payments within the selected period)
         const currentExpectedPaymentsTotal = expectedPayments
           ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
         
-        const currentExpectedRecurringTotal = expectedRecurring
+        const currentExpectedRecurringTotal = filteredRecurring
           ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
         
         const currentExpectedRevenue = currentExpectedPaymentsTotal + currentExpectedRecurringTotal;
@@ -269,8 +290,24 @@ export const useMetrics = (period: string = 'current') => {
         const previousExpectedPaymentsTotal = previousExpectedPayments
           ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
-        // Para simplificar, usamos o mesmo valor recorrente para o período anterior
-        const previousExpectedRevenue = previousExpectedPaymentsTotal + currentExpectedRecurringTotal;
+        // Filter previous recurring payments the same way
+        const previousFilteredRecurring = expectedRecurring?.filter(item => {
+          if (!item.due_day) return false;
+          
+          const startDate = new Date(dates.compareStart);
+          const endDate = new Date(dates.compareEnd);
+          const year = startDate.getFullYear();
+          const month = startDate.getMonth();
+          
+          const dueDate = new Date(year, month, item.due_day);
+          
+          return dueDate >= startDate && dueDate < endDate;
+        }) || [];
+        
+        const previousExpectedRecurringTotal = previousFilteredRecurring
+          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          
+        const previousExpectedRevenue = previousExpectedPaymentsTotal + previousExpectedRecurringTotal;
 
         const currentNetProfit = currentRevenue - currentExpenses;
         const previousNetProfit = previousRevenue - previousExpenses;
