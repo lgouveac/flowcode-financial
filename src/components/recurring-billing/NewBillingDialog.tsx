@@ -27,12 +27,38 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
     onSuccess();
   };
 
-  const handleNewRecurring = async (billing: Omit<RecurringBilling, 'id' | 'created_at' | 'updated_at' | 'current_installment'> & { email_template?: string }) => {
-    console.log("Creating new recurring billing:", billing);
+  const handleNewRecurring = async (billingData: Omit<RecurringBilling, 'id' | 'created_at' | 'updated_at' | 'current_installment'> & { email_template?: string; responsible_name?: string }) => {
+    console.log("Creating new recurring billing:", billingData);
 
+    // Extract responsible_name to update client
+    const { responsible_name, ...billingRecordData } = billingData;
+    
+    // First, update the client's responsible_name if provided
+    if (responsible_name && billingData.client_id) {
+      const client = clients.find(c => c.id === billingData.client_id);
+      if (client && responsible_name !== client.responsible_name) {
+        console.log("Updating client responsible name:", responsible_name);
+        const { error: updateError } = await supabase
+          .from('clients')
+          .update({ responsible_name })
+          .eq('id', billingData.client_id);
+          
+        if (updateError) {
+          console.error('Error updating client responsible_name:', updateError);
+          toast({
+            title: "Erro",
+            description: "Erro ao atualizar o nome do responsável do cliente.",
+            variant: "destructive",
+          });
+          // Continue with creating the billing even if updating the client fails
+        }
+      }
+    }
+
+    // Now insert the billing record (without responsible_name)
     const { data, error } = await supabase
       .from('recurring_billing')
-      .insert(billing as any)
+      .insert(billingRecordData)
       .select()
       .single();
 

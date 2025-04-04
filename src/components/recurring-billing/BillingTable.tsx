@@ -255,7 +255,8 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
       awaiting_invoice: 'Aguardando Fatura',
       paid: 'Pago',
       overdue: 'Atrasado',
-      cancelled: 'Cancelado'
+      cancelled: 'Cancelado',
+      partially_paid: 'Parcialmente Pago'
     };
     return statusLabels[status];
   };
