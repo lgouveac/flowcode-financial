@@ -15,7 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, DollarSign } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { CalendarIcon, DollarSign, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,6 +52,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [partialPaymentDialogOpen, setPartialPaymentDialogOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [partialAmount, setPartialAmount] = useState(payment.paid_amount || 0);
 
   // For partial payment
@@ -95,6 +97,37 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
       });
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleDeletePayment = async () => {
+    try {
+      setDeleting(true);
+      
+      const { error } = await supabase
+        .from('payments')
+        .delete()
+        .eq('id', payment.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Recebimento excluído",
+        description: "O recebimento foi excluído com sucesso.",
+      });
+      
+      onPaymentUpdated();
+    } catch (error) {
+      console.error("Erro ao excluir recebimento:", error);
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -253,6 +286,35 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
             >
               {sending ? 'Enviando...' : 'Enviar Email'}
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2Icon className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Recebimento</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir este recebimento? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeletePayment}
+                    disabled={deleting}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {deleting ? 'Excluindo...' : 'Excluir'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </TableCell>
       </TableRow>
