@@ -7,6 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { PaymentTable } from "@/components/payments/PaymentTable";
+import type { Payment } from "@/types/payment";
 
 export const Overview = () => {
   const [period, setPeriod] = useState("current");
@@ -15,6 +19,10 @@ export const Overview = () => {
     metrics,
     isLoading
   } = useMetrics(period);
+  
+  const [pendingPaymentsOpen, setPendingPaymentsOpen] = useState(false);
+  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   // Format currency with consistent decimal places
   const formatCurrency = (value: number) => {
@@ -30,6 +38,42 @@ export const Overview = () => {
   useEffect(() => {
     console.log('Overview metrics before display:', metrics);
   }, [metrics]);
+  
+  // Function to fetch pending payments
+  const fetchPendingPayments = async () => {
+    setLoadingPayments(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          clients (
+            name,
+            email,
+            partner_name
+          )
+        `)
+        .in('status', ['pending', 'awaiting_invoice', 'billed'])
+        .order('due_date', { ascending: true });
+      
+      if (error) {
+        throw error;
+      }
+      
+      setPendingPayments(data || []);
+    } catch (error) {
+      console.error("Error fetching pending payments:", error);
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+  
+  // Handle click on the expected revenue card
+  const handleExpectedRevenueClick = () => {
+    fetchPendingPayments();
+    setPendingPaymentsOpen(true);
+  };
 
   // Main stats
   const stats = [{
@@ -42,6 +86,7 @@ export const Overview = () => {
     value: formatCurrency(metrics.expectedRevenue || 0),
     change: metrics.expectedRevenueChange || "0%",
     description: "Recebimentos pendentes",
+    onClick: handleExpectedRevenueClick,
   }, {
     title: "Despesas Totais",
     value: formatCurrency(metrics.totalExpenses || 0),
@@ -126,7 +171,10 @@ export const Overview = () => {
       }} transition={{
         delay: i * 0.1
       }}>
-            <Card>
+            <Card 
+              className={stat.onClick ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
+              onClick={stat.onClick}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
@@ -238,5 +286,26 @@ export const Overview = () => {
           </Alert>
         )}
       </div>
+      
+      {/* Pending Payments Modal */}
+      <Dialog open={pendingPaymentsOpen} onOpenChange={setPendingPaymentsOpen}>
+        <DialogContent className="w-full max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Recebimentos Pendentes</DialogTitle>
+          </DialogHeader>
+          
+          {loadingPayments ? (
+            <div className="flex justify-center py-8">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : (
+            <PaymentTable 
+              payments={pendingPayments} 
+              onRefresh={fetchPendingPayments}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>;
 };
+
