@@ -5,7 +5,6 @@ import { Payment } from "@/types/payment";
 import { PaymentRow } from "./PaymentRow";
 import { EmptyState } from "./EmptyState";
 
-// Add onRefresh to props
 interface PaymentTableProps {
   payments?: Payment[];
   onRefresh?: () => void;
@@ -13,6 +12,12 @@ interface PaymentTableProps {
 
 export const PaymentTable = ({ payments = [], onRefresh }: PaymentTableProps) => {
   const handleEmailSent = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handlePaymentUpdated = () => {
     if (onRefresh) {
       onRefresh();
     }
@@ -41,6 +46,7 @@ export const PaymentTable = ({ payments = [], onRefresh }: PaymentTableProps) =>
                 key={payment.id} 
                 payment={payment} 
                 onEmailSent={handleEmailSent}
+                onPaymentUpdated={handlePaymentUpdated}
               />
             ))
           )}

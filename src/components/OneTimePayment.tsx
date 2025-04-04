@@ -105,7 +105,10 @@ export const OneTimePayment = () => {
         </Dialog>
       </div>
 
-      <PaymentTable payments={payments} />
+      <PaymentTable 
+        payments={payments} 
+        onRefresh={fetchPayments}
+      />
     </div>
   );
 };
