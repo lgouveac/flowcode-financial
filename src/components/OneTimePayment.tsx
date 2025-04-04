@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -60,7 +61,7 @@ export const OneTimePayment = () => {
       // We need to send one payment object, not an array
       const { data, error } = await supabase
         .from('payments')
-        .insert(payment)
+        .insert(payment as any)
         .select()
         .single();
 

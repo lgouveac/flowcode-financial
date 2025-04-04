@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -114,7 +115,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
       const { error } = await supabase
         .from('payments')
         .update({
-          status: 'partially_paid',
+          status: 'partially_paid' as Payment['status'],
           paid_amount: data.paid_amount,
           payment_date: data.payment_date ? data.payment_date.toISOString().split('T')[0] : null
         })
@@ -162,9 +163,10 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({ payment, onEmailSent, on
         formattedData.paid_amount = data.paid_amount;
       }
       
+      // Use type assertion to handle the status type
       const { error } = await supabase
         .from('payments')
-        .update(formattedData)
+        .update(formattedData as any)
         .eq('id', payment.id);
         
       if (error) {

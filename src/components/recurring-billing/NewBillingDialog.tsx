@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -31,7 +32,7 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
 
     const { data, error } = await supabase
       .from('recurring_billing')
-      .insert(billing)
+      .insert(billing as any)
       .select()
       .single();
 
