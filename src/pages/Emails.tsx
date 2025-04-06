@@ -38,33 +38,34 @@ export default function Emails() {
     }
   };
   
-  return <div className="container py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Emails e Notificações</h1>
-        <div className="space-x-3">
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-2xl font-bold tracking-tight">Emails e Notificações</h1>
+        <div className="flex gap-2">
           <TestEmployeeNotificationButton />
         </div>
       </div>
 
       <Tabs defaultValue="templates" className="w-full">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="templates">Templates de Email</TabsTrigger>
-          <TabsTrigger value="cc-recipients">Destinatários CC</TabsTrigger>
+        <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
+          <TabsTrigger value="templates" className="flex-1 sm:flex-none">Templates de Email</TabsTrigger>
+          <TabsTrigger value="cc-recipients" className="flex-1 sm:flex-none">Destinatários CC</TabsTrigger>
         </TabsList>
         
         <TabsContent value="templates">
-          <div className="mb-6">
+          <div className="mt-4">
             <Tabs defaultValue="clients" onValueChange={(value) => setCurrentTemplateType(value as 'clients' | 'employees')}>
-              <TabsList>
-                <TabsTrigger value="clients">Templates de Cliente</TabsTrigger>
-                <TabsTrigger value="employees">Templates de Funcionário</TabsTrigger>
+              <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
+                <TabsTrigger value="clients" className="flex-1 sm:flex-none">Templates de Cliente</TabsTrigger>
+                <TabsTrigger value="employees" className="flex-1 sm:flex-none">Templates de Funcionário</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="clients">
+              <TabsContent value="clients" className="mt-4">
                 <TemplateSection type="clients" onSaveTemplate={handleSaveTemplate} />
               </TabsContent>
               
-              <TabsContent value="employees">
+              <TabsContent value="employees" className="mt-4">
                 <TemplateSection type="employees" onSaveTemplate={handleSaveTemplate} />
               </TabsContent>
             </Tabs>
@@ -88,5 +89,6 @@ export default function Emails() {
     }} /> : null}
       
       <EmployeeEmailSettings open={employeeSettingsOpen} onClose={() => setEmployeeSettingsOpen(false)} />
-    </div>;
+    </div>
+  );
 }
