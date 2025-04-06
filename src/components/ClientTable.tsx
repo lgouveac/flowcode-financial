@@ -9,6 +9,7 @@ import { NewClientForm } from "./client/NewClientForm";
 import { ClientRow } from "./client/ClientRow";
 import { EditClientDialog } from "./EditClientDialog";
 import { ImportCSV } from "./import/ImportCSV";
+import { ShareFormButton } from "./client/ShareFormButton";
 import type { Client, NewClient } from "@/types/client";
 import { 
   AlertDialog,
@@ -192,8 +193,9 @@ export const ClientTable = () => {
     <div className="space-y-4 p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Clientes</h1>
-        <div className="flex w-full sm:w-auto gap-2">
+        <div className="flex flex-wrap w-full sm:w-auto gap-2">
           <ImportCSV />
+          <ShareFormButton />
           <Dialog>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto gap-2">

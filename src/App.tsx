@@ -21,6 +21,9 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import EmailConfirmed from "./pages/auth/EmailConfirmed";
+import PublicClientForm from "./pages/PublicClientForm";
+import ThankYou from "./pages/ThankYou";
+import EmployeesPage from "./pages/Employees";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +36,10 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <Routes>
+              {/* Public routes */}
+              <Route path="/register-client" element={<PublicClientForm />} />
+              <Route path="/thank-you" element={<ThankYou />} />
+              
               {/* Rotas de autenticação */}
               <Route path="/auth">
                 <Route path="login" element={<Login />} />
