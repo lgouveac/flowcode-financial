@@ -36,7 +36,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <Routes>
-              {/* Public routes */}
+              {/* Public routes - positioned before the auth routes */}
               <Route path="/register-client" element={<PublicClientForm />} />
               <Route path="/thank-you" element={<ThankYou />} />
               
