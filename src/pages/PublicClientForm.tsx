@@ -37,17 +37,18 @@ export default function PublicClientForm() {
     setIsSubmitting(true);
 
     try {
+      // Prepare the form data with the correct typing for Supabase
       const finalFormData = {
         ...formData,
         type: clientType,
         name: clientType === 'pj' ? formData.company_name : formData.name,
-        status: 'active',
+        status: 'active' as "active" | "inactive" | "overdue", // Fix the type issue
         total_billing: 0
       };
 
       const { error } = await supabase
         .from('clients')
-        .insert([finalFormData]);
+        .insert(finalFormData); // Fixed: Remove the array brackets
 
       if (error) throw error;
 
