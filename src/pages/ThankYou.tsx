@@ -15,9 +15,9 @@ export default function ThankYou() {
           Seus dados foram registrados com sucesso. 
           Entraremos em contato em breve.
         </p>
-        <Link to="/">
-          <Button>Voltar ao início</Button>
-        </Link>
+        <Button asChild>
+          <a href="/register-client">Voltar ao formulário</a>
+        </Button>
       </div>
     </div>
   );

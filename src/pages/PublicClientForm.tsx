@@ -46,6 +46,7 @@ export default function PublicClientForm() {
         total_billing: 0
       };
 
+      // Create a public client without requiring authentication
       const { error } = await supabase
         .from('clients')
         .insert(finalFormData);

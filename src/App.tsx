@@ -34,34 +34,39 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              {/* Public routes - positioned before the auth routes */}
-              <Route path="/register-client" element={<PublicClientForm />} />
-              <Route path="/thank-you" element={<ThankYou />} />
-              
-              {/* Rotas de autenticação */}
-              <Route path="/auth">
-                <Route path="login" element={<Login />} />
-                <Route path="register" element={<Register />} />
-                <Route path="forgot-password" element={<ForgotPassword />} />
-                <Route path="reset-password" element={<ResetPassword />} />
-                <Route path="verify-email" element={<VerifyEmail />} />
-                <Route path="email-confirmed" element={<EmailConfirmed />} />
-              </Route>
+          {/* Public routes must be outside of AuthProvider to avoid any auth checks */}
+          <Routes>
+            <Route path="/register-client" element={<PublicClientForm />} />
+            <Route path="/thank-you" element={<ThankYou />} />
+            
+            {/* All authenticated routes wrapped in AuthProvider */}
+            <Route path="*" element={
+              <AuthProvider>
+                <Routes>
+                  {/* Auth routes */}
+                  <Route path="/auth">
+                    <Route path="login" element={<Login />} />
+                    <Route path="register" element={<Register />} />
+                    <Route path="forgot-password" element={<ForgotPassword />} />
+                    <Route path="reset-password" element={<ResetPassword />} />
+                    <Route path="verify-email" element={<VerifyEmail />} />
+                    <Route path="email-confirmed" element={<EmailConfirmed />} />
+                  </Route>
 
-              {/* Rotas protegidas */}
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
-                <Route index element={<Overview />} />
-                <Route path="clients" element={<ClientTable />} />
-                <Route path="employees" element={<EmployeeTable />} />
-                <Route path="receivables" element={<RecurringBilling />} />
-                <Route path="emails" element={<Emails />} />
-                <Route path="cashflow" element={<CashFlow showChart={true} />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
+                  {/* Protected routes */}
+                  <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
+                    <Route index element={<Overview />} />
+                    <Route path="clients" element={<ClientTable />} />
+                    <Route path="employees" element={<EmployeeTable />} />
+                    <Route path="receivables" element={<RecurringBilling />} />
+                    <Route path="emails" element={<Emails />} />
+                    <Route path="cashflow" element={<CashFlow showChart={true} />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AuthProvider>
+            } />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
