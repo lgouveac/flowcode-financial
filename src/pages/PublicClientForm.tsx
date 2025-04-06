@@ -76,10 +76,10 @@ export default function PublicClientForm() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="w-full max-w-3xl mx-auto my-8 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight">Formulário de Cadastro</h1>
-            <p className="text-muted-foreground mt-2">Por favor, preencha os dados abaixo para completar seu cadastro.</p>
+        <div className="bg-white shadow rounded-lg p-6 sm:p-8">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Formulário de Cadastro</h1>
+            <p className="text-gray-500 mt-2">Por favor, preencha os dados abaixo para completar seu cadastro.</p>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -98,7 +98,11 @@ export default function PublicClientForm() {
             />
             
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-md font-medium"
+              >
                 {isSubmitting ? "Enviando..." : "Enviar Cadastro"}
               </Button>
             </div>
