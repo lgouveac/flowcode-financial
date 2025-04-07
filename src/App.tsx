@@ -22,6 +22,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import EmailConfirmed from "./pages/auth/EmailConfirmed";
 import PublicClientForm from "./pages/PublicClientForm";
+import PublicEmployeeForm from "./pages/PublicEmployeeForm";
 import ThankYou from "./pages/ThankYou";
 import EmployeesPage from "./pages/Employees";
 
@@ -37,6 +38,7 @@ const App = () => (
           {/* Public routes must be outside of AuthProvider to avoid any auth checks */}
           <Routes>
             <Route path="/register-client" element={<PublicClientForm />} />
+            <Route path="/register-employee" element={<PublicEmployeeForm />} />
             <Route path="/thank-you" element={<ThankYou />} />
             
             {/* All authenticated routes wrapped in AuthProvider */}

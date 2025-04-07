@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 import { EmployeeRegistrationDialog } from "@/components/employees/EmployeeRegistrationDialog";
+import { ShareEmployeeFormButton } from "@/components/employees/ShareEmployeeFormButton";
 
 export default function EmployeesPage() {
   const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
@@ -14,10 +15,13 @@ export default function EmployeesPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <h1 className="text-2xl font-bold tracking-tight">Funcionários</h1>
-        <Button onClick={() => setRegistrationDialogOpen(true)}>
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Novo Funcionário
-        </Button>
+        <div className="flex gap-2">
+          <ShareEmployeeFormButton />
+          <Button onClick={() => setRegistrationDialogOpen(true)}>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Novo Funcionário
+          </Button>
+        </div>
       </div>
       <Tabs defaultValue="list" className="w-full">
         <TabsList className="w-full mb-4 flex overflow-x-auto no-scrollbar sm:w-auto sm:inline-flex">
