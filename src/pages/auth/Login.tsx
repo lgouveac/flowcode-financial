@@ -14,7 +14,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user, loading } = useAuth();
+  const { signIn, user, session, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -24,11 +24,11 @@ export default function Login() {
   
   // If user is already logged in, redirect to homepage
   useEffect(() => {
-    if (user && !loading) {
+    if (user && session && !loading) {
       console.log('User already logged in, redirecting to homepage');
       navigate('/', { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, session, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

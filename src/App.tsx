@@ -26,7 +26,18 @@ import PublicEmployeeForm from "./pages/PublicEmployeeForm";
 import ThankYou from "./pages/ThankYou";
 import EmployeesPage from "./pages/Employees";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Shorten stale time to refresh data more frequently
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      // Retry failed queries to handle network issues
+      retry: 1,
+      // Set cache time to prevent immediate garbage collection
+      gcTime: 1000 * 60 * 10, // 10 minutes
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
