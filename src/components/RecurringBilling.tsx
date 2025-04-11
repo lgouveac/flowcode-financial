@@ -31,10 +31,10 @@ export const RecurringBilling = () => {
     handleSuccess();
   };
 
-  // Filter out payments that are part of installment series (recurring)
+  // Filter out recurring payments (those with installment info)
   // Only show one-time payments in the "Pontuais" tab
-  const filteredPayments = payments.filter(payment => 
-    payment.installment_number === null || payment.total_installments === null
+  const oneTimePayments = payments.filter(payment => 
+    payment.installment_number === null || payment.installment_number === undefined
   );
 
   return (
@@ -111,7 +111,7 @@ export const RecurringBilling = () => {
           </div>
           
           <PaymentTable 
-            payments={filteredPayments} 
+            payments={oneTimePayments} 
             onRefresh={handleRefreshData}
             searchTerm={paymentSearch}
             statusFilter={paymentStatusFilter}
