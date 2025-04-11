@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -22,11 +23,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
+
 interface PaymentRowProps {
   payment: Payment;
   onEmailSent: () => void;
   onPaymentUpdated: () => void;
 }
+
 const paymentSchema = z.object({
   description: z.string().min(1, "Descrição é obrigatória"),
   amount: z.coerce.number().min(0.01, "Valor deve ser maior que zero"),
@@ -42,14 +45,13 @@ const paymentSchema = z.object({
   }),
   paid_amount: z.coerce.number().optional()
 });
+
 export const PaymentRow: React.FC<PaymentRowProps> = ({
   payment,
   onEmailSent,
   onPaymentUpdated
 }) => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [sending, setSending] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [partialPaymentDialogOpen, setPartialPaymentDialogOpen] = useState(false);
@@ -64,6 +66,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
       payment_date: payment.payment_date ? new Date(payment.payment_date) : new Date()
     }
   });
+
   const form = useForm<z.infer<typeof paymentSchema>>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
@@ -76,6 +79,17 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
       paid_amount: payment.paid_amount || 0
     }
   });
+
+  // Function to handle status changes and update payment_date automatically
+  const handleStatusChange = (newStatus: string) => {
+    if (newStatus === 'paid' && !form.getValues('payment_date')) {
+      // If status is changed to paid and there's no payment date, set it to today
+      form.setValue('payment_date', new Date(), { shouldValidate: true });
+    }
+    
+    form.setValue('status', newStatus as any, { shouldValidate: true });
+  };
+
   const handleSendEmail = async () => {
     try {
       setSending(true);
@@ -96,12 +110,11 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
       setSending(false);
     }
   };
+
   const handleDeletePayment = async () => {
     try {
       setDeleting(true);
-      const {
-        error
-      } = await supabase.from('payments').delete().eq('id', payment.id);
+      const { error } = await supabase.from('payments').delete().eq('id', payment.id);
       if (error) {
         throw error;
       }
@@ -121,6 +134,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
       setDeleting(false);
     }
   };
+
   const handlePartialPayment = async (data: any) => {
     try {
       setUpdating(true);
@@ -134,16 +148,16 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
       }
 
       // Update the payment with partial payment info
-      const {
-        error
-      } = await supabase.from('payments').update({
+      const { error } = await supabase.from('payments').update({
         status: 'partially_paid' as Payment['status'],
         paid_amount: data.paid_amount,
         payment_date: data.payment_date ? data.payment_date.toISOString().split('T')[0] : null
       }).eq('id', payment.id);
+      
       if (error) {
         throw error;
       }
+      
       toast({
         title: "Pagamento parcial registrado",
         description: `Valor de ${formatCurrency(data.paid_amount)} registrado com sucesso.`
@@ -161,6 +175,7 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
       setUpdating(false);
     }
   };
+
   const onSubmit = async (data: z.infer<typeof paymentSchema>) => {
     try {
       setUpdating(true);
@@ -183,12 +198,11 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
       }
 
       // Use type assertion to handle the status type
-      const {
-        error
-      } = await supabase.from('payments').update(formattedData as any).eq('id', payment.id);
+      const { error } = await supabase.from('payments').update(formattedData as any).eq('id', payment.id);
       if (error) {
         throw error;
       }
+      
       toast({
         title: "Recebimento atualizado",
         description: "As informações foram atualizadas com sucesso."
@@ -209,23 +223,27 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
 
   // Calculate the remaining amount for partially paid invoices
   const remainingAmount = payment.status === 'partially_paid' && payment.paid_amount ? payment.amount - payment.paid_amount : payment.amount;
-  return <>
+
+  return (
+    <>
       <TableRow key={payment.id}>
         <TableCell>{payment.clients?.name || "Cliente não encontrado"}</TableCell>
         <TableCell>{payment.description}</TableCell>
         <TableCell>
-          {payment.status === 'partially_paid' && payment.paid_amount ? <div>
+          {payment.status === 'partially_paid' && payment.paid_amount ? (
+            <div>
               <div>{formatCurrency(payment.amount)}</div>
               <div className="text-xs text-muted-foreground mt-1">
                 Pago: {formatCurrency(payment.paid_amount)} | 
                 Restante: {formatCurrency(remainingAmount)}
               </div>
-            </div> : formatCurrency(payment.amount)}
+            </div>
+          ) : formatCurrency(payment.amount)}
         </TableCell>
         <TableCell>
           {payment.due_date ? format(new Date(payment.due_date), "dd/MM/yyyy", {
-          locale: ptBR
-        }) : "-"}
+            locale: ptBR
+          }) : "-"}
         </TableCell>
         <TableCell>{getPaymentMethodLabel(payment.payment_method)}</TableCell>
         <TableCell>
@@ -238,7 +256,6 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
             <Button size="sm" variant="outline" onClick={() => setEditDialogOpen(true)}>
               Editar
             </Button>
-            {payment.status === 'pending'}
             <Button size="sm" variant="outline" onClick={handleSendEmail} disabled={sending}>
               {sending ? 'Enviando...' : 'Enviar Email'}
             </Button>
@@ -286,29 +303,48 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
               <Label htmlFor="paid_amount">Valor Recebido</Label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5">R$</span>
-                <Input id="paid_amount" type="number" step="0.01" min="0.01" max={payment.amount - 0.01} className="pl-8" {...partialForm.register('paid_amount', {
-                valueAsNumber: true,
-                required: true
-              })} />
+                <Input 
+                  id="paid_amount" 
+                  type="number" 
+                  step="0.01" 
+                  min="0.01" 
+                  max={payment.amount - 0.01} 
+                  className="pl-8" 
+                  {...partialForm.register('paid_amount', {
+                    valueAsNumber: true,
+                    required: true
+                  })} 
+                />
               </div>
-              {partialForm.formState.errors.paid_amount && <p className="text-sm font-medium text-destructive">
+              {partialForm.formState.errors.paid_amount && (
+                <p className="text-sm font-medium text-destructive">
                   Valor pago é obrigatório
-                </p>}
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
               <Label>Data de Pagamento</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start text-left font-normal"
+                  >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {partialForm.watch('payment_date') ? format(partialForm.watch('payment_date'), "PPP", {
-                    locale: ptBR
-                  }) : "Selecione uma data"}
+                    {partialForm.watch('payment_date') ? 
+                      format(partialForm.watch('payment_date'), "PPP", { locale: ptBR }) : 
+                      "Selecione uma data"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={partialForm.watch('payment_date')} onSelect={date => partialForm.setValue('payment_date', date || new Date())} initialFocus />
+                  <Calendar 
+                    mode="single" 
+                    selected={partialForm.watch('payment_date')} 
+                    onSelect={date => partialForm.setValue('payment_date', date || new Date())} 
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
                 </PopoverContent>
               </Popover>
             </div>
@@ -321,10 +357,19 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
             </div>
             
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setPartialPaymentDialogOpen(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setPartialPaymentDialogOpen(false)}
+              >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={updating || partialForm.watch('paid_amount') <= 0 || partialForm.watch('paid_amount') >= payment.amount}>
+              <Button 
+                type="submit" 
+                disabled={updating || 
+                  partialForm.watch('paid_amount') <= 0 || 
+                  partialForm.watch('paid_amount') >= payment.amount}
+              >
                 {updating ? 'Salvando...' : 'Salvar'}
               </Button>
             </div>
@@ -341,73 +386,121 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField control={form.control} name="description" render={({
-              field
-            }) => <FormItem>
+              <FormField 
+                control={form.control} 
+                name="description" 
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Descrição</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )} 
+              />
               
-              <FormField control={form.control} name="amount" render={({
-              field
-            }) => <FormItem>
+              <FormField 
+                control={form.control} 
+                name="amount" 
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Valor (R$)</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" min="0" {...field} />
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        {...field} 
+                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )} 
+              />
               
-              <FormField control={form.control} name="due_date" render={({
-              field
-            }) => <FormItem className="flex flex-col">
+              <FormField 
+                control={form.control} 
+                name="due_date" 
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
                     <FormLabel>Data de Vencimento</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                            {field.value ? format(field.value, "PPP", {
-                        locale: ptBR
-                      }) : <span>Selecione uma data</span>}
+                          <Button 
+                            variant="outline" 
+                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Selecione uma data</span>
+                            )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={date => date < new Date("1900-01-01")} initialFocus />
+                        <Calendar 
+                          mode="single" 
+                          selected={field.value} 
+                          onSelect={field.onChange} 
+                          disabled={(date) => date < new Date("1900-01-01")} 
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )} 
+              />
               
-              <FormField control={form.control} name="payment_date" render={({
-              field
-            }) => <FormItem className="flex flex-col">
+              <FormField 
+                control={form.control} 
+                name="payment_date" 
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
                     <FormLabel>Data de Pagamento</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                            {field.value ? format(field.value, "PPP", {
-                        locale: ptBR
-                      }) : <span>Não pago</span>}
+                          <Button 
+                            variant="outline" 
+                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: ptBR })
+                            ) : (
+                              <span>Não pago</span>
+                            )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={date => date < new Date("1900-01-01")} initialFocus />
+                        <Calendar 
+                          mode="single" 
+                          selected={field.value || undefined} 
+                          onSelect={(date) => field.onChange(date)} 
+                          disabled={(date) => date < new Date("1900-01-01")} 
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )} 
+              />
               
-              <FormField control={form.control} name="payment_method" render={({
-              field
-            }) => <FormItem>
+              <FormField 
+                control={form.control} 
+                name="payment_method" 
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Método de Pagamento</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
@@ -422,13 +515,20 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )} 
+              />
               
-              <FormField control={form.control} name="status" render={({
-              field
-            }) => <FormItem>
+              <FormField 
+                control={form.control} 
+                name="status" 
+                render={({ field }) => (
+                  <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select 
+                      onValueChange={(value) => handleStatusChange(value)} 
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o status" />
@@ -445,20 +545,39 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                  </FormItem>} />
+                  </FormItem>
+                )} 
+              />
               
-              {form.watch('status') === 'partially_paid' && <FormField control={form.control} name="paid_amount" render={({
-              field
-            }) => <FormItem>
+              {form.watch('status') === 'partially_paid' && (
+                <FormField 
+                  control={form.control} 
+                  name="paid_amount" 
+                  render={({ field }) => (
+                    <FormItem>
                       <FormLabel>Valor Pago (R$)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" min="0.01" max={form.watch('amount') - 0.01} {...field} />
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          min="0.01" 
+                          max={form.watch('amount') - 0.01} 
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>} />}
+                    </FormItem>
+                  )} 
+                />
+              )}
               
               <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setEditDialogOpen(false)}
+                >
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={updating}>
@@ -469,5 +588,6 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
           </Form>
         </DialogContent>
       </Dialog>
-    </>;
+    </>
+  );
 };
