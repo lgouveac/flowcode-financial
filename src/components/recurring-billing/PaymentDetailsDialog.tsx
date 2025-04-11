@@ -131,7 +131,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
           
           {billingData && (
             <div className="space-y-4">
-              <BillingDetails billing={billingData} />
+              <BillingDetails billingData={billingData} />
               
               {billingData.status !== 'paid' && billingData.status !== 'cancelled' && (
                 <div className="flex justify-end">
