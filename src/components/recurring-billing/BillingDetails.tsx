@@ -11,6 +11,7 @@ interface BillingDetailsProps {
   startDate?: string;
   endDate?: string;
   onUpdate?: (field: string, value: string | number) => void;
+  darkMode?: boolean;
 }
 
 export const BillingDetails = ({
@@ -21,7 +22,8 @@ export const BillingDetails = ({
   dueDay,
   startDate,
   endDate,
-  onUpdate
+  onUpdate,
+  darkMode = false
 }: BillingDetailsProps) => {
   // If billingData is provided, use that, otherwise use individual props
   const data = billingData || {
@@ -49,12 +51,15 @@ export const BillingDetails = ({
       <div className="space-y-2">
         <Label>Descrição</Label>
         {isReadOnly ? (
-          <p className="p-2 border rounded-md bg-gray-50">{data.description}</p>
+          <p className={`p-2 border rounded-md ${darkMode ? 'bg-background border-border/50 text-foreground' : 'bg-gray-50'}`}>
+            {data.description}
+          </p>
         ) : (
           <Input
             value={data.description}
             onChange={(e) => handleUpdate('description', e.target.value)}
             required
+            className={darkMode ? 'bg-background border-border/50 text-foreground' : ''}
           />
         )}
       </div>
@@ -63,7 +68,7 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Valor</Label>
           {isReadOnly ? (
-            <p className="p-2 border rounded-md bg-gray-50">
+            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background border-border/50 text-foreground' : 'bg-gray-50'}`}>
               {typeof data.amount === 'number' 
                 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.amount) 
                 : data.amount}
@@ -75,6 +80,7 @@ export const BillingDetails = ({
               value={data.amount}
               onChange={(e) => handleUpdate('amount', parseFloat(e.target.value))}
               required
+              className={darkMode ? 'bg-background border-border/50 text-foreground' : ''}
             />
           )}
         </div>
@@ -82,7 +88,9 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Parcelas</Label>
           {isReadOnly ? (
-            <p className="p-2 border rounded-md bg-gray-50">{data.installments || data.installments === 0 ? data.installments : '-'}</p>
+            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background border-border/50 text-foreground' : 'bg-gray-50'}`}>
+              {data.installments || data.installments === 0 ? data.installments : '-'}
+            </p>
           ) : (
             <Input
               type="number"
@@ -90,6 +98,7 @@ export const BillingDetails = ({
               value={data.installments}
               onChange={(e) => handleUpdate('installments', parseInt(e.target.value))}
               required
+              className={darkMode ? 'bg-background border-border/50 text-foreground' : ''}
             />
           )}
         </div>
@@ -99,7 +108,9 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Dia do Vencimento</Label>
           {isReadOnly ? (
-            <p className="p-2 border rounded-md bg-gray-50">{data.due_day || '-'}</p>
+            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background border-border/50 text-foreground' : 'bg-gray-50'}`}>
+              {data.due_day || '-'}
+            </p>
           ) : (
             <Input
               type="number"
@@ -108,6 +119,7 @@ export const BillingDetails = ({
               value={data.due_day}
               onChange={(e) => handleUpdate('due_day', parseInt(e.target.value))}
               required
+              className={darkMode ? 'bg-background border-border/50 text-foreground' : ''}
             />
           )}
         </div>
@@ -117,13 +129,16 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Data de Início</Label>
           {isReadOnly ? (
-            <p className="p-2 border rounded-md bg-gray-50">{data.start_date || '-'}</p>
+            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background border-border/50 text-foreground' : 'bg-gray-50'}`}>
+              {data.start_date || '-'}
+            </p>
           ) : (
             <Input
               type="date"
               value={data.start_date}
               onChange={(e) => handleUpdate('start_date', e.target.value)}
               required
+              className={darkMode ? 'bg-background border-border/50 text-foreground' : ''}
             />
           )}
         </div>
@@ -131,12 +146,15 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Data Final (opcional)</Label>
           {isReadOnly ? (
-            <p className="p-2 border rounded-md bg-gray-50">{data.end_date || '-'}</p>
+            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background border-border/50 text-foreground' : 'bg-gray-50'}`}>
+              {data.end_date || '-'}
+            </p>
           ) : (
             <Input
               type="date"
               value={data.end_date}
               onChange={(e) => handleUpdate('end_date', e.target.value)}
+              className={darkMode ? 'bg-background border-border/50 text-foreground' : ''}
             />
           )}
         </div>

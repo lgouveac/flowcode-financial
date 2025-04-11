@@ -76,6 +76,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setPaymentsLoading(true);
     
     try {
+      // Fixed the query - removed the invalid syntax for integer comparison
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -85,7 +86,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             email
           )
         `)
-        .eq('installment_number', '!=', null)
+        .not('installment_number', 'is', null)  // Use 'not is null' instead of '!='
         .eq('client_id', billingData?.client_id)
         .order('due_date', { ascending: true });
 
@@ -296,7 +297,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   return (
     <>
       <Dialog open={open} onOpenChange={() => onClose()}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl bg-background text-foreground">
           <DialogHeader>
             <DialogTitle>Detalhes do Recebimento</DialogTitle>
             <DialogDescription>
@@ -370,9 +371,10 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                 startDate={isEditing ? editedBillingData.start_date : undefined}
                 endDate={isEditing ? editedBillingData.end_date : undefined}
                 onUpdate={isEditing ? updateBillingField : undefined}
+                darkMode={true}
               />
 
-              <div className="border-t pt-4">
+              <div className="border-t border-border/50 pt-4">
                 <h3 className="text-lg font-medium mb-4">Pagamentos Associados</h3>
                 
                 {paymentsLoading ? (
