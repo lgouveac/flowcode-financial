@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -22,6 +23,12 @@ interface BillingWithClient extends RecurringBilling {
   };
 }
 
+// Define a type for the supabase response to avoid deep type instantiation
+type SupabaseQueryResult<T> = {
+  data: T | null;
+  error: Error | null;
+};
+
 export const PaymentDetailsDialog = ({
   billingId,
   open,
@@ -40,24 +47,27 @@ export const PaymentDetailsDialog = ({
   const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
   const [newStartDate, setNewStartDate] = useState<string | null>(null);
 
-  // Fix for deep type instantiation - Simplify the query type
+  // Fix for deep type instantiation by using a simpler query function
   const billingQuery = useQuery({
     queryKey: ["billing", billingId],
     queryFn: async () => {
       if (!billingId) return null;
 
-      const { data, error } = await supabase
+      // Explicitly type the result to avoid deep instantiation
+      const result: SupabaseQueryResult<BillingWithClient> = await supabase
         .from("recurring_billing")
         .select("*, client:clients(*)")
         .eq("id", billingId)
         .single();
-
-      if (error) throw error;
+      
+      if (result.error) throw result.error;
       
       // Store the original start date for comparison later
-      setOriginalStartDate(data.start_date);
+      if (result.data) {
+        setOriginalStartDate(result.data.start_date);
+      }
       
-      return data as BillingWithClient;
+      return result.data;
     },
     enabled: !!billingId && open,
   });
@@ -66,20 +76,21 @@ export const PaymentDetailsDialog = ({
   const isLoadingBilling = billingQuery.isLoading;
   const billingError = billingQuery.error;
 
-  // Fetch payments for this billing - Fix deep type by simplifying the return type
+  // Fetch payments for this billing - Fix deep type by using a simpler return type
   const paymentsQuery = useQuery({
     queryKey: ["payments", billingId],
     queryFn: async () => {
       if (!billingId) return [] as Payment[];
 
-      const { data, error } = await supabase
+      // Explicitly type the result to avoid deep instantiation
+      const result: SupabaseQueryResult<Payment[]> = await supabase
         .from("payments")
         .select("*")
         .eq("recurring_billing_id", billingId)
         .order("due_date", { ascending: true });
 
-      if (error) throw error;
-      return (data || []) as Payment[];
+      if (result.error) throw result.error;
+      return (result.data || []) as Payment[];
     },
     enabled: !!billingId && open,
   });
