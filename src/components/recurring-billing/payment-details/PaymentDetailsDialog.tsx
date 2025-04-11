@@ -71,7 +71,7 @@ export const PaymentDetailsDialog = ({
     enabled: !!billingId && open,
   });
 
-  // Simple function to fetch payments - completely avoiding the deep type instantiation issue
+  // Completely rewritten function to manually fetch payments
   const fetchPayments = async () => {
     if (!billingId) {
       setPayments([]);
@@ -79,7 +79,7 @@ export const PaymentDetailsDialog = ({
     }
 
     try {
-      // Simple approach without complex type inference
+      // Avoid type inference issues by using a basic approach
       const result = await supabase
         .from("payments")
         .select("*")
@@ -88,9 +88,8 @@ export const PaymentDetailsDialog = ({
       
       if (result.error) throw result.error;
       
-      // Explicitly type the data to avoid deep type inference issues
-      const paymentData = result.data || [];
-      setPayments(paymentData as Payment[]);
+      // Manually handle and type the data
+      setPayments(result.data as Payment[]);
     } catch (error) {
       console.error("Error fetching payments:", error);
       toast({
