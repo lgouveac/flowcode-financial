@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,7 +75,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setPaymentsLoading(true);
     
     try {
-      // Fixed the query - removed the invalid syntax for integer comparison
+      // Modified query to correctly fetch all payments associated with the recurring billing
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -86,19 +85,16 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
             email
           )
         `)
-        .not('installment_number', 'is', null)  // Use 'not is null' instead of '!='
         .eq('client_id', billingData?.client_id)
+        .ilike('description', `%${billingData?.description}%`)
         .order('due_date', { ascending: true });
 
       if (error) throw error;
       
       if (data) {
         console.log("Associated payments fetched:", data);
-        // Filter payments that match the billing description pattern
-        const relatedPayments = data.filter(payment => 
-          payment.description.includes(billingData.description)
-        );
-        setPayments(relatedPayments);
+        // We'll show all payments that match the description pattern
+        setPayments(data);
       }
     } catch (error) {
       console.error('Error fetching associated payments:', error);
@@ -250,6 +246,8 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         return <Badge className="bg-red-500">Atrasado</Badge>;
       case 'cancelled':
         return <Badge className="bg-gray-500">Cancelado</Badge>;
+      case 'partially_paid':
+        return <Badge className="bg-blue-500">Pago Parcial</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
