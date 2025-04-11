@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
-import Overview from "./pages/Overview";
+import { Overview } from "./pages/Overview";
 import RegisterEmployee from "./pages/RegisterEmployee";
 import PublicEmployeeForm from "./pages/PublicEmployeeForm";
 import PublicClientForm from "./pages/PublicClientForm";
