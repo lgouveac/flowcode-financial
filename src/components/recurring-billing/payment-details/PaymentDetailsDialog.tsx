@@ -41,7 +41,7 @@ export const PaymentDetailsDialog = ({
   const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
   const [newStartDate, setNewStartDate] = useState<string | null>(null);
 
-  // Fix for deep type instantiation - Break query type connections and use explicit casting
+  // Fix for deep type instantiation - Use explicit type casting
   const billingQuery = useQuery({
     queryKey: ["billing", billingId],
     queryFn: async () => {
@@ -67,7 +67,7 @@ export const PaymentDetailsDialog = ({
   const isLoadingBilling = billingQuery.isLoading;
   const billingError = billingQuery.error;
 
-  // Fetch payments for this billing - Break query connections
+  // Fetch payments for this billing
   const paymentsQuery = useQuery({
     queryKey: ["payments", billingId],
     queryFn: async () => {
@@ -300,7 +300,7 @@ export const PaymentDetailsDialog = ({
               <TabsContent value="details" className="space-y-4 pt-4">
                 {billing && (
                   <BillingDetailsSection 
-                    billingData={billing} 
+                    billing={billing} 
                     onUpdate={updateBilling.mutate}
                     onCancel={() => setShowCancelDialog(true)}
                     onStartDateChange={handleStartDateChange}
