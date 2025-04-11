@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -82,15 +81,20 @@ export const PaymentDetailsDialog = ({
     queryFn: async () => {
       if (!billingId) return [] as Payment[];
 
-      // Explicitly type the result to avoid deep instantiation
-      const result: SupabaseQueryResult<Payment[]> = await supabase
-        .from("payments")
-        .select("*")
-        .eq("recurring_billing_id", billingId)
-        .order("due_date", { ascending: true });
+      try {
+        // Explicitly type and destructure the result to avoid deep instantiation
+        const { data, error } = await supabase
+          .from("payments")
+          .select("*")
+          .eq("recurring_billing_id", billingId)
+          .order("due_date", { ascending: true });
 
-      if (result.error) throw result.error;
-      return (result.data || []) as Payment[];
+        if (error) throw error;
+        return (data || []) as Payment[];
+      } catch (error) {
+        console.error("Error fetching payments:", error);
+        throw error;
+      }
     },
     enabled: !!billingId && open,
   });
