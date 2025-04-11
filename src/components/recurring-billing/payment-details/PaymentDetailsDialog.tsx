@@ -40,6 +40,7 @@ export const PaymentDetailsDialog = ({
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
   const [newStartDate, setNewStartDate] = useState<string | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
 
   // Fix for deep type instantiation by using a simpler query function
   const billingQuery = useQuery({
@@ -70,37 +71,45 @@ export const PaymentDetailsDialog = ({
     enabled: !!billingId && open,
   });
 
+  // Rewrite payments query to prevent the deep type instantiation issue
+  // By fetching data manually and using state to store results
+  const fetchPayments = async () => {
+    if (!billingId) {
+      setPayments([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("recurring_billing_id", billingId)
+        .order("due_date", { ascending: true });
+      
+      if (error) throw error;
+      
+      setPayments(data as Payment[] || []);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      toast({
+        title: "Erro ao carregar pagamentos",
+        description: "Não foi possível carregar os pagamentos associados.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Use useEffect to fetch payments when billingId changes or dialog opens
+  useEffect(() => {
+    if (billingId && open) {
+      fetchPayments();
+    }
+  }, [billingId, open]);
+
   const billing = billingQuery.data;
   const isLoadingBilling = billingQuery.isLoading;
   const billingError = billingQuery.error;
-
-  // Rewrite payments query to fix the deep type instantiation issue
-  const paymentsQuery = useQuery({
-    queryKey: ["payments", billingId],
-    queryFn: async () => {
-      if (!billingId) return [];
-      
-      try {
-        // Using a simple approach to fetch payments
-        const result = await supabase
-          .from("payments")
-          .select("*")
-          .eq("recurring_billing_id", billingId)
-          .order("due_date", { ascending: true });
-          
-        if (result.error) throw result.error;
-        return (result.data || []) as Payment[];
-      } catch (error) {
-        console.error("Error fetching payments:", error);
-        throw error;
-      }
-    },
-    enabled: !!billingId && open,
-  });
-
-  const payments = paymentsQuery.data || [];
-  const isLoadingPayments = paymentsQuery.isLoading;
-  const paymentsError = paymentsQuery.error;
+  const isLoadingPayments = !payments && !!billingId && open;
 
   // Update a payment's status
   const updatePaymentStatus = useMutation({
@@ -114,7 +123,7 @@ export const PaymentDetailsDialog = ({
       return null;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["payments", billingId] });
+      fetchPayments(); // Refetch payments after update
       toast({
         title: "Status atualizado",
         description: "O status do pagamento foi atualizado com sucesso.",
@@ -183,7 +192,7 @@ export const PaymentDetailsDialog = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["billing", billingId] });
-      queryClient.invalidateQueries({ queryKey: ["payments", billingId] });
+      fetchPayments(); // Refetch payments after update
       queryClient.invalidateQueries({ queryKey: ["recurring-billing"] });
       toast({
         title: "Faturamento cancelado",
@@ -242,7 +251,7 @@ export const PaymentDetailsDialog = ({
         if (error) throw error;
       }
       
-      queryClient.invalidateQueries({ queryKey: ["payments", billingId] });
+      fetchPayments(); // Refetch payments after update
       toast({
         title: "Datas atualizadas",
         description: "As datas de pagamento foram atualizadas com sucesso.",
@@ -283,7 +292,7 @@ export const PaymentDetailsDialog = ({
   }, [open]);
 
   const isLoading = isLoadingBilling || isLoadingPayments || loading;
-  const hasError = billingError || paymentsError;
+  const hasError = billingError;
 
   if (!open) return null;
 
@@ -322,13 +331,11 @@ export const PaymentDetailsDialog = ({
               </TabsContent>
               
               <TabsContent value="payments" className="pt-4">
-                {payments && (
-                  <PaymentsTableSection 
-                    payments={payments}
-                    onStatusChange={handleStatusChange}
-                    isUpdating={updatePaymentStatus.isPending}
-                  />
-                )}
+                <PaymentsTableSection 
+                  payments={payments}
+                  onStatusChange={handleStatusChange}
+                  isUpdating={updatePaymentStatus.isPending}
+                />
               </TabsContent>
             </Tabs>
 
