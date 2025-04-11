@@ -41,12 +41,8 @@ export const PaymentDetailsDialog = ({
   const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
   const [newStartDate, setNewStartDate] = useState<string | null>(null);
 
-  // Fetch billing details with explicit return type
-  const {
-    data: billing,
-    isLoading: isLoadingBilling,
-    error: billingError,
-  } = useQuery({
+  // Fix for deep type instantiation - Break query type connections and use explicit casting
+  const billingQuery = useQuery({
     queryKey: ["billing", billingId],
     queryFn: async () => {
       if (!billingId) return null;
@@ -67,12 +63,12 @@ export const PaymentDetailsDialog = ({
     enabled: !!billingId && open,
   });
 
-  // Fetch payments for this billing
-  const {
-    data: payments,
-    isLoading: isLoadingPayments,
-    error: paymentsError,
-  } = useQuery({
+  const billing = billingQuery.data;
+  const isLoadingBilling = billingQuery.isLoading;
+  const billingError = billingQuery.error;
+
+  // Fetch payments for this billing - Break query connections
+  const paymentsQuery = useQuery({
     queryKey: ["payments", billingId],
     queryFn: async () => {
       if (!billingId) return [];
@@ -88,6 +84,10 @@ export const PaymentDetailsDialog = ({
     },
     enabled: !!billingId && open,
   });
+
+  const payments = paymentsQuery.data;
+  const isLoadingPayments = paymentsQuery.isLoading;
+  const paymentsError = paymentsQuery.error;
 
   // Update a payment's status
   const updatePaymentStatus = useMutation({

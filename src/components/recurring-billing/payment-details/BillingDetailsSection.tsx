@@ -5,14 +5,14 @@ import { RecurringBilling } from "@/types/billing";
 import { UseMutateFunction } from "@tanstack/react-query";
 
 interface BillingDetailsSectionProps {
-  billing: any;
+  billingData: any; // Changed from 'billing' to 'billingData' to match usage in PaymentDetailsDialog
   onUpdate: UseMutateFunction<any, Error, any, unknown>;
   onCancel: () => void;
   onStartDateChange: (date: string) => void;
 }
 
 export const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({
-  billing,
+  billingData, // Updated parameter name to match the interface
   onUpdate,
   onCancel,
   onStartDateChange
@@ -24,7 +24,7 @@ export const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({
   return (
     <div className="space-y-6">
       <BillingDetails 
-        billingData={billing}
+        billingData={billingData}
         onUpdate={handleFieldUpdate}
         darkMode={true}
       />
@@ -37,12 +37,12 @@ export const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({
           Cancelar Faturamento
         </button>
         
-        {billing?.start_date && (
+        {billingData?.start_date && (
           <div>
             <label className="block text-sm font-medium mb-1">Data de Início</label>
             <input
               type="date"
-              value={billing.start_date}
+              value={billingData.start_date}
               onChange={(e) => onStartDateChange(e.target.value)}
               className="p-2 border rounded-md"
             />
