@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Payment } from "@/types/payment";
-import { formatCurrency, formatDate, getStatusBadge } from "./utils";
+import { formatCurrency, formatDate, getStatusBadge } from "./utils.tsx";
 
 interface PaymentsTableSectionProps {
   payments: Payment[];

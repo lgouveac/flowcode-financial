@@ -1,2 +1,3 @@
 
-export { PaymentDetailsDialog } from "./payment-details";
+export { PaymentDetailsDialog } from "./payment-details/PaymentDetailsDialog";
+
