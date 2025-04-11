@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +87,54 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
     }
     
     form.setValue('status', newStatus as any, { shouldValidate: true });
+  };
+
+  const createCashFlowEntry = async (paymentData: any) => {
+    // Only create cash flow entry for paid payments
+    if (paymentData.status !== 'paid' || !paymentData.payment_date) {
+      return;
+    }
+    
+    try {
+      // Check if cash flow entry already exists for this payment
+      const { data: existingEntry, error: checkError } = await supabase
+        .from('cash_flow')
+        .select('id')
+        .eq('payment_id', payment.id)
+        .maybeSingle();
+        
+      if (checkError) {
+        console.error('Error checking for existing cash flow entry:', checkError);
+        return;
+      }
+        
+      if (!existingEntry) {
+        // Create cash flow entry
+        const { error: insertError } = await supabase
+          .from('cash_flow')
+          .insert({
+            type: 'income',
+            description: payment.description,
+            amount: payment.amount,
+            date: paymentData.payment_date,
+            category: 'payment',
+            payment_id: payment.id
+          });
+            
+        if (insertError) {
+          console.error('Error creating cash flow entry:', insertError);
+          toast({
+            title: "Aviso",
+            description: "Pagamento marcado como pago, mas houve erro ao registrar no fluxo de caixa.",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Created cash flow entry for payment:', payment.id);
+        }
+      }
+    } catch (error) {
+      console.error('Unexpected error creating cash flow entry:', error);
+    }
   };
 
   const handleSendEmail = async () => {
@@ -201,6 +248,11 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
       const { error } = await supabase.from('payments').update(formattedData as any).eq('id', payment.id);
       if (error) {
         throw error;
+      }
+      
+      // Create cash flow entry if payment is marked as paid
+      if (data.status === 'paid') {
+        await createCashFlowEntry(formattedData);
       }
       
       toast({

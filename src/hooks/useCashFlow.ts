@@ -115,20 +115,85 @@ export const useCashFlow = (period: string = 'current') => {
       // Log the date range and period for debugging
       console.log('Fetching cash flow for:', { period, dates });
       
-      const { data, error } = await supabase
+      // 1. First, fetch regular cash flow entries
+      const { data: cashFlowData, error: cashFlowError } = await supabase
         .from('cash_flow')
         .select('*')
         .gte('date', dates.start)
         .lt('date', dates.end)
         .order('date', { ascending: true });
 
-      if (error) throw error;
+      if (cashFlowError) throw cashFlowError;
 
-      // Log the raw data from database
-      console.log('Cash flow data from database:', data);
+      // 2. Now fetch payments that are marked as paid but don't have entries in cash_flow
+      const { data: paidPaymentsData, error: paymentsError } = await supabase
+        .from('payments')
+        .select(`
+          id,
+          description,
+          amount,
+          payment_date,
+          status
+        `)
+        .eq('status', 'paid')
+        .gte('payment_date', dates.start)
+        .lt('payment_date', dates.end)
+        .is('payment_id', null); // This ensures we only get payments that don't have a corresponding cash_flow entry
+
+      if (paymentsError) throw paymentsError;
+
+      // Log raw data for debugging
+      console.log('Cash flow data from database:', cashFlowData);
+      console.log('Paid payments not in cash flow:', paidPaymentsData);
+
+      // For each paid payment that doesn't have a cash flow entry, create one
+      for (const payment of paidPaymentsData || []) {
+        if (payment.status === 'paid' && payment.payment_date) {
+          const { data: existingEntry, error: checkError } = await supabase
+            .from('cash_flow')
+            .select('id')
+            .eq('payment_id', payment.id)
+            .maybeSingle();
+
+          if (checkError) {
+            console.error('Error checking for existing cash flow entry:', checkError);
+            continue;
+          }
+
+          if (!existingEntry) {
+            // No cash flow entry exists for this payment, create one
+            const { error: insertError } = await supabase
+              .from('cash_flow')
+              .insert({
+                type: 'income',
+                description: payment.description,
+                amount: payment.amount,
+                date: payment.payment_date,
+                category: 'payment',
+                payment_id: payment.id
+              });
+
+            if (insertError) {
+              console.error('Error creating cash flow entry for payment:', insertError);
+            } else {
+              console.log('Created cash flow entry for payment:', payment.id);
+            }
+          }
+        }
+      }
+
+      // Fetch cash flow data again to include newly created entries
+      const { data: updatedCashFlowData, error: updateFetchError } = await supabase
+        .from('cash_flow')
+        .select('*')
+        .gte('date', dates.start)
+        .lt('date', dates.end)
+        .order('date', { ascending: true });
+
+      if (updateFetchError) throw updateFetchError;
 
       // Transform the data for accurate number handling
-      const transformedData: CashFlow[] = (data || []).map(item => {
+      const transformedData: CashFlow[] = (updatedCashFlowData || []).map(item => {
         // Handle amount with care to ensure it's a proper number
         let amount: number;
         
@@ -173,46 +238,6 @@ export const useCashFlow = (period: string = 'current') => {
       }));
 
       setCashFlow(validatedData);
-      
-      // Calculate and log total February 2024 expenses
-      if (period.includes('2024-2') || (period === 'current' && new Date().getMonth() === 1 && new Date().getFullYear() === 2024)) {
-        const februaryExpenses = validatedData
-          .filter(item => item.type === 'expense' && item.date.startsWith('2024-02'))
-          .reduce((sum, item) => sum + item.amount, 0);
-        
-        console.log('Total February 2024 expenses:', februaryExpenses.toFixed(2));
-        console.log('Individual February 2024 expense items:', validatedData
-          .filter(item => item.type === 'expense' && item.date.startsWith('2024-02'))
-          .map(item => ({
-            description: item.description,
-            date: item.date,
-            amount: item.amount.toFixed(2),
-            category: item.category
-          }))
-        );
-      }
-      
-      // Log detailed information for debugging
-      console.log('Transformed cash flow data:', {
-        totalItems: validatedData.length,
-        sampleItems: validatedData.slice(0, 3)
-      });
-
-      // Log the total expenses for debugging
-      const totalExpenses = validatedData
-        .filter(item => item.type === 'expense')
-        .reduce((sum, item) => parseFloat((sum + item.amount).toFixed(2)), 0);
-      
-      console.log('Total expenses calculated:', totalExpenses.toFixed(2));
-      console.log('Individual expense items:', validatedData
-        .filter(item => item.type === 'expense')
-        .map(item => ({
-          description: item.description,
-          amount: item.amount.toFixed(2),
-          amountType: typeof item.amount,
-          category: item.category
-        }))
-      );
 
       // Process data for the chart with precise number handling
       const chartDataMap = new Map();
