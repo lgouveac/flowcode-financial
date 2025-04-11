@@ -313,7 +313,7 @@ export const PaymentDetailsDialog = ({
               onCloseUpdateDialog={() => setShowUpdateConfirmDialog(false)}
               onCloseCancelDialog={() => setShowCancelDialog(false)}
               onConfirmUpdate={updatePaymentDates}
-              onConfirmCancel={cancelBilling.mutate}
+              onConfirmCancel={() => cancelBilling.mutate()}
               isUpdating={updateBilling.isPending}
               isCancelling={cancelBilling.isPending}
             />

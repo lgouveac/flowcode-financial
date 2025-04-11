@@ -13,14 +13,14 @@ import PublicEmployeeForm from "./pages/PublicEmployeeForm";
 import PublicClientForm from "./pages/PublicClientForm";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
-import { Emails } from "./pages/Emails";
-import { Employees } from "./pages/Employees";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+import Emails from "./pages/Emails";
+import Employees from "./pages/Employees";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="dark">
         <Toaster />
         <Routes>
           <Route path="/register-client" element={<PublicClientForm />} />
