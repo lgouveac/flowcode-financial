@@ -32,15 +32,20 @@ function App() {
         <ThemeProvider defaultTheme="dark">
           <Toaster />
           <Routes>
+            {/* Public routes - No authentication required */}
             <Route path="/register-client" element={<PublicClientForm />} />
             <Route path="/register-employee" element={<PublicEmployeeForm />} />
             <Route path="/thank-you" element={<ThankYou />} />
+            
+            {/* Auth routes */}
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/auth/verify-email" element={<VerifyEmail />} />
             <Route path="/auth/email-confirmed" element={<EmailConfirmed />} />
+            
+            {/* Protected routes - Authentication required */}
             <Route path="*" element={<ProtectedRoute><Index /></ProtectedRoute>}>
               <Route path="" element={<Overview />} />
               <Route path="employees" element={<Employees />} />

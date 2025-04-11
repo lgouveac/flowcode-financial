@@ -74,21 +74,22 @@ export const PaymentDetailsDialog = ({
   const isLoadingBilling = billingQuery.isLoading;
   const billingError = billingQuery.error;
 
-  // Completely rewrite the payments query to avoid type issues
+  // Rewrite payments query to fix the deep type instantiation issue
   const paymentsQuery = useQuery({
     queryKey: ["payments", billingId],
     queryFn: async () => {
       if (!billingId) return [];
-
+      
       try {
-        const { data, error } = await supabase
+        // Using a simple approach to fetch payments
+        const result = await supabase
           .from("payments")
           .select("*")
           .eq("recurring_billing_id", billingId)
           .order("due_date", { ascending: true });
-
-        if (error) throw error;
-        return data || [];
+          
+        if (result.error) throw result.error;
+        return (result.data || []) as Payment[];
       } catch (error) {
         console.error("Error fetching payments:", error);
         throw error;
@@ -97,7 +98,7 @@ export const PaymentDetailsDialog = ({
     enabled: !!billingId && open,
   });
 
-  const payments = paymentsQuery.data as Payment[];
+  const payments = paymentsQuery.data || [];
   const isLoadingPayments = paymentsQuery.isLoading;
   const paymentsError = paymentsQuery.error;
 
