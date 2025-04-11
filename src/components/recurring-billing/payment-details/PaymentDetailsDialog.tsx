@@ -71,8 +71,7 @@ export const PaymentDetailsDialog = ({
     enabled: !!billingId && open,
   });
 
-  // Rewrite payments query to prevent the deep type instantiation issue
-  // By fetching data manually and using state to store results
+  // Simple function to fetch payments - completely avoiding the deep type instantiation issue
   const fetchPayments = async () => {
     if (!billingId) {
       setPayments([]);
@@ -80,15 +79,18 @@ export const PaymentDetailsDialog = ({
     }
 
     try {
-      const { data, error } = await supabase
+      // Simple approach without complex type inference
+      const result = await supabase
         .from("payments")
         .select("*")
         .eq("recurring_billing_id", billingId)
         .order("due_date", { ascending: true });
       
-      if (error) throw error;
+      if (result.error) throw result.error;
       
-      setPayments(data as Payment[] || []);
+      // Explicitly type the data to avoid deep type inference issues
+      const paymentData = result.data || [];
+      setPayments(paymentData as Payment[]);
     } catch (error) {
       console.error("Error fetching payments:", error);
       toast({

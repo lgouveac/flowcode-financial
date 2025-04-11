@@ -3,7 +3,7 @@ import {
   BrowserRouter,
   Routes,
   Route,
-  Outlet,
+  Navigate,
 } from "react-router-dom";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
@@ -28,11 +28,12 @@ import Index from "./pages/Index";
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="dark">
+        <AuthProvider>
           <Toaster />
           <Routes>
             {/* Public routes - No authentication required */}
+            {/* These routes are placed OUTSIDE of any authentication checks */}
             <Route path="/register-client" element={<PublicClientForm />} />
             <Route path="/register-employee" element={<PublicEmployeeForm />} />
             <Route path="/thank-you" element={<ThankYou />} />
@@ -46,15 +47,17 @@ function App() {
             <Route path="/auth/email-confirmed" element={<EmailConfirmed />} />
             
             {/* Protected routes - Authentication required */}
-            <Route path="*" element={<ProtectedRoute><Index /></ProtectedRoute>}>
-              <Route path="" element={<Overview />} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
+              <Route index element={<Overview />} />
               <Route path="employees" element={<Employees />} />
               <Route path="emails" element={<Emails />} />
-              <Route path="*" element={<NotFound />} />
             </Route>
+            
+            {/* Catch-all route for authenticated users */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
-        </ThemeProvider>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }
