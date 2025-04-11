@@ -6,8 +6,12 @@ import { BillingDetails } from "./BillingDetails";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Edit2, Save, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { type RecurringBilling } from "@/types/billing";
+import { type Payment } from "@/types/payment";
+import { Badge } from "@/components/ui/badge";
 
 interface PaymentDetailsDialogProps {
   billingId: string;
@@ -17,8 +21,13 @@ interface PaymentDetailsDialogProps {
 
 export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetailsDialogProps) => {
   const [billingData, setBillingData] = useState<any>(null);
+  const [editedBillingData, setEditedBillingData] = useState<Partial<RecurringBilling>>({});
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [showMarkAsPaidConfirm, setShowMarkAsPaidConfirm] = useState(false);
+  const [paymentToUpdate, setPaymentToUpdate] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchBillingDetails = async () => {
@@ -43,6 +52,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       if (data) {
         console.log("Billing details fetched:", data);
         setBillingData(data);
+        setEditedBillingData(data);
       } else {
         toast({
           title: "Dados não encontrados",
@@ -62,7 +72,46 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
-  const handleMarkAsPaid = async () => {
+  const fetchAssociatedPayments = async () => {
+    setPaymentsLoading(true);
+    
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          clients (
+            name,
+            email
+          )
+        `)
+        .eq('installment_number', '!=', null)
+        .eq('client_id', billingData?.client_id)
+        .order('due_date', { ascending: true });
+
+      if (error) throw error;
+      
+      if (data) {
+        console.log("Associated payments fetched:", data);
+        // Filter payments that match the billing description pattern
+        const relatedPayments = data.filter(payment => 
+          payment.description.includes(billingData.description)
+        );
+        setPayments(relatedPayments);
+      }
+    } catch (error) {
+      console.error('Error fetching associated payments:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os pagamentos associados.",
+        variant: "destructive",
+      });
+    } finally {
+      setPaymentsLoading(false);
+    }
+  };
+
+  const handleMarkBillingAsPaid = async () => {
     try {
       const now = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
       
@@ -108,6 +157,116 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   };
 
+  const handleMarkPaymentAsPaid = async (paymentId: string) => {
+    try {
+      const now = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+      
+      const { error } = await supabase
+        .from('payments')
+        .update({ 
+          status: 'paid',
+          payment_date: now 
+        })
+        .eq('id', paymentId);
+
+      if (error) throw error;
+
+      // Create cash flow entry for the payment
+      const payment = payments.find(p => p.id === paymentId);
+      if (payment) {
+        const { error: cashFlowError } = await supabase
+          .from('cash_flow')
+          .insert({
+            type: 'income',
+            description: payment.description,
+            amount: payment.amount,
+            date: now,
+            category: 'payment',
+            payment_id: paymentId
+          });
+
+        if (cashFlowError) throw cashFlowError;
+      }
+
+      toast({
+        title: "Pagamento marcado como pago",
+        description: "O status foi atualizado e registrado no fluxo de caixa.",
+      });
+      
+      // Refetch the data to show updated status
+      fetchAssociatedPayments();
+      setPaymentToUpdate(null);
+    } catch (error) {
+      console.error('Error marking payment as paid:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status do pagamento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateBillingDetails = async () => {
+    try {
+      const { error } = await supabase
+        .from('recurring_billing')
+        .update(editedBillingData)
+        .eq('id', billingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Dados atualizados",
+        description: "As informações do recebimento foram atualizadas com sucesso.",
+      });
+      
+      setIsEditing(false);
+      fetchBillingDetails();
+    } catch (error) {
+      console.error('Error updating billing details:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar as informações do recebimento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateBillingField = (field: string, value: string | number) => {
+    setEditedBillingData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge className="bg-green-500">Pago</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-500">Pendente</Badge>;
+      case 'overdue':
+        return <Badge className="bg-red-500">Atrasado</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-gray-500">Cancelado</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
+  };
+
   // Fetch data when dialog opens
   useEffect(() => {
     if (open && billingId) {
@@ -115,18 +274,29 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     }
   }, [open, billingId]);
 
+  // Fetch associated payments when billing data is loaded
+  useEffect(() => {
+    if (billingData && billingData.client_id) {
+      fetchAssociatedPayments();
+    }
+  }, [billingData]);
+
   // Reset state when dialog closes
   useEffect(() => {
     if (!open) {
       setBillingData(null);
+      setEditedBillingData({});
+      setIsEditing(false);
+      setPayments([]);
       setLoading(true);
+      setPaymentsLoading(true);
     }
   }, [open]);
 
   return (
     <>
       <Dialog open={open} onOpenChange={() => onClose()}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Detalhes do Recebimento</DialogTitle>
             <DialogDescription>
@@ -151,10 +321,110 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
               </div>
             </div>
           ) : billingData ? (
-            <div className="space-y-4">
-              <BillingDetails billingData={billingData} />
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Informações do Recebimento</h3>
+                {!isEditing ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsEditing(true)}
+                    className="gap-2"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                    Editar
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditedBillingData(billingData);
+                      }}
+                      className="gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Cancelar
+                    </Button>
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={handleUpdateBillingDetails}
+                      className="gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      Salvar
+                    </Button>
+                  </div>
+                )}
+              </div>
               
-              {billingData.status !== 'paid' && billingData.status !== 'cancelled' && (
+              <BillingDetails 
+                billingData={isEditing ? null : billingData}
+                description={isEditing ? editedBillingData.description : undefined}
+                amount={isEditing ? editedBillingData.amount : undefined}
+                installments={isEditing ? editedBillingData.installments : undefined}
+                dueDay={isEditing ? editedBillingData.due_day : undefined}
+                startDate={isEditing ? editedBillingData.start_date : undefined}
+                endDate={isEditing ? editedBillingData.end_date : undefined}
+                onUpdate={isEditing ? updateBillingField : undefined}
+              />
+
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-medium mb-4">Pagamentos Associados</h3>
+                
+                {paymentsLoading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                ) : payments.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Vencimento</TableHead>
+                        <TableHead>Valor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Pago em</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {payments.map((payment) => (
+                        <TableRow key={payment.id}>
+                          <TableCell>{payment.description}</TableCell>
+                          <TableCell>{formatDate(payment.due_date)}</TableCell>
+                          <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                          <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                          <TableCell>{payment.payment_date ? formatDate(payment.payment_date) : '-'}</TableCell>
+                          <TableCell>
+                            {payment.status !== 'paid' && payment.status !== 'cancelled' && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => setPaymentToUpdate(payment.id)}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              >
+                                Marcar como pago
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Nenhum pagamento associado encontrado.
+                  </div>
+                )}
+              </div>
+              
+              {billingData.status !== 'paid' && billingData.status !== 'cancelled' && !isEditing && (
                 <div className="flex justify-end">
                   <Button 
                     className="gap-2"
@@ -174,6 +444,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         </DialogContent>
       </Dialog>
 
+      {/* Confirm Dialog for Marking Billing as Paid */}
       <AlertDialog open={showMarkAsPaidConfirm} onOpenChange={setShowMarkAsPaidConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -185,7 +456,31 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleMarkAsPaid}>Confirmar</AlertDialogAction>
+            <AlertDialogAction onClick={handleMarkBillingAsPaid}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Dialog for Marking Payment as Paid */}
+      <AlertDialog 
+        open={!!paymentToUpdate} 
+        onOpenChange={(open) => !open && setPaymentToUpdate(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar pagamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja marcar este pagamento como pago? 
+              Esta ação também registrará o pagamento no fluxo de caixa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => paymentToUpdate && handleMarkPaymentAsPaid(paymentToUpdate)}
+            >
+              Confirmar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
