@@ -45,12 +45,17 @@ export const PaymentTable = ({
     });
   }, [payments, searchTerm, statusFilter]);
 
+  if (filteredPayments.length === 0) {
+    return <EmptyState />;
+  }
+
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Cliente</TableHead>
+            <TableHead>Responsável</TableHead>
             <TableHead>Descrição</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Vencimento</TableHead>
@@ -60,18 +65,14 @@ export const PaymentTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredPayments.length === 0 ? (
-            <EmptyState />
-          ) : (
-            filteredPayments.map((payment) => (
-              <PaymentRow 
-                key={payment.id} 
-                payment={payment} 
-                onEmailSent={handleEmailSent}
-                onPaymentUpdated={handlePaymentUpdated}
-              />
-            ))
-          )}
+          {filteredPayments.map((payment) => (
+            <PaymentRow 
+              key={payment.id} 
+              payment={payment} 
+              onEmailSent={handleEmailSent}
+              onPaymentUpdated={handlePaymentUpdated}
+            />
+          ))}
         </TableBody>
       </Table>
     </div>

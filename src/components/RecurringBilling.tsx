@@ -72,15 +72,15 @@ export const RecurringBilling = () => {
             onRefresh={handleRefreshData} 
           />
         </TabsContent>
-        <TabsContent value="onetime" className="border rounded-lg p-4">
-          <div className="flex justify-between items-center mb-4">
+        <TabsContent value="onetime" className="border rounded-lg">
+          <div className="flex justify-between items-center mb-4 pt-4 px-4">
             <h2 className="text-lg font-medium">Recebimentos Pontuais</h2>
             <Button onClick={() => setShowNewPaymentDialog(true)}>
               Novo Recebimento Pontual
             </Button>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4 mb-4 px-4">
             <div className="relative flex-1">
               <Input
                 placeholder="Buscar por cliente ou descrição..."
@@ -97,7 +97,7 @@ export const RecurringBilling = () => {
               >
                 <SelectTrigger className="w-full">
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os status</SelectItem>
