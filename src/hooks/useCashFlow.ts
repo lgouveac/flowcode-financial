@@ -126,6 +126,7 @@ export const useCashFlow = (period: string = 'current') => {
       if (cashFlowError) throw cashFlowError;
 
       // 2. Now fetch payments that are marked as paid but don't have entries in cash_flow
+      // Fixed query - removing the problematic payment_id reference
       const { data: paidPaymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select(`
@@ -137,8 +138,7 @@ export const useCashFlow = (period: string = 'current') => {
         `)
         .eq('status', 'paid')
         .gte('payment_date', dates.start)
-        .lt('payment_date', dates.end)
-        .is('payment_id', null); // This ensures we only get payments that don't have a corresponding cash_flow entry
+        .lt('payment_date', dates.end);
 
       if (paymentsError) throw paymentsError;
 
@@ -146,7 +146,7 @@ export const useCashFlow = (period: string = 'current') => {
       console.log('Cash flow data from database:', cashFlowData);
       console.log('Paid payments not in cash flow:', paidPaymentsData);
 
-      // For each paid payment that doesn't have a cash flow entry, create one
+      // For each paid payment, check if it already has a cash flow entry
       for (const payment of paidPaymentsData || []) {
         if (payment.status === 'paid' && payment.payment_date) {
           const { data: existingEntry, error: checkError } = await supabase
