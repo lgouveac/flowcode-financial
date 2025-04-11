@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -75,14 +76,16 @@ export const PaymentDetailsDialog = ({
   const isLoadingBilling = billingQuery.isLoading;
   const billingError = billingQuery.error;
 
-  // Fetch payments for this billing - Fix deep type by using a simpler return type
+  // Fetch payments for this billing - Fix deep type by avoiding complex return types
   const paymentsQuery = useQuery({
     queryKey: ["payments", billingId],
     queryFn: async () => {
       if (!billingId) return [] as Payment[];
 
+      // Simplify the return type to avoid deep type instantiation
+      const payments: Payment[] = [];
+      
       try {
-        // Explicitly type and destructure the result to avoid deep instantiation
         const { data, error } = await supabase
           .from("payments")
           .select("*")
@@ -90,7 +93,7 @@ export const PaymentDetailsDialog = ({
           .order("due_date", { ascending: true });
 
         if (error) throw error;
-        return (data || []) as Payment[];
+        return data as Payment[] || [];
       } catch (error) {
         console.error("Error fetching payments:", error);
         throw error;
