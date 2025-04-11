@@ -32,9 +32,12 @@ export const PaymentTable = ({
 
   const filteredPayments = useMemo(() => {
     return payments.filter(payment => {
+      // Check if clients data exists and has a name property
+      const clientName = payment.clients?.name || '';
+      
       const matchesSearch = 
         searchTerm.toLowerCase() === '' || 
-        (payment.clients?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.description.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = 

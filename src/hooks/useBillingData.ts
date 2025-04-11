@@ -18,10 +18,7 @@ export const useBillingData = () => {
       .from('recurring_billing')
       .select(`
         *,
-        clients:client_id (
-          name,
-          responsible_name
-        )
+        clients:client_id (*)
       `);
 
     if (error) {
@@ -44,11 +41,7 @@ export const useBillingData = () => {
       .from('payments')
       .select(`
         *,
-        clients:client_id (
-          name,
-          email,
-          partner_name
-        )
+        clients:client_id (*)
       `)
       .order('created_at', { ascending: false });
 

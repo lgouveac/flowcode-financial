@@ -33,16 +33,12 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setLoading(true);
     
     try {
-      // Fix the query to properly handle the client information
+      // Modified query to correctly handle client information
       const { data, error } = await supabase
         .from('recurring_billing')
         .select(`
           *,
-          clients:client_id (
-            name,
-            email,
-            responsible_name
-          )
+          clients:client_id (*)
         `)
         .eq('id', billingId)
         .maybeSingle();
@@ -76,27 +72,29 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setPaymentsLoading(true);
     
     try {
-      // Updated query to correctly fetch all payments associated with the billing
-      // We should query by recurring billing ID or pattern to get all related payments
+      // Improved query to fetch all payments associated with the recurring billing
       const { data, error } = await supabase
         .from('payments')
         .select(`
           *,
-          clients:client_id (
-            name,
-            email
-          )
+          clients:client_id (*)
         `)
         .eq('client_id', billingData?.client_id)
         .eq('total_installments', billingData?.installments)
-        .ilike('description', `%${billingData?.description.split(' (')[0]}%`)
         .order('installment_number', { ascending: true });
 
       if (error) throw error;
       
       if (data) {
         console.log("Associated payments fetched:", data);
-        setPayments(data);
+        
+        // Filter payments to match the billing description pattern
+        const baseDescription = billingData?.description.split(' (')[0];
+        const filteredPayments = data.filter(payment => 
+          payment.description.includes(baseDescription)
+        );
+        
+        setPayments(filteredPayments);
       }
     } catch (error) {
       console.error('Error fetching associated payments:', error);
