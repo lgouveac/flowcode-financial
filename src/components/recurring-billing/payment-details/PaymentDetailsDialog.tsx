@@ -79,17 +79,21 @@ export const PaymentDetailsDialog = ({
     }
 
     try {
-      // Avoid type inference issues by using a basic approach
-      const result = await supabase
+      // Use a more basic approach that avoids complex type inference
+      const { data, error } = await supabase
         .from("payments")
         .select("*")
         .eq("recurring_billing_id", billingId)
         .order("due_date", { ascending: true });
       
-      if (result.error) throw result.error;
+      if (error) throw error;
       
-      // Manually handle and type the data
-      setPayments(result.data as Payment[]);
+      // Manually handle the data and cast it to the expected type
+      if (data) {
+        setPayments(data as Payment[]);
+      } else {
+        setPayments([]);
+      }
     } catch (error) {
       console.error("Error fetching payments:", error);
       toast({
