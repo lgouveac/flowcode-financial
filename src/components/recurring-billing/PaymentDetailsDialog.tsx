@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,28 +28,47 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [showMarkAsPaidConfirm, setShowMarkAsPaidConfirm] = useState(false);
   const [paymentToUpdate, setPaymentToUpdate] = useState<string | null>(null);
+  const [clientData, setClientData] = useState<any>(null);
   const { toast } = useToast();
 
   const fetchBillingDetails = async () => {
     setLoading(true);
     
     try {
-      // Modified query to correctly handle client information
-      const { data, error } = await supabase
+      // First fetch the billing data without the client join
+      const { data: billingDataResult, error: billingError } = await supabase
         .from('recurring_billing')
-        .select(`
-          *,
-          clients:client_id (*)
-        `)
+        .select('*')
         .eq('id', billingId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (billingError) throw billingError;
       
-      if (data) {
-        console.log("Billing details fetched:", data);
-        setBillingData(data);
-        setEditedBillingData(data);
+      if (billingDataResult) {
+        console.log("Billing details fetched:", billingDataResult);
+        
+        // Then fetch the client data separately
+        const { data: clientDataResult, error: clientError } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', billingDataResult.client_id)
+          .maybeSingle();
+          
+        if (clientError) throw clientError;
+        
+        if (clientDataResult) {
+          console.log("Client data fetched:", clientDataResult);
+          setClientData(clientDataResult);
+          
+          // Combine the data
+          const combinedData = {
+            ...billingDataResult,
+            clients: clientDataResult
+          };
+          
+          setBillingData(combinedData);
+          setEditedBillingData(billingDataResult);
+        }
       } else {
         toast({
           title: "Dados não encontrados",
@@ -72,15 +92,21 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setPaymentsLoading(true);
     
     try {
-      // Improved query to fetch all payments associated with the recurring billing
+      if (!billingData || !billingData.client_id) {
+        console.log("No billing data available yet for fetching payments");
+        setPaymentsLoading(false);
+        return;
+      }
+      
+      // Fetch all payments from this client with matching installments
       const { data, error } = await supabase
         .from('payments')
         .select(`
           *,
           clients:client_id (*)
         `)
-        .eq('client_id', billingData?.client_id)
-        .eq('total_installments', billingData?.installments)
+        .eq('client_id', billingData.client_id)
+        .eq('total_installments', billingData.installments)
         .order('installment_number', { ascending: true });
 
       if (error) throw error;
@@ -89,11 +115,12 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         console.log("Associated payments fetched:", data);
         
         // Filter payments to match the billing description pattern
-        const baseDescription = billingData?.description.split(' (')[0];
+        const baseDescription = billingData.description.split(' (')[0];
         const filteredPayments = data.filter(payment => 
           payment.description.includes(baseDescription)
         );
         
+        console.log("Filtered payments:", filteredPayments);
         setPayments(filteredPayments);
       }
     } catch (error) {
@@ -205,9 +232,21 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
 
   const handleUpdateBillingDetails = async () => {
     try {
+      // Only update the fields that can be edited, not the entire object
+      const updatableFields = {
+        description: editedBillingData.description,
+        amount: editedBillingData.amount,
+        installments: editedBillingData.installments,
+        due_day: editedBillingData.due_day,
+        start_date: editedBillingData.start_date,
+        end_date: editedBillingData.end_date
+      };
+      
+      console.log("Updating billing with data:", updatableFields);
+      
       const { error } = await supabase
         .from('recurring_billing')
-        .update(editedBillingData)
+        .update(updatableFields)
         .eq('id', billingId);
 
       if (error) throw error;
@@ -289,8 +328,141 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       setPayments([]);
       setLoading(true);
       setPaymentsLoading(true);
+      setClientData(null);
     }
   }, [open]);
+
+  const handleMarkBillingAsPaid = async () => {
+    try {
+      const now = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+      
+      const { error } = await supabase
+        .from('recurring_billing')
+        .update({ 
+          status: 'paid',
+          payment_date: now 
+        })
+        .eq('id', billingId);
+
+      if (error) throw error;
+
+      // Create cash flow entry for the payment
+      const { error: cashFlowError } = await supabase
+        .from('cash_flow')
+        .insert({
+          type: 'income',
+          description: billingData.description,
+          amount: billingData.amount,
+          date: now,
+          category: 'payment',
+          payment_id: billingId
+        });
+
+      if (cashFlowError) throw cashFlowError;
+
+      toast({
+        title: "Recebimento marcado como pago",
+        description: "O status foi atualizado e registrado no fluxo de caixa.",
+      });
+      
+      // Refetch the data to show updated status
+      fetchBillingDetails();
+      setShowMarkAsPaidConfirm(false);
+    } catch (error) {
+      console.error('Error marking billing as paid:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status do recebimento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMarkPaymentAsPaid = async (paymentId: string) => {
+    try {
+      const now = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+      
+      const { error } = await supabase
+        .from('payments')
+        .update({ 
+          status: 'paid',
+          payment_date: now 
+        })
+        .eq('id', paymentId);
+
+      if (error) throw error;
+
+      // Create cash flow entry for the payment
+      const payment = payments.find(p => p.id === paymentId);
+      if (payment) {
+        const { error: cashFlowError } = await supabase
+          .from('cash_flow')
+          .insert({
+            type: 'income',
+            description: payment.description,
+            amount: payment.amount,
+            date: now,
+            category: 'payment',
+            payment_id: paymentId
+          });
+
+        if (cashFlowError) throw cashFlowError;
+      }
+
+      toast({
+        title: "Pagamento marcado como pago",
+        description: "O status foi atualizado e registrado no fluxo de caixa.",
+      });
+      
+      // Refetch the data to show updated status
+      fetchAssociatedPayments();
+      setPaymentToUpdate(null);
+    } catch (error) {
+      console.error('Error marking payment as paid:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status do pagamento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateBillingField = (field: string, value: string | number) => {
+    setEditedBillingData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return <Badge className="bg-green-500">Pago</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-500">Pendente</Badge>;
+      case 'overdue':
+        return <Badge className="bg-red-500">Atrasado</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-gray-500">Cancelado</Badge>;
+      case 'partially_paid':
+        return <Badge className="bg-blue-500">Pago Parcial</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
+  };
 
   return (
     <>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,14 +13,39 @@ export const useBillingData = () => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const { toast } = useToast();
 
+  const fetchBillingWithClients = async (billingData: any[]) => {
+    // Extract client IDs from billing data
+    const clientIds = [...new Set(billingData.map(item => item.client_id))];
+    
+    // Fetch all relevant clients in a single query
+    const { data: clientsData, error: clientsError } = await supabase
+      .from('clients')
+      .select('*')
+      .in('id', clientIds);
+      
+    if (clientsError) {
+      console.error('Error fetching clients for billings:', clientsError);
+      return billingData;
+    }
+    
+    // Create a map of client data by ID for quick lookup
+    const clientsMap = (clientsData || []).reduce((acc, client) => {
+      acc[client.id] = client;
+      return acc;
+    }, {} as Record<string, any>);
+    
+    // Merge client data into billing objects
+    return billingData.map(billing => ({
+      ...billing,
+      clients: clientsMap[billing.client_id] || null
+    }));
+  };
+
   const fetchBillings = async () => {
     console.log("Fetching billings...");
     const { data, error } = await supabase
       .from('recurring_billing')
-      .select(`
-        *,
-        clients:client_id (*)
-      `);
+      .select('*');
 
     if (error) {
       console.error('Error fetching billings:', error);
@@ -31,18 +57,49 @@ export const useBillingData = () => {
       return;
     }
 
-    console.log("Billings fetched:", data);
-    setBillings(data || []);
+    // Fetch and merge client data
+    if (data && data.length > 0) {
+      const billingsWithClients = await fetchBillingWithClients(data);
+      console.log("Billings fetched:", billingsWithClients);
+      setBillings(billingsWithClients || []);
+    } else {
+      setBillings([]);
+    }
+  };
+
+  const fetchPaymentsWithClients = async (paymentData: any[]) => {
+    // Extract client IDs from payment data
+    const clientIds = [...new Set(paymentData.map(item => item.client_id))];
+    
+    // Fetch all relevant clients in a single query
+    const { data: clientsData, error: clientsError } = await supabase
+      .from('clients')
+      .select('*')
+      .in('id', clientIds);
+      
+    if (clientsError) {
+      console.error('Error fetching clients for payments:', clientsError);
+      return paymentData;
+    }
+    
+    // Create a map of client data by ID for quick lookup
+    const clientsMap = (clientsData || []).reduce((acc, client) => {
+      acc[client.id] = client;
+      return acc;
+    }, {} as Record<string, any>);
+    
+    // Merge client data into payment objects
+    return paymentData.map(payment => ({
+      ...payment,
+      clients: clientsMap[payment.client_id] || null
+    }));
   };
 
   const fetchPayments = async () => {
     console.log("Fetching payments...");
     const { data, error } = await supabase
       .from('payments')
-      .select(`
-        *,
-        clients:client_id (*)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -55,8 +112,14 @@ export const useBillingData = () => {
       return;
     }
 
-    console.log("Payments fetched:", data);
-    setPayments(data || [] as Payment[]);
+    // Fetch and merge client data
+    if (data && data.length > 0) {
+      const paymentsWithClients = await fetchPaymentsWithClients(data);
+      console.log("Payments fetched:", paymentsWithClients);
+      setPayments(paymentsWithClients || []);
+    } else {
+      setPayments([]);
+    }
   };
 
   const fetchClients = async () => {
