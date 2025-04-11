@@ -29,6 +29,8 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   const [showMarkAsPaidConfirm, setShowMarkAsPaidConfirm] = useState(false);
   const [paymentToUpdate, setPaymentToUpdate] = useState<string | null>(null);
   const [clientData, setClientData] = useState<any>(null);
+  const [showUpdatePaymentsConfirm, setShowUpdatePaymentsConfirm] = useState(false);
+  const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchBillingDetails = async () => {
@@ -46,6 +48,9 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       
       if (billingDataResult) {
         console.log("Billing details fetched:", billingDataResult);
+        
+        // Store the original start date for comparison later
+        setOriginalStartDate(billingDataResult.start_date);
         
         // Then fetch the client data separately
         const { data: clientDataResult, error: clientError } = await supabase
@@ -267,6 +272,76 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     return date.toLocaleDateString('pt-BR');
   };
 
+  const calculateNewPaymentDates = () => {
+    if (!editedBillingData.start_date || !originalStartDate || !billingData || !payments.length) {
+      return [];
+    }
+
+    const originalStartDateObj = new Date(originalStartDate);
+    const newStartDateObj = new Date(editedBillingData.start_date);
+    
+    // Calculate the difference in days between the original and new start dates
+    const daysDifference = Math.floor(
+      (newStartDateObj.getTime() - originalStartDateObj.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    
+    // If there's no difference, no need to update
+    if (daysDifference === 0) return [];
+
+    // Generate updated due dates for each payment
+    return payments.map(payment => {
+      const currentDueDate = new Date(payment.due_date);
+      const newDueDate = new Date(currentDueDate);
+      newDueDate.setDate(newDueDate.getDate() + daysDifference);
+      
+      return {
+        paymentId: payment.id,
+        oldDueDate: payment.due_date,
+        newDueDate: newDueDate.toISOString().split('T')[0] // Format as YYYY-MM-DD
+      };
+    });
+  };
+
+  const updatePaymentDates = async () => {
+    try {
+      const updatedPaymentDates = calculateNewPaymentDates();
+      
+      if (!updatedPaymentDates.length) {
+        toast({
+          title: "Nenhuma alteração necessária",
+          description: "As datas dos pagamentos não precisam ser atualizadas.",
+        });
+        return;
+      }
+      
+      // Update each payment with its new due date
+      for (const update of updatedPaymentDates) {
+        const { error } = await supabase
+          .from('payments')
+          .update({ due_date: update.newDueDate })
+          .eq('id', update.paymentId);
+          
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Datas atualizadas",
+        description: `Datas de vencimento de ${updatedPaymentDates.length} pagamentos foram atualizadas.`,
+      });
+      
+      // Refetch data to show updated dates
+      fetchAssociatedPayments();
+      setShowUpdatePaymentsConfirm(false);
+    } catch (error) {
+      console.error('Error updating payment dates:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar as datas dos pagamentos.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleUpdateBillingDetails = async () => {
     try {
       // Only update the fields that can be edited, not the entire object
@@ -293,8 +368,13 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         description: "As informações do recebimento foram atualizadas com sucesso.",
       });
       
-      setIsEditing(false);
-      fetchBillingDetails();
+      // Check if the start date was changed
+      if (editedBillingData.start_date !== originalStartDate && payments.length > 0) {
+        setShowUpdatePaymentsConfirm(true);
+      } else {
+        setIsEditing(false);
+        fetchBillingDetails();
+      }
     } catch (error) {
       console.error('Error updating billing details:', error);
       toast({
@@ -329,6 +409,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
       setLoading(true);
       setPaymentsLoading(true);
       setClientData(null);
+      setOriginalStartDate(null);
     }
   }, [open]);
 
@@ -520,6 +601,31 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
               onClick={() => paymentToUpdate && handleMarkPaymentAsPaid(paymentToUpdate)}
             >
               Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* New Confirm Dialog for Updating Payment Dates */}
+      <AlertDialog open={showUpdatePaymentsConfirm} onOpenChange={setShowUpdatePaymentsConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Atualizar datas de pagamentos</AlertDialogTitle>
+            <AlertDialogDescription>
+              A data de início foi alterada. Deseja atualizar também as datas de vencimento 
+              dos pagamentos associados para corresponder à nova data de início?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowUpdatePaymentsConfirm(false);
+              setIsEditing(false);
+              fetchBillingDetails();
+            }}>
+              Não atualizar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={updatePaymentDates}>
+              Atualizar pagamentos
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
