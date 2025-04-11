@@ -10,6 +10,18 @@ import { BillingDetailsSection } from "./BillingDetailsSection";
 import { PaymentsTableSection } from "./PaymentsTableSection";
 import { ConfirmationDialogs } from "./ConfirmationDialogs";
 import { Payment } from "@/types/payment";
+import { RecurringBilling } from "@/types/billing";
+
+// Define a more specific type for the billing data with client info
+interface BillingWithClient extends RecurringBilling {
+  client: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    partner_name?: string;
+  };
+}
 
 export const PaymentDetailsDialog = ({
   billingId,
@@ -29,7 +41,7 @@ export const PaymentDetailsDialog = ({
   const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
   const [newStartDate, setNewStartDate] = useState<string | null>(null);
 
-  // Fetch billing details
+  // Fetch billing details with explicit return type
   const {
     data: billing,
     isLoading: isLoadingBilling,
@@ -50,7 +62,7 @@ export const PaymentDetailsDialog = ({
       // Store the original start date for comparison later
       setOriginalStartDate(data.start_date);
       
-      return data;
+      return data as BillingWithClient;
     },
     enabled: !!billingId && open,
   });
@@ -107,7 +119,7 @@ export const PaymentDetailsDialog = ({
 
   // Update billing information
   const updateBilling = useMutation({
-    mutationFn: async (updatedBilling: any) => {
+    mutationFn: async (updatedBilling: Partial<RecurringBilling>) => {
       const { data, error } = await supabase
         .from("recurring_billing")
         .update(updatedBilling)
@@ -288,7 +300,7 @@ export const PaymentDetailsDialog = ({
               <TabsContent value="details" className="space-y-4 pt-4">
                 {billing && (
                   <BillingDetailsSection 
-                    billing={billing} 
+                    billingData={billing} 
                     onUpdate={updateBilling.mutate}
                     onCancel={() => setShowCancelDialog(true)}
                     onStartDateChange={handleStartDateChange}
