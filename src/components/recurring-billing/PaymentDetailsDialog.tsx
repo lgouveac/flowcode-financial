@@ -33,11 +33,12 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setLoading(true);
     
     try {
+      // Fix the query to properly handle the client information
       const { data, error } = await supabase
         .from('recurring_billing')
         .select(`
           *,
-          clients (
+          clients:client_id (
             name,
             email,
             responsible_name
@@ -75,25 +76,26 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     setPaymentsLoading(true);
     
     try {
-      // Modified query to correctly fetch all payments associated with the recurring billing
+      // Updated query to correctly fetch all payments associated with the billing
+      // We should query by recurring billing ID or pattern to get all related payments
       const { data, error } = await supabase
         .from('payments')
         .select(`
           *,
-          clients (
+          clients:client_id (
             name,
             email
           )
         `)
         .eq('client_id', billingData?.client_id)
-        .ilike('description', `%${billingData?.description}%`)
-        .order('due_date', { ascending: true });
+        .eq('total_installments', billingData?.installments)
+        .ilike('description', `%${billingData?.description.split(' (')[0]}%`)
+        .order('installment_number', { ascending: true });
 
       if (error) throw error;
       
       if (data) {
         console.log("Associated payments fetched:", data);
-        // We'll show all payments that match the description pattern
         setPayments(data);
       }
     } catch (error) {
@@ -266,19 +268,19 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
     return date.toLocaleDateString('pt-BR');
   };
 
+  // Only fetch associated payments when billing data is loaded
+  useEffect(() => {
+    if (billingData && billingData.client_id) {
+      fetchAssociatedPayments();
+    }
+  }, [billingData]);
+
   // Fetch data when dialog opens
   useEffect(() => {
     if (open && billingId) {
       fetchBillingDetails();
     }
   }, [open, billingId]);
-
-  // Fetch associated payments when billing data is loaded
-  useEffect(() => {
-    if (billingData && billingData.client_id) {
-      fetchAssociatedPayments();
-    }
-  }, [billingData]);
 
   // Reset state when dialog closes
   useEffect(() => {

@@ -34,7 +34,7 @@ export const PaymentTable = ({
     return payments.filter(payment => {
       const matchesSearch = 
         searchTerm.toLowerCase() === '' || 
-        payment.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (payment.clients?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         payment.description.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = 

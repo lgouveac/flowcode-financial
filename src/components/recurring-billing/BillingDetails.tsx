@@ -46,12 +46,17 @@ export const BillingDetails = ({
   // Read-only mode if no onUpdate provided
   const isReadOnly = !onUpdate;
 
+  // Create a consistent styling for all fields based on darkMode
+  const fieldStyle = darkMode 
+    ? 'bg-background/30 border-border/50 text-foreground' 
+    : 'bg-gray-50';
+
   return (
     <>
       <div className="space-y-2">
         <Label>Descrição</Label>
         {isReadOnly ? (
-          <p className={`p-2 border rounded-md ${darkMode ? 'bg-background/30 border-border/50 text-foreground' : 'bg-gray-50'}`}>
+          <p className={`p-2 border rounded-md ${fieldStyle}`}>
             {data.description}
           </p>
         ) : (
@@ -59,7 +64,7 @@ export const BillingDetails = ({
             value={data.description || ''}
             onChange={(e) => handleUpdate('description', e.target.value)}
             required
-            className={darkMode ? 'bg-background/30 border-border/50 text-foreground' : ''}
+            className={fieldStyle}
           />
         )}
       </div>
@@ -68,7 +73,7 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Valor</Label>
           {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background/30 border-border/50 text-foreground' : 'bg-gray-50'}`}>
+            <p className={`p-2 border rounded-md ${fieldStyle}`}>
               {typeof data.amount === 'number' 
                 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.amount) 
                 : data.amount || ''}
@@ -80,7 +85,7 @@ export const BillingDetails = ({
               value={data.amount || ''}
               onChange={(e) => handleUpdate('amount', parseFloat(e.target.value))}
               required
-              className={darkMode ? 'bg-background/30 border-border/50 text-foreground' : ''}
+              className={fieldStyle}
             />
           )}
         </div>
@@ -88,7 +93,7 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Parcelas</Label>
           {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background/30 border-border/50 text-foreground' : 'bg-gray-50'}`}>
+            <p className={`p-2 border rounded-md ${fieldStyle}`}>
               {data.installments || data.installments === 0 ? data.installments : '-'}
             </p>
           ) : (
@@ -98,7 +103,7 @@ export const BillingDetails = ({
               value={data.installments || ''}
               onChange={(e) => handleUpdate('installments', parseInt(e.target.value))}
               required
-              className={darkMode ? 'bg-background/30 border-border/50 text-foreground' : ''}
+              className={fieldStyle}
             />
           )}
         </div>
@@ -108,7 +113,7 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Dia do Vencimento</Label>
           {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background/30 border-border/50 text-foreground' : 'bg-gray-50'}`}>
+            <p className={`p-2 border rounded-md ${fieldStyle}`}>
               {data.due_day || '-'}
             </p>
           ) : (
@@ -119,7 +124,7 @@ export const BillingDetails = ({
               value={data.due_day || ''}
               onChange={(e) => handleUpdate('due_day', parseInt(e.target.value))}
               required
-              className={darkMode ? 'bg-background/30 border-border/50 text-foreground' : ''}
+              className={fieldStyle}
             />
           )}
         </div>
@@ -129,7 +134,7 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Data de Início</Label>
           {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background/30 border-border/50 text-foreground' : 'bg-gray-50'}`}>
+            <p className={`p-2 border rounded-md ${fieldStyle}`}>
               {data.start_date || '-'}
             </p>
           ) : (
@@ -138,7 +143,7 @@ export const BillingDetails = ({
               value={data.start_date || ''}
               onChange={(e) => handleUpdate('start_date', e.target.value)}
               required
-              className={darkMode ? 'bg-background/30 border-border/50 text-foreground' : ''}
+              className={fieldStyle}
             />
           )}
         </div>
@@ -146,7 +151,7 @@ export const BillingDetails = ({
         <div className="space-y-2">
           <Label>Data Final (opcional)</Label>
           {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${darkMode ? 'bg-background/30 border-border/50 text-foreground' : 'bg-gray-50'}`}>
+            <p className={`p-2 border rounded-md ${fieldStyle}`}>
               {data.end_date || '-'}
             </p>
           ) : (
@@ -154,7 +159,7 @@ export const BillingDetails = ({
               type="date"
               value={data.end_date || ''}
               onChange={(e) => handleUpdate('end_date', e.target.value)}
-              className={darkMode ? 'bg-background/30 border-border/50 text-foreground' : ''}
+              className={fieldStyle}
             />
           )}
         </div>
