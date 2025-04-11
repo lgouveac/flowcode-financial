@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Payment } from "@/types/payment";
 import { PaymentRow } from "./PaymentRow";
@@ -8,9 +8,16 @@ import { EmptyState } from "./EmptyState";
 interface PaymentTableProps {
   payments?: Payment[];
   onRefresh?: () => void;
+  searchTerm?: string;
+  statusFilter?: string;
 }
 
-export const PaymentTable = ({ payments = [], onRefresh }: PaymentTableProps) => {
+export const PaymentTable = ({ 
+  payments = [], 
+  onRefresh,
+  searchTerm = "",
+  statusFilter = "all"
+}: PaymentTableProps) => {
   const handleEmailSent = () => {
     if (onRefresh) {
       onRefresh();
@@ -22,6 +29,21 @@ export const PaymentTable = ({ payments = [], onRefresh }: PaymentTableProps) =>
       onRefresh();
     }
   };
+
+  const filteredPayments = useMemo(() => {
+    return payments.filter(payment => {
+      const matchesSearch = 
+        searchTerm.toLowerCase() === '' || 
+        payment.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        payment.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = 
+        statusFilter === 'all' || 
+        payment.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [payments, searchTerm, statusFilter]);
 
   return (
     <div className="rounded-md border">
@@ -38,10 +60,10 @@ export const PaymentTable = ({ payments = [], onRefresh }: PaymentTableProps) =>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {payments.length === 0 ? (
+          {filteredPayments.length === 0 ? (
             <EmptyState />
           ) : (
-            payments.map((payment) => (
+            filteredPayments.map((payment) => (
               <PaymentRow 
                 key={payment.id} 
                 payment={payment} 

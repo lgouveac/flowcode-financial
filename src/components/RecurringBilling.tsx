@@ -5,17 +5,21 @@ import { BillingTable } from "./recurring-billing/BillingTable";
 import { PaymentTable } from "./payments/PaymentTable";
 import { NewBillingDialog } from "./recurring-billing/NewBillingDialog";
 import { NotificationSettings } from "./emails/NotificationSettings";
-import { Settings } from "lucide-react";
+import { Search, Settings, SlidersHorizontal } from "lucide-react";
 import { Button } from "./ui/button";
 import { useBillingData } from "@/hooks/useBillingData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NewPaymentDialog } from "./payments/NewPaymentDialog";
+import { Input } from "./ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 export const RecurringBilling = () => {
   const { billings, payments, clients, templates, fetchBillings, fetchPayments } = useBillingData();
   const [showSettings, setShowSettings] = useState(false);
   const [showNewPaymentDialog, setShowNewPaymentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("recurring");
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
 
   const handleSuccess = () => {
     fetchBillings();
@@ -26,6 +30,12 @@ export const RecurringBilling = () => {
   const handleRefreshData = () => {
     handleSuccess();
   };
+
+  // Filter out payments that are part of installment series (recurring)
+  // Only show one-time payments in the "Pontuais" tab
+  const filteredPayments = payments.filter(payment => 
+    payment.installment_number === null || payment.total_installments === null
+  );
 
   return (
     <div className="space-y-8 p-6">
@@ -65,10 +75,46 @@ export const RecurringBilling = () => {
         <TabsContent value="onetime" className="border rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-medium">Recebimentos Pontuais</h2>
+            <Button onClick={() => setShowNewPaymentDialog(true)}>
+              Novo Recebimento Pontual
+            </Button>
           </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <div className="relative flex-1">
+              <Input
+                placeholder="Buscar por cliente ou descrição..."
+                value={paymentSearch}
+                onChange={(e) => setPaymentSearch(e.target.value)}
+                className="pl-9"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="w-full sm:w-[200px]">
+              <Select
+                value={paymentStatusFilter}
+                onValueChange={(value) => setPaymentStatusFilter(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="paid">Pago</SelectItem>
+                  <SelectItem value="overdue">Atrasado</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
           <PaymentTable 
-            payments={payments} 
-            onRefresh={handleRefreshData} 
+            payments={filteredPayments} 
+            onRefresh={handleRefreshData}
+            searchTerm={paymentSearch}
+            statusFilter={paymentStatusFilter}
           />
         </TabsContent>
       </Tabs>
