@@ -1,12 +1,13 @@
 
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { BillingDetails } from "./BillingDetails";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CheckCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PaymentDetailsDialogProps {
   billingId: string;
@@ -35,10 +36,20 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
           )
         `)
         .eq('id', billingId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      setBillingData(data);
+      
+      if (data) {
+        console.log("Billing details fetched:", data);
+        setBillingData(data);
+      } else {
+        toast({
+          title: "Dados não encontrados",
+          description: "Não foi possível encontrar os detalhes deste recebimento.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Error fetching billing details:', error);
       toast({
@@ -98,38 +109,48 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   };
 
   // Fetch data when dialog opens
-  if (open && !billingData && !loading) {
-    fetchBillingDetails();
-  }
+  useEffect(() => {
+    if (open && billingId) {
+      fetchBillingDetails();
+    }
+  }, [open, billingId]);
 
   // Reset state when dialog closes
-  if (!open && billingData) {
-    setBillingData(null);
-  }
+  useEffect(() => {
+    if (!open) {
+      setBillingData(null);
+      setLoading(true);
+    }
+  }, [open]);
 
-  // If we don't have data yet, show loading state
-  if (!billingData && loading) {
-    return (
-      <Dialog open={open} onOpenChange={() => onClose()}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Carregando detalhes...</DialogTitle>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // If we have data, show the details
   return (
     <>
       <Dialog open={open} onOpenChange={() => onClose()}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Detalhes do Recebimento</DialogTitle>
+            <DialogDescription>
+              Visualize ou altere as informações deste recebimento recorrente.
+            </DialogDescription>
           </DialogHeader>
           
-          {billingData && (
+          {loading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-full" />
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            </div>
+          ) : billingData ? (
             <div className="space-y-4">
               <BillingDetails billingData={billingData} />
               
@@ -144,6 +165,10 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
                   </Button>
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="py-4 text-center text-muted-foreground">
+              Nenhum dado encontrado para este recebimento.
             </div>
           )}
         </DialogContent>
