@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -41,7 +40,7 @@ export const PaymentDetailsDialog = ({
   const [originalStartDate, setOriginalStartDate] = useState<string | null>(null);
   const [newStartDate, setNewStartDate] = useState<string | null>(null);
 
-  // Fix for deep type instantiation - Use explicit type casting
+  // Fix for deep type instantiation - Simplify the query type
   const billingQuery = useQuery({
     queryKey: ["billing", billingId],
     queryFn: async () => {
@@ -67,11 +66,11 @@ export const PaymentDetailsDialog = ({
   const isLoadingBilling = billingQuery.isLoading;
   const billingError = billingQuery.error;
 
-  // Fetch payments for this billing
+  // Fetch payments for this billing - Fix deep type by simplifying the return type
   const paymentsQuery = useQuery({
     queryKey: ["payments", billingId],
     queryFn: async () => {
-      if (!billingId) return [];
+      if (!billingId) return [] as Payment[];
 
       const { data, error } = await supabase
         .from("payments")
@@ -80,7 +79,7 @@ export const PaymentDetailsDialog = ({
         .order("due_date", { ascending: true });
 
       if (error) throw error;
-      return data as Payment[];
+      return (data || []) as Payment[];
     },
     enabled: !!billingId && open,
   });

@@ -12,7 +12,7 @@ interface BillingDetailsSectionProps {
 }
 
 export const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({
-  billing, // Updated parameter name to match the interface
+  billing,
   onUpdate,
   onCancel,
   onStartDateChange
