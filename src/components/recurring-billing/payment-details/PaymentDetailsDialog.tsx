@@ -23,12 +23,6 @@ interface BillingWithClient extends RecurringBilling {
   };
 }
 
-// Define a type for the supabase response to avoid deep type instantiation
-type SupabaseQueryResult<T> = {
-  data: T | null;
-  error: Error | null;
-};
-
 export const PaymentDetailsDialog = ({
   billingId,
   open,
@@ -53,21 +47,25 @@ export const PaymentDetailsDialog = ({
     queryFn: async () => {
       if (!billingId) return null;
 
-      // Explicitly type the result to avoid deep instantiation
-      const result: SupabaseQueryResult<BillingWithClient> = await supabase
-        .from("recurring_billing")
-        .select("*, client:clients(*)")
-        .eq("id", billingId)
-        .single();
-      
-      if (result.error) throw result.error;
-      
-      // Store the original start date for comparison later
-      if (result.data) {
-        setOriginalStartDate(result.data.start_date);
+      try {
+        const { data, error } = await supabase
+          .from("recurring_billing")
+          .select("*, client:clients(*)")
+          .eq("id", billingId)
+          .single();
+        
+        if (error) throw error;
+        
+        // Store the original start date for comparison later
+        if (data) {
+          setOriginalStartDate(data.start_date);
+        }
+        
+        return data as BillingWithClient;
+      } catch (error) {
+        console.error("Error fetching billing:", error);
+        throw error;
       }
-      
-      return result.data;
     },
     enabled: !!billingId && open,
   });
@@ -76,15 +74,12 @@ export const PaymentDetailsDialog = ({
   const isLoadingBilling = billingQuery.isLoading;
   const billingError = billingQuery.error;
 
-  // Fetch payments for this billing - Fix deep type by avoiding complex return types
+  // Completely rewrite the payments query to avoid type issues
   const paymentsQuery = useQuery({
     queryKey: ["payments", billingId],
     queryFn: async () => {
-      if (!billingId) return [] as Payment[];
+      if (!billingId) return [];
 
-      // Simplify the return type to avoid deep type instantiation
-      const payments: Payment[] = [];
-      
       try {
         const { data, error } = await supabase
           .from("payments")
@@ -93,7 +88,7 @@ export const PaymentDetailsDialog = ({
           .order("due_date", { ascending: true });
 
         if (error) throw error;
-        return data as Payment[] || [];
+        return data || [];
       } catch (error) {
         console.error("Error fetching payments:", error);
         throw error;
@@ -102,20 +97,20 @@ export const PaymentDetailsDialog = ({
     enabled: !!billingId && open,
   });
 
-  const payments = paymentsQuery.data;
+  const payments = paymentsQuery.data as Payment[];
   const isLoadingPayments = paymentsQuery.isLoading;
   const paymentsError = paymentsQuery.error;
 
   // Update a payment's status
   const updatePaymentStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "paid" | "pending" | "overdue" | "cancelled" | "partially_paid" }) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("payments")
         .update({ status })
         .eq("id", id);
 
       if (error) throw error;
-      return data;
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payments", billingId] });
@@ -137,13 +132,13 @@ export const PaymentDetailsDialog = ({
   // Update billing information
   const updateBilling = useMutation({
     mutationFn: async (updatedBilling: Partial<RecurringBilling>) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("recurring_billing")
         .update(updatedBilling)
         .eq("id", billingId);
 
       if (error) throw error;
-      return data;
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["billing", billingId] });
