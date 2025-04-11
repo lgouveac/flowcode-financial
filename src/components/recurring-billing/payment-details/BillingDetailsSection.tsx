@@ -2,31 +2,53 @@
 import React from "react";
 import { BillingDetails } from "../BillingDetails";
 import { RecurringBilling } from "@/types/billing";
+import { UseMutateFunction } from "@tanstack/react-query";
 
 interface BillingDetailsSectionProps {
-  billingData: any;
-  editedBillingData: Partial<RecurringBilling>;
-  isEditing: boolean;
-  updateBillingField: (field: string, value: string | number) => void;
+  billing: any;
+  onUpdate: UseMutateFunction<any, Error, any, unknown>;
+  onCancel: () => void;
+  onStartDateChange: (date: string) => void;
 }
 
 export const BillingDetailsSection: React.FC<BillingDetailsSectionProps> = ({
-  billingData,
-  editedBillingData,
-  isEditing,
-  updateBillingField
+  billing,
+  onUpdate,
+  onCancel,
+  onStartDateChange
 }) => {
+  const handleFieldUpdate = (field: string, value: string | number) => {
+    onUpdate({ [field]: value });
+  };
+
   return (
-    <BillingDetails 
-      billingData={isEditing ? null : billingData}
-      description={isEditing ? editedBillingData.description : undefined}
-      amount={isEditing ? editedBillingData.amount : undefined}
-      installments={isEditing ? editedBillingData.installments : undefined}
-      dueDay={isEditing ? editedBillingData.due_day : undefined}
-      startDate={isEditing ? editedBillingData.start_date : undefined}
-      endDate={isEditing ? editedBillingData.end_date : undefined}
-      onUpdate={isEditing ? updateBillingField : undefined}
-      darkMode={true}
-    />
+    <div className="space-y-6">
+      <BillingDetails 
+        billingData={billing}
+        onUpdate={handleFieldUpdate}
+        darkMode={true}
+      />
+      
+      <div className="flex justify-between mt-4">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+        >
+          Cancelar Faturamento
+        </button>
+        
+        {billing?.start_date && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Data de Início</label>
+            <input
+              type="date"
+              value={billing.start_date}
+              onChange={(e) => onStartDateChange(e.target.value)}
+              className="p-2 border rounded-md"
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
-};
+}

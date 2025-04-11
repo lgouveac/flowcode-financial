@@ -1,5 +1,5 @@
 
-import { PublicEmployeeForm } from "./PublicEmployeeForm";
+import PublicEmployeeForm from "./PublicEmployeeForm";
 
 export default function RegisterEmployee() {
   return <PublicEmployeeForm />;

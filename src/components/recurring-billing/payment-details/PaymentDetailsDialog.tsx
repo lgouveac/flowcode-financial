@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { BillingDetailsSection } from "./BillingDetailsSection";
 import { PaymentsTableSection } from "./PaymentsTableSection";
 import { ConfirmationDialogs } from "./ConfirmationDialogs";
+import { Payment } from "@/types/payment";
 
 export const PaymentDetailsDialog = ({
   billingId,
@@ -71,14 +72,14 @@ export const PaymentDetailsDialog = ({
         .order("due_date", { ascending: true });
 
       if (error) throw error;
-      return data;
+      return data as Payment[];
     },
     enabled: !!billingId && open,
   });
 
   // Update a payment's status
   const updatePaymentStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: "paid" | "pending" | "overdue" | "cancelled" | "partially_paid" }) => {
       const { data, error } = await supabase
         .from("payments")
         .update({ status })
@@ -153,7 +154,7 @@ export const PaymentDetailsDialog = ({
 
       if (paymentsError) throw paymentsError;
       
-      return;
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["billing", billingId] });
@@ -176,7 +177,7 @@ export const PaymentDetailsDialog = ({
   });
 
   // Calculate new dates for payments when start date changes
-  const calculateNewPaymentDates = (originalDate: string, newDate: string, payments: any[]) => {
+  const calculateNewPaymentDates = (originalDate: string, newDate: string, payments: Payment[]) => {
     if (!payments || !payments.length) return [];
     
     const originalDateObj = new Date(originalDate);
@@ -196,10 +197,18 @@ export const PaymentDetailsDialog = ({
   };
 
   // Update payment dates when start date changes
-  const updatePaymentDates = async (newPayments: any[]) => {
+  const updatePaymentDates = async () => {
+    if (!newStartDate || !originalStartDate || !payments) return;
+    
     setLoading(true);
     try {
-      for (const payment of newPayments) {
+      // First update the billing start date
+      await updateBilling.mutateAsync({ start_date: newStartDate });
+      
+      // Then update all the payment dates
+      const updatedPayments = calculateNewPaymentDates(originalStartDate, newStartDate, payments);
+      
+      for (const payment of updatedPayments) {
         const { error } = await supabase
           .from("payments")
           .update({ due_date: payment.due_date })
@@ -213,6 +222,10 @@ export const PaymentDetailsDialog = ({
         title: "Datas atualizadas",
         description: "As datas de pagamento foram atualizadas com sucesso.",
       });
+      
+      // Update the original start date for future comparisons
+      setOriginalStartDate(newStartDate);
+      setNewStartDate(null);
     } catch (error) {
       console.error("Error updating payment dates:", error);
       toast({
@@ -233,22 +246,7 @@ export const PaymentDetailsDialog = ({
     }
   };
 
-  const confirmDateUpdate = async () => {
-    if (!newStartDate || !originalStartDate || !payments) return;
-    
-    // First update the billing start date
-    await updateBilling({ start_date: newStartDate });
-    
-    // Then update all the payment dates
-    const updatedPayments = calculateNewPaymentDates(originalStartDate, newStartDate, payments);
-    await updatePaymentDates(updatedPayments);
-    
-    // Update the original start date for future comparisons
-    setOriginalStartDate(newStartDate);
-    setNewStartDate(null);
-  };
-
-  const handleStatusChange = (paymentId: string, newStatus: string) => {
+  const handleStatusChange = (paymentId: string, newStatus: "paid" | "pending" | "overdue" | "cancelled" | "partially_paid") => {
     updatePaymentStatus.mutate({ id: paymentId, status: newStatus });
   };
 
@@ -299,11 +297,13 @@ export const PaymentDetailsDialog = ({
               </TabsContent>
               
               <TabsContent value="payments" className="pt-4">
-                <PaymentsTableSection 
-                  payments={payments || []}
-                  onStatusChange={handleStatusChange}
-                  isUpdating={updatePaymentStatus.isPending}
-                />
+                {payments && (
+                  <PaymentsTableSection 
+                    payments={payments}
+                    onStatusChange={handleStatusChange}
+                    isUpdating={updatePaymentStatus.isPending}
+                  />
+                )}
               </TabsContent>
             </Tabs>
 
@@ -312,7 +312,7 @@ export const PaymentDetailsDialog = ({
               showCancelDialog={showCancelDialog}
               onCloseUpdateDialog={() => setShowUpdateConfirmDialog(false)}
               onCloseCancelDialog={() => setShowCancelDialog(false)}
-              onConfirmUpdate={confirmDateUpdate}
+              onConfirmUpdate={updatePaymentDates}
               onConfirmCancel={cancelBilling.mutate}
               isUpdating={updateBilling.isPending}
               isCancelling={cancelBilling.isPending}

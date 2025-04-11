@@ -1,77 +1,33 @@
 
 import React from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { UseMutateFunction } from "@tanstack/react-query";
 
 interface ConfirmationDialogsProps {
-  showMarkAsPaidConfirm: boolean;
-  setShowMarkAsPaidConfirm: (show: boolean) => void;
-  handleMarkBillingAsPaid: () => Promise<void>;
-  paymentToUpdate: string | null;
-  setPaymentToUpdate: (id: string | null) => void;
-  handleMarkPaymentAsPaid: (id: string) => Promise<void>;
-  showUpdatePaymentsConfirm: boolean;
-  setShowUpdatePaymentsConfirm: (show: boolean) => void;
-  updatePaymentDates: () => Promise<void>;
-  fetchBillingDetails: () => Promise<void>;
+  showUpdateConfirmDialog: boolean;
+  showCancelDialog: boolean;
+  onCloseUpdateDialog: () => void;
+  onCloseCancelDialog: () => void;
+  onConfirmUpdate: () => Promise<void>;
+  onConfirmCancel: UseMutateFunction<any, Error, void, unknown>;
+  isUpdating: boolean;
+  isCancelling: boolean;
 }
 
 export const ConfirmationDialogs: React.FC<ConfirmationDialogsProps> = ({
-  showMarkAsPaidConfirm,
-  setShowMarkAsPaidConfirm,
-  handleMarkBillingAsPaid,
-  paymentToUpdate,
-  setPaymentToUpdate,
-  handleMarkPaymentAsPaid,
-  showUpdatePaymentsConfirm,
-  setShowUpdatePaymentsConfirm,
-  updatePaymentDates,
-  fetchBillingDetails
+  showUpdateConfirmDialog,
+  showCancelDialog,
+  onCloseUpdateDialog,
+  onCloseCancelDialog,
+  onConfirmUpdate,
+  onConfirmCancel,
+  isUpdating,
+  isCancelling
 }) => {
   return (
     <>
-      {/* Confirm Dialog for Marking Billing as Paid */}
-      <AlertDialog open={showMarkAsPaidConfirm} onOpenChange={setShowMarkAsPaidConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar pagamento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja marcar este recebimento como pago? 
-              Esta ação também registrará o pagamento no fluxo de caixa.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleMarkBillingAsPaid}>Confirmar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Confirm Dialog for Marking Payment as Paid */}
-      <AlertDialog 
-        open={!!paymentToUpdate} 
-        onOpenChange={(open) => !open && setPaymentToUpdate(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar pagamento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja marcar este pagamento como pago? 
-              Esta ação também registrará o pagamento no fluxo de caixa.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => paymentToUpdate && handleMarkPaymentAsPaid(paymentToUpdate)}
-            >
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {/* New Confirm Dialog for Updating Payment Dates */}
-      <AlertDialog open={showUpdatePaymentsConfirm} onOpenChange={setShowUpdatePaymentsConfirm}>
+      {/* Confirm Dialog for Updating Payment Dates */}
+      <AlertDialog open={showUpdateConfirmDialog} onOpenChange={onCloseUpdateDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Atualizar datas de pagamentos</AlertDialogTitle>
@@ -81,14 +37,35 @@ export const ConfirmationDialogs: React.FC<ConfirmationDialogsProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowUpdatePaymentsConfirm(false);
-              fetchBillingDetails();
-            }}>
-              Não atualizar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={updatePaymentDates}>
+            <AlertDialogCancel>Não atualizar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={onConfirmUpdate}
+              disabled={isUpdating}
+            >
               Atualizar pagamentos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Dialog for Cancelling Billing */}
+      <AlertDialog open={showCancelDialog} onOpenChange={onCloseCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar faturamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar este faturamento recorrente? 
+              Esta ação também cancelará todos os pagamentos pendentes associados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => onConfirmCancel()}
+              disabled={isCancelling}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Cancelar Faturamento
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

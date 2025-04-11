@@ -18,15 +18,15 @@ export const formatDate = (dateString: string): string => {
 export const getStatusBadge = (status: string): React.ReactNode => {
   switch (status) {
     case 'paid':
-      return <Badge className="bg-green-500">Pago</Badge>;
+      return <Badge variant="success">Pago</Badge>;
     case 'pending':
-      return <Badge className="bg-yellow-500">Pendente</Badge>;
+      return <Badge variant="warning">Pendente</Badge>;
     case 'overdue':
-      return <Badge className="bg-red-500">Atrasado</Badge>;
+      return <Badge variant="danger">Atrasado</Badge>;
     case 'cancelled':
-      return <Badge className="bg-gray-500">Cancelado</Badge>;
+      return <Badge variant="neutral">Cancelado</Badge>;
     case 'partially_paid':
-      return <Badge className="bg-blue-500">Pago Parcial</Badge>;
+      return <Badge variant="info">Pago Parcial</Badge>;
     default:
       return <Badge>{status}</Badge>;
   }

@@ -1,33 +1,27 @@
+
 import React from "react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Payment } from "@/types/payment";
 import { formatCurrency, formatDate, getStatusBadge } from "./utils.tsx";
 
 interface PaymentsTableSectionProps {
   payments: Payment[];
-  paymentsLoading: boolean;
-  setPaymentToUpdate: (id: string | null) => void;
+  onStatusChange: (paymentId: string, newStatus: string) => void;
+  isUpdating: boolean;
 }
 
 export const PaymentsTableSection: React.FC<PaymentsTableSectionProps> = ({
   payments,
-  paymentsLoading,
-  setPaymentToUpdate
+  onStatusChange,
+  isUpdating
 }) => {
   return (
     <div className="border-t border-border/50 pt-4">
       <h3 className="text-lg font-medium mb-4">Pagamentos Associados</h3>
       
-      {paymentsLoading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      ) : payments.length > 0 ? (
+      {payments.length > 0 ? (
         <Table>
           <TableHeader>
             <TableRow>
@@ -52,7 +46,8 @@ export const PaymentsTableSection: React.FC<PaymentsTableSectionProps> = ({
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => setPaymentToUpdate(payment.id)}
+                      onClick={() => onStatusChange(payment.id, 'paid')}
+                      disabled={isUpdating}
                       className="text-green-600 hover:text-green-700 hover:bg-green-50"
                     >
                       Marcar como pago
