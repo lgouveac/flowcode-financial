@@ -4,37 +4,40 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger 
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 export default function PublicEmployeeForm() {
-  const [contractType, setContractType] = useState<"pf" | "pj">("pj");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentType, setPaymentType] = useState<"pix" | "boleto" | "credit_card">("pix");
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get("redirect") || "/thank-you";
   
   const [formData, setFormData] = useState({
-    // Common fields
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    payment_method: "pix" as "pix" | "boleto" | "credit_card",
-    due_date: "",
-    
     // PJ fields
+    company_name: "",
     cnpj: "",
+    email: "",
     partner_name: "",
     partner_cpf: "",
-    company_name: "",
     
-    // PF fields
-    cpf: "",
-    
-    // Email recipient
-    email_recipient: ""
+    // Common fields
+    phone: "",
+    email_recipient: "",
+    address: "",
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -46,27 +49,27 @@ export default function PublicEmployeeForm() {
     setIsSubmitting(true);
 
     try {
+      if (!selectedDate) {
+        throw new Error("Por favor, selecione uma data de vencimento.");
+      }
+
       // Prepare employee data
       const employeeData = {
-        name: contractType === "pj" ? formData.company_name : formData.name,
+        name: formData.company_name,
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
-        payment_method: formData.payment_method,
-        type: contractType,
+        payment_method: paymentType,
+        due_date: format(selectedDate, 'yyyy-MM-dd'),
+        type: "pj", // We're only supporting PJ in the form
         status: "active",
-        cnpj: contractType === "pj" ? formData.cnpj : null,
-        // We'll store additional PJ or PF data as metadata
-        metadata: contractType === "pj" 
-          ? {
-              partner_name: formData.partner_name,
-              partner_cpf: formData.partner_cpf,
-              email_recipient: formData.email_recipient || formData.partner_name
-            }
-          : {
-              cpf: formData.cpf,
-              email_recipient: formData.email_recipient || formData.name
-            }
+        cnpj: formData.cnpj,
+        // Additional PJ data as metadata
+        metadata: {
+          partner_name: formData.partner_name,
+          partner_cpf: formData.partner_cpf,
+          email_recipient: formData.email_recipient || formData.partner_name
+        }
       };
 
       const { error } = await supabase
@@ -76,7 +79,7 @@ export default function PublicEmployeeForm() {
       if (error) throw error;
 
       toast({
-        title: "Funcionário registrado",
+        title: "Cadastro realizado com sucesso",
         description: "Seus dados foram enviados com sucesso.",
       });
 
@@ -84,7 +87,7 @@ export default function PublicEmployeeForm() {
       navigate(redirectUrl);
       
     } catch (error: any) {
-      console.error("Error submitting form:", error);
+      console.error("Erro ao enviar formulário:", error);
       toast({
         title: "Erro ao enviar formulário",
         description: error.message || "Ocorreu um erro ao enviar o formulário. Por favor, tente novamente.",
@@ -105,159 +108,102 @@ export default function PublicEmployeeForm() {
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <div>
-              <p className="text-base font-medium mb-2">Você contratará como pessoa física ou jurídica?</p>
-              <RadioGroup
-                value={contractType}
-                onValueChange={(value: "pf" | "pj") => setContractType(value)}
-                className="flex gap-4 mt-2"
-              >
-                <div className="flex items-center space-x-2 border rounded-md px-16 py-2">
-                  <RadioGroupItem value="pf" id="contract-pf" />
-                  <Label htmlFor="contract-pf">Pessoa Física (PF)</Label>
-                </div>
-                <div className="flex items-center space-x-2 border rounded-md px-16 py-2">
-                  <RadioGroupItem value="pj" id="contract-pj" />
-                  <Label htmlFor="contract-pj">Pessoa Jurídica (PJ)</Label>
-                </div>
-              </RadioGroup>
+            <div className="space-y-2">
+              <Label className="text-gray-700" htmlFor="company_name">Razão Social da Empresa</Label>
+              <Input
+                id="company_name"
+                value={formData.company_name}
+                onChange={(e) => handleInputChange("company_name", e.target.value)}
+                placeholder="Nome da empresa"
+                required
+                className="bg-gray-100"
+              />
             </div>
-
-            {contractType === "pj" ? (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-gray-700" htmlFor="company_name">Razão Social da Empresa</Label>
-                  <input
-                    id="company_name"
-                    value={formData.company_name}
-                    onChange={(e) => handleInputChange("company_name", e.target.value)}
-                    placeholder="Nome da empresa"
-                    required
-                    className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-gray-700" htmlFor="cnpj">CNPJ</Label>
-                    <input
-                      id="cnpj"
-                      value={formData.cnpj}
-                      onChange={(e) => handleInputChange("cnpj", e.target.value)}
-                      placeholder="00.000.000/0001-00"
-                      required
-                      className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-gray-700" htmlFor="email">Email</Label>
-                    <input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                      placeholder="empresa@exemplo.com"
-                      required
-                      className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-gray-700" htmlFor="partner_name">Nome completo do sócio</Label>
-                    <input
-                      id="partner_name"
-                      value={formData.partner_name}
-                      onChange={(e) => handleInputChange("partner_name", e.target.value)}
-                      placeholder="Nome do sócio"
-                      required
-                      className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-gray-700" htmlFor="partner_cpf">CPF do sócio</Label>
-                    <input
-                      id="partner_cpf"
-                      value={formData.partner_cpf}
-                      onChange={(e) => handleInputChange("partner_cpf", e.target.value)}
-                      placeholder="000.000.000-00"
-                      required
-                      className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                    />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-gray-700" htmlFor="name">Nome completo</Label>
-                  <input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    placeholder="Seu nome completo"
-                    required
-                    className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-gray-700" htmlFor="cpf">CPF</Label>
-                  <input
-                    id="cpf"
-                    value={formData.cpf}
-                    onChange={(e) => handleInputChange("cpf", e.target.value)}
-                    placeholder="000.000.000-00"
-                    required
-                    className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-gray-700" htmlFor="email">Email</Label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    placeholder="seu@email.com"
-                    required
-                    className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                  />
-                </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-gray-700" htmlFor="cnpj">CNPJ</Label>
+                <Input
+                  id="cnpj"
+                  value={formData.cnpj}
+                  onChange={(e) => handleInputChange("cnpj", e.target.value)}
+                  placeholder="00.000.000/0001-00"
+                  required
+                  className="bg-gray-100"
+                />
               </div>
-            )}
+              <div className="space-y-2">
+                <Label className="text-gray-700" htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder="empresa@exemplo.com"
+                  required
+                  className="bg-gray-100"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-gray-700" htmlFor="partner_name">Nome completo do sócio</Label>
+                <Input
+                  id="partner_name"
+                  value={formData.partner_name}
+                  onChange={(e) => handleInputChange("partner_name", e.target.value)}
+                  placeholder="Nome do sócio"
+                  required
+                  className="bg-gray-100"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-gray-700" htmlFor="partner_cpf">CPF do sócio</Label>
+                <Input
+                  id="partner_cpf"
+                  value={formData.partner_cpf}
+                  onChange={(e) => handleInputChange("partner_cpf", e.target.value)}
+                  placeholder="000.000.000-00"
+                  required
+                  className="bg-gray-100"
+                />
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label className="text-gray-700" htmlFor="phone">Telefone</Label>
-              <input
+              <Input
                 id="phone"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
                 placeholder="(00) 00000-0000"
                 required
-                className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
+                className="bg-gray-100"
               />
             </div>
 
             <div className="space-y-2">
               <Label className="text-gray-700" htmlFor="email_recipient">Nome do responsável</Label>
-              <input
+              <Input
                 id="email_recipient"
                 value={formData.email_recipient}
                 onChange={(e) => handleInputChange("email_recipient", e.target.value)}
                 placeholder="Se for diferente do sócio"
-                className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
+                className="bg-gray-100"
               />
             </div>
 
             <div className="space-y-2">
               <Label className="text-gray-700" htmlFor="address">Endereço completo com CEP</Label>
-              <input
+              <Input
                 id="address"
                 value={formData.address}
                 onChange={(e) => handleInputChange("address", e.target.value)}
                 placeholder="Rua, número, complemento, bairro, cidade - UF, CEP"
                 required
-                className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
+                className="bg-gray-100"
               />
             </div>
 
@@ -266,51 +212,88 @@ export default function PublicEmployeeForm() {
                 <Label className="text-gray-700" htmlFor="due_date">
                   Melhor data de vencimento do pagamento
                 </Label>
-                <input
-                  id="due_date"
-                  type="date"
-                  value={formData.due_date}
-                  onChange={(e) => handleInputChange("due_date", e.target.value)}
-                  required
-                  className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full bg-gray-100 justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? (
+                        format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Escolha uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      className="p-3 pointer-events-auto"
+                      disabled={(date) => date < new Date()}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="space-y-2">
                 <Label className="text-gray-700">Qual a melhor maneira de pagamento?</Label>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2">
+                  <div 
+                    className={cn(
+                      "flex items-center justify-center rounded-md border px-3 py-2 cursor-pointer",
+                      paymentType === "pix" ? "border-primary bg-primary/10" : "border-gray-300 bg-gray-100"
+                    )}
+                    onClick={() => setPaymentType("pix")}
+                  >
                     <input
                       type="radio"
                       id="payment-pix"
                       name="payment_method"
                       value="pix"
-                      checked={formData.payment_method === "pix"}
-                      onChange={() => handleInputChange("payment_method", "pix")}
-                      className="text-primary"
+                      checked={paymentType === "pix"}
+                      onChange={() => setPaymentType("pix")}
+                      className="sr-only"
                     />
                     <label htmlFor="payment-pix" className="text-sm cursor-pointer">PIX</label>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2">
+                  <div 
+                    className={cn(
+                      "flex items-center justify-center rounded-md border px-3 py-2 cursor-pointer",
+                      paymentType === "boleto" ? "border-primary bg-primary/10" : "border-gray-300 bg-gray-100"
+                    )}
+                    onClick={() => setPaymentType("boleto")}
+                  >
                     <input
                       type="radio"
                       id="payment-boleto"
                       name="payment_method"
                       value="boleto"
-                      checked={formData.payment_method === "boleto"}
-                      onChange={() => handleInputChange("payment_method", "boleto")}
-                      className="text-primary"
+                      checked={paymentType === "boleto"}
+                      onChange={() => setPaymentType("boleto")}
+                      className="sr-only"
                     />
                     <label htmlFor="payment-boleto" className="text-sm cursor-pointer">Boleto</label>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2">
+                  <div 
+                    className={cn(
+                      "flex items-center justify-center rounded-md border px-3 py-2 cursor-pointer",
+                      paymentType === "credit_card" ? "border-primary bg-primary/10" : "border-gray-300 bg-gray-100"
+                    )}
+                    onClick={() => setPaymentType("credit_card")}
+                  >
                     <input
                       type="radio"
                       id="payment-credit-card"
                       name="payment_method"
                       value="credit_card"
-                      checked={formData.payment_method === "credit_card"}
-                      onChange={() => handleInputChange("payment_method", "credit_card")}
-                      className="text-primary"
+                      checked={paymentType === "credit_card"}
+                      onChange={() => setPaymentType("credit_card")}
+                      className="sr-only"
                     />
                     <label htmlFor="payment-credit-card" className="text-sm cursor-pointer">Cartão</label>
                   </div>
