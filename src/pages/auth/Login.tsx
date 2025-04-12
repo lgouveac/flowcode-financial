@@ -62,6 +62,11 @@ export default function Login() {
     }
   };
 
+  // Function to directly navigate to register page
+  const goToRegister = () => {
+    navigate('/auth/register');
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
@@ -138,9 +143,13 @@ export default function Login() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Não tem uma conta?{" "}
-              <Link to="/auth/register" className="text-primary hover:underline">
+              <Button 
+                variant="link" 
+                onClick={goToRegister} 
+                className="text-primary p-0 h-auto font-normal"
+              >
                 Cadastre-se
-              </Link>
+              </Button>
             </p>
           </CardFooter>
         </form>

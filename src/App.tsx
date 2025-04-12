@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/auth/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -52,20 +52,18 @@ const App = () => (
             <Route path="/register-employee" element={<PublicEmployeeForm />} />
             <Route path="/thank-you" element={<ThankYou />} />
             
+            {/* Auth pages that don't require auth validation */}
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/register" element={<Register />} />
+            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/verify-email" element={<VerifyEmail />} />
+            <Route path="/auth/email-confirmed" element={<EmailConfirmed />} />
+            
             {/* All authenticated routes wrapped in AuthProvider */}
-            <Route path="*" element={
+            <Route path="/" element={
               <AuthProvider>
                 <Routes>
-                  {/* Auth routes */}
-                  <Route path="/auth">
-                    <Route path="login" element={<Login />} />
-                    <Route path="register" element={<Register />} />
-                    <Route path="forgot-password" element={<ForgotPassword />} />
-                    <Route path="reset-password" element={<ResetPassword />} />
-                    <Route path="verify-email" element={<VerifyEmail />} />
-                    <Route path="email-confirmed" element={<EmailConfirmed />} />
-                  </Route>
-
                   {/* Protected routes */}
                   <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
                     <Route index element={<Overview />} />
@@ -79,6 +77,9 @@ const App = () => (
                 </Routes>
               </AuthProvider>
             } />
+            
+            {/* Catch all other routes */}
+            <Route path="*" element={<Navigate to="/auth/login" replace />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
