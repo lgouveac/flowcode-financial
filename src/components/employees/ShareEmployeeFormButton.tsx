@@ -97,7 +97,7 @@ export const ShareEmployeeFormButton = () => {
           
           <TabsContent value="qrcode" className="space-y-4">
             <div className="flex justify-center py-4">
-              <div className="border p-4 rounded-lg bg-white">
+              <div className="border p-4 rounded-lg bg-card">
                 <img 
                   src={generateQRCode()} 
                   alt="QR Code para formulário de cadastro de colaborador" 

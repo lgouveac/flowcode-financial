@@ -14,19 +14,19 @@ export const CommonFields = ({ formData, setFormData, clientType }: CommonFields
   return (
     <div className="grid gap-5">
       <div className="grid gap-2">
-        <Label htmlFor="address" className="text-sm font-medium text-gray-700">Endereço completo com CEP</Label>
+        <Label htmlFor="address" className="text-sm font-medium">Endereço completo com CEP</Label>
         <Input
           id="address"
           value={formData.address}
           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
           required
           placeholder="Rua, número, complemento, bairro, cidade - UF, CEP"
-          className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+          className="w-full"
         />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
-          <Label htmlFor="due_date" className="text-sm font-medium text-gray-700">
+          <Label htmlFor="due_date" className="text-sm font-medium">
             {clientType === "pj" 
               ? "Melhor data de vencimento do pagamento"
               : "Melhor data de vencimento do pagamento"
@@ -38,11 +38,10 @@ export const CommonFields = ({ formData, setFormData, clientType }: CommonFields
             value={formData.due_date}
             onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
             required
-            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
           />
         </div>
         <div className="grid gap-2">
-          <Label className="text-sm font-medium text-gray-700">Qual a melhor maneira de pagamento?</Label>
+          <Label className="text-sm font-medium">Qual a melhor maneira de pagamento?</Label>
           <RadioGroup
             value={formData.payment_method}
             onValueChange={(value: "pix" | "boleto" | "credit_card") => 
@@ -51,15 +50,15 @@ export const CommonFields = ({ formData, setFormData, clientType }: CommonFields
             className="grid grid-cols-3 gap-3"
           >
             <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:border-primary/50 transition-colors">
-              <RadioGroupItem value="pix" id="payment-pix" className="text-primary" />
+              <RadioGroupItem value="pix" id="payment-pix" />
               <Label htmlFor="payment-pix" className="text-sm cursor-pointer">PIX</Label>
             </div>
             <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:border-primary/50 transition-colors">
-              <RadioGroupItem value="boleto" id="payment-boleto" className="text-primary" />
+              <RadioGroupItem value="boleto" id="payment-boleto" />
               <Label htmlFor="payment-boleto" className="text-sm cursor-pointer">Boleto</Label>
             </div>
             <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:border-primary/50 transition-colors">
-              <RadioGroupItem value="credit_card" id="payment-credit-card" className="text-primary" />
+              <RadioGroupItem value="credit_card" id="payment-credit-card" />
               <Label htmlFor="payment-credit-card" className="text-sm cursor-pointer">Cartão</Label>
             </div>
           </RadioGroup>
