@@ -1,65 +1,89 @@
 
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { ThemeProvider } from "./components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/components/auth/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import Index from "./pages/Index";
 import { Overview } from "./pages/Overview";
-import RegisterEmployee from "./pages/RegisterEmployee";
-import PublicEmployeeForm from "./pages/PublicEmployeeForm";
-import PublicClientForm from "./pages/PublicClientForm";
-import ThankYou from "./pages/ThankYou";
-import NotFound from "./pages/NotFound";
+import { ClientTable } from "@/components/ClientTable";
+import { EmployeeTable } from "@/components/EmployeeTable";
+import { RecurringBilling } from "@/components/RecurringBilling";
+import { CashFlow } from "@/components/CashFlow";
 import Emails from "./pages/Emails";
-import Employees from "./pages/Employees";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
-import { AuthProvider } from "./components/auth/AuthContext";
+import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import VerifyEmail from "./pages/auth/VerifyEmail";
 import EmailConfirmed from "./pages/auth/EmailConfirmed";
-import Index from "./pages/Index";
+import PublicClientForm from "./pages/PublicClientForm";
+import PublicEmployeeForm from "./pages/PublicEmployeeForm";
+import ThankYou from "./pages/ThankYou";
+import EmployeesPage from "./pages/Employees";
 
-function App() {
-  return (
-    <BrowserRouter>
-      <ThemeProvider defaultTheme="dark">
-        <AuthProvider>
-          <Toaster />
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Shorten stale time to refresh data more frequently
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      // Retry failed queries to handle network issues
+      retry: 1,
+      // Set cache time to prevent immediate garbage collection
+      gcTime: 1000 * 60 * 10, // 10 minutes
+    },
+  },
+});
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider defaultTheme="system">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          {/* Public routes must be outside of AuthProvider to avoid any auth checks */}
           <Routes>
-            {/* Public routes - No authentication required */}
-            {/* These routes are placed OUTSIDE of any authentication checks */}
             <Route path="/register-client" element={<PublicClientForm />} />
             <Route path="/register-employee" element={<PublicEmployeeForm />} />
             <Route path="/thank-you" element={<ThankYou />} />
             
-            {/* Auth routes */}
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
-            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/verify-email" element={<VerifyEmail />} />
-            <Route path="/auth/email-confirmed" element={<EmailConfirmed />} />
-            
-            {/* Protected routes - Authentication required */}
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
-              <Route index element={<Overview />} />
-              <Route path="employees" element={<Employees />} />
-              <Route path="emails" element={<Emails />} />
-            </Route>
-            
-            {/* Catch-all route for authenticated users */}
-            <Route path="*" element={<NotFound />} />
+            {/* All authenticated routes wrapped in AuthProvider */}
+            <Route path="*" element={
+              <AuthProvider>
+                <Routes>
+                  {/* Auth routes */}
+                  <Route path="/auth">
+                    <Route path="login" element={<Login />} />
+                    <Route path="register" element={<Register />} />
+                    <Route path="forgot-password" element={<ForgotPassword />} />
+                    <Route path="reset-password" element={<ResetPassword />} />
+                    <Route path="verify-email" element={<VerifyEmail />} />
+                    <Route path="email-confirmed" element={<EmailConfirmed />} />
+                  </Route>
+
+                  {/* Protected routes */}
+                  <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
+                    <Route index element={<Overview />} />
+                    <Route path="clients" element={<ClientTable />} />
+                    <Route path="employees" element={<EmployeeTable />} />
+                    <Route path="receivables" element={<RecurringBilling />} />
+                    <Route path="emails" element={<Emails />} />
+                    <Route path="cashflow" element={<CashFlow showChart={true} />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AuthProvider>
+            } />
           </Routes>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
-  );
-}
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
+);
 
 export default App;
