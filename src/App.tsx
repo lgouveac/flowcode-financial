@@ -46,41 +46,35 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          {/* Public routes must be outside of AuthProvider to avoid any auth checks */}
-          <Routes>
-            <Route path="/register-client" element={<PublicClientForm />} />
-            <Route path="/register-employee" element={<PublicEmployeeForm />} />
-            <Route path="/thank-you" element={<ThankYou />} />
-            
-            {/* Auth pages that don't require auth validation */}
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
-            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
-            <Route path="/auth/verify-email" element={<VerifyEmail />} />
-            <Route path="/auth/email-confirmed" element={<EmailConfirmed />} />
-            
-            {/* All authenticated routes wrapped in AuthProvider */}
-            <Route path="/" element={
-              <AuthProvider>
-                <Routes>
-                  {/* Protected routes */}
-                  <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
-                    <Route index element={<Overview />} />
-                    <Route path="clients" element={<ClientTable />} />
-                    <Route path="employees" element={<EmployeeTable />} />
-                    <Route path="receivables" element={<RecurringBilling />} />
-                    <Route path="emails" element={<Emails />} />
-                    <Route path="cashflow" element={<CashFlow showChart={true} />} />
-                  </Route>
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AuthProvider>
-            } />
-            
-            {/* Catch all other routes */}
-            <Route path="*" element={<Navigate to="/auth/login" replace />} />
-          </Routes>
+          <AuthProvider>
+            <Routes>
+              {/* Public routes that don't need auth checks */}
+              <Route path="/register-client" element={<PublicClientForm />} />
+              <Route path="/register-employee" element={<PublicEmployeeForm />} />
+              <Route path="/thank-you" element={<ThankYou />} />
+              
+              {/* Auth pages - wrapped in AuthProvider but not in ProtectedRoute */}
+              <Route path="/auth/login" element={<Login />} />
+              <Route path="/auth/register" element={<Register />} />
+              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
+              <Route path="/auth/verify-email" element={<VerifyEmail />} />
+              <Route path="/auth/email-confirmed" element={<EmailConfirmed />} />
+              
+              {/* Protected routes */}
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
+                <Route index element={<Overview />} />
+                <Route path="clients" element={<ClientTable />} />
+                <Route path="employees" element={<EmployeeTable />} />
+                <Route path="receivables" element={<RecurringBilling />} />
+                <Route path="emails" element={<Emails />} />
+                <Route path="cashflow" element={<CashFlow showChart={true} />} />
+              </Route>
+              
+              {/* Catch all other routes */}
+              <Route path="*" element={<Navigate to="/auth/login" replace />} />
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
