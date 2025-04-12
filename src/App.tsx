@@ -65,7 +65,7 @@ const App = () => (
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
                 <Route index element={<Overview />} />
                 <Route path="clients" element={<ClientTable />} />
-                <Route path="employees" element={<EmployeesPage />} />
+                <Route path="employees" element={<EmployeeTable />} />
                 <Route path="receivables" element={<RecurringBilling />} />
                 <Route path="emails" element={<Emails />} />
                 <Route path="cashflow" element={<CashFlow showChart={true} />} />

@@ -36,16 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthPage = () => {
     return location.pathname.startsWith('/auth/');
   };
-  
-  // Helper to check if we're on a public page
-  const isPublicPage = () => {
-    return (
-      location.pathname.startsWith('/register-client') ||
-      location.pathname.startsWith('/register-employee') ||
-      location.pathname.startsWith('/thank-you') ||
-      isAuthPage()
-    );
-  };
 
   useEffect(() => {
     console.log('AuthProvider initialized');
@@ -96,8 +86,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false);
           console.log('User signed out');
           
-          // Only navigate to login if we're not already on a public page
-          if (!isPublicPage()) {
+          // Only navigate to login if we're not already on an auth page
+          if (!isAuthPage()) {
             navigate('/auth/login');
           }
         } else if (event === 'USER_UPDATED') {
@@ -111,8 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(null);
             setLoading(false);
             
-            // Only navigate to login if we're not on a public page
-            if (!isPublicPage()) {
+            // Only navigate to login if we're not on an auth page and not on public routes
+            if (!isAuthPage() && 
+                !location.pathname.startsWith('/register-client') && 
+                !location.pathname.startsWith('/register-employee') && 
+                !location.pathname.startsWith('/thank-you')) {
               navigate('/auth/login');
             }
           } else {
@@ -130,11 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(null);
         setUser(null);
         setLoading(false);
-        
-        // Only redirect to login if not on a public page
-        if (!isPublicPage()) {
-          navigate('/auth/login');
-        }
         return;
       }
       
