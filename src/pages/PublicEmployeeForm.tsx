@@ -1,11 +1,11 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { NewClient } from "@/types/client";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ClientTypeSelector } from "@/components/client/ClientTypeSelector";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 export default function PublicEmployeeForm() {
   const [contractType, setContractType] = useState<"pf" | "pj">("pj");
@@ -96,155 +96,189 @@ export default function PublicEmployeeForm() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <div className="w-full max-w-3xl mx-auto my-8 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow rounded-lg p-6 sm:p-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Formulário de Cadastro de Colaborador</h1>
-            <p className="text-gray-500 mt-2">Por favor, preencha os dados abaixo para completar seu cadastro.</p>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <ClientTypeSelector 
-              clientType={contractType} 
-              onTypeChange={setContractType} 
-            />
-            
+    <div className="min-h-screen bg-white flex justify-center">
+      <div className="w-full max-w-3xl py-8 px-6">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">Formulário de Cadastro</h1>
+          <p className="text-gray-600 mt-2">Por favor, preencha os dados abaixo para completar seu cadastro.</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <p className="text-base font-medium mb-2">Você contratará como pessoa física ou jurídica?</p>
+              <RadioGroup
+                value={contractType}
+                onValueChange={(value: "pf" | "pj") => setContractType(value)}
+                className="flex gap-4 mt-2"
+              >
+                <div className="flex items-center space-x-2 border rounded-md px-16 py-2">
+                  <RadioGroupItem value="pf" id="contract-pf" />
+                  <Label htmlFor="contract-pf">Pessoa Física (PF)</Label>
+                </div>
+                <div className="flex items-center space-x-2 border rounded-md px-16 py-2">
+                  <RadioGroupItem value="pj" id="contract-pj" />
+                  <Label htmlFor="contract-pj">Pessoa Jurídica (PJ)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             {contractType === "pj" ? (
-              <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
+              <>
+                <div className="space-y-2">
+                  <Label className="text-gray-700" htmlFor="company_name">Razão Social da Empresa</Label>
+                  <input
+                    id="company_name"
+                    value={formData.company_name}
+                    onChange={(e) => handleInputChange("company_name", e.target.value)}
+                    placeholder="Nome da empresa"
+                    required
+                    className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="cnpj" className="text-sm font-medium text-gray-700">CNPJ</label>
+                    <Label className="text-gray-700" htmlFor="cnpj">CNPJ</Label>
                     <input
                       id="cnpj"
                       value={formData.cnpj}
                       onChange={(e) => handleInputChange("cnpj", e.target.value)}
                       placeholder="00.000.000/0001-00"
                       required
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                      className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="company_name" className="text-sm font-medium text-gray-700">Razão Social da Empresa</label>
+                    <Label className="text-gray-700" htmlFor="email">Email</Label>
                     <input
-                      id="company_name"
-                      value={formData.company_name}
-                      onChange={(e) => handleInputChange("company_name", e.target.value)}
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange("email", e.target.value)}
+                      placeholder="empresa@exemplo.com"
                       required
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                      className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
                     />
                   </div>
                 </div>
-                
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="partner_name" className="text-sm font-medium text-gray-700">Nome completo do sócio</label>
+                    <Label className="text-gray-700" htmlFor="partner_name">Nome completo do sócio</Label>
                     <input
                       id="partner_name"
                       value={formData.partner_name}
                       onChange={(e) => handleInputChange("partner_name", e.target.value)}
+                      placeholder="Nome do sócio"
                       required
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                      className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="partner_cpf" className="text-sm font-medium text-gray-700">CPF do sócio</label>
+                    <Label className="text-gray-700" htmlFor="partner_cpf">CPF do sócio</Label>
                     <input
                       id="partner_cpf"
                       value={formData.partner_cpf}
                       onChange={(e) => handleInputChange("partner_cpf", e.target.value)}
                       placeholder="000.000.000-00"
                       required
-                      className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                      className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
                     />
                   </div>
                 </div>
-              </div>
+              </>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium text-gray-700">Nome completo</label>
+                  <Label className="text-gray-700" htmlFor="name">Nome completo</Label>
                   <input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
+                    placeholder="Seu nome completo"
                     required
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                    className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="cpf" className="text-sm font-medium text-gray-700">CPF</label>
+                  <Label className="text-gray-700" htmlFor="cpf">CPF</Label>
                   <input
                     id="cpf"
                     value={formData.cpf}
                     onChange={(e) => handleInputChange("cpf", e.target.value)}
                     placeholder="000.000.000-00"
                     required
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                    className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-700" htmlFor="email">Email</Label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    placeholder="seu@email.com"
+                    required
+                    className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
                   />
                 </div>
               </div>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  required
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="phone" className="text-sm font-medium text-gray-700">WhatsApp</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="(00) 00000-0000"
-                  required
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label className="text-gray-700" htmlFor="phone">Telefone</Label>
+              <input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="(00) 00000-0000"
+                required
+                className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
+              />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="address" className="text-sm font-medium text-gray-700">Endereço completo com CEP</label>
+              <Label className="text-gray-700" htmlFor="email_recipient">Nome do responsável</Label>
+              <input
+                id="email_recipient"
+                value={formData.email_recipient}
+                onChange={(e) => handleInputChange("email_recipient", e.target.value)}
+                placeholder="Se for diferente do sócio"
+                className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-700" htmlFor="address">Endereço completo com CEP</Label>
               <input
                 id="address"
                 value={formData.address}
                 onChange={(e) => handleInputChange("address", e.target.value)}
                 placeholder="Rua, número, complemento, bairro, cidade - UF, CEP"
                 required
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label htmlFor="due_date" className="text-sm font-medium text-gray-700">
-                  {contractType === "pj" 
-                    ? "Melhor data de vencimento do pagamento ou data da primeira parcela"
-                    : "Melhor data de vencimento do pagamento"
-                  }
-                </label>
+                <Label className="text-gray-700" htmlFor="due_date">
+                  Melhor data de vencimento do pagamento
+                </Label>
                 <input
                   id="due_date"
                   type="date"
                   value={formData.due_date}
                   onChange={(e) => handleInputChange("due_date", e.target.value)}
                   required
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                  className="w-full p-2 rounded-md border border-gray-300 bg-gray-100"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Qual a melhor maneira de pagamento?</label>
+                <Label className="text-gray-700">Qual a melhor maneira de pagamento?</Label>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:border-primary/50 transition-colors">
+                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2">
                     <input
                       type="radio"
                       id="payment-pix"
@@ -256,7 +290,7 @@ export default function PublicEmployeeForm() {
                     />
                     <label htmlFor="payment-pix" className="text-sm cursor-pointer">PIX</label>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:border-primary/50 transition-colors">
+                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2">
                     <input
                       type="radio"
                       id="payment-boleto"
@@ -268,7 +302,7 @@ export default function PublicEmployeeForm() {
                     />
                     <label htmlFor="payment-boleto" className="text-sm cursor-pointer">Boleto</label>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:border-primary/50 transition-colors">
+                  <div className="flex items-center space-x-2 border rounded-md px-3 py-2">
                     <input
                       type="radio"
                       id="payment-credit-card"
@@ -283,29 +317,18 @@ export default function PublicEmployeeForm() {
                 </div>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="email_recipient" className="text-sm font-medium text-gray-700">Nome de quem vai receber o e-mail</label>
-              <input
-                id="email_recipient"
-                value={formData.email_recipient}
-                onChange={(e) => handleInputChange("email_recipient", e.target.value)}
-                placeholder={contractType === "pj" ? "Se diferente do sócio" : "Se diferente do nome completo"}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-              />
-            </div>
-            
-            <div className="flex justify-end">
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-md font-medium"
-              >
-                {isSubmitting ? "Enviando..." : "Enviar Cadastro"}
-              </Button>
-            </div>
-          </form>
-        </div>
+          </div>
+          
+          <div className="pt-4">
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-md font-medium"
+            >
+              {isSubmitting ? "Enviando..." : "Enviar Cadastro"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );
