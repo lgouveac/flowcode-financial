@@ -49,7 +49,7 @@ export default function Login() {
       const { error } = await signIn(email, password);
       
       if (error) {
-        console.error('Login error:', error);
+        console.error('Login error:', error.message);
         // Error is already handled in the signIn function
       } else {
         console.log('Login successful, auth state change should trigger redirection');

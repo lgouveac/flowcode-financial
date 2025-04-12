@@ -1,4 +1,3 @@
-
 import { 
   createContext, 
   useContext, 
@@ -9,7 +8,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
 import { useToast } from '@/components/ui/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 type AuthContextType = {
   session: Session | null;
@@ -31,6 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Helper to check if we're on an auth page
+  const isAuthPage = () => {
+    return location.pathname.startsWith('/auth/');
+  };
 
   useEffect(() => {
     console.log('AuthProvider initialized');
@@ -70,15 +75,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 }
                 setLoading(false);
                 
-                // Navigate after authentication is complete
-                navigate('/', { replace: true });
+                // Only navigate if we're on an auth page
+                if (isAuthPage()) {
+                  navigate('/', { replace: true });
+                }
               });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setLoading(false);
           console.log('User signed out');
-          navigate('/auth/login');
+          
+          // Only navigate to login if we're not already on an auth page
+          if (!isAuthPage()) {
+            navigate('/auth/login');
+          }
         } else if (event === 'USER_UPDATED') {
           console.log(`Auth event: ${event}`);
         } else {
@@ -89,7 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setProfile(null);
             setLoading(false);
-            navigate('/auth/login');
+            
+            // Only navigate to login if we're not on an auth page and not on public routes
+            if (!isAuthPage() && 
+                !location.pathname.startsWith('/register-client') && 
+                !location.pathname.startsWith('/register-employee') && 
+                !location.pathname.startsWith('/thank-you')) {
+              navigate('/auth/login');
+            }
           } else {
             console.log(`Other auth event: ${event}`);
           }
@@ -118,7 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(null);
           setUser(null);
           setLoading(false);
-          navigate('/auth/login');
+          if (!isAuthPage()) {
+            navigate('/auth/login');
+          }
         });
         return;
       }
@@ -161,7 +181,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setSession(null);
                 setUser(null);
                 setProfile(null);
-                navigate('/auth/login');
+                if (!isAuthPage()) {
+                  navigate('/auth/login');
+                }
               });
             } else {
               console.log('Session refreshed successfully');
@@ -178,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(loadingTimeout);
       clearInterval(sessionCheckInterval);
     };
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const signIn = async (email: string, password: string) => {
     try {
