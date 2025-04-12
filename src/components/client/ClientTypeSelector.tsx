@@ -16,11 +16,11 @@ export const ClientTypeSelector = ({ clientType, onTypeChange }: ClientTypeSelec
         onValueChange={onTypeChange}
         className="grid sm:grid-cols-2 gap-4"
       >
-        <div className="flex items-center space-x-2 border rounded-md px-4 py-3 hover:border-primary/50 transition-colors">
+        <div className="flex items-center space-x-2 border rounded-md px-4 py-3 hover:border-primary/50 transition-colors bg-background">
           <RadioGroupItem value="pf" id="pf" />
           <Label htmlFor="pf" className="cursor-pointer font-medium">Pessoa Física (PF)</Label>
         </div>
-        <div className="flex items-center space-x-2 border rounded-md px-4 py-3 hover:border-primary/50 transition-colors">
+        <div className="flex items-center space-x-2 border rounded-md px-4 py-3 hover:border-primary/50 transition-colors bg-background">
           <RadioGroupItem value="pj" id="pj" />
           <Label htmlFor="pj" className="cursor-pointer font-medium">Pessoa Jurídica (PJ)</Label>
         </div>

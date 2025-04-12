@@ -116,7 +116,7 @@ export function AddEmployeeDialog() {
           Novo Colaborador
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] bg-card">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Colaborador</DialogTitle>
         </DialogHeader>
@@ -204,7 +204,7 @@ export function AddEmployeeDialog() {
                 setFormData({ ...formData, type: value })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger id="type">
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -214,11 +214,11 @@ export function AddEmployeeDialog() {
             </Select>
           </div>
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 mt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Salvar</Button>
+            <Button type="submit" className="bg-primary">Salvar</Button>
           </div>
         </form>
       </DialogContent>
