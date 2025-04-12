@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,6 +20,7 @@ import { Calendar } from "@/components/ui/calendar";
 
 export default function PublicEmployeeForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contractType, setContractType] = useState<"pf" | "pj">("pj");
   const [paymentType, setPaymentType] = useState<"pix" | "boleto" | "credit_card">("pix");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
@@ -27,17 +29,23 @@ export default function PublicEmployeeForm() {
   const redirectUrl = searchParams.get("redirect") || "/thank-you";
   
   const [formData, setFormData] = useState({
-    // PJ fields
-    company_name: "",
-    cnpj: "",
+    // Common fields
+    name: "",
     email: "",
+    phone: "",
+    address: "",
+    
+    // PJ fields
+    cnpj: "",
+    company_name: "",
     partner_name: "",
     partner_cpf: "",
     
-    // Common fields
-    phone: "",
+    // PF fields
+    cpf: "",
+    
+    // Email recipient
     email_recipient: "",
-    address: "",
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -55,21 +63,26 @@ export default function PublicEmployeeForm() {
 
       // Prepare employee data
       const employeeData = {
-        name: formData.company_name,
+        name: contractType === "pj" ? formData.company_name : formData.name,
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
         payment_method: paymentType,
         due_date: format(selectedDate, 'yyyy-MM-dd'),
-        type: "pj", // We're only supporting PJ in the form
+        type: contractType,
         status: "active",
-        cnpj: formData.cnpj,
-        // Additional PJ data as metadata
-        metadata: {
-          partner_name: formData.partner_name,
-          partner_cpf: formData.partner_cpf,
-          email_recipient: formData.email_recipient || formData.partner_name
-        }
+        cnpj: contractType === "pj" ? formData.cnpj : null,
+        // We'll store additional PJ or PF data as metadata
+        metadata: contractType === "pj" 
+          ? {
+              partner_name: formData.partner_name,
+              partner_cpf: formData.partner_cpf,
+              email_recipient: formData.email_recipient || formData.partner_name
+            }
+          : {
+              cpf: formData.cpf,
+              email_recipient: formData.email_recipient || formData.name
+            }
       };
 
       const { error } = await supabase
@@ -99,125 +112,173 @@ export default function PublicEmployeeForm() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex justify-center">
+    <div className="min-h-screen bg-background flex justify-center">
       <div className="w-full max-w-3xl py-8 px-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Formulário de Cadastro</h1>
-          <p className="text-gray-600 mt-2">Por favor, preencha os dados abaixo para completar seu cadastro.</p>
+          <h1 className="text-2xl font-bold text-foreground">Formulário de Cadastro</h1>
+          <p className="text-muted-foreground mt-2">Por favor, preencha os dados abaixo para completar seu cadastro.</p>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-gray-700" htmlFor="company_name">Razão Social da Empresa</Label>
-              <Input
-                id="company_name"
-                value={formData.company_name}
-                onChange={(e) => handleInputChange("company_name", e.target.value)}
-                placeholder="Nome da empresa"
-                required
-                className="bg-gray-100"
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-gray-700" htmlFor="cnpj">CNPJ</Label>
-                <Input
-                  id="cnpj"
-                  value={formData.cnpj}
-                  onChange={(e) => handleInputChange("cnpj", e.target.value)}
-                  placeholder="00.000.000/0001-00"
-                  required
-                  className="bg-gray-100"
-                />
+          <div>
+            <Label className="text-base font-semibold text-foreground">Você contratará como pessoa física ou jurídica?</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+              <div 
+                className={cn(
+                  "flex items-center space-x-2 border rounded-md px-4 py-3 cursor-pointer",
+                  contractType === "pf" ? "border-primary bg-primary/10" : "border-input bg-background"
+                )}
+                onClick={() => setContractType("pf")}
+              >
+                <RadioGroupItem value="pf" id="contract-pf" checked={contractType === "pf"} />
+                <Label htmlFor="contract-pf" className="cursor-pointer">Pessoa Física (PF)</Label>
               </div>
+              <div 
+                className={cn(
+                  "flex items-center space-x-2 border rounded-md px-4 py-3 cursor-pointer",
+                  contractType === "pj" ? "border-primary bg-primary/10" : "border-input bg-background"
+                )}
+                onClick={() => setContractType("pj")}
+              >
+                <RadioGroupItem value="pj" id="contract-pj" checked={contractType === "pj"} />
+                <Label htmlFor="contract-pj" className="cursor-pointer">Pessoa Jurídica (PJ)</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {contractType === "pj" ? (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-foreground" htmlFor="cnpj">CNPJ</Label>
+                    <Input
+                      id="cnpj"
+                      value={formData.cnpj}
+                      onChange={(e) => handleInputChange("cnpj", e.target.value)}
+                      placeholder="00.000.000/0001-00"
+                      required
+                      className="bg-background/50 border-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground" htmlFor="company_name">Razão Social da Empresa</Label>
+                    <Input
+                      id="company_name"
+                      value={formData.company_name}
+                      onChange={(e) => handleInputChange("company_name", e.target.value)}
+                      required
+                      placeholder="Nome da empresa"
+                      className="bg-background/50 border-input"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-foreground" htmlFor="partner_name">Nome completo do sócio</Label>
+                    <Input
+                      id="partner_name"
+                      value={formData.partner_name}
+                      onChange={(e) => handleInputChange("partner_name", e.target.value)}
+                      required
+                      placeholder="Nome do sócio"
+                      className="bg-background/50 border-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground" htmlFor="partner_cpf">CPF do sócio</Label>
+                    <Input
+                      id="partner_cpf"
+                      value={formData.partner_cpf}
+                      onChange={(e) => handleInputChange("partner_cpf", e.target.value)}
+                      placeholder="000.000.000-00"
+                      required
+                      className="bg-background/50 border-input"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-foreground" htmlFor="name">Nome completo</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    required
+                    placeholder="Seu nome completo"
+                    className="bg-background/50 border-input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-foreground" htmlFor="cpf">CPF</Label>
+                  <Input
+                    id="cpf"
+                    value={formData.cpf}
+                    onChange={(e) => handleInputChange("cpf", e.target.value)}
+                    placeholder="000.000.000-00"
+                    required
+                    className="bg-background/50 border-input"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-gray-700" htmlFor="email">Email</Label>
+                <Label className="text-foreground" htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="empresa@exemplo.com"
                   required
-                  className="bg-gray-100"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-gray-700" htmlFor="partner_name">Nome completo do sócio</Label>
-                <Input
-                  id="partner_name"
-                  value={formData.partner_name}
-                  onChange={(e) => handleInputChange("partner_name", e.target.value)}
-                  placeholder="Nome do sócio"
-                  required
-                  className="bg-gray-100"
+                  placeholder="email@exemplo.com"
+                  className="bg-background/50 border-input"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-gray-700" htmlFor="partner_cpf">CPF do sócio</Label>
+                <Label className="text-foreground" htmlFor="phone">WhatsApp</Label>
                 <Input
-                  id="partner_cpf"
-                  value={formData.partner_cpf}
-                  onChange={(e) => handleInputChange("partner_cpf", e.target.value)}
-                  placeholder="000.000.000-00"
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  placeholder="(00) 00000-0000"
                   required
-                  className="bg-gray-100"
+                  className="bg-background/50 border-input"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-700" htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="(00) 00000-0000"
-                required
-                className="bg-gray-100"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-gray-700" htmlFor="email_recipient">Nome do responsável</Label>
-              <Input
-                id="email_recipient"
-                value={formData.email_recipient}
-                onChange={(e) => handleInputChange("email_recipient", e.target.value)}
-                placeholder="Se for diferente do sócio"
-                className="bg-gray-100"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-gray-700" htmlFor="address">Endereço completo com CEP</Label>
+              <Label className="text-foreground" htmlFor="address">Endereço completo com CEP</Label>
               <Input
                 id="address"
                 value={formData.address}
                 onChange={(e) => handleInputChange("address", e.target.value)}
                 placeholder="Rua, número, complemento, bairro, cidade - UF, CEP"
                 required
-                className="bg-gray-100"
+                className="bg-background/50 border-input"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-gray-700" htmlFor="due_date">
-                  Melhor data de vencimento do pagamento
+                <Label className="text-foreground" htmlFor="due_date">
+                  {contractType === "pj" 
+                    ? "Melhor data de vencimento do pagamento ou data da primeira parcela"
+                    : "Melhor data de vencimento do pagamento"
+                  }
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full bg-gray-100 justify-start text-left font-normal",
+                        "w-full bg-background justify-start text-left font-normal",
                         !selectedDate && "text-muted-foreground"
                       )}
                     >
@@ -241,12 +302,12 @@ export default function PublicEmployeeForm() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label className="text-gray-700">Qual a melhor maneira de pagamento?</Label>
+                <Label className="text-foreground">Qual a melhor maneira de pagamento?</Label>
                 <div className="grid grid-cols-3 gap-3">
                   <div 
                     className={cn(
                       "flex items-center justify-center rounded-md border px-3 py-2 cursor-pointer",
-                      paymentType === "pix" ? "border-primary bg-primary/10" : "border-gray-300 bg-gray-100"
+                      paymentType === "pix" ? "border-primary bg-primary/10" : "border-input bg-background"
                     )}
                     onClick={() => setPaymentType("pix")}
                   >
@@ -264,7 +325,7 @@ export default function PublicEmployeeForm() {
                   <div 
                     className={cn(
                       "flex items-center justify-center rounded-md border px-3 py-2 cursor-pointer",
-                      paymentType === "boleto" ? "border-primary bg-primary/10" : "border-gray-300 bg-gray-100"
+                      paymentType === "boleto" ? "border-primary bg-primary/10" : "border-input bg-background"
                     )}
                     onClick={() => setPaymentType("boleto")}
                   >
@@ -282,7 +343,7 @@ export default function PublicEmployeeForm() {
                   <div 
                     className={cn(
                       "flex items-center justify-center rounded-md border px-3 py-2 cursor-pointer",
-                      paymentType === "credit_card" ? "border-primary bg-primary/10" : "border-gray-300 bg-gray-100"
+                      paymentType === "credit_card" ? "border-primary bg-primary/10" : "border-input bg-background"
                     )}
                     onClick={() => setPaymentType("credit_card")}
                   >
@@ -300,13 +361,24 @@ export default function PublicEmployeeForm() {
                 </div>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground" htmlFor="email_recipient">Nome de quem vai receber o e-mail</Label>
+              <Input
+                id="email_recipient"
+                value={formData.email_recipient}
+                onChange={(e) => handleInputChange("email_recipient", e.target.value)}
+                placeholder={contractType === "pj" ? "Se diferente do sócio" : "Se diferente do nome completo"}
+                className="bg-background/50 border-input"
+              />
+            </div>
           </div>
           
           <div className="pt-4">
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-md font-medium"
+              className="w-full md:w-auto"
             >
               {isSubmitting ? "Enviando..." : "Enviar Cadastro"}
             </Button>
