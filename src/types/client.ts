@@ -4,7 +4,7 @@ export interface Client {
   name: string;
   email: string;
   phone?: string;
-  status: "active" | "inactive" | "overdue";
+  status: "active" | "inactive" | "overdue" | "unpaid";
   total_billing: number;
   last_payment?: string;
   type: "pf" | "pj";
@@ -16,7 +16,7 @@ export interface Client {
   address: string;
   due_date: string;
   payment_method: "pix" | "boleto" | "credit_card";
-  responsible_name?: string; // New field for the person responsible
+  responsible_name?: string;
 }
 
 // New type for creating a client - includes only the required fields

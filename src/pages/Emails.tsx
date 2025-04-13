@@ -10,6 +10,7 @@ import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsM
 import { EmailTemplate } from "@/types/email";
 import { createTemplate } from "@/services/templateService";
 import { useToast } from "@/hooks/use-toast";
+import { ReminderEmailSettings } from "@/components/emails/ReminderEmailSettings";
 
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
@@ -48,8 +49,9 @@ export default function Emails() {
       </div>
 
       <Tabs defaultValue="templates" className="w-full">
-        <TabsList className="grid grid-cols-2 w-full max-w-[400px] mx-auto mb-4">
+        <TabsList className="grid grid-cols-3 w-full max-w-[600px] mx-auto mb-4">
           <TabsTrigger value="templates">Templates de Email</TabsTrigger>
+          <TabsTrigger value="reminders">Lembretes de Pagamento</TabsTrigger>
           <TabsTrigger value="cc-recipients">Destinatários CC</TabsTrigger>
         </TabsList>
         
@@ -78,6 +80,10 @@ export default function Emails() {
           </div>
         </TabsContent>
         
+        <TabsContent value="reminders" className="mt-4">
+          <ReminderEmailSettings />
+        </TabsContent>
+        
         <TabsContent value="cc-recipients">
           <EmailCCRecipientsManager />
         </TabsContent>
@@ -97,4 +103,4 @@ export default function Emails() {
       <EmployeeEmailSettings open={employeeSettingsOpen} onClose={() => setEmployeeSettingsOpen(false)} />
     </div>
   );
-}
+};

@@ -1,20 +1,48 @@
 
 project_id = "itlpvpdwgiwbdpqheemw"
 
-[functions.send-email]
-verify_jwt = false
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
 
-[functions.trigger-notifications]
-verify_jwt = false
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
 
-[functions.trigger-employee-notifications]
-verify_jwt = false
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:5173"
+
+[storage]
+enabled = true
 
 [functions.send-billing-email]
-verify_jwt = false
 
-[functions.trigger-billing-notifications]
-verify_jwt = false
+[functions.send-reminder-email]
 
-[functions.process-billing-notifications]
-verify_jwt = false
+[functions.trigger-reminder-emails]
+
+[[functions.trigger-reminder-emails.cron]]
+schedule = "*/5 * * * *"
+
+[[edge-functions.routes]]
+path = "api/send-reminder-email"
+function = "send-reminder-email"
+
+[[edge-functions.routes]]
+path = "api/trigger-reminder-emails"
+function = "trigger-reminder-emails"
