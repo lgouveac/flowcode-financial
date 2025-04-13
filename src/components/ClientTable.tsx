@@ -82,13 +82,16 @@ export const ClientTable = () => {
   };
 
   const handleNewClient = async (client: NewClient) => {
+    // The issue is here, we need to explicitly type the object being inserted
+    const newClient = {
+      ...client,
+      status: client.status || 'active',
+      total_billing: client.total_billing || 0
+    };
+
     const { data, error } = await supabase
       .from('clients')
-      .insert([{
-        ...client,
-        status: client.status || 'active',
-        total_billing: client.total_billing || 0
-      }])
+      .insert([newClient])
       .select()
       .single();
 
