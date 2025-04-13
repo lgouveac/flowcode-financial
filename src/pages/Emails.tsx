@@ -48,17 +48,17 @@ export default function Emails() {
       </div>
 
       <Tabs defaultValue="templates" className="w-full">
-        <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
-          <TabsTrigger value="templates" className="flex-1 sm:flex-none">Templates de Email</TabsTrigger>
-          <TabsTrigger value="cc-recipients" className="flex-1 sm:flex-none">Destinatários CC</TabsTrigger>
+        <TabsList className="grid grid-cols-2 w-full max-w-[400px] mx-auto">
+          <TabsTrigger value="templates">Templates de Email</TabsTrigger>
+          <TabsTrigger value="cc-recipients">Destinatários CC</TabsTrigger>
         </TabsList>
         
         <TabsContent value="templates">
           <div className="mt-4">
             <Tabs defaultValue="clients" onValueChange={(value) => setCurrentTemplateType(value as 'clients' | 'employees')}>
-              <TabsList className="w-full sm:w-auto flex overflow-x-auto no-scrollbar">
-                <TabsTrigger value="clients" className="flex-1 sm:flex-none">Templates de Cliente</TabsTrigger>
-                <TabsTrigger value="employees" className="flex-1 sm:flex-none">Templates de Funcionário</TabsTrigger>
+              <TabsList className="grid grid-cols-2 w-full max-w-[400px] mx-auto">
+                <TabsTrigger value="clients">Templates de Cliente</TabsTrigger>
+                <TabsTrigger value="employees">Templates de Funcionário</TabsTrigger>
               </TabsList>
               
               <TabsContent value="clients" className="mt-4">
