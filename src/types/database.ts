@@ -4,7 +4,7 @@ export type Client = {
   name: string;
   email: string;
   phone: string;
-  status: "active" | "inactive" | "overdue";
+  status: "active" | "inactive" | "overdue" | "unpaid";
   total_billing: number;
   last_payment?: string;
   type: "pf" | "pj";

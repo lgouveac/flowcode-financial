@@ -22,5 +22,5 @@ export interface Client {
 // New type for creating a client - includes only the required fields
 export type NewClient = Omit<Client, 'id' | 'total_billing' | 'status'> & {
   total_billing?: number;
-  status?: "active" | "inactive" | "overdue";
+  status?: "active" | "inactive" | "overdue" | "unpaid";
 };

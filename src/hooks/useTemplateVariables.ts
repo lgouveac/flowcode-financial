@@ -9,7 +9,7 @@ export const useTemplateVariables = () => {
   const renderTemplate = (
     content: string,
     type: 'clients' | 'employees',
-    subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours',
+    subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder',
     data: TemplateData
   ) => {
     let renderedContent = content;

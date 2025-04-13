@@ -10,10 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { Clock, Calendar, RotateCcw } from "lucide-react";
 
+interface ReminderSettings {
+  id: number;
+  notification_time: string;
+  days_interval: number;
+  active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export const ReminderEmailSettings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<ReminderSettings>({
+    id: 1,
     notification_time: "09:00",
     days_interval: 7,
     active: true
@@ -23,18 +33,17 @@ export const ReminderEmailSettings = () => {
     const fetchSettings = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("payment_reminder_settings")
-          .select("*")
-          .single();
+        // Using RPC call instead of direct table access since the table may not be in types yet
+        const { data, error } = await supabase.rpc('get_payment_reminder_settings');
 
         if (error) throw error;
         
         if (data) {
           setSettings({
-            notification_time: data.notification_time.substring(0, 5),
-            days_interval: data.days_interval,
-            active: data.active
+            id: data.id || 1,
+            notification_time: data.notification_time?.substring(0, 5) || "09:00",
+            days_interval: data.days_interval || 7,
+            active: data.active ?? true
           });
         }
       } catch (error: any) {
@@ -54,15 +63,12 @@ export const ReminderEmailSettings = () => {
 
   const handleSaveSettings = async () => {
     try {
-      const { error } = await supabase
-        .from("payment_reminder_settings")
-        .upsert({
-          id: 1, // Using a static ID for the single settings record
-          notification_time: settings.notification_time,
-          days_interval: settings.days_interval,
-          active: settings.active,
-          updated_at: new Date().toISOString()
-        });
+      // Using RPC call instead of direct table access
+      const { error } = await supabase.rpc('update_payment_reminder_settings', {
+        p_notification_time: settings.notification_time,
+        p_days_interval: settings.days_interval,
+        p_active: settings.active
+      });
 
       if (error) throw error;
 
