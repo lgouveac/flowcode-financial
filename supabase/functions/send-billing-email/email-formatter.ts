@@ -1,3 +1,4 @@
+
 // Email formatting utilities
 
 export interface EmailData {
@@ -14,6 +15,8 @@ export interface EmailData {
 
 export const processEmailContent = (content: string, data: EmailData): string => {
   let processedContent = content;
+  console.log("Processing email content with data:", JSON.stringify(data, null, 2));
+  console.log("Original content:", content);
   
   // Create a mapping of template variables to their values
   const variableMap: Record<string, string> = {
@@ -29,10 +32,13 @@ export const processEmailContent = (content: string, data: EmailData): string =>
     '{forma_pagamento}': data.paymentMethod || 'PIX',
   };
   
+  console.log("Variable map:", variableMap);
+  
   // Replace all variables in the content
   for (const [variable, value] of Object.entries(variableMap)) {
     const regex = new RegExp(variable, 'g');
     processedContent = processedContent.replace(regex, value);
+    console.log(`Replacing ${variable} with ${value}`);
   }
   
   // Find any remaining unresolved variables
@@ -42,6 +48,7 @@ export const processEmailContent = (content: string, data: EmailData): string =>
     const fallbackValue = getFallbackValue(variableName);
     const regex = new RegExp(`{${variableName}}`, 'g');
     processedContent = processedContent.replace(regex, fallbackValue);
+    console.log(`Replacing remaining variable ${variable} with fallback ${fallbackValue}`);
   }
   
   console.log("Rendered content:", processedContent);

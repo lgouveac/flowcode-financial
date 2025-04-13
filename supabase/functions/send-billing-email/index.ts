@@ -27,6 +27,16 @@ interface EmailRequest {
   content?: string;
   templateId?: string;
   data?: EmailData;
+  // For direct parameters (legacy support)
+  recipientName?: string;
+  responsibleName?: string;
+  billingValue?: number;
+  dueDate?: string;
+  daysUntilDue?: number;
+  currentInstallment?: number;
+  totalInstallments?: number;
+  paymentMethod?: string;
+  descricaoServico?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -83,16 +93,34 @@ const handler = async (req: Request): Promise<Response> => {
       
       subject = template.subject;
       content = template.content;
-      emailData = requestData.data || {};
+      
+      // Combine data from requestData.data and direct parameters
+      emailData = {
+        ...requestData.data,
+        recipientName: requestData.recipientName || requestData.data?.recipientName,
+        responsibleName: requestData.responsibleName || requestData.data?.responsibleName,
+        billingValue: requestData.billingValue || requestData.data?.billingValue,
+        dueDate: requestData.dueDate || requestData.data?.dueDate,
+        daysUntilDue: requestData.daysUntilDue || requestData.data?.daysUntilDue,
+        currentInstallment: requestData.currentInstallment || requestData.data?.currentInstallment,
+        totalInstallments: requestData.totalInstallments || requestData.data?.totalInstallments,
+        paymentMethod: requestData.paymentMethod || requestData.data?.paymentMethod,
+        descricaoServico: requestData.descricaoServico || requestData.data?.descricaoServico,
+      };
     } else {
       // Legacy direct content method
       subject = requestData.subject || '';
       content = requestData.content || '';
-      emailData = requestData.data || {
-        recipientName: '',
-        billingValue: 0,
-        dueDate: '',
-        daysUntilDue: 0
+      emailData = {
+        recipientName: requestData.recipientName || '',
+        responsibleName: requestData.responsibleName || '',
+        billingValue: requestData.billingValue || 0,
+        dueDate: requestData.dueDate || '',
+        daysUntilDue: requestData.daysUntilDue || 0,
+        currentInstallment: requestData.currentInstallment || 1,
+        totalInstallments: requestData.totalInstallments || 1,
+        paymentMethod: requestData.paymentMethod || 'PIX',
+        descricaoServico: requestData.descricaoServico || '',
       };
     }
     

@@ -159,6 +159,10 @@ serve(async (req) => {
           }
         });
         
+        // Extra details for debug
+        console.log(`Current installment: ${billing.current_installment || 1}`);
+        console.log(`Total installments: ${billing.installments || 1}`);
+        
         // Send the email notification
         try {
           const { error: emailError } = await supabase.functions.invoke(
@@ -173,8 +177,8 @@ serve(async (req) => {
                   billingValue: billing.amount,
                   dueDate: dueDate.toISOString(),
                   daysUntilDue: daysUntilDue,
-                  currentInstallment: billing.current_installment,
-                  totalInstallments: billing.installments,
+                  currentInstallment: billing.current_installment || 1,
+                  totalInstallments: billing.installments || 1,
                   descricaoServico: billing.description,
                   paymentMethod: paymentMethodStr
                 }
@@ -214,7 +218,6 @@ serve(async (req) => {
     
     console.log(`Notifications process completed. Sent ${notificationsSent} notifications.`);
     
-    // Just redirect to the main trigger-notifications function to avoid duplication
     return new Response(
       JSON.stringify({ 
         success: true,
