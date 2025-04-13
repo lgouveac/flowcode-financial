@@ -50,6 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("🔑 ResendAPI Key available:", !!resendApiKey);
     
     const requestData: EmailRequest = await req.json();
+    console.log("📄 Request data:", JSON.stringify(requestData, null, 2));
     
     let subject = '';
     let content = '';
@@ -88,6 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       console.log(`📄 Found template: ${template.name}`);
+      console.log(`📄 Template content: ${template.content}`);
       
       subject = template.subject;
       content = template.content;
@@ -134,10 +136,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     console.log(`📧 Preparing email to: ${to}`);
+    console.log(`📧 Email data:`, JSON.stringify(emailData, null, 2));
     
     // Process email content and subject
     const processedContent = processEmailContent(content, emailData);
     const processedSubject = processEmailSubject(subject, emailData);
+    
+    console.log(`📧 Processed content: ${processedContent}`);
+    console.log(`📧 Processed subject: ${processedSubject}`);
     
     // Convert to HTML
     const htmlContent = convertToHtml(processedContent);
@@ -169,6 +175,9 @@ const handler = async (req: Request): Promise<Response> => {
       const ccEmails = ccRecipients?.map(recipient => recipient.email) || [];
       console.log("CC recipients:", ccEmails);
       
+      // Record that we're about to send this email (before sending to prevent duplicates)
+      recordEmailSent(cacheKey);
+      
       // Send email using the custom flowcode.cc domain
       const { data: emailResult, error } = await resend.emails.send({
         from: "Financeiro FlowCode <financeiro@flowcode.cc>",
@@ -182,9 +191,6 @@ const handler = async (req: Request): Promise<Response> => {
         console.error("Error sending email:", error);
         throw error;
       }
-      
-      // Record that we've sent this email
-      recordEmailSent(cacheKey);
       
       console.log("✅ Email sent successfully:", emailResult);
       

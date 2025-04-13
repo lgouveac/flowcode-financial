@@ -37,12 +37,31 @@ export const EmailPreview = ({
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
   if (!selectedTemplateData) return null;
 
-  // Prepare data for template rendering
+  // Format amount to BRL currency
+  const formattedAmount = amount 
+    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount)
+    : "R$ 0,00";
+
+  // Format due date  
+  let formattedDueDate = dueDate || "";
+  if (dueDay && !dueDate) {
+    const today = new Date();
+    const dueDateTime = new Date(today.getFullYear(), today.getMonth(), dueDay);
+    formattedDueDate = dueDateTime.toLocaleDateString('pt-BR');
+  } else if (dueDate) {
+    try {
+      formattedDueDate = new Date(dueDate).toLocaleDateString('pt-BR');
+    } catch (e) {
+      console.error("Error formatting date:", e);
+    }
+  }
+
+  // Prepare data for template rendering with properly formatted values
   const templateData = {
     nome_cliente: clientName || "Cliente",
     nome_responsavel: responsibleName || "Responsável",
-    valor_cobranca: amount || 0,
-    data_vencimento: dueDate || (dueDay ? String(dueDay) : ""),
+    valor_cobranca: formattedAmount,
+    data_vencimento: formattedDueDate,
     plano_servico: description || "",
     descricao_servico: description || "",
     numero_parcela: currentInstallment || 1,

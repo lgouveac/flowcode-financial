@@ -60,6 +60,23 @@ export const sendPaymentEmail = async (payment: Payment) => {
   // Determine responsible name
   const responsibleName = clientData.responsible_name || clientData.partner_name || "Responsável";
   
+  // Prepare installment information
+  const currentInstallment = payment.installment_number || 1;
+  const totalInstallments = payment.total_installments || 1;
+  
+  console.log('Sending email with data:', {
+    to: clientData.email,
+    templateId,
+    clientName: clientData.name,
+    responsibleName,
+    amount: payment.amount,
+    dueDate: payment.due_date,
+    description: payment.description,
+    currentInstallment,
+    totalInstallments,
+    paymentMethod: paymentMethodStr
+  });
+  
   // Send email via the edge function
   const { error: emailError } = await supabase.functions.invoke(
     'send-billing-email',
@@ -75,14 +92,15 @@ export const sendPaymentEmail = async (payment: Payment) => {
           daysUntilDue: daysUntilDue,
           descricaoServico: payment.description,
           paymentMethod: paymentMethodStr,
-          currentInstallment: payment.installment_number || 1,
-          totalInstallments: payment.total_installments || 1
+          currentInstallment: currentInstallment,
+          totalInstallments: totalInstallments
         }
       })
     }
   );
   
   if (emailError) {
+    console.error('Email error:', emailError);
     throw new Error(`Erro ao enviar email: ${emailError.message}`);
   }
   

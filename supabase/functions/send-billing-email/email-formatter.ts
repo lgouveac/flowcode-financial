@@ -38,8 +38,8 @@ export function processEmailContent(content: string, data: EmailData): string {
   
   // Add optional replacements if they exist
   if (data.currentInstallment !== undefined && data.totalInstallments !== undefined) {
-    replacements["{numero_parcela}"] = data.currentInstallment.toString();
-    replacements["{total_parcelas}"] = data.totalInstallments.toString();
+    replacements["{numero_parcela}"] = String(data.currentInstallment);
+    replacements["{total_parcelas}"] = String(data.totalInstallments);
   }
   
   if (data.paymentMethod) {
@@ -48,7 +48,8 @@ export function processEmailContent(content: string, data: EmailData): string {
   
   // Replace all variables in content
   Object.entries(replacements).forEach(([variable, value]) => {
-    processedContent = processedContent.replace(new RegExp(variable, 'g'), value);
+    const regex = new RegExp(escapeRegExp(variable), 'g');
+    processedContent = processedContent.replace(regex, value);
   });
   
   return processedContent;
@@ -78,8 +79,8 @@ export function processEmailSubject(subject: string, data: EmailData): string {
   
   // Add optional replacements if they exist
   if (data.currentInstallment !== undefined && data.totalInstallments !== undefined) {
-    replacements["{numero_parcela}"] = data.currentInstallment.toString();
-    replacements["{total_parcelas}"] = data.totalInstallments.toString();
+    replacements["{numero_parcela}"] = String(data.currentInstallment);
+    replacements["{total_parcelas}"] = String(data.totalInstallments);
   }
   
   if (data.paymentMethod) {
@@ -88,10 +89,18 @@ export function processEmailSubject(subject: string, data: EmailData): string {
   
   // Replace all variables in subject
   Object.entries(replacements).forEach(([variable, value]) => {
-    processedSubject = processedSubject.replace(new RegExp(variable, 'g'), value);
+    const regex = new RegExp(escapeRegExp(variable), 'g');
+    processedSubject = processedSubject.replace(regex, value);
   });
   
   return processedSubject;
+}
+
+/**
+ * Escapes special characters in a string for use in RegExp
+ */
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
