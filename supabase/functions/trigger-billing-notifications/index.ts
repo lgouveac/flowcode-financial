@@ -141,6 +141,10 @@ serve(async (req) => {
         const daysUntilDue = interval.days_before;
         
         // Determine responsible name - THIS IS THE CRITICAL FIX
+        // Add explicit logging of the responsible_name value
+        console.log("Client responsible_name:", client.responsible_name);
+        console.log("Client partner_name:", client.partner_name);
+        
         const responsibleName = client.responsible_name || client.partner_name || "Responsável";
         console.log("Using responsible name:", responsibleName);
         

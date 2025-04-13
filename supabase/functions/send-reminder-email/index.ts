@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
 import { Resend } from "npm:resend@2.0.0";
@@ -187,8 +188,12 @@ const handler = async (req: Request): Promise<Response> => {
       if (client.payment_method === 'boleto') paymentMethodStr = 'Boleto';
       if (client.payment_method === 'credit_card') paymentMethodStr = 'Cartão de Crédito';
       
-      // Determine responsible name
+      // Determine responsible name - ADDED DEBUG LOGGING
+      console.log("Client responsible_name for reminder:", client.responsible_name);
+      console.log("Client partner_name for reminder:", client.partner_name);
+      
       const responsibleName = client.responsible_name || client.partner_name || "Responsável";
+      console.log("Using responsible name for reminder:", responsibleName);
       
       // Prepare email data
       const emailData: EmailData = {

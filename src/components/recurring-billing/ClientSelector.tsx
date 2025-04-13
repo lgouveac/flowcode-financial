@@ -14,6 +14,12 @@ export const ClientSelector = ({ clients, onSelect }: ClientSelectorProps) => {
       <Select 
         onValueChange={(value) => {
           console.log("Selected client:", value);
+          // Find the selected client to log the responsible_name for debugging
+          const selectedClient = clients.find(client => client.id === value);
+          if (selectedClient) {
+            console.log("Selected client responsible_name:", selectedClient.responsible_name);
+            console.log("Selected client partner_name:", selectedClient.partner_name);
+          }
           onSelect(value);
         }}
         required

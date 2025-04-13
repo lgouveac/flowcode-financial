@@ -58,6 +58,10 @@ export const sendPaymentEmail = async (payment: Payment) => {
   }
   
   // Determine responsible name - THIS IS THE CRITICAL FIX
+  // Add explicit logging of the responsible_name value
+  console.log("Client responsible_name for payment email:", clientData.responsible_name);
+  console.log("Client partner_name for payment email:", clientData.partner_name);
+  
   // Explicitly use responsible_name first, then fall back to partner_name
   const responsibleName = clientData.responsible_name || clientData.partner_name || "Responsável";
   console.log("Using responsible name for payment email:", responsibleName);

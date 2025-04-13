@@ -71,6 +71,9 @@ export const EmailPreview = ({
                             paymentMethod === 'boleto' ? 'Boleto' : 
                             'Cartão de Crédito';
 
+  // Log responsible name for debugging
+  console.log("Email preview responsibleName:", responsibleName);
+
   // Prepare data for template rendering with properly formatted values
   const templateData = {
     nome_cliente: clientName || "Cliente",
