@@ -21,4 +21,5 @@ export type Client = {
   payment_method: "pix" | "boleto" | "credit_card";
   created_at?: string;
   updated_at?: string;
+  responsible_name?: string;
 }

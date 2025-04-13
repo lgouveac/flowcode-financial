@@ -17,6 +17,8 @@ export interface Client {
   due_date: string;
   payment_method: "pix" | "boleto" | "credit_card";
   responsible_name?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // New type for creating a client - includes only the required fields
@@ -24,3 +26,5 @@ export type NewClient = Omit<Client, 'id' | 'total_billing' | 'status'> & {
   total_billing?: number;
   status?: "active" | "inactive" | "overdue" | "unpaid";
 };
+
+export type EditablePaymentFields = Pick<Client, 'name' | 'email' | 'phone' | 'status' | 'address' | 'due_date' | 'payment_method'>;

@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,23 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
     try {
       const { error } = await supabase
         .from('clients')
-        .update(formData)
+        .update({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          status: formData.status,
+          type: formData.type,
+          company_name: formData.company_name,
+          cnpj: formData.cnpj,
+          partner_name: formData.partner_name,
+          partner_cpf: formData.partner_cpf,
+          cpf: formData.cpf,
+          address: formData.address,
+          due_date: formData.due_date,
+          payment_method: formData.payment_method,
+          total_billing: formData.total_billing,
+          responsible_name: formData.responsible_name
+        })
         .eq('id', formData.id);
 
       if (error) throw error;
@@ -100,7 +115,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: "active" | "inactive" | "overdue") =>
+                onValueChange={(value: "active" | "inactive" | "overdue" | "unpaid") =>
                   setFormData({ ...formData, status: value })
                 }
               >
@@ -111,6 +126,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
                   <SelectItem value="active">Ativo</SelectItem>
                   <SelectItem value="inactive">Inativo</SelectItem>
                   <SelectItem value="overdue">Inadimplente</SelectItem>
+                  <SelectItem value="unpaid">Não Pago</SelectItem>
                 </SelectContent>
               </Select>
             </div>
