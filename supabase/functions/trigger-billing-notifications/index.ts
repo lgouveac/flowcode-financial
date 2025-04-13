@@ -140,8 +140,9 @@ serve(async (req) => {
         // Calculate days until due
         const daysUntilDue = interval.days_before;
         
-        // Determine responsible name
+        // Determine responsible name - THIS IS THE CRITICAL FIX
         const responsibleName = client.responsible_name || client.partner_name || "Responsável";
+        console.log("Using responsible name:", responsibleName);
         
         console.log("Sending email with data:", {
           to: client.email,

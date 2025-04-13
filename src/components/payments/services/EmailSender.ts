@@ -57,8 +57,9 @@ export const sendPaymentEmail = async (payment: Payment) => {
     throw new Error(`Erro ao obter dados do cliente: ${clientError.message}`);
   }
   
-  // Determine responsible name
+  // Determine responsible name - explicitly get the responsible name
   const responsibleName = clientData.responsible_name || clientData.partner_name || "Responsável";
+  console.log("Using responsible name for payment email:", responsibleName);
   
   // Prepare installment information
   const currentInstallment = payment.installment_number || 1;
