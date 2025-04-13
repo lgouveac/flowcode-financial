@@ -55,10 +55,13 @@ export const ClientRow = ({ client, onUpdate, onClick, onDelete }: ClientRowProp
             ? "bg-green-100 text-green-800" 
             : client.status === "overdue"
             ? "bg-red-100 text-red-800"
+            : client.status === "unpaid"
+            ? "bg-yellow-100 text-yellow-800"
             : "bg-gray-100 text-gray-800"
         }`}>
           {client.status === "active" ? "Ativo" 
             : client.status === "overdue" ? "Inadimplente" 
+            : client.status === "unpaid" ? "Não Pago"
             : "Inativo"}
         </span>
       </td>

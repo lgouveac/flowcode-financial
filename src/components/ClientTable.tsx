@@ -1,4 +1,3 @@
-
 import { PlusIcon, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -93,8 +92,7 @@ export const ClientTable = () => {
     const { data, error } = await supabase
       .from('clients')
       .insert([newClient])
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error('Error creating client:', error);
@@ -106,7 +104,7 @@ export const ClientTable = () => {
       return;
     }
 
-    setClients(prev => [...prev, data]);
+    setClients(prev => [...prev, data[0]]);
     toast({
       title: "Cliente adicionado",
       description: "O novo cliente foi cadastrado com sucesso.",
