@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ClientSelectorProps {
-  clients: Array<{ id: string; name: string }>;
+  clients: Array<{ id: string; name: string; responsible_name?: string; partner_name?: string }>;
   onSelect: (clientId: string) => void;
 }
 

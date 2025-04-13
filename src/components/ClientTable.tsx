@@ -82,11 +82,12 @@ export const ClientTable = () => {
   };
 
   const handleNewClient = async (client: NewClient) => {
-    // The issue is here, we need to explicitly type the object being inserted
+    // Explicitly type the object being inserted to match the database schema
     const newClient = {
       ...client,
       status: client.status || 'active',
-      total_billing: client.total_billing || 0
+      total_billing: client.total_billing || 0,
+      responsible_name: client.responsible_name || null
     };
 
     const { data, error } = await supabase
