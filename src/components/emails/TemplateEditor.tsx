@@ -24,7 +24,7 @@ export const TemplateEditor = ({
   onDrop,
 }: TemplateEditorProps) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full">
       <div>
         <Label htmlFor="template-name" className="text-sm sm:text-base">Nome do Template</Label>
         <Input

@@ -23,8 +23,9 @@ export const processEmailContent = (content: string, data: EmailData): string =>
     // Client variables
     '{nome_cliente}': data.recipientName || 'Cliente',
     '{nome_responsavel}': data.responsibleName || 'Responsável',
-    // Make sure we also handle the variable without the underscore
     '{nomeresponsavel}': data.responsibleName || 'Responsável',
+    '{responsavel}': data.responsibleName || 'Responsável',
+    '{responsável}': data.responsibleName || 'Responsável',
     '{valor_cobranca}': formatCurrency(data.billingValue || 0),
     '{data_vencimento}': formatDate(data.dueDate),
     '{plano_servico}': data.descricaoServico || '',
@@ -101,6 +102,8 @@ const getFallbackValue = (variableName: string): string => {
       return 'Cliente';
     case 'nomeresponsavel':
     case 'nome_responsavel':
+    case 'responsavel':
+    case 'responsável':
       return 'Responsável';
     case 'valorcobranca':
     case 'valor_cobranca':

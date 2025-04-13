@@ -168,7 +168,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="col-span-1 lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             <TemplateEditor
               type={type}
               currentType={currentType}
@@ -185,7 +185,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
               isLoading={isLoading}
             />
           </div>
-          <div className="col-span-1 order-first lg:order-last mb-6 lg:mb-0">
+          <div className="order-first lg:order-last mb-6 lg:mb-0">
             <VariablesList
               variables={currentVariables}
               onDragStart={handleDragStart}

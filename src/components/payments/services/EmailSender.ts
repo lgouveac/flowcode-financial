@@ -57,8 +57,8 @@ export const sendPaymentEmail = async (payment: Payment) => {
     throw new Error(`Erro ao obter dados do cliente: ${clientError.message}`);
   }
   
-  // Determine responsible name - explicitly get the responsible name
-  // Note: explicitly get the responsible_name first, then fall back to partner_name
+  // Determine responsible name - THIS IS THE CRITICAL FIX
+  // Explicitly use responsible_name first, then fall back to partner_name
   const responsibleName = clientData.responsible_name || clientData.partner_name || "Responsável";
   console.log("Using responsible name for payment email:", responsibleName);
   
@@ -69,8 +69,8 @@ export const sendPaymentEmail = async (payment: Payment) => {
   console.log('Sending email with data:', {
     to: clientData.email,
     templateId,
-    clientName: clientData.name,
-    responsibleName: responsibleName, // Log the exact value we're sending
+    recipientName: clientData.name,
+    responsibleName: responsibleName,
     amount: payment.amount,
     dueDate: payment.due_date,
     description: payment.description,

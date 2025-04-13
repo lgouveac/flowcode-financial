@@ -10,7 +10,7 @@ interface VariablesListProps {
 
 export const VariablesList = ({ variables, onDragStart }: VariablesListProps) => {
   return (
-    <Card className="sticky top-4">
+    <Card className="sticky top-4 w-full">
       <CardHeader className="px-3 py-2 sm:px-4 sm:py-3">
         <CardTitle className="text-base sm:text-lg">Variáveis Disponíveis</CardTitle>
       </CardHeader>
