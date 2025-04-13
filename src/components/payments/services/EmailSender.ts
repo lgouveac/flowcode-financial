@@ -87,7 +87,7 @@ export const sendPaymentEmail = async (payment: Payment) => {
         templateId: templateId,
         data: {
           recipientName: clientData.name,
-          responsibleName: responsibleName,
+          responsibleName: responsibleName, // Ensure this is explicitly passed
           billingValue: payment.amount,
           dueDate: payment.due_date,
           daysUntilDue: daysUntilDue,
