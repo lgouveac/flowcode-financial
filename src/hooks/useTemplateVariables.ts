@@ -64,6 +64,8 @@ export const useTemplateVariables = () => {
         return '1';
       case 'forma_pagamento':
         return 'PIX';
+      case 'dias_atraso':
+        return '0';
       default:
         return `[${variableName}]`;
     }

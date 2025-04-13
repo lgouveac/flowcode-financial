@@ -22,4 +22,3 @@ export type Client = {
   created_at?: string;
   updated_at?: string;
 }
-

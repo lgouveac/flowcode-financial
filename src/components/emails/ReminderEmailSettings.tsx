@@ -33,17 +33,19 @@ export const ReminderEmailSettings = () => {
     const fetchSettings = async () => {
       setIsLoading(true);
       try {
-        // Using RPC call instead of direct table access since the table may not be in types yet
+        // Using direct call to the stored procedure
         const { data, error } = await supabase.rpc('get_payment_reminder_settings');
 
         if (error) throw error;
         
         if (data) {
+          // Parse the JSONB result from the function
+          const parsedData = data as any;
           setSettings({
-            id: data.id || 1,
-            notification_time: data.notification_time?.substring(0, 5) || "09:00",
-            days_interval: data.days_interval || 7,
-            active: data.active ?? true
+            id: parsedData.id || 1,
+            notification_time: (parsedData.notification_time || "09:00").substring(0, 5),
+            days_interval: parsedData.days_interval || 7,
+            active: parsedData.active === true
           });
         }
       } catch (error: any) {
@@ -63,7 +65,7 @@ export const ReminderEmailSettings = () => {
 
   const handleSaveSettings = async () => {
     try {
-      // Using RPC call instead of direct table access
+      // Using direct call to the stored procedure
       const { error } = await supabase.rpc('update_payment_reminder_settings', {
         p_notification_time: settings.notification_time,
         p_days_interval: settings.days_interval,
