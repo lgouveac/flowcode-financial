@@ -26,17 +26,7 @@ interface EmailRequest {
   subject?: string;
   content?: string;
   templateId?: string;
-  data?: {
-    recipientName: string;
-    responsibleName?: string;
-    billingValue: number;
-    dueDate: string;
-    daysUntilDue: number;
-    currentInstallment?: number;
-    totalInstallments?: number;
-    paymentMethod?: string;
-    descricaoServico?: string;
-  };
+  data?: EmailData;
 }
 
 const handler = async (req: Request): Promise<Response> => {

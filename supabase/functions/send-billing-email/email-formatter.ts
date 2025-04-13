@@ -1,149 +1,105 @@
+// Email formatting utilities
 
-/**
- * Types for email data
- */
 export interface EmailData {
-  recipientName: string;
+  recipientName?: string;
   responsibleName?: string;
-  billingValue: number;
-  dueDate: string;
+  billingValue?: number;
+  dueDate?: string;
+  daysUntilDue?: number;
   currentInstallment?: number;
   totalInstallments?: number;
-  daysUntilDue: number;
   paymentMethod?: string;
   descricaoServico?: string;
 }
 
-/**
- * Process email content by replacing variables with actual values
- */
-export function processEmailContent(content: string, data: EmailData): string {
+export const processEmailContent = (content: string, data: EmailData): string => {
   let processedContent = content;
   
-  // Format date as DD/MM/YYYY
-  const formattedDate = formatDate(data.dueDate);
-  
-  // Format monetary value
-  const formattedValue = formatCurrency(data.billingValue);
-  
-  // Define all possible replacements
-  const replacements: Record<string, string> = {
-    "{nome_cliente}": data.recipientName || "Cliente",
-    "{nome_responsavel}": data.responsibleName || "Responsável",
-    "{valor_cobranca}": formattedValue,
-    "{data_vencimento}": formattedDate,
-    "{descricao_servico}": data.descricaoServico || "",
-    "{plano_servico}": data.descricaoServico || "",
+  // Create a mapping of template variables to their values
+  const variableMap: Record<string, string> = {
+    // Client variables
+    '{nome_cliente}': data.recipientName || 'Cliente',
+    '{nome_responsavel}': data.responsibleName || 'Responsável',
+    '{valor_cobranca}': formatCurrency(data.billingValue || 0),
+    '{data_vencimento}': formatDate(data.dueDate),
+    '{plano_servico}': data.descricaoServico || '',
+    '{descricao_servico}': data.descricaoServico || '',
+    '{numero_parcela}': String(data.currentInstallment || 1),
+    '{total_parcelas}': String(data.totalInstallments || 1),
+    '{forma_pagamento}': data.paymentMethod || 'PIX',
   };
   
-  // Add optional replacements if they exist
-  if (data.currentInstallment !== undefined && data.totalInstallments !== undefined) {
-    replacements["{numero_parcela}"] = String(data.currentInstallment);
-    replacements["{total_parcelas}"] = String(data.totalInstallments);
-  }
-  
-  if (data.paymentMethod) {
-    replacements["{forma_pagamento}"] = data.paymentMethod;
-  }
-  
-  // Replace all variables in content
-  Object.entries(replacements).forEach(([variable, value]) => {
-    const regex = new RegExp(escapeRegExp(variable), 'g');
+  // Replace all variables in the content
+  for (const [variable, value] of Object.entries(variableMap)) {
+    const regex = new RegExp(variable, 'g');
     processedContent = processedContent.replace(regex, value);
-  });
+  }
   
+  // Find any remaining unresolved variables
+  const remainingVariables = processedContent.match(/{[^{}]+}/g) || [];
+  for (const variable of remainingVariables) {
+    const variableName = variable.replace(/[{}]/g, '');
+    const fallbackValue = getFallbackValue(variableName);
+    const regex = new RegExp(`{${variableName}}`, 'g');
+    processedContent = processedContent.replace(regex, fallbackValue);
+  }
+  
+  console.log("Rendered content:", processedContent);
   return processedContent;
-}
+};
 
-/**
- * Process email subject by replacing variables with actual values
- */
-export function processEmailSubject(subject: string, data: EmailData): string {
-  let processedSubject = subject;
-  
-  // Format date as DD/MM/YYYY
-  const formattedDate = formatDate(data.dueDate);
-  
-  // Format monetary value
-  const formattedValue = formatCurrency(data.billingValue);
-  
-  // Define all possible replacements
-  const replacements: Record<string, string> = {
-    "{nome_cliente}": data.recipientName || "Cliente",
-    "{nome_responsavel}": data.responsibleName || "Responsável",
-    "{valor_cobranca}": formattedValue,
-    "{data_vencimento}": formattedDate,
-    "{descricao_servico}": data.descricaoServico || "",
-    "{plano_servico}": data.descricaoServico || "",
-  };
-  
-  // Add optional replacements if they exist
-  if (data.currentInstallment !== undefined && data.totalInstallments !== undefined) {
-    replacements["{numero_parcela}"] = String(data.currentInstallment);
-    replacements["{total_parcelas}"] = String(data.totalInstallments);
-  }
-  
-  if (data.paymentMethod) {
-    replacements["{forma_pagamento}"] = data.paymentMethod;
-  }
-  
-  // Replace all variables in subject
-  Object.entries(replacements).forEach(([variable, value]) => {
-    const regex = new RegExp(escapeRegExp(variable), 'g');
-    processedSubject = processedSubject.replace(regex, value);
-  });
-  
-  return processedSubject;
-}
+export const processEmailSubject = (subject: string, data: EmailData): string => {
+  // Use the same processing logic for the subject
+  return processEmailContent(subject, data);
+};
 
-/**
- * Escapes special characters in a string for use in RegExp
- */
-function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+export const convertToHtml = (content: string): string => {
+  // Convert newlines to <br> tags for HTML emails
+  return content.replace(/\n/g, '<br>');
+};
 
-/**
- * Convert plaintext content to HTML with paragraphs
- */
-export function convertToHtml(content: string): string {
-  const paragraphs = content
-    .split('\n')
-    .filter(line => line.trim() !== '')
-    .map(line => `<p style="margin-bottom: 1em; line-height: 1.5; text-align: left;">${line}</p>`)
-    .join('\n');
-    
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-      </head>
-      <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0; padding: 20px; text-align: left;">
-        ${paragraphs}
-      </body>
-    </html>
-  `;
-}
+// Helper function to format currency
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', { 
+    style: 'currency', 
+    currency: 'BRL' 
+  }).format(value);
+};
 
-/**
- * Format a date string to DD/MM/YYYY
- */
-function formatDate(dateStr: string): string {
+// Helper function to format date
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return '';
+  
   try {
-    const date = new Date(dateStr);
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return '';
+    }
     return date.toLocaleDateString('pt-BR');
   } catch (e) {
-    return dateStr;
+    console.error("Error formatting date:", e);
+    return '';
   }
-}
+};
 
-/**
- * Format a number as currency (R$)
- */
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value);
-}
+// Helper function to provide fallback values for common variables
+const getFallbackValue = (variableName: string): string => {
+  switch (variableName) {
+    case 'nome_cliente':
+      return 'Cliente';
+    case 'nome_responsavel':
+      return 'Responsável';
+    case 'valor_cobranca':
+      return 'R$ 0,00';
+    case 'data_vencimento':
+      return new Date().toLocaleDateString('pt-BR');
+    case 'numero_parcela':
+      return '1';
+    case 'total_parcelas':
+      return '1';
+    case 'forma_pagamento':
+      return 'PIX';
+    default:
+      return `[${variableName}]`;
+  }
+};
