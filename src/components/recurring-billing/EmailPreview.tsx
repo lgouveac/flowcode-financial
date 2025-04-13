@@ -69,9 +69,9 @@ export const EmailPreview = ({
     <div className="space-y-2">
       <Label>Prévia do Email</Label>
       <div className="mb-2">
-        <Label className="text-xs text-muted-foreground">Assunto: {subject}</Label>
+        <Label className="text-xs text-muted-foreground break-anywhere">Assunto: {subject}</Label>
       </div>
-      <div className="bg-background border rounded-md p-4 whitespace-pre-wrap text-sm text-left">
+      <div className="bg-background border rounded-md p-3 sm:p-4 whitespace-pre-wrap text-sm text-left overflow-x-auto max-h-[400px] overflow-y-auto">
         {content}
       </div>
     </div>

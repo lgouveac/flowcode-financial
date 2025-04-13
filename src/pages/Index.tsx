@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { MoonIcon, SunIcon, LogOutIcon, MenuIcon } from "lucide-react";
+import { MoonIcon, SunIcon, LogOutIcon, MenuIcon, ChevronDownIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
@@ -18,6 +18,7 @@ const Index = () => {
   const { user, signOut, profile } = useAuth();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showFullNav, setShowFullNav] = useState(false);
 
   const navigation = [
     { path: "/", label: "Visão Geral" },
@@ -39,7 +40,7 @@ const Index = () => {
     setMobileMenuOpen(false);
   }, [location]);
 
-  // Obter as iniciais do nome do usuário para o avatar
+  // Get user initials for avatar
   const getInitials = () => {
     if (!profile?.full_name) return 'U';
     
@@ -72,7 +73,7 @@ const Index = () => {
           <MenuIcon className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[75vw] max-w-xs p-0">
+      <SheetContent side="left" className="w-[85vw] max-w-xs p-0">
         <div className="flex flex-col h-full">
           <div className="p-4 border-b">
             <img 
@@ -146,21 +147,60 @@ const Index = () => {
     </Sheet>
   );
 
+  // Compact navigation for small screens
+  const CompactNav = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="sm" className="h-9">
+          <span className="text-sm font-medium mr-1">{
+            navigation.find(item => isActive(item.path))?.label || "Menu"
+          }</span>
+          <ChevronDownIcon className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        <DropdownMenuLabel>Navegação</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {navigation.map(({ path, label }) => (
+          <DropdownMenuItem key={path} asChild>
+            <NavLink
+              to={path}
+              end={path === "/"}
+              className={({ isActive }) => `w-full ${
+                isActive ? 'font-medium text-primary' : ''
+              }`}
+            >
+              {label}
+            </NavLink>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="bg-secondary border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+        <div className="max-w-[1400px] mx-auto px-4 flex justify-between items-center h-14 sm:h-16">
           <div className="flex items-center md:w-auto w-full">
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center">
+              <div className="flex items-center gap-4">
                 <img 
                   src="/lovable-uploads/86bceaf8-2d8e-4f71-812c-f3e40ccf2e67.png" 
                   alt="FlowCode Logo" 
-                  className="h-8 md:h-10 mr-4" 
+                  className="h-7 sm:h-8 md:h-10" 
                 />
+                
                 <MobileNav />
+                
+                {/* Show compact dropdown on small screens */}
+                <div className="hidden sm:block md:hidden">
+                  <CompactNav />
+                </div>
               </div>
-              <nav className="hidden md:flex -mb-px space-x-4 lg:space-x-8">
+              
+              {/* Full navigation for medium screens and above */}
+              <nav className="hidden md:flex -mb-px space-x-1 lg:space-x-8">
                 {navigation.map(({ path, label }) => (
                   <NavLink
                     key={path}
@@ -178,11 +218,12 @@ const Index = () => {
               </nav>
             </div>
           </div>
-          <div className="hidden md:flex items-center space-x-4">
+          
+          <div className="flex items-center gap-2 sm:gap-4">
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 hover:bg-muted"
+              className="h-8 w-8 hover:bg-muted"
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             >
               {theme === "light" ? (
@@ -197,10 +238,10 @@ const Index = () => {
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
-                  className="h-9 rounded-full p-0 hover:bg-muted"
+                  className="h-8 rounded-full p-0 hover:bg-muted"
                 >
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs sm:text-sm">
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
@@ -224,7 +265,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="flex-1 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in">
+      <main className="flex-1 max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in">
         <Outlet />
       </main>
     </div>

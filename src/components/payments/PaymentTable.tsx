@@ -53,30 +53,32 @@ export const PaymentTable = ({
   }
 
   return (
-    <div className="rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Vencimento</TableHead>
-            <TableHead>Método</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredPayments.map((payment) => (
-            <PaymentRow 
-              key={payment.id} 
-              payment={payment} 
-              onEmailSent={handleEmailSent}
-              onPaymentUpdated={handlePaymentUpdated}
-            />
-          ))}
-        </TableBody>
-      </Table>
+    <div className="rounded-md border overflow-hidden">
+      <div className="w-full overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[140px] sm:w-[180px]">Cliente</TableHead>
+              <TableHead className="min-w-[120px]">Descrição</TableHead>
+              <TableHead className="w-[100px]">Valor</TableHead>
+              <TableHead className="w-[110px]">Vencimento</TableHead>
+              <TableHead className="w-[90px] hidden sm:table-cell">Método</TableHead>
+              <TableHead className="w-[90px]">Status</TableHead>
+              <TableHead className="w-[100px] text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredPayments.map((payment) => (
+              <PaymentRow 
+                key={payment.id} 
+                payment={payment} 
+                onEmailSent={handleEmailSent}
+                onPaymentUpdated={handlePaymentUpdated}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
