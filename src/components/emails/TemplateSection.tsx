@@ -132,8 +132,8 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
   return (
     <>
       <Tabs defaultValue={type === 'employees' ? 'invoice' : 'recurring'} onValueChange={handleTypeChange}>
-        <div className="flex items-center justify-between mb-4">
-          <TabsList>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <TabsList className="w-full sm:w-auto">
             {type === 'employees' ? (
               <>
                 <TabsTrigger value="invoice">Template NF</TabsTrigger>
@@ -143,11 +143,13 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
               <>
                 <TabsTrigger value="recurring" className="flex items-center gap-2">
                   <RefreshCwIcon className="h-4 w-4" />
-                  Cobrança Recorrente
+                  <span className="hidden sm:inline">Cobrança Recorrente</span>
+                  <span className="sm:hidden">Recorrente</span>
                 </TabsTrigger>
                 <TabsTrigger value="oneTime" className="flex items-center gap-2">
                   <CalendarIcon className="h-4 w-4" />
-                  Cobrança Pontual
+                  <span className="hidden sm:inline">Cobrança Pontual</span>
+                  <span className="sm:hidden">Pontual</span>
                 </TabsTrigger>
               </>
             )}
@@ -160,12 +162,13 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
             disabled={!newTemplate.subject || !newTemplate.content}
           >
             <Send className="h-4 w-4 mr-2" />
-            Testar Template
+            <span className="hidden sm:inline">Testar Template</span>
+            <span className="sm:hidden">Testar</span>
           </Button>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="col-span-1 lg:col-span-2 space-y-6">
             <TemplateEditor
               type={type}
               currentType={currentType}
@@ -182,10 +185,12 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
               isLoading={isLoading}
             />
           </div>
-          <VariablesList
-            variables={currentVariables}
-            onDragStart={handleDragStart}
-          />
+          <div className="col-span-1 order-first lg:order-last mb-6 lg:mb-0">
+            <VariablesList
+              variables={currentVariables}
+              onDragStart={handleDragStart}
+            />
+          </div>
         </div>
       </Tabs>
 

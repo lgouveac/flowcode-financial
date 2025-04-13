@@ -23,6 +23,8 @@ export const processEmailContent = (content: string, data: EmailData): string =>
     // Client variables
     '{nome_cliente}': data.recipientName || 'Cliente',
     '{nome_responsavel}': data.responsibleName || 'Responsável',
+    // Make sure we also handle the variable without the underscore
+    '{nomeresponsavel}': data.responsibleName || 'Responsável',
     '{valor_cobranca}': formatCurrency(data.billingValue || 0),
     '{data_vencimento}': formatDate(data.dueDate),
     '{plano_servico}': data.descricaoServico || '',
@@ -36,7 +38,7 @@ export const processEmailContent = (content: string, data: EmailData): string =>
   
   // Replace all variables in the content
   for (const [variable, value] of Object.entries(variableMap)) {
-    const regex = new RegExp(variable, 'g');
+    const regex = new RegExp(variable, 'gi'); // Case insensitive to handle variations
     processedContent = processedContent.replace(regex, value);
     console.log(`Replacing ${variable} with ${value}`);
   }
@@ -46,7 +48,7 @@ export const processEmailContent = (content: string, data: EmailData): string =>
   for (const variable of remainingVariables) {
     const variableName = variable.replace(/[{}]/g, '');
     const fallbackValue = getFallbackValue(variableName);
-    const regex = new RegExp(`{${variableName}}`, 'g');
+    const regex = new RegExp(`{${variableName}}`, 'gi'); // Case insensitive
     processedContent = processedContent.replace(regex, fallbackValue);
     console.log(`Replacing remaining variable ${variable} with fallback ${fallbackValue}`);
   }
@@ -91,19 +93,28 @@ const formatDate = (dateString?: string): string => {
 
 // Helper function to provide fallback values for common variables
 const getFallbackValue = (variableName: string): string => {
-  switch (variableName) {
+  const normalizedName = variableName.toLowerCase().replace(/_/g, '');
+  
+  switch (normalizedName) {
+    case 'nomecliente':
     case 'nome_cliente':
       return 'Cliente';
+    case 'nomeresponsavel':
     case 'nome_responsavel':
       return 'Responsável';
+    case 'valorcobranca':
     case 'valor_cobranca':
       return 'R$ 0,00';
+    case 'datavencimento':
     case 'data_vencimento':
       return new Date().toLocaleDateString('pt-BR');
+    case 'numeroparcela':
     case 'numero_parcela':
       return '1';
+    case 'totalparcelas':
     case 'total_parcelas':
       return '1';
+    case 'formapagamento':
     case 'forma_pagamento':
       return 'PIX';
     default:
