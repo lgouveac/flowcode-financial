@@ -48,8 +48,7 @@ export function processEmailContent(content: string, data: EmailData): string {
   
   // Replace all variables in content
   Object.entries(replacements).forEach(([variable, value]) => {
-    const regex = new RegExp(escapeRegExp(variable), 'g');
-    processedContent = processedContent.replace(regex, value);
+    processedContent = processedContent.replace(new RegExp(variable, 'g'), value);
   });
   
   return processedContent;
@@ -87,10 +86,9 @@ export function processEmailSubject(subject: string, data: EmailData): string {
     replacements["{forma_pagamento}"] = data.paymentMethod;
   }
   
-  // Replace all variables in content
+  // Replace all variables in subject
   Object.entries(replacements).forEach(([variable, value]) => {
-    const regex = new RegExp(escapeRegExp(variable), 'g');
-    processedSubject = processedSubject.replace(regex, value);
+    processedSubject = processedSubject.replace(new RegExp(variable, 'g'), value);
   });
   
   return processedSubject;
@@ -139,11 +137,4 @@ function formatCurrency(value: number): string {
     style: 'currency',
     currency: 'BRL'
   }).format(value);
-}
-
-/**
- * Escape special characters in a string for use in a regular expression
- */
-function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

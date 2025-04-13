@@ -5,6 +5,7 @@ const emailSentCache = new Map<string, number>();
 // Constants
 const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
 const CACHE_CLEANUP_INTERVAL_MS = 3600 * 1000; // 1 hour
+const DUPLICATE_PREVENTION_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 // CORS headers for Edge Function
 export const corsHeaders = {
@@ -51,9 +52,8 @@ export function isDuplicateEmail(cacheKey: string): { isDuplicate: boolean; time
   const now = Date.now();
   const timeSince = now - lastSent;
   
-  // Consider it a duplicate if sent within the last 6 hours
   return {
-    isDuplicate: timeSince < 6 * 60 * 60 * 1000,
+    isDuplicate: timeSince < DUPLICATE_PREVENTION_WINDOW_MS,
     timeSince
   };
 }

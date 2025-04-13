@@ -14,12 +14,20 @@ export const useTemplateVariables = () => {
   ) => {
     let renderedContent = content;
     
+    // First get the applicable variables list for this type/subtype
     const variables = variablesList[type]?.[subtype] || [];
     
+    // Then replace each variable in the template
     variables.forEach(variable => {
+      // Get the variable name without the braces
       const variableName = variable.name.replace(/[{}]/g, '');
+      
+      // Check if we have a value for this variable
       if (data[variableName] !== undefined) {
-        const regex = new RegExp(variable.name.replace(/[{}]/g, '\\$&'), 'g');
+        // Create a regex to find all instances of the variable in the template
+        const regex = new RegExp(`{${variableName}}`, 'g');
+        
+        // Replace all occurrences with the actual value
         renderedContent = renderedContent.replace(regex, String(data[variableName]));
       }
     });

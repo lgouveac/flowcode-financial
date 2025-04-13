@@ -74,7 +74,9 @@ export const sendPaymentEmail = async (payment: Payment) => {
           dueDate: payment.due_date,
           daysUntilDue: daysUntilDue,
           descricaoServico: payment.description,
-          paymentMethod: paymentMethodStr
+          paymentMethod: paymentMethodStr,
+          currentInstallment: payment.installment_number || 1,
+          totalInstallments: payment.total_installments || 1
         }
       })
     }

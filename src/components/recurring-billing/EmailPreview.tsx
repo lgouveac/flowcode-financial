@@ -1,6 +1,7 @@
 
 import { Label } from "@/components/ui/label";
 import type { EmailTemplate } from "@/types/email";
+import { useTemplateVariables } from "@/hooks/useTemplateVariables";
 
 interface EmailPreviewProps {
   selectedTemplate?: string;
@@ -29,30 +30,40 @@ export const EmailPreview = ({
   currentInstallment,
   paymentMethod
 }: EmailPreviewProps) => {
+  const { renderTemplate } = useTemplateVariables();
+  
   if (!selectedTemplate) return null;
 
   const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
   if (!selectedTemplateData) return null;
 
-  let content = selectedTemplateData.content;
-  let subject = selectedTemplateData.subject;
-
-  const replacements = {
-    "{nome_cliente}": clientName || "Cliente",
-    "{nome_responsavel}": responsibleName || "Responsável",
-    "{valor_cobranca}": (amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-    "{data_vencimento}": dueDate ? new Date(dueDate).toLocaleDateString('pt-BR') : dueDay ? String(dueDay) : "",
-    "{plano_servico}": description || "",
-    "{descricao_servico}": description || "",
-    "{numero_parcela}": String(currentInstallment || 1),
-    "{total_parcelas}": String(installments || 1),
-    "{forma_pagamento}": paymentMethod === 'pix' ? 'PIX' : paymentMethod === 'boleto' ? 'Boleto' : 'Cartão de Crédito'
+  // Prepare data for template rendering
+  const templateData = {
+    nome_cliente: clientName || "Cliente",
+    nome_responsavel: responsibleName || "Responsável",
+    valor_cobranca: amount || 0,
+    data_vencimento: dueDate || (dueDay ? String(dueDay) : ""),
+    plano_servico: description || "",
+    descricao_servico: description || "",
+    numero_parcela: currentInstallment || 1,
+    total_parcelas: installments || 1,
+    forma_pagamento: paymentMethod === 'pix' ? 'PIX' : paymentMethod === 'boleto' ? 'Boleto' : 'Cartão de Crédito'
   };
 
-  Object.entries(replacements).forEach(([key, value]) => {
-    content = content.replace(new RegExp(key, 'g'), value);
-    subject = subject.replace(new RegExp(key, 'g'), value);
-  });
+  // Render the template content and subject
+  const content = renderTemplate(
+    selectedTemplateData.content, 
+    selectedTemplateData.type, 
+    selectedTemplateData.subtype, 
+    templateData
+  );
+  
+  const subject = renderTemplate(
+    selectedTemplateData.subject, 
+    selectedTemplateData.type, 
+    selectedTemplateData.subtype, 
+    templateData
+  );
 
   return (
     <div className="space-y-2">
