@@ -14,10 +14,10 @@ export const useTemplateVariables = () => {
   ) => {
     let renderedContent = content;
     
-    // First get the applicable variables list for this type/subtype
+    // Get the applicable variables list for this type/subtype
     const variables = variablesList[type]?.[subtype] || [];
     
-    // Then replace each variable in the template
+    // Replace each variable in the template
     variables.forEach(variable => {
       // Get the variable name without the braces
       const variableName = variable.name.replace(/[{}]/g, '');
@@ -32,7 +32,41 @@ export const useTemplateVariables = () => {
       }
     });
     
+    // Double check for any remaining variables and use fallback values
+    const remainingVariables = content.match(/{[^{}]+}/g) || [];
+    
+    remainingVariables.forEach(variable => {
+      const variableName = variable.replace(/[{}]/g, '');
+      if (!data[variableName]) {
+        const fallbackValue = getFallbackValue(variableName);
+        const regex = new RegExp(`{${variableName}}`, 'g');
+        renderedContent = renderedContent.replace(regex, fallbackValue);
+      }
+    });
+    
     return renderedContent;
+  };
+
+  // Helper function to provide fallback values for common variables
+  const getFallbackValue = (variableName: string): string => {
+    switch (variableName) {
+      case 'nome_cliente':
+        return 'Cliente';
+      case 'nome_responsavel':
+        return 'Responsável';
+      case 'valor_cobranca':
+        return 'R$ 0,00';
+      case 'data_vencimento':
+        return new Date().toLocaleDateString('pt-BR');
+      case 'numero_parcela':
+        return '1';
+      case 'total_parcelas':
+        return '1';
+      case 'forma_pagamento':
+        return 'PIX';
+      default:
+        return `[${variableName}]`;
+    }
   };
 
   return { renderTemplate };

@@ -50,11 +50,26 @@ export const EmailPreview = ({
     formattedDueDate = dueDateTime.toLocaleDateString('pt-BR');
   } else if (dueDate) {
     try {
-      formattedDueDate = new Date(dueDate).toLocaleDateString('pt-BR');
+      const dueDateObj = new Date(dueDate);
+      if (!isNaN(dueDateObj.getTime())) {
+        formattedDueDate = dueDateObj.toLocaleDateString('pt-BR');
+      } else {
+        formattedDueDate = "Data inválida";
+      }
     } catch (e) {
       console.error("Error formatting date:", e);
+      formattedDueDate = "Data inválida";
     }
   }
+
+  // Safe values for installments
+  const safeCurrentInstallment = currentInstallment && currentInstallment > 0 ? currentInstallment : 1;
+  const safeTotalInstallments = installments && installments > 0 ? installments : 1;
+
+  // Payment method display text
+  const paymentMethodText = paymentMethod === 'pix' ? 'PIX' : 
+                            paymentMethod === 'boleto' ? 'Boleto' : 
+                            'Cartão de Crédito';
 
   // Prepare data for template rendering with properly formatted values
   const templateData = {
@@ -64,10 +79,14 @@ export const EmailPreview = ({
     data_vencimento: formattedDueDate,
     plano_servico: description || "",
     descricao_servico: description || "",
-    numero_parcela: currentInstallment || 1,
-    total_parcelas: installments || 1,
-    forma_pagamento: paymentMethod === 'pix' ? 'PIX' : paymentMethod === 'boleto' ? 'Boleto' : 'Cartão de Crédito'
+    numero_parcela: String(safeCurrentInstallment),
+    total_parcelas: String(safeTotalInstallments),
+    forma_pagamento: paymentMethodText
   };
+
+  // Log the template data for debugging
+  console.log("Template data:", templateData);
+  console.log("Template content before rendering:", selectedTemplateData.content);
 
   // Render the template content and subject
   const content = renderTemplate(
@@ -83,6 +102,8 @@ export const EmailPreview = ({
     selectedTemplateData.subtype, 
     templateData
   );
+
+  console.log("Rendered content:", content);
 
   return (
     <div className="space-y-2">
