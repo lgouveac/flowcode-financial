@@ -3,15 +3,16 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import type { Record, EmailData } from "../types/emailTest";
+import type { Record, EmailData, RecordType } from "../types/emailTest";
 import type { EmailTemplate } from "@/types/email";
 
 export const useEmailTest = (template: EmailTemplate) => {
   const { toast } = useToast();
   const [selectedRecordId, setSelectedRecordId] = useState<string>("");
+  const [recordType, setRecordType] = useState<RecordType>("all");
 
   const { data: records = [], isLoading } = useQuery({
-    queryKey: ["billing-records", template.type, template.subtype],
+    queryKey: ["billing-records", template.type, template.subtype, recordType],
     queryFn: async () => {
       if (template.type === "employees") {
         const { data, error } = await supabase
@@ -21,8 +22,15 @@ export const useEmailTest = (template: EmailTemplate) => {
           .order("name");
         if (error) throw error;
         return data as Record[];
-      } else if (template.subtype === "recurring") {
-        const { data, error } = await supabase
+      } 
+      
+      // For client templates
+      let recurringRecords: Record[] = [];
+      let oneTimeRecords: Record[] = [];
+      
+      // Fetch recurring billing records if needed
+      if (recordType === "all" || recordType === "recurring") {
+        const { data: recurringData, error: recurringError } = await supabase
           .from("recurring_billing")
           .select(`
             id,
@@ -40,13 +48,18 @@ export const useEmailTest = (template: EmailTemplate) => {
           `)
           .eq("status", "pending")
           .order("created_at", { ascending: false });
-        if (error) throw error;
-        return (data || []).map(record => ({
+          
+        if (recurringError) throw recurringError;
+        
+        recurringRecords = (recurringData || []).map(record => ({
           ...record,
           client: record.clients
         }));
-      } else {
-        const { data, error } = await supabase
+      }
+      
+      // Fetch one-time payment records if needed
+      if (recordType === "all" || recordType === "oneTime") {
+        const { data: paymentsData, error: paymentsError } = await supabase
           .from("payments")
           .select(`
             id,
@@ -62,12 +75,17 @@ export const useEmailTest = (template: EmailTemplate) => {
           `)
           .eq("status", "pending")
           .order("created_at", { ascending: false });
-        if (error) throw error;
-        return (data || []).map(record => ({
+          
+        if (paymentsError) throw paymentsError;
+        
+        oneTimeRecords = (paymentsData || []).map(record => ({
           ...record,
           client: record.clients
         }));
       }
+      
+      // Combine the records based on the filter
+      return [...recurringRecords, ...oneTimeRecords];
     },
   });
 
@@ -78,7 +96,7 @@ export const useEmailTest = (template: EmailTemplate) => {
         description: "Por favor, selecione um registro para enviar o email de teste.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
     try {
@@ -114,6 +132,8 @@ export const useEmailTest = (template: EmailTemplate) => {
   return {
     selectedRecordId,
     setSelectedRecordId,
+    recordType,
+    setRecordType,
     records,
     isLoading,
     handleTestEmail,

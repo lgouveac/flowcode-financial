@@ -9,6 +9,8 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
   const {
     selectedRecordId,
     setSelectedRecordId,
+    recordType,
+    setRecordType,
     records,
     isLoading,
     handleTestEmail,
@@ -34,6 +36,8 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
             records={records}
             isLoading={isLoading}
             template={template}
+            recordType={recordType}
+            onRecordTypeChange={setRecordType}
           />
 
           <div className="flex justify-end space-x-2">
