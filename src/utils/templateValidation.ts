@@ -5,8 +5,8 @@ export const validateTemplateType = (type: string): type is 'clients' | 'employe
   return type === 'clients' || type === 'employees';
 };
 
-export const validateTemplateSubtype = (subtype: string): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' => {
-  return ['recurring', 'oneTime', 'invoice', 'hours'].includes(subtype);
+export const validateTemplateSubtype = (subtype: string): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' => {
+  return ['recurring', 'oneTime', 'invoice', 'hours', 'reminder'].includes(subtype);
 };
 
 export const validateTemplate = (template: Partial<EmailTemplate>): boolean => {

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarIcon, RefreshCwIcon, Send } from "lucide-react";
+import { CalendarIcon, RefreshCwIcon, Send, AlertTriangle } from "lucide-react";
 import { TemplateEditor } from "./TemplateEditor";
 import { VariablesList } from "./VariablesList";
 import { EmailTemplate, variablesList } from "@/types/email";
@@ -40,7 +40,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
     setCurrentType(type);
     setNewTemplate(prev => ({
       ...prev,
-      subtype: type as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+      subtype: type as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder',
     }));
   };
 
@@ -98,7 +98,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
       
       const templateToSave = {
         ...newTemplate,
-        subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours'
+        subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder'
       };
       
       const success = await onSaveTemplate(templateToSave);
@@ -111,7 +111,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
         
         setNewTemplate({
           type: type,
-          subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours',
+          subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder',
           name: '',
           subject: '',
           content: '',
@@ -150,6 +150,11 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
                   <CalendarIcon className="h-4 w-4" />
                   <span className="hidden sm:inline">Cobrança Pontual</span>
                   <span className="sm:hidden">Pontual</span>
+                </TabsTrigger>
+                <TabsTrigger value="reminder" className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Lembrete de Pagamento</span>
+                  <span className="sm:hidden">Lembrete</span>
                 </TabsTrigger>
               </>
             )}
