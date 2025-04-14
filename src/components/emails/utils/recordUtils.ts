@@ -13,10 +13,10 @@ export const getRecordLabel = (record: Record): string => {
   
   if ('due_day' in record) {
     // Recurring billing
-    return `[Recorrente] ${record.client.name} - ${record.description} (${amount})`;
+    return `${record.client.name} - ${record.description} (${amount}) [Recorrente]`;
   } else {
     // One-time payment
     const dueDate = new Date(record.due_date).toLocaleDateString('pt-BR');
-    return `[Pontual] ${record.client.name} - ${record.description} (${amount}) - Venc: ${dueDate}`;
+    return `${record.client.name} - ${record.description} (${amount}) - Venc: ${dueDate} [Pontual]`;
   }
 };

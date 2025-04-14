@@ -84,8 +84,14 @@ export const useEmailTest = (template: EmailTemplate) => {
         }));
       }
       
-      // Combine the records based on the filter
-      return [...recurringRecords, ...oneTimeRecords];
+      // Return the appropriate records based on filter
+      if (recordType === "recurring") {
+        return recurringRecords;
+      } else if (recordType === "oneTime") {
+        return oneTimeRecords;
+      } else {
+        return [...recurringRecords, ...oneTimeRecords];
+      }
     },
   });
 

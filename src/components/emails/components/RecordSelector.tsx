@@ -4,9 +4,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Record, RecordType } from "../types/emailTest";
 import { getRecordLabel } from "../utils/recordUtils";
 import { EmailTemplate } from "@/types/email";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ListFilter } from "lucide-react";
+import { useEffect } from "react";
 
 interface RecordSelectorProps {
   selectedRecordId: string;
@@ -30,14 +30,12 @@ export const RecordSelector = ({
   // Only show type filter for client templates
   const showTypeFilter = template.type === "clients";
 
-  const getRecordTypeLabel = (type: RecordType) => {
-    switch (type) {
-      case "all": return "Todos";
-      case "recurring": return "Recorrentes";
-      case "oneTime": return "Pontuais";
-      default: return "";
+  // Clear selection when records change
+  useEffect(() => {
+    if (selectedRecordId && !records.some(r => r.id === selectedRecordId)) {
+      onRecordSelect("");
     }
-  };
+  }, [records, selectedRecordId, onRecordSelect]);
 
   const getPlaceholder = () => {
     if (isLoading) return "Carregando...";

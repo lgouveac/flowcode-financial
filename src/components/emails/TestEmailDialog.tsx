@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { RecordSelector } from "./components/RecordSelector";
 import { useEmailTest } from "./hooks/useEmailTest";
 import type { TestEmailDialogProps } from "./types/emailTest";
+import { useEffect } from "react";
 
 export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProps) => {
   const {
@@ -15,6 +16,11 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
     isLoading,
     handleTestEmail,
   } = useEmailTest(template);
+
+  // Reset selected record when filter type changes
+  useEffect(() => {
+    setSelectedRecordId("");
+  }, [recordType, setSelectedRecordId]);
 
   const onSendTest = async () => {
     const success = await handleTestEmail();
@@ -44,7 +50,10 @@ export const TestEmailDialog = ({ template, open, onClose }: TestEmailDialogProp
             <Button variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button onClick={onSendTest}>
+            <Button 
+              onClick={onSendTest}
+              disabled={!selectedRecordId}
+            >
               Enviar Teste
             </Button>
           </div>
