@@ -115,7 +115,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: "active" | "inactive" | "overdue" | "unpaid") =>
+                onValueChange={(value: "active" | "inactive" | "overdue") =>
                   setFormData({ ...formData, status: value })
                 }
               >
@@ -126,7 +126,6 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
                   <SelectItem value="active">Ativo</SelectItem>
                   <SelectItem value="inactive">Inativo</SelectItem>
                   <SelectItem value="overdue">Inadimplente</SelectItem>
-                  <SelectItem value="unpaid">Não Pago</SelectItem>
                 </SelectContent>
               </Select>
             </div>

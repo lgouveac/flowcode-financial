@@ -4,7 +4,7 @@ export interface Client {
   name: string;
   email: string;
   phone?: string;
-  status: "active" | "inactive" | "overdue" | "unpaid";
+  status: "active" | "inactive" | "overdue";
   total_billing: number;
   last_payment?: string;
   type: "pf" | "pj";
@@ -24,7 +24,7 @@ export interface Client {
 // New type for creating a client - includes only the required fields
 export type NewClient = Omit<Client, 'id' | 'total_billing' | 'status'> & {
   total_billing?: number;
-  status?: "active" | "inactive" | "overdue" | "unpaid";
+  status?: "active" | "inactive" | "overdue";
 };
 
 export type EditablePaymentFields = Pick<Client, 'name' | 'email' | 'phone' | 'status' | 'address' | 'due_date' | 'payment_method'>;
