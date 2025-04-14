@@ -1,3 +1,4 @@
+
 import { PlusIcon, Upload } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -81,8 +82,8 @@ export const ClientTable = () => {
   };
 
   const handleNewClient = async (client: NewClient) => {
-    // Explicitly type the object being inserted to match the database schema
-    const newClient = {
+    // Explicitly type the object being inserted to match the database schema and fixed types
+    const newClient: any = {
       ...client,
       status: client.status || 'active',
       total_billing: client.total_billing || 0,
