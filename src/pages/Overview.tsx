@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import type { Payment } from "@/types/payment";
 
@@ -105,7 +105,7 @@ export const Overview = () => {
             partner_name
           )
         `)
-        .in('status', ['pending', 'awaiting_invoice', 'billed'])
+        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid'])
         .gte('due_date', dates.start)
         .lte('due_date', dates.end)
         .order('due_date', { ascending: true });
