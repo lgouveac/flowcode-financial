@@ -10,6 +10,8 @@ import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsM
 import { EmailTemplate } from "@/types/email";
 import { createTemplate } from "@/services/templateService";
 import { useToast } from "@/hooks/use-toast";
+import { TestEmailDialog } from "@/components/emails/TestEmailDialog";
+import { EmployeeEmailSettings } from "@/components/emails/EmployeeEmailSettings";
 
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
@@ -103,4 +105,3 @@ export default function Emails() {
     </div>
   );
 };
-
