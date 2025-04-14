@@ -1,28 +1,21 @@
-
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { EmployeeMonthlyValue, EstimatedExpense } from "@/types/employee";
-import { useState, useEffect } from "react";
+import { EstimatedExpense } from "@/types/employee";
 
 export interface EstimatedExpenses {
-  workerExpenses: number;
-  workerExpensesChange: string;
   totalEstimatedExpenses: number;
   totalEstimatedExpensesChange: string;
-  otherFixedExpenses: number;
-  otherFixedExpensesChange: string;
 }
+
+// Create a refetch function as a singleton
+let refetchEstimatedExpenses: (() => void) | null = null;
 
 export const useEstimatedExpenses = (period: string = 'current') => {
   const { toast } = useToast();
   const [estimatedExpenses, setEstimatedExpenses] = useState<EstimatedExpenses>({
-    workerExpenses: 0,
-    workerExpensesChange: "0%",
     totalEstimatedExpenses: 0,
-    totalEstimatedExpensesChange: "0%",
-    otherFixedExpenses: 0,
-    otherFixedExpensesChange: "0%"
+    totalEstimatedExpensesChange: "0%"
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -92,115 +85,81 @@ export const useEstimatedExpenses = (period: string = 'current') => {
     return `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
   };
 
+  const fetchEstimatedExpenses = async () => {
+    try {
+      setIsLoading(true);
+      const dates = getPeriodDates(period);
+      
+      // Fetch estimated expenses for current period
+      const { data: currentFixedExpenses, error: currentFixedError } = await supabase
+        .from('estimated_expenses')
+        .select('*')
+        .eq('is_recurring', true)
+        .or(`start_date.lte.${dates.end},start_date.is.null`)
+        .or(`end_date.gte.${dates.start},end_date.is.null`);
+
+      if (currentFixedError) throw currentFixedError;
+
+      // Fetch estimated expenses for previous period
+      const { data: previousFixedExpenses, error: previousFixedError } = await supabase
+        .from('estimated_expenses')
+        .select('*')
+        .eq('is_recurring', true)
+        .or(`start_date.lte.${dates.compareEnd},start_date.is.null`)
+        .or(`end_date.gte.${dates.compareStart},end_date.is.null`);
+
+      if (previousFixedError) throw previousFixedError;
+
+      // Calculate estimated expenses
+      const currentEstimatedExpenses = currentFixedExpenses?.reduce((sum, item) => 
+        sum + Number(item.amount), 0) || 0;
+        
+      const previousEstimatedExpenses = previousFixedExpenses?.reduce((sum, item) => 
+        sum + Number(item.amount), 0) || 0;
+
+      // Calculate change percentage
+      const totalEstimatedExpensesChange = calculatePercentageChange(
+        currentEstimatedExpenses,
+        previousEstimatedExpenses
+      );
+
+      setEstimatedExpenses({
+        totalEstimatedExpenses: currentEstimatedExpenses,
+        totalEstimatedExpensesChange
+      });
+
+      console.log('Estimated expenses calculated:', {
+        totalEstimatedExpenses: currentEstimatedExpenses,
+        totalEstimatedExpensesChange
+      });
+
+    } catch (error) {
+      console.error('Error fetching estimated expenses:', error);
+      toast({
+        title: "Erro ao carregar despesas estimadas",
+        description: "Não foi possível calcular as despesas estimadas.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchEstimatedExpenses = async () => {
-      try {
-        setIsLoading(true);
-        const dates = getPeriodDates(period);
-        
-        // Fetch worker expenses for current period
-        const { data: currentWorkerValues, error: currentWorkerError } = await supabase
-          .from('employee_monthly_values')
-          .select('amount')
-          .gte('month', dates.start)
-          .lt('month', dates.end);
-
-        if (currentWorkerError) throw currentWorkerError;
-
-        // Fetch worker expenses for previous period
-        const { data: previousWorkerValues, error: previousWorkerError } = await supabase
-          .from('employee_monthly_values')
-          .select('amount')
-          .gte('month', dates.compareStart)
-          .lt('month', dates.compareEnd);
-
-        if (previousWorkerError) throw previousWorkerError;
-
-        // Fetch other fixed expenses for current period
-        const { data: currentFixedExpenses, error: currentFixedError } = await supabase
-          .from('estimated_expenses')
-          .select('*')
-          .eq('is_recurring', true)
-          .or(`start_date.lte.${dates.end},start_date.is.null`)
-          .or(`end_date.gte.${dates.start},end_date.is.null`);
-
-        if (currentFixedError) throw currentFixedError;
-
-        // Fetch other fixed expenses for previous period
-        const { data: previousFixedExpenses, error: previousFixedError } = await supabase
-          .from('estimated_expenses')
-          .select('*')
-          .eq('is_recurring', true)
-          .or(`start_date.lte.${dates.compareEnd},start_date.is.null`)
-          .or(`end_date.gte.${dates.compareStart},end_date.is.null`);
-
-        if (previousFixedError) throw previousFixedError;
-
-        // Calculate worker expenses
-        const currentWorkerExpenses = currentWorkerValues?.reduce((sum, item) => 
-          sum + Number(item.amount), 0) || 0;
-        
-        const previousWorkerExpenses = previousWorkerValues?.reduce((sum, item) => 
-          sum + Number(item.amount), 0) || 0;
-
-        // Calculate other fixed expenses
-        const currentOtherExpenses = currentFixedExpenses?.reduce((sum, item) => 
-          sum + Number(item.amount), 0) || 0;
-          
-        const previousOtherExpenses = previousFixedExpenses?.reduce((sum, item) => 
-          sum + Number(item.amount), 0) || 0;
-
-        // Calculate change percentages
-        const workerExpensesChange = calculatePercentageChange(
-          currentWorkerExpenses, 
-          previousWorkerExpenses
-        );
-
-        const otherFixedExpensesChange = calculatePercentageChange(
-          currentOtherExpenses,
-          previousOtherExpenses
-        );
-
-        // Calculate total estimated expenses
-        const totalEstimatedExpenses = currentWorkerExpenses + currentOtherExpenses;
-        const previousTotalEstimatedExpenses = previousWorkerExpenses + previousOtherExpenses;
-        const totalEstimatedExpensesChange = calculatePercentageChange(
-          totalEstimatedExpenses,
-          previousTotalEstimatedExpenses
-        );
-
-        setEstimatedExpenses({
-          workerExpenses: currentWorkerExpenses,
-          workerExpensesChange,
-          otherFixedExpenses: currentOtherExpenses,
-          otherFixedExpensesChange,
-          totalEstimatedExpenses,
-          totalEstimatedExpensesChange
-        });
-
-        console.log('Estimated expenses calculated:', {
-          workerExpenses: currentWorkerExpenses,
-          workerExpensesChange,
-          otherFixedExpenses: currentOtherExpenses,
-          otherFixedExpensesChange,
-          totalEstimatedExpenses,
-          totalEstimatedExpensesChange
-        });
-
-      } catch (error) {
-        console.error('Error fetching estimated expenses:', error);
-        toast({
-          title: "Erro ao carregar despesas estimadas",
-          description: "Não foi possível calcular as despesas estimadas.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+    fetchEstimatedExpenses();
+    // Store the refetch function
+    refetchEstimatedExpenses = fetchEstimatedExpenses;
+    
+    return () => {
+      // Cleanup when component unmounts
+      if (refetchEstimatedExpenses === fetchEstimatedExpenses) {
+        refetchEstimatedExpenses = null;
       }
     };
+  }, [period]);
 
-    fetchEstimatedExpenses();
-  }, [period, toast]);
+  // Expose the refetch function
+  useEstimatedExpenses.refetchEstimatedExpenses = refetchEstimatedExpenses;
 
   return { estimatedExpenses, isLoading };
 };
