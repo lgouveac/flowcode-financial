@@ -1,8 +1,10 @@
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,8 +41,9 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
       
       const fetchPaymentData = async () => {
         try {
-          const { data, error } = await supabase
-            .from('payments')
+          // First try to get data from recurring_billing
+          const { data: billingData, error: billingError } = await supabase
+            .from('recurring_billing')
             .select(`
               *,
               clients (
@@ -52,9 +55,40 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
             .eq('id', billingId)
             .single();
           
-          if (error) throw error;
-          
-          setPayment(data);
+          if (!billingError && billingData) {
+            // Convert the billing data to a payment format
+            const paymentData: Payment = {
+              id: billingData.id,
+              client_id: billingData.client_id,
+              description: billingData.description,
+              amount: billingData.amount,
+              due_date: new Date(new Date().getFullYear(), new Date().getMonth(), billingData.due_day).toISOString(),
+              payment_date: billingData.payment_date,
+              payment_method: billingData.payment_method,
+              status: billingData.status,
+              installment_number: billingData.current_installment,
+              total_installments: billingData.installments,
+              clients: billingData.clients
+            };
+            setPayment(paymentData);
+          } else {
+            // If not found in recurring_billing, try payments table
+            const { data: paymentData, error: paymentError } = await supabase
+              .from('payments')
+              .select(`
+                *,
+                clients (
+                  name,
+                  email,
+                  partner_name
+                )
+              `)
+              .eq('id', billingId)
+              .single();
+            
+            if (paymentError) throw paymentError;
+            setPayment(paymentData);
+          }
         } catch (error) {
           console.error("Error fetching payment:", error);
         } finally {
@@ -80,6 +114,9 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Detalhes do Recebimento</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Carregando dados do recebimento...
+            </DialogDescription>
           </DialogHeader>
           <div className="py-6 text-center">Carregando...</div>
         </DialogContent>
@@ -93,6 +130,9 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Detalhes do Recebimento</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Não foi possível encontrar dados para este recebimento.
+            </DialogDescription>
           </DialogHeader>
           <div className="py-6 text-center">Nenhum dado de recebimento encontrado.</div>
         </DialogContent>
@@ -102,9 +142,12 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl dark:bg-gray-900">
         <DialogHeader>
-          <DialogTitle>Detalhes do Recebimento</DialogTitle>
+          <DialogTitle className="dark:text-white">Detalhes do Recebimento</DialogTitle>
+          <DialogDescription className="text-muted-foreground dark:text-gray-400">
+            Informações detalhadas sobre este recebimento
+          </DialogDescription>
         </DialogHeader>
 
         <div className="overflow-x-auto">
@@ -185,7 +228,6 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
                   </td>
                 </tr>
               )}
-              {/* Only show notes if property exists */}
               {payment.paid_amount && (
                 <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
