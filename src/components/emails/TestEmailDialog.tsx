@@ -15,7 +15,6 @@ import { RecipientField } from "./components/RecipientField";
 import { useEmailTest } from "./hooks/useEmailTest";
 import { TestEmailDialogProps } from "./types/emailTest";
 import { EmailPreview } from "./components/EmailPreview";
-import { useState } from "react";
 
 export const TestEmailDialog = ({
   template,
@@ -37,9 +36,9 @@ export const TestEmailDialog = ({
     recordType,
     setRecordType,
     error,
+    mode,
+    setMode
   } = useEmailTest(template);
-
-  const [mode, setMode] = useState<"record" | "custom">("record");
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

@@ -1,218 +1,190 @@
 
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import type { Record, EmailData, RecordType } from "../types/emailTest";
-import type { EmailTemplate } from "@/types/email";
+import { EmailTemplate } from "@/types/email";
+import { RecordType } from "../types/emailTest";
 
 export const useEmailTest = (template: EmailTemplate) => {
   const { toast } = useToast();
+  const [customEmail, setCustomEmail] = useState<string>("");
   const [selectedRecordId, setSelectedRecordId] = useState<string>("");
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [records, setRecords] = useState<any[]>([]);
+  const [isLoadingRecords, setIsLoadingRecords] = useState(true);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [recordType, setRecordType] = useState<RecordType>("all");
+  const [previewData, setPreviewData] = useState<any>(null);
 
-  const { data: records = [], isLoading } = useQuery({
-    queryKey: ["billing-records", template.type, template.subtype, recordType],
-    queryFn: async () => {
-      if (template.type === "employees") {
-        const { data, error } = await supabase
-          .from("employees")
-          .select("id, name, email")
-          .eq("status", "active")
-          .order("name");
-        if (error) throw error;
-        return data as Record[];
-      } 
-      
-      // For client templates
-      let recurringRecords: Record[] = [];
-      let oneTimeRecords: Record[] = [];
-      
-      // Fetch recurring billing records if needed
-      if (recordType === "all" || recordType === "recurring") {
-        console.log("Fetching recurring records");
-        const { data: recurringData, error: recurringError } = await supabase
-          .from("recurring_billing")
-          .select(`
-            id,
-            amount,
-            description,
-            due_day,
-            installments,
-            current_installment,
-            payment_method,
-            clients (
-              id,
-              name,
-              email,
-              partner_name
-            )
-          `)
-          .eq("status", "pending")
-          .order("created_at", { ascending: false });
-          
-        if (recurringError) throw recurringError;
-        
-        recurringRecords = (recurringData || []).map(record => ({
-          ...record,
-          client: record.clients
-        }));
-        
-        console.log("Recurring records fetched:", recurringRecords.length);
-        console.log("Recurring records:", recurringRecords);
-      }
-      
-      // Fetch one-time payment records if needed
-      if (recordType === "all" || recordType === "oneTime") {
-        console.log("Fetching one-time records");
-        const { data: paymentsData, error: paymentsError } = await supabase
-          .from("payments")
-          .select(`
-            id,
-            amount,
-            description,
-            due_date,
-            payment_method,
-            status,
-            clients (
-              id,
-              name,
-              email,
-              partner_name
-            )
-          `)
-          .is("installment_number", null)  // Ensure we only get one-time payments
-          .not("status", "in", '("cancelled")')  // Exclude cancelled payments
-          .order("created_at", { ascending: false });
-          
-        if (paymentsError) throw paymentsError;
-        
-        oneTimeRecords = (paymentsData || []).map(record => ({
-          ...record,
-          client: record.clients
-        }));
-        
-        console.log("One-time records fetched:", oneTimeRecords.length);
-        console.log("One-time records:", oneTimeRecords);
-      }
-      
-      // Return the appropriate records based on filter
-      if (recordType === "recurring") {
-        return recurringRecords;
-      } else if (recordType === "oneTime") {
-        return oneTimeRecords;
-      } else {
-        return [...recurringRecords, ...oneTimeRecords];
-      }
-    },
-  });
-
-  // Reset selected record when record type changes
   useEffect(() => {
-    setSelectedRecordId("");
-  }, [recordType]);
+    fetchRecords();
+  }, [template, recordType]);
+
+  useEffect(() => {
+    if (selectedRecordId && records.length > 0) {
+      const record = records.find(r => r.id === selectedRecordId);
+      if (record) {
+        setSelectedRecord(record);
+        updatePreviewData(record);
+      }
+    }
+  }, [selectedRecordId, records]);
+
+  const fetchRecords = async () => {
+    setIsLoadingRecords(true);
+    setError(null);
+    
+    try {
+      let data: any[] = [];
+      
+      if (template.type === 'clients') {
+        if (template.subtype === 'recurring' || recordType === 'recurring' || recordType === 'all') {
+          const { data: recurringData, error: recurringError } = await supabase
+            .from('recurring_billings')
+            .select(`
+              id, amount, due_day, description, installments, current_installment, payment_method,
+              client:client_id (id, name, email, partner_name)
+            `)
+            .limit(50);
+          
+          if (recurringError) throw recurringError;
+          
+          data = [...data, ...recurringData];
+        }
+        
+        if (template.subtype === 'oneTime' || recordType === 'oneTime' || recordType === 'all') {
+          const { data: paymentData, error: paymentError } = await supabase
+            .from('payments')
+            .select(`
+              id, amount, due_date, description, payment_method, status,
+              client:client_id (id, name, email, partner_name)
+            `)
+            .order('due_date', { ascending: false })
+            .limit(50);
+          
+          if (paymentError) throw paymentError;
+          
+          data = [...data, ...paymentData];
+        }
+      } else if (template.type === 'employees') {
+        const { data: employeeData, error: employeeError } = await supabase
+          .from('employees')
+          .select('id, name, email')
+          .limit(50);
+        
+        if (employeeError) throw employeeError;
+        
+        data = [...data, ...employeeData];
+      }
+      
+      setRecords(data);
+    } catch (err: any) {
+      console.error('Error fetching records:', err);
+      setError(err.message || 'Failed to load records');
+    } finally {
+      setIsLoadingRecords(false);
+    }
+  };
+
+  const updatePreviewData = (record: any) => {
+    if (template.type === 'clients') {
+      if ('client' in record) {
+        // Payment or Recurring Billing
+        setPreviewData({
+          clientName: record.client?.name || "Cliente",
+          responsibleName: record.client?.partner_name || "Responsável",
+          amount: record.amount || 0,
+          dueDay: record.due_day || (record.due_date ? new Date(record.due_date).getDate() : 1),
+          dueDate: record.due_date,
+          description: record.description || "Serviço",
+          totalInstallments: record.installments || record.total_installments || 1,
+          currentInstallment: record.current_installment || 1,
+          paymentMethod: record.payment_method || "pix"
+        });
+      }
+    } else {
+      // Employee
+      setPreviewData({
+        employeeName: record.name || "Funcionário",
+        employeeEmail: record.email || "email@example.com",
+      });
+    }
+  };
+
+  const handleRecordSelect = (id: string) => {
+    setSelectedRecordId(id);
+  };
 
   const handleTestEmail = async () => {
-    if (!selectedRecordId) {
-      toast({
-        title: "Selecione um registro",
-        description: "Por favor, selecione um registro para enviar o email de teste.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
     try {
-      const record = records.find(r => r.id === selectedRecordId);
-      if (!record) throw new Error("Registro não encontrado");
-
-      const emailData = prepareEmailData(record, template);
-      console.log("Sending email with data:", emailData);
-
-      const { error } = await supabase.functions.invoke('send-email', {
+      setIsSendingEmail(true);
+      setError(null);
+      
+      if (mode === 'record' && !selectedRecordId) {
+        throw new Error('Please select a record first');
+      }
+      
+      if (mode === 'custom' && !customEmail) {
+        throw new Error('Please enter an email address');
+      }
+      
+      const emailData: any = {
+        templateId: template.id,
+        type: template.type,
+        subtype: template.subtype
+      };
+      
+      if (mode === 'record') {
+        emailData.recordId = selectedRecordId;
+      } else {
+        emailData.to = customEmail;
+        emailData.testData = true;
+      }
+      
+      const { data, error: apiError } = await supabase.functions.invoke('send-email', {
         body: emailData
       });
-
-      if (error) throw error;
-
+      
+      if (apiError) throw apiError;
+      
       toast({
-        title: "Email enviado",
-        description: "O email de teste foi enviado com sucesso.",
+        title: 'Email enviado com sucesso',
+        description: 'O email de teste foi enviado para o destinatário especificado.',
       });
-
-      return true;
-    } catch (error: any) {
-      console.error('Error sending test email:', error);
+      
+      return data;
+    } catch (err: any) {
+      setError(err.message || 'Falha ao enviar o email de teste');
       toast({
-        title: "Erro ao enviar email",
-        description: error.message || "Não foi possível enviar o email de teste.",
-        variant: "destructive",
+        title: 'Erro ao enviar email',
+        description: err.message || 'Ocorreu um erro ao enviar o email de teste.',
+        variant: 'destructive',
       });
-      return false;
+      throw err;
+    } finally {
+      setIsSendingEmail(false);
     }
   };
+
+  const [mode, setMode] = useState<'record' | 'custom'>('record');
 
   return {
+    customEmail,
+    setCustomEmail,
     selectedRecordId,
     setSelectedRecordId,
+    selectedRecord,
+    records,
+    isLoadingRecords,
+    isSendingEmail,
+    handleRecordSelect,
+    handleTestEmail,
+    error,
+    previewData,
     recordType,
     setRecordType,
-    records,
-    isLoading,
-    handleTestEmail,
+    mode,
+    setMode
   };
-};
-
-const prepareEmailData = (record: Record, template: EmailTemplate): EmailData => {
-  let emailData: EmailData = {
-    to: 'client' in record ? record.client.email || '' : record.email,
-    subject: template.subject,
-    content: template.content,
-  };
-
-  if (!('client' in record)) {
-    // Employee case
-    emailData = {
-      ...emailData,
-      nome_funcionario: record.name,
-    };
-    
-    // Add employee specific variables based on template subtype
-    if (template.subtype === 'invoice') {
-      emailData.valor_nota = 0; // Default value, would be replaced with actual data
-      emailData.data_nota = new Date().toISOString().split('T')[0]; // Default to today
-    } else if (template.subtype === 'hours') {
-      emailData.total_horas = 0; // Default value
-      emailData.periodo = `${new Date().getMonth() + 1}/${new Date().getFullYear()}`; // Current month/year
-    }
-  } else if ('due_day' in record) {
-    // Recurring billing case
-    const dueDate = new Date();
-    dueDate.setDate(record.due_day);
-
-    emailData = {
-      ...emailData,
-      nome_cliente: record.client.name,
-      nome_responsavel: record.client.partner_name || 'Responsável',
-      valor_cobranca: record.amount,
-      data_vencimento: dueDate.toISOString(),
-      plano_servico: record.description,
-      numero_parcela: record.current_installment,
-      total_parcelas: record.installments,
-      forma_pagamento: record.payment_method,
-    };
-  } else {
-    // One-time payment case
-    emailData = {
-      ...emailData,
-      nome_cliente: record.client.name,
-      nome_responsavel: record.client.partner_name || 'Responsável',
-      valor_cobranca: record.amount,
-      data_vencimento: record.due_date,
-      descricao_servico: record.description,
-      forma_pagamento: record.payment_method,
-    };
-  }
-
-  return emailData;
 };

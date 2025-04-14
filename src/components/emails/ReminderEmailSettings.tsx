@@ -52,9 +52,9 @@ export const ReminderEmailSettings = () => {
           id,
           name,
           email,
-          payments(id, due_date, amount)
+          payments(id, due_date, amount, status)
         `)
-        .eq('status', 'unpaid');
+        .eq('status', 'overdue');
       
       if (error) {
         console.error("Error fetching overdue clients:", error);
