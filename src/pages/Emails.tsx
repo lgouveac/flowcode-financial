@@ -1,4 +1,3 @@
-
 import { PlusIcon, Upload } from "lucide-react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -59,7 +58,7 @@ export default function Emails() {
         <TabsContent value="templates" className="mt-4">
           <div>
             <Tabs defaultValue="clients" onValueChange={(value) => setCurrentTemplateType(value as 'clients' | 'employees')}>
-              <TabsList className="grid grid-cols-2 w-full max-w-[400px] mx-auto mb-6">
+              <TabsList className="grid grid-cols-2 w-full max-w-[400px] ml-0 mb-6">
                 <TabsTrigger value="clients">
                   <span className="hidden sm:inline">Templates de Cliente</span>
                   <span className="sm:hidden">Cliente</span>
