@@ -1,9 +1,11 @@
-
 import { useState, useEffect } from "react";
 import { CashFlowChart } from "./cash-flow/CashFlowChart";
 import { CashFlowTable } from "./cash-flow/CashFlowTable";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import { EstimatedExpensesDialog } from "./cash-flow/EstimatedExpensesDialog";
 
 interface CashFlowProps {
   showChart?: boolean;
@@ -14,6 +16,7 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
+  const [showEstimatedExpensesDialog, setShowEstimatedExpensesDialog] = useState(false);
   
   // Use the selectedValues to create a custom period filter
   const [customPeriod, setCustomPeriod] = useState(period);
@@ -158,6 +161,18 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
 
   return (
     <div className="space-y-4 sm:space-y-6 md:space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Fluxo de Caixa</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowEstimatedExpensesDialog(true)}
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          Despesas Estimadas
+        </Button>
+      </div>
+      
       {showChart ? (
         <>
           <CashFlowChart 
@@ -195,6 +210,13 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
           </div>
         </>
       )}
+      
+      {/* Estimated Expenses Dialog */}
+      <EstimatedExpensesDialog
+        open={showEstimatedExpensesDialog}
+        onClose={() => setShowEstimatedExpensesDialog(false)}
+        onSuccess={onNewCashFlow}
+      />
     </div>
   );
 };

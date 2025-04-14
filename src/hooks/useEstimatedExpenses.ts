@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { EmployeeMonthlyValue } from "@/types/employee";
+import { EmployeeMonthlyValue, EstimatedExpense } from "@/types/employee";
 import { useState, useEffect } from "react";
 
 export interface EstimatedExpenses {
@@ -10,7 +10,8 @@ export interface EstimatedExpenses {
   workerExpensesChange: string;
   totalEstimatedExpenses: number;
   totalEstimatedExpensesChange: string;
-  // Future fields for additional fixed expenses
+  otherFixedExpenses: number;
+  otherFixedExpensesChange: string;
 }
 
 export const useEstimatedExpenses = (period: string = 'current') => {
@@ -20,6 +21,8 @@ export const useEstimatedExpenses = (period: string = 'current') => {
     workerExpensesChange: "0%",
     totalEstimatedExpenses: 0,
     totalEstimatedExpensesChange: "0%",
+    otherFixedExpenses: 0,
+    otherFixedExpensesChange: "0%"
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -113,11 +116,38 @@ export const useEstimatedExpenses = (period: string = 'current') => {
 
         if (previousWorkerError) throw previousWorkerError;
 
+        // Fetch other fixed expenses for current period
+        const { data: currentFixedExpenses, error: currentFixedError } = await supabase
+          .from('estimated_expenses')
+          .select('*')
+          .eq('is_recurring', true)
+          .or(`start_date.lte.${dates.end},start_date.is.null`)
+          .or(`end_date.gte.${dates.start},end_date.is.null`);
+
+        if (currentFixedError) throw currentFixedError;
+
+        // Fetch other fixed expenses for previous period
+        const { data: previousFixedExpenses, error: previousFixedError } = await supabase
+          .from('estimated_expenses')
+          .select('*')
+          .eq('is_recurring', true)
+          .or(`start_date.lte.${dates.compareEnd},start_date.is.null`)
+          .or(`end_date.gte.${dates.compareStart},end_date.is.null`);
+
+        if (previousFixedError) throw previousFixedError;
+
         // Calculate worker expenses
         const currentWorkerExpenses = currentWorkerValues?.reduce((sum, item) => 
           sum + Number(item.amount), 0) || 0;
         
         const previousWorkerExpenses = previousWorkerValues?.reduce((sum, item) => 
+          sum + Number(item.amount), 0) || 0;
+
+        // Calculate other fixed expenses
+        const currentOtherExpenses = currentFixedExpenses?.reduce((sum, item) => 
+          sum + Number(item.amount), 0) || 0;
+          
+        const previousOtherExpenses = previousFixedExpenses?.reduce((sum, item) => 
           sum + Number(item.amount), 0) || 0;
 
         // Calculate change percentages
@@ -126,14 +156,24 @@ export const useEstimatedExpenses = (period: string = 'current') => {
           previousWorkerExpenses
         );
 
-        // Currently total estimated expenses is just worker expenses
-        // In the future, we'll add other fixed expenses here
-        const totalEstimatedExpenses = currentWorkerExpenses;
-        const totalEstimatedExpensesChange = workerExpensesChange;
+        const otherFixedExpensesChange = calculatePercentageChange(
+          currentOtherExpenses,
+          previousOtherExpenses
+        );
+
+        // Calculate total estimated expenses
+        const totalEstimatedExpenses = currentWorkerExpenses + currentOtherExpenses;
+        const previousTotalEstimatedExpenses = previousWorkerExpenses + previousOtherExpenses;
+        const totalEstimatedExpensesChange = calculatePercentageChange(
+          totalEstimatedExpenses,
+          previousTotalEstimatedExpenses
+        );
 
         setEstimatedExpenses({
           workerExpenses: currentWorkerExpenses,
           workerExpensesChange,
+          otherFixedExpenses: currentOtherExpenses,
+          otherFixedExpensesChange,
           totalEstimatedExpenses,
           totalEstimatedExpensesChange
         });
@@ -141,6 +181,8 @@ export const useEstimatedExpenses = (period: string = 'current') => {
         console.log('Estimated expenses calculated:', {
           workerExpenses: currentWorkerExpenses,
           workerExpensesChange,
+          otherFixedExpenses: currentOtherExpenses,
+          otherFixedExpensesChange,
           totalEstimatedExpenses,
           totalEstimatedExpensesChange
         });
