@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
@@ -8,10 +9,17 @@ export interface EstimatedExpenses {
   totalEstimatedExpensesChange: string;
 }
 
-// Create a refetch function as a singleton
-let refetchEstimatedExpenses: (() => void) | null = null;
+// Define a type for the hook's return value including the refetch function
+export interface UseEstimatedExpensesResult {
+  estimatedExpenses: EstimatedExpenses;
+  isLoading: boolean;
+  refetchEstimatedExpenses: () => void;
+}
 
-export const useEstimatedExpenses = (period: string = 'current') => {
+// Create a refetch function as a singleton
+let globalRefetchFunction: (() => void) | null = null;
+
+export const useEstimatedExpenses = (period: string = 'current'): UseEstimatedExpensesResult => {
   const { toast } = useToast();
   const [estimatedExpenses, setEstimatedExpenses] = useState<EstimatedExpenses>({
     totalEstimatedExpenses: 0,
@@ -147,19 +155,29 @@ export const useEstimatedExpenses = (period: string = 'current') => {
 
   useEffect(() => {
     fetchEstimatedExpenses();
-    // Store the refetch function
-    refetchEstimatedExpenses = fetchEstimatedExpenses;
+    // Store the refetch function globally
+    globalRefetchFunction = fetchEstimatedExpenses;
     
     return () => {
       // Cleanup when component unmounts
-      if (refetchEstimatedExpenses === fetchEstimatedExpenses) {
-        refetchEstimatedExpenses = null;
+      if (globalRefetchFunction === fetchEstimatedExpenses) {
+        globalRefetchFunction = null;
       }
     };
   }, [period]);
 
-  // Expose the refetch function
-  useEstimatedExpenses.refetchEstimatedExpenses = refetchEstimatedExpenses;
+  return { 
+    estimatedExpenses, 
+    isLoading,
+    refetchEstimatedExpenses: fetchEstimatedExpenses
+  };
+};
 
-  return { estimatedExpenses, isLoading };
+// Export the global refetch function
+export const refetchEstimatedExpenses = () => {
+  if (globalRefetchFunction) {
+    globalRefetchFunction();
+  } else {
+    console.warn('refetchEstimatedExpenses was called before the hook was initialized');
+  }
 };
