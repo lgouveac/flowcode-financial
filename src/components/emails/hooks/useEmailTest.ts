@@ -30,6 +30,7 @@ export const useEmailTest = (template: EmailTemplate) => {
       
       // Fetch recurring billing records if needed
       if (recordType === "all" || recordType === "recurring") {
+        console.log("Fetching recurring records");
         const { data: recurringData, error: recurringError } = await supabase
           .from("recurring_billing")
           .select(`
@@ -41,6 +42,7 @@ export const useEmailTest = (template: EmailTemplate) => {
             current_installment,
             payment_method,
             clients (
+              id,
               name,
               email,
               partner_name
@@ -55,10 +57,14 @@ export const useEmailTest = (template: EmailTemplate) => {
           ...record,
           client: record.clients
         }));
+        
+        console.log("Recurring records fetched:", recurringRecords.length);
+        console.log("Recurring records:", recurringRecords);
       }
       
       // Fetch one-time payment records if needed
       if (recordType === "all" || recordType === "oneTime") {
+        console.log("Fetching one-time records");
         const { data: paymentsData, error: paymentsError } = await supabase
           .from("payments")
           .select(`
@@ -68,12 +74,13 @@ export const useEmailTest = (template: EmailTemplate) => {
             due_date,
             payment_method,
             clients (
+              id,
               name,
               email,
               partner_name
             )
           `)
-          .eq("status", "pending")
+          .in("status", ["pending", "awaiting_invoice", "billed"])
           .order("created_at", { ascending: false });
           
         if (paymentsError) throw paymentsError;
@@ -82,6 +89,9 @@ export const useEmailTest = (template: EmailTemplate) => {
           ...record,
           client: record.clients
         }));
+        
+        console.log("One-time records fetched:", oneTimeRecords.length);
+        console.log("One-time records:", oneTimeRecords);
       }
       
       // Return the appropriate records based on filter
