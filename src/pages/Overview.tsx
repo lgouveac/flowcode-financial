@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -141,6 +142,13 @@ export const Overview = () => {
     setEstimatedExpensesOpen(true);
   };
 
+  // Calculate the total expected revenue (current revenue + expected future revenue)
+  const totalExpectedRevenue = (metrics.totalRevenue || 0) + (metrics.expectedRevenue || 0);
+  
+  // Calculate percentage change for total expected revenue
+  // This could be calculated against the previous period's total expected revenue if available
+  const totalExpectedRevenueChange = metrics.revenueChange || "0%";
+
   // Main stats
   const primaryStats = [{
     title: "Receita Total",
@@ -164,13 +172,19 @@ export const Overview = () => {
     description: "Últimos 30 dias",
   }];
 
-  // Estimates section
+  // Estimates section with new Total Expected Revenue card
   const estimateStats = [{
     title: "Faturamento Esperado",
     value: formatCurrency(metrics.expectedRevenue || 0),
     change: metrics.expectedRevenueChange || "0%",
     description: "Recebimentos pendentes",
     onClick: handleExpectedRevenueClick,
+    icon: <FileText className="h-4 w-4 text-muted-foreground" />,
+  }, {
+    title: "Faturamento Total Esperado",
+    value: formatCurrency(totalExpectedRevenue),
+    change: totalExpectedRevenueChange,
+    description: "Receita atual + pendente",
     icon: <FileText className="h-4 w-4 text-muted-foreground" />,
   }, {
     title: "Despesa Estimada",
@@ -279,7 +293,7 @@ export const Overview = () => {
           <BarChart3 className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-xl font-semibold">Estimativas</h2>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {estimateStats.map((stat, i) => <motion.div key={stat.title} initial={{
             opacity: 0,
             y: 20
