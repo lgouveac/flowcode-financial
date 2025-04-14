@@ -17,6 +17,10 @@ export const getRecordLabel = (record: Record): string => {
   } else {
     // One-time payment
     const dueDate = new Date(record.due_date).toLocaleDateString('pt-BR');
-    return `${record.client.name} - ${record.description} (${amount}) - Venc: ${dueDate} [Pontual]`;
+    const statusLabel = record.status === 'overdue' ? '[Atrasado]' : 
+                         record.status === 'paid' ? '[Pago]' : 
+                         record.status === 'pending' ? '[Pendente]' : '';
+    
+    return `${record.client.name} - ${record.description} (${amount}) - Venc: ${dueDate} [Pontual] ${statusLabel}`;
   }
 };

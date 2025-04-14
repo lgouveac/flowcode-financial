@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,6 +73,7 @@ export const useEmailTest = (template: EmailTemplate) => {
             description,
             due_date,
             payment_method,
+            status,
             clients (
               id,
               name,
@@ -80,7 +81,8 @@ export const useEmailTest = (template: EmailTemplate) => {
               partner_name
             )
           `)
-          .in("status", ["pending", "awaiting_invoice", "billed"])
+          .is("installment_number", null)  // Ensure we only get one-time payments
+          .not("status", "in", '("cancelled")')  // Exclude cancelled payments
           .order("created_at", { ascending: false });
           
         if (paymentsError) throw paymentsError;
@@ -104,6 +106,11 @@ export const useEmailTest = (template: EmailTemplate) => {
       }
     },
   });
+
+  // Reset selected record when record type changes
+  useEffect(() => {
+    setSelectedRecordId("");
+  }, [recordType]);
 
   const handleTestEmail = async () => {
     if (!selectedRecordId) {

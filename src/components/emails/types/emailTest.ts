@@ -28,6 +28,7 @@ export interface Payment {
   description: string;
   due_date: string;
   payment_method: string;
+  status: string;
   client: {
     name: string;
     email?: string;

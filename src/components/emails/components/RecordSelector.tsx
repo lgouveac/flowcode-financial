@@ -40,6 +40,8 @@ export const RecordSelector = ({
   const getPlaceholder = () => {
     if (isLoading) return "Carregando...";
     
+    if (records.length === 0) return "Nenhum registro disponível";
+    
     if (template.type === "employees") 
       return "Selecione um funcionário";
     
