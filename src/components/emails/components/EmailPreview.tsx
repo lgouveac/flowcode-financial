@@ -1,5 +1,4 @@
-
-import React from "react";
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { EmailTemplate } from "@/types/email";

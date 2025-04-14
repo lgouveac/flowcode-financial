@@ -41,7 +41,7 @@ export const useEmailTest = (template: EmailTemplate) => {
       if (template.type === 'clients') {
         if (template.subtype === 'recurring' || recordType === 'recurring' || recordType === 'all') {
           const { data: recurringData, error: recurringError } = await supabase
-            .from('recurring_billings')
+            .from('recurring_billing') // Fixed: 'recurring_billings' -> 'recurring_billing'
             .select(`
               id, amount, due_day, description, installments, current_installment, payment_method,
               client:client_id (id, name, email, partner_name)

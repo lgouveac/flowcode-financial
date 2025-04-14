@@ -1,4 +1,5 @@
-
+import * as React from "react";
+import { useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Record, RecordType } from "../types/emailTest";
@@ -6,7 +7,6 @@ import { getRecordLabel } from "../utils/recordUtils";
 import { EmailTemplate } from "@/types/email";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ListFilter } from "lucide-react";
-import { useEffect } from "react";
 
 interface RecordSelectorProps {
   selectedRecordId: string;
@@ -18,7 +18,7 @@ interface RecordSelectorProps {
   onRecordTypeChange: (type: RecordType) => void;
 }
 
-export const RecordSelector = ({
+export const RecordSelector: React.FC<RecordSelectorProps> = ({
   selectedRecordId,
   onRecordSelect,
   records,
@@ -26,7 +26,7 @@ export const RecordSelector = ({
   template,
   recordType,
   onRecordTypeChange,
-}: RecordSelectorProps) => {
+}) => {
   // Only show type filter for client templates
   const showTypeFilter = template.type === "clients";
 
