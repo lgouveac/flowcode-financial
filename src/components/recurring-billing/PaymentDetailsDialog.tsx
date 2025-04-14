@@ -121,7 +121,7 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
             partner_name
           )
         `)
-        .eq('description', `LIKE %${recurringBillingId}%`)
+        .ilike('description', `%${recurringBillingId}%`)
         .order('installment_number', { ascending: true });
       
       if (error) throw error;
@@ -163,7 +163,7 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
   }, [open, initialPayment]);
 
   // Handle payment status update
-  const handleStatusChange = async (paymentId: string, newStatus: string) => {
+  const handleStatusChange = async (paymentId: string, newStatus: "pending" | "billed" | "awaiting_invoice" | "paid" | "overdue" | "cancelled" | "partially_paid") => {
     try {
       const { error } = await supabase
         .from('payments')
@@ -175,7 +175,7 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
       // Update local state
       setRelatedPayments(prevPayments => 
         prevPayments.map(p => 
-          p.id === paymentId ? { ...p, status: newStatus as any } : p
+          p.id === paymentId ? { ...p, status: newStatus } : p
         )
       );
       
@@ -388,7 +388,9 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
                       <td className="py-3 px-4 text-sm">
                         <Select
                           value={payment.status}
-                          onValueChange={(value) => handleStatusChange(payment.id, value)}
+                          onValueChange={(value: "pending" | "billed" | "awaiting_invoice" | "paid" | "overdue" | "cancelled" | "partially_paid") => 
+                            handleStatusChange(payment.id, value)
+                          }
                         >
                           <SelectTrigger className="w-[140px]">
                             <SelectValue>{getStatusBadge(payment.status)}</SelectValue>
