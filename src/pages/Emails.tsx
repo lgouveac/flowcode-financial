@@ -1,16 +1,15 @@
 
+import { PlusIcon, Upload } from "lucide-react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemplateSection } from "@/components/emails/TemplateSection";
 import { Button } from "@/components/ui/button";
-import { TestEmailDialog } from "@/components/emails/TestEmailDialog";
-import { EmployeeEmailSettings } from "@/components/emails/EmployeeEmailSettings";
 import { TestEmployeeNotificationButton } from "@/components/emails/TestEmployeeNotificationButton";
+import { ReminderEmailSettings } from "@/components/emails/ReminderEmailSettings";
 import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsManager";
 import { EmailTemplate } from "@/types/email";
 import { createTemplate } from "@/services/templateService";
 import { useToast } from "@/hooks/use-toast";
-import { ReminderEmailSettings } from "@/components/emails/ReminderEmailSettings";
 
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
@@ -49,7 +48,7 @@ export default function Emails() {
       </div>
 
       <Tabs defaultValue="templates" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-[600px] mx-auto mb-4">
+        <TabsList className="grid grid-cols-3 w-full max-w-[600px] ml-0">
           <TabsTrigger value="templates">Templates de Email</TabsTrigger>
           <TabsTrigger value="reminders">Lembretes de Pagamento</TabsTrigger>
           <TabsTrigger value="cc-recipients">Destinatários CC</TabsTrigger>
@@ -104,3 +103,4 @@ export default function Emails() {
     </div>
   );
 };
+
