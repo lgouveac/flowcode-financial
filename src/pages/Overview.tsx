@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -114,6 +115,9 @@ export const Overview = () => {
       }
       
       setPendingPayments(data || []);
+      
+      // Log data to help with debugging
+      console.log('Pending payments data:', data);
     } catch (error) {
       console.error("Error fetching pending payments:", error);
     } finally {

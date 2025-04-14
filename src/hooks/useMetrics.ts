@@ -185,8 +185,8 @@ export const useMetrics = (period: string = 'current') => {
         // Buscar faturamento esperado (pagamentos pendentes) - FILTER BY SELECTED PERIOD
         const { data: expectedPayments, error: expectedPaymentsError } = await supabase
           .from('payments')
-          .select('amount')
-          .in('status', ['pending', 'billed', 'awaiting_invoice'])
+          .select('amount, paid_amount, status')
+          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid'])
           .gte('due_date', dates.start)
           .lt('due_date', dates.end);
 
@@ -195,8 +195,8 @@ export const useMetrics = (period: string = 'current') => {
         // Buscar faturamento esperado (recorrentes) - FILTER BY SELECTED PERIOD
         const { data: expectedRecurring, error: expectedRecurringError } = await supabase
           .from('recurring_billing')
-          .select('amount, due_day')
-          .in('status', ['pending', 'billed', 'awaiting_invoice']);
+          .select('amount, due_day, status')
+          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid']);
 
         if (expectedRecurringError) throw expectedRecurringError;
 
@@ -220,8 +220,8 @@ export const useMetrics = (period: string = 'current') => {
         // Buscar faturamento esperado do período anterior (pagamentos pontuais)
         const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
           .from('payments')
-          .select('amount')
-          .in('status', ['pending', 'billed', 'awaiting_invoice'])
+          .select('amount, paid_amount, status')
+          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid'])
           .gte('due_date', dates.compareStart)
           .lt('due_date', dates.compareEnd);
 
@@ -278,17 +278,34 @@ export const useMetrics = (period: string = 'current') => {
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
         // Calcular faturamento esperado atual (only count payments within the selected period)
+        // Correctly handle partially paid payments by subtracting paid_amount from amount
         const currentExpectedPaymentsTotal = expectedPayments
-          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          ?.reduce((sum, item) => {
+            // For partially paid payments, only count the remaining amount
+            if (item.status === 'partially_paid' && item.paid_amount) {
+              return sum + (Number(item.amount) - Number(item.paid_amount));
+            }
+            return sum + Number(item.amount);
+          }, 0) || 0;
         
         const currentExpectedRecurringTotal = filteredRecurring
-          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          ?.reduce((sum, item) => {
+            // For now, we don't have partially paid handling for recurring payments
+            // But we can add it in the future if needed
+            return sum + Number(item.amount);
+          }, 0) || 0;
         
         const currentExpectedRevenue = currentExpectedPaymentsTotal + currentExpectedRecurringTotal;
 
-        // Calcular faturamento esperado anterior
+        // Calcular faturamento esperado anterior (with partially paid handling)
         const previousExpectedPaymentsTotal = previousExpectedPayments
-          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+          ?.reduce((sum, item) => {
+            // For partially paid payments, only count the remaining amount
+            if (item.status === 'partially_paid' && item.paid_amount) {
+              return sum + (Number(item.amount) - Number(item.paid_amount));
+            }
+            return sum + Number(item.amount);
+          }, 0) || 0;
 
         // Filter previous recurring payments the same way
         const previousFilteredRecurring = expectedRecurring?.filter(item => {
@@ -311,6 +328,13 @@ export const useMetrics = (period: string = 'current') => {
 
         const currentNetProfit = currentRevenue - currentExpenses;
         const previousNetProfit = previousRevenue - previousExpenses;
+
+        console.log('Expected revenue calculation:', {
+          payments: expectedPayments,
+          paymentTotal: currentExpectedPaymentsTotal,
+          recurringTotal: currentExpectedRecurringTotal,
+          total: currentExpectedRevenue
+        });
 
         setMetrics({
           totalRevenue: currentRevenue,
