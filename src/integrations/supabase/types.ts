@@ -391,6 +391,42 @@ export type Database = {
         }
         Relationships: []
       }
+      estimated_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string | null
+          end_date: string | null
+          id: string
+          is_recurring: boolean
+          name: string
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_recurring?: boolean
+          name: string
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          is_recurring?: boolean
+          name?: string
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       global_settings: {
         Row: {
           created_at: string | null
