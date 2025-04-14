@@ -1,188 +1,166 @@
 
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmailTemplate } from "@/types/email";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
-import { Clock, Calendar, RotateCcw } from "lucide-react";
+import { TestEmailDialog } from "./TestEmailDialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle } from "lucide-react";
 
-interface ReminderSettings {
-  id: number;
-  notification_time: string;
-  days_interval: number;
-  active: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export const ReminderEmailSettings = () => {
+export function ReminderEmailSettings() {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-  const [settings, setSettings] = useState<ReminderSettings>({
-    id: 1,
-    notification_time: "09:00",
-    days_interval: 7,
-    active: true
-  });
+  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [testEmailOpen, setTestEmailOpen] = useState(false);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      setIsLoading(true);
+    async function fetchTemplates() {
       try {
-        // Using direct call to the stored procedure
-        const { data, error } = await supabase.rpc('get_payment_reminder_settings');
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('email_templates')
+          .select('*')
+          .eq('type', 'clients')
+          .eq('subtype', 'reminder');
 
         if (error) throw error;
         
         if (data) {
-          // Parse the JSONB result from the function
-          const parsedData = data as any;
-          setSettings({
-            id: parsedData.id || 1,
-            notification_time: (parsedData.notification_time || "09:00").substring(0, 5),
-            days_interval: parsedData.days_interval || 7,
-            active: parsedData.active === true
-          });
+          setTemplates(data as EmailTemplate[]);
+          // Set the default template as selected, if any
+          const defaultTemplate = data.find(t => t.is_default);
+          if (defaultTemplate) {
+            setSelectedTemplate(defaultTemplate as EmailTemplate);
+          } else if (data.length > 0) {
+            setSelectedTemplate(data[0] as EmailTemplate);
+          }
         }
-      } catch (error: any) {
-        console.error("Error fetching reminder settings:", error);
+      } catch (error) {
+        console.error('Error fetching reminder templates:', error);
         toast({
-          title: "Erro ao carregar configurações",
-          description: "Não foi possível carregar as configurações de lembretes. Usando valores padrão.",
+          title: "Erro ao carregar templates",
+          description: "Não foi possível carregar os templates de lembrete",
           variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
-    };
+    }
 
-    fetchSettings();
+    fetchTemplates();
   }, [toast]);
 
-  const handleSaveSettings = async () => {
+  const handleTemplateSelect = (template: EmailTemplate) => {
+    setSelectedTemplate(template);
+  };
+
+  const handleSendTestEmail = () => {
+    if (selectedTemplate) {
+      setTestEmailOpen(true);
+    }
+  };
+
+  const handleTriggerReminders = async () => {
     try {
-      // Using direct call to the stored procedure
-      const { error } = await supabase.rpc('update_payment_reminder_settings', {
-        p_notification_time: settings.notification_time,
-        p_days_interval: settings.days_interval,
-        p_active: settings.active
+      const { data, error } = await supabase.functions.invoke('send-reminder-email', {
+        body: { }
       });
 
       if (error) throw error;
 
+      console.log('Reminder email response:', data);
+      
       toast({
-        title: "Configurações salvas",
-        description: "As configurações de lembretes foram salvas com sucesso.",
+        title: "Lembretes enviados",
+        description: "Os lembretes de pagamento foram enviados com sucesso!",
       });
-    } catch (error: any) {
-      console.error("Error saving settings:", error);
+    } catch (error) {
+      console.error('Error sending reminders:', error);
       toast({
-        title: "Erro ao salvar configurações",
-        description: `Ocorreu um erro ao salvar: ${error.message}`,
+        title: "Erro ao enviar lembretes",
+        description: "Não foi possível enviar os lembretes de pagamento",
         variant: "destructive",
       });
     }
   };
 
-  if (isLoading) {
-    return (
+  return (
+    <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Configurações de Lembretes</CardTitle>
-          <CardDescription>Carregando...</CardDescription>
+          <CardTitle>Lembretes de Pagamento</CardTitle>
+          <CardDescription>
+            Configure os lembretes automáticos para clientes com pagamentos em atraso
+          </CardDescription>
         </CardHeader>
-      </Card>
-    );
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Configurações de Lembretes de Pagamento</CardTitle>
-        <CardDescription>Configure quando e como os lembretes serão enviados para clientes com pagamentos atrasados</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="timing" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="timing">Agendamento</TabsTrigger>
-            <TabsTrigger value="status">Status</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="timing" className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="notification-time" className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Horário de Envio
-                </Label>
-                <Input
-                  id="notification-time"
-                  type="time"
-                  value={settings.notification_time}
-                  onChange={(e) => setSettings({...settings, notification_time: e.target.value})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="days-interval" className="flex items-center gap-2">
-                  <RotateCcw className="h-4 w-4" />
-                  Intervalo em Dias
-                </Label>
-                <Select 
-                  value={String(settings.days_interval)} 
-                  onValueChange={(value) => setSettings({...settings, days_interval: parseInt(value)})}
-                >
-                  <SelectTrigger id="days-interval">
-                    <SelectValue placeholder="Selecione o intervalo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 dia</SelectItem>
-                    <SelectItem value="3">3 dias</SelectItem>
-                    <SelectItem value="7">7 dias</SelectItem>
-                    <SelectItem value="15">15 dias</SelectItem>
-                    <SelectItem value="30">30 dias</SelectItem>
-                  </SelectContent>
-                </Select>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-10 w-1/2 mt-4" />
+            </div>
+          ) : templates.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-4 text-center space-y-4 border border-dashed rounded-md">
+              <AlertTriangle className="h-8 w-8 text-amber-500" />
+              <div>
+                <p className="font-medium">Nenhum template de lembrete encontrado</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Crie um template do tipo "Lembrete de Pagamento" na aba Templates de Email
+                </p>
               </div>
             </div>
-            
-            <div className="text-sm text-muted-foreground mt-2">
-              Com essas configurações, os lembretes serão enviados às <strong>{settings.notification_time}</strong> a cada <strong>{settings.days_interval} dias</strong> para clientes com pagamentos atrasados.
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="status" className="space-y-4 mt-4">
+          ) : (
             <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="active"
-                  checked={settings.active}
-                  onChange={(e) => setSettings({...settings, active: e.target.checked})}
-                  className="rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <Label htmlFor="active">Ativar envio automático de lembretes</Label>
+              <div>
+                <p className="text-sm font-medium mb-2">Templates disponíveis:</p>
+                {templates.length > 0 && (
+                  <Tabs defaultValue={selectedTemplate?.id || templates[0].id}>
+                    <TabsList className="w-full">
+                      {templates.map(template => (
+                        <TabsTrigger 
+                          key={template.id} 
+                          value={template.id}
+                          onClick={() => handleTemplateSelect(template)}
+                          className="flex-1"
+                        >
+                          {template.name}
+                          {template.is_default && <span className="ml-2 text-xs bg-green-100 text-green-800 px-1 rounded">Padrão</span>}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                )}
               </div>
               
-              <div className="text-sm text-muted-foreground">
-                {settings.active 
-                  ? "O sistema enviará lembretes automaticamente conforme configurado." 
-                  : "O envio automático de lembretes está desativado."}
+              <div className="flex justify-between mt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={handleSendTestEmail}
+                  disabled={!selectedTemplate}
+                >
+                  Testar Email
+                </Button>
+                <Button onClick={handleTriggerReminders}>
+                  Enviar Lembretes de Pagamento
+                </Button>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
-        
-        <div className="flex justify-end mt-6">
-          <Button onClick={handleSaveSettings}>
-            Salvar Configurações
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedTemplate && (
+        <TestEmailDialog
+          template={selectedTemplate}
+          open={testEmailOpen}
+          onClose={() => setTestEmailOpen(false)}
+        />
+      )}
+    </div>
   );
-};
+}

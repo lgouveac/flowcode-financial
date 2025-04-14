@@ -11,38 +11,25 @@ port = 54322
 shadow_port = 54320
 major_version = 15
 
-[realtime]
-enabled = true
-
 [studio]
 enabled = true
 port = 54323
-api_url = "http://127.0.0.1"
-
-[inbucket]
-enabled = true
-port = 54324
-
-[auth]
-enabled = true
-site_url = "http://127.0.0.1:5173"
+inbucket_port = 54324
 
 [storage]
 enabled = true
+file_size_limit = "50MiB"
 
-[functions.send-billing-email]
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["https://localhost:5173"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+
+[realtime]
+enabled = true
 
 [functions.send-reminder-email]
-
-[functions.trigger-reminder-emails]
-
-[[functions.trigger-reminder-emails.cron]]
-schedule = "*/5 * * * *"
-
-[[edge-functions.routes]]
-path = "api/send-reminder-email"
-function = "send-reminder-email"
-
-[[edge-functions.routes]]
-path = "api/trigger-reminder-emails"
-function = "trigger-reminder-emails"
+verify_jwt = false
