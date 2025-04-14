@@ -1,8 +1,8 @@
-
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMetrics } from "@/hooks/useMetrics";
+import { useEstimatedExpenses } from "@/hooks/useEstimatedExpenses";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/lib/supabase";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import type { Payment } from "@/types/payment";
+import { FileText, Calculator } from "lucide-react";
 
 export const Overview = () => {
   const [period, setPeriod] = useState("current");
@@ -19,6 +20,8 @@ export const Overview = () => {
     metrics,
     isLoading
   } = useMetrics(period);
+  
+  const { estimatedExpenses, isLoading: isLoadingEstimates } = useEstimatedExpenses(period);
   
   const [pendingPaymentsOpen, setPendingPaymentsOpen] = useState(false);
   const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
@@ -149,6 +152,12 @@ export const Overview = () => {
     change: metrics.expensesChange || "0%",
     description: period === "current" ? "Mês atual" : "Período selecionado",
   }, {
+    title: "Despesa Estimada",
+    value: formatCurrency(estimatedExpenses.totalEstimatedExpenses || 0),
+    change: estimatedExpenses.totalEstimatedExpensesChange || "0%",
+    description: "Funcionários e custos fixos",
+    icon: <Calculator className="h-4 w-4 text-muted-foreground" />,
+  }, {
     title: "Lucro Líquido",
     value: formatCurrency(metrics.netProfit || 0),
     change: metrics.profitChange || "0%",
@@ -217,7 +226,7 @@ export const Overview = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {stats.map((stat, i) => <motion.div key={stat.title} initial={{
         opacity: 0,
         y: 20
@@ -235,9 +244,10 @@ export const Overview = () => {
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
+                {stat.icon}
               </CardHeader>
               <CardContent>
-                {isLoading ? <div className="space-y-2">
+                {(isLoading || (stat.title === "Despesa Estimada" && isLoadingEstimates)) ? <div className="space-y-2">
                     <Skeleton className="h-8 w-[100px]" />
                     <Skeleton className="h-4 w-[60px]" />
                   </div> : <>
@@ -303,6 +313,31 @@ export const Overview = () => {
           }
         </div>
       </div>
+
+      {/* Worker Expenses Breakdown - New Section */}
+      {!isLoadingEstimates && estimatedExpenses.workerExpenses > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Detalhamento de Despesas Estimadas</h2>
+          <Alert className="bg-blue-50 dark:bg-blue-950/20">
+            <AlertTitle className="text-lg">Análise de Despesas Estimadas</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-4 mt-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <p className="font-medium">Despesas com Funcionários:</p>
+                  <p>{formatCurrency(estimatedExpenses.workerExpenses || 0)}</p>
+                  
+                  <div className="col-span-2 border-t border-blue-200 dark:border-blue-800 my-2"></div>
+                  
+                  <p className="font-medium text-lg">Total Despesas Estimadas:</p>
+                  <p className="text-lg font-bold text-blue-700 dark:text-blue-500">
+                    {formatCurrency(estimatedExpenses.totalEstimatedExpenses || 0)}
+                  </p>
+                </div>
+              </div>
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Profit Analysis Section */}
       <div className="space-y-4">
