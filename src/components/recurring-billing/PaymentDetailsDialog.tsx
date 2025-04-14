@@ -45,11 +45,18 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
   useEffect(() => {
     if (open && billingId) {
       fetchBillingDetails();
-      fetchPaymentsForBilling();
     }
   }, [open, billingId]);
 
+  // Add useEffect to fetch payments after billing details are loaded
+  useEffect(() => {
+    if (billingDetails && billingDetails.client_id) {
+      fetchPaymentsForBilling();
+    }
+  }, [billingDetails]);
+
   const fetchBillingDetails = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('recurring_billing')
@@ -67,6 +74,7 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
 
       if (error) throw error;
       setBillingDetails(data);
+      console.log("Billing details loaded:", data);
     } catch (error) {
       console.error("Error fetching billing details:", error);
       toast({
@@ -74,29 +82,32 @@ export const PaymentDetailsDialog = ({ billingId, open, onClose }: PaymentDetail
         description: "Não foi possível carregar os detalhes do recebimento recorrente.",
         variant: "destructive",
       });
+      setLoading(false);
     }
   };
 
   const fetchPaymentsForBilling = async () => {
-    setLoading(true);
     try {
+      console.log("Fetching payments for client_id:", billingDetails.client_id);
+      
       const { data, error } = await supabase
         .from('payments')
         .select(`
           *,
           clients(name, email)
         `)
-        .eq('client_id', billingDetails?.client_id || '')
+        .eq('client_id', billingDetails.client_id)
         .order('due_date', { ascending: true });
 
       if (error) throw error;
       
       // Filter payments related to this recurring billing by matching the description pattern
       const relatedPayments = data.filter(payment => 
-        payment.description.includes(billingDetails?.description) && 
+        payment.description.includes(billingDetails.description) && 
         payment.installment_number !== null
       );
       
+      console.log("Filtered payments:", relatedPayments);
       setPayments(relatedPayments);
     } catch (error) {
       console.error("Error fetching payments:", error);
