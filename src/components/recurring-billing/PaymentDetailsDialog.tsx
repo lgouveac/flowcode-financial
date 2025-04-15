@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -116,12 +115,16 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
     }
   }, [billingId, initialPayment, open]);
 
-  // Fetch all payments related to this recurring billing
+  // Fetch all payments related to this recurring billing, ensuring we only get valid payments
   const fetchRelatedPaymentsForBilling = async (clientId: string, description: string) => {
     try {
       console.log("Fetching related payments for client:", clientId, "with description:", description);
       
-      // Try to match by client and partial description match
+      // Improved query to better match related installments by description pattern
+      // This will find all payments that match the pattern "Description (X/Y)"
+      // where X is the installment number and Y is the total installments
+      const baseDescription = description.split(' (')[0]; // Get the base description without installment info
+      
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -133,15 +136,18 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
           )
         `)
         .eq('client_id', clientId)
-        .ilike('description', `%${description}%`)
+        .ilike('description', `${baseDescription} (%`)
         .order('installment_number', { ascending: true });
       
       if (error) throw error;
       
-      console.log("Related payments found:", data?.length || 0);
-      
-      if (!data || data.length === 0) {
-        // If no payments found, try a broader search by client ID only
+      if (data && data.length > 0) {
+        console.log("Related payments found:", data.length);
+        setRelatedPayments(data);
+      } else {
+        console.log("No related payments found with precise description match. Trying broader search.");
+        
+        // If no precise matches are found, try with a broader search but still filter by client
         const { data: fallbackData, error: fallbackError } = await supabase
           .from('payments')
           .select(`
@@ -153,17 +159,29 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
             )
           `)
           .eq('client_id', clientId)
-          .order('created_at', { ascending: false })
+          .ilike('description', `%${baseDescription}%`)
+          .order('installment_number', { ascending: true })
           .limit(20);
         
         if (fallbackError) throw fallbackError;
         console.log("Fallback payments found:", fallbackData?.length || 0);
-        setRelatedPayments(fallbackData || []);
-      } else {
-        setRelatedPayments(data);
+        
+        if (fallbackData && fallbackData.length > 0) {
+          // Additional filter to only keep payments that clearly belong to this series
+          // We'll check if they have valid installment numbers
+          const validPayments = fallbackData.filter(payment => 
+            payment.installment_number !== null && 
+            payment.total_installments !== null
+          );
+          
+          setRelatedPayments(validPayments);
+        } else {
+          setRelatedPayments([]);
+        }
       }
     } catch (error) {
       console.error("Error fetching related payments:", error);
+      setRelatedPayments([]);
     }
   };
 
