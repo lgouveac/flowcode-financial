@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -14,6 +13,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { 
+  Table, 
+  TableHeader, 
+  TableBody, 
+  TableRow, 
+  TableHead, 
+  TableCell 
+} from "@/components/ui/table";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
@@ -254,98 +261,70 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
         </DialogHeader>
 
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                  ID do Recebimento
-                </td>
-                <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                  {payment.id}
-                </td>
-              </tr>
-              <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Cliente
-                </td>
-                <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                  {payment.clients?.name}
-                </td>
-              </tr>
-              <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Valor
-                </td>
-                <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+          <Table>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">ID do Recebimento</TableCell>
+                <TableCell>{payment.id}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Cliente</TableCell>
+                <TableCell>{payment.clients?.name}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Valor</TableCell>
+                <TableCell>
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",
                   }).format(payment.amount)}
-                </td>
-              </tr>
-              <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Data de Vencimento
-                </td>
-                <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Data de Vencimento</TableCell>
+                <TableCell>
                   {format(new Date(payment.due_date), "dd 'de' MMMM 'de' yyyy", {
                     locale: ptBR,
                   })}
-                </td>
-              </tr>
-              <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Status
-                </td>
-                <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                  {payment.status}
-                </td>
-              </tr>
-              <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Descrição
-                </td>
-                <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                  {payment.description}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Status</TableCell>
+                <TableCell>{getStatusBadge(payment.status)}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">Descrição</TableCell>
+                <TableCell>{payment.description}</TableCell>
+              </TableRow>
               {payment.payment_date && (
-                <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                    Data de Pagamento
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                <TableRow>
+                  <TableCell className="font-medium">Data de Pagamento</TableCell>
+                  <TableCell>
                     {format(new Date(payment.payment_date), "dd 'de' MMMM 'de' yyyy", {
                       locale: ptBR,
                     })}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
               {payment.payment_method && (
-                <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                    Método de Pagamento
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
-                    {payment.payment_method}
-                  </td>
-                </tr>
+                <TableRow>
+                  <TableCell className="font-medium">Método de Pagamento</TableCell>
+                  <TableCell>{payment.payment_method}</TableCell>
+                </TableRow>
               )}
               {payment.paid_amount && (
-                <tr className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                    Valor Pago
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                <TableRow>
+                  <TableCell className="font-medium">Valor Pago</TableCell>
+                  <TableCell>
                     {new Intl.NumberFormat("pt-BR", {
                       style: "currency",
                       currency: "BRL",
                     }).format(payment.paid_amount)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Related Payments Section */}
@@ -353,39 +332,31 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
           <div className="mt-6">
             <h3 className="text-lg font-medium mb-3 dark:text-white">Parcelas Relacionadas</h3>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Parcela
-                    </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Valor
-                    </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Vencimento
-                    </th>
-                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Parcela</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {relatedPayments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                    <TableRow key={payment.id}>
+                      <TableCell>
                         {payment.installment_number}/{payment.total_installments}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                      </TableCell>
+                      <TableCell>
                         {new Intl.NumberFormat("pt-BR", {
                           style: "currency",
                           currency: "BRL",
                         }).format(payment.amount)}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                      </TableCell>
+                      <TableCell>
                         {format(new Date(payment.due_date), "dd/MM/yyyy", { locale: ptBR })}
-                      </td>
-                      <td className="py-3 px-4 text-sm">
+                      </TableCell>
+                      <TableCell>
                         <Select
                           value={payment.status}
                           onValueChange={(value: "pending" | "billed" | "awaiting_invoice" | "paid" | "overdue" | "cancelled" | "partially_paid") => 
@@ -403,11 +374,11 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
                             <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
                           </SelectContent>
                         </Select>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         )}
