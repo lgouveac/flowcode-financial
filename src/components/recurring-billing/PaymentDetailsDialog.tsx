@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -85,7 +86,7 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
             setPayment(paymentData);
             
             // Now fetch all related payments for this recurring billing
-            fetchRelatedPayments(billingData.id);
+            fetchRelatedPaymentsForBilling(billingData.client_id, billingData.description);
           } else {
             // If not found in recurring_billing, try payments table
             const { data: paymentData, error: paymentError } = await supabase
@@ -116,8 +117,11 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
   }, [billingId, initialPayment, open]);
 
   // Fetch all payments related to this recurring billing
-  const fetchRelatedPayments = async (recurringBillingId: string) => {
+  const fetchRelatedPaymentsForBilling = async (clientId: string, description: string) => {
     try {
+      console.log("Fetching related payments for client:", clientId, "with description:", description);
+      
+      // Try to match by client and partial description match
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -128,31 +132,33 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
             partner_name
           )
         `)
-        .ilike('description', `%${recurringBillingId}%`)
+        .eq('client_id', clientId)
+        .ilike('description', `%${description}%`)
         .order('installment_number', { ascending: true });
       
       if (error) throw error;
       
-      // If no related payments were found using the LIKE query, try a different approach
+      console.log("Related payments found:", data?.length || 0);
+      
       if (!data || data.length === 0) {
-        // Try to find payments that might be related by client_id and similar description
-        if (payment) {
-          const { data: alternativeData, error: alternativeError } = await supabase
-            .from('payments')
-            .select(`
-              *,
-              clients (
-                name,
-                email,
-                partner_name
-              )
-            `)
-            .eq('client_id', payment.client_id)
-            .order('created_at', { ascending: false });
-          
-          if (alternativeError) throw alternativeError;
-          setRelatedPayments(alternativeData || []);
-        }
+        // If no payments found, try a broader search by client ID only
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('payments')
+          .select(`
+            *,
+            clients (
+              name,
+              email,
+              partner_name
+            )
+          `)
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: false })
+          .limit(20);
+        
+        if (fallbackError) throw fallbackError;
+        console.log("Fallback payments found:", fallbackData?.length || 0);
+        setRelatedPayments(fallbackData || []);
       } else {
         setRelatedPayments(data);
       }
@@ -328,9 +334,9 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
         </div>
 
         {/* Related Payments Section */}
-        {relatedPayments.length > 0 && (
-          <div className="mt-6">
-            <h3 className="text-lg font-medium mb-3 dark:text-white">Parcelas Relacionadas</h3>
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-3 dark:text-white">Parcelas Relacionadas</h3>
+          {relatedPayments.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -342,29 +348,29 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {relatedPayments.map((payment) => (
-                    <TableRow key={payment.id}>
+                  {relatedPayments.map((relatedPayment) => (
+                    <TableRow key={relatedPayment.id}>
                       <TableCell>
-                        {payment.installment_number}/{payment.total_installments}
+                        {relatedPayment.installment_number}/{relatedPayment.total_installments}
                       </TableCell>
                       <TableCell>
                         {new Intl.NumberFormat("pt-BR", {
                           style: "currency",
                           currency: "BRL",
-                        }).format(payment.amount)}
+                        }).format(relatedPayment.amount)}
                       </TableCell>
                       <TableCell>
-                        {format(new Date(payment.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                        {format(new Date(relatedPayment.due_date), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
                       <TableCell>
                         <Select
-                          value={payment.status}
+                          value={relatedPayment.status}
                           onValueChange={(value: "pending" | "billed" | "awaiting_invoice" | "paid" | "overdue" | "cancelled" | "partially_paid") => 
-                            handleStatusChange(payment.id, value)
+                            handleStatusChange(relatedPayment.id, value)
                           }
                         >
                           <SelectTrigger className="w-[140px]">
-                            <SelectValue>{getStatusBadge(payment.status)}</SelectValue>
+                            <SelectValue>{getStatusBadge(relatedPayment.status)}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="pending">Pendente</SelectItem>
@@ -380,8 +386,12 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
                 </TableBody>
               </Table>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="py-4 text-center text-muted-foreground dark:text-gray-400">
+              Nenhuma parcela relacionada encontrada.
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
