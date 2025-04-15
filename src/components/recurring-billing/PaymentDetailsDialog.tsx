@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -84,8 +85,10 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
             };
             setPayment(paymentData);
             
-            // Now fetch all related payments for this recurring billing
-            fetchRelatedPaymentsForBilling(billingData.client_id, billingData.description);
+            // Now fetch valid active payments for this recurring billing
+            if (billingData.client_id && billingData.description) {
+              fetchRelatedPaymentsForBilling(billingData.client_id, billingData.description);
+            }
           } else {
             // If not found in recurring_billing, try payments table
             const { data: paymentData, error: paymentError } = await supabase
@@ -115,16 +118,15 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
     }
   }, [billingId, initialPayment, open]);
 
-  // Fetch all payments related to this recurring billing, ensuring we only get valid payments
+  // Fetch only the valid payments related to this recurring billing
   const fetchRelatedPaymentsForBilling = async (clientId: string, description: string) => {
     try {
       console.log("Fetching related payments for client:", clientId, "with description:", description);
       
-      // Improved query to better match related installments by description pattern
-      // This will find all payments that match the pattern "Description (X/Y)"
-      // where X is the installment number and Y is the total installments
-      const baseDescription = description.split(' (')[0]; // Get the base description without installment info
+      // Get the base description without installment info
+      const baseDescription = description.split(' (')[0];
       
+      // Query for active recurring or one-time payments specifically
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -141,14 +143,22 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
       
       if (error) throw error;
       
+      // If we found specific installment payments, use them
       if (data && data.length > 0) {
-        console.log("Related payments found:", data.length);
-        setRelatedPayments(data);
-      } else {
-        console.log("No related payments found with precise description match. Trying broader search.");
+        console.log("Found specific installment payments:", data.length);
         
-        // If no precise matches are found, try with a broader search but still filter by client
-        const { data: fallbackData, error: fallbackError } = await supabase
+        // Make sure these are valid payments with installment info
+        const validPayments = data.filter(payment => 
+          payment.installment_number !== null && 
+          payment.total_installments !== null
+        );
+        
+        setRelatedPayments(validPayments);
+      } else {
+        console.log("No specific installment payments found, checking for one-time payments");
+        
+        // Look for one-time payments without installment numbers
+        const { data: oneTimePayments, error: oneTimeError } = await supabase
           .from('payments')
           .select(`
             *,
@@ -159,22 +169,15 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
             )
           `)
           .eq('client_id', clientId)
-          .ilike('description', `%${baseDescription}%`)
-          .order('installment_number', { ascending: true })
-          .limit(20);
+          .eq('description', baseDescription)
+          .is('installment_number', null)
+          .order('due_date', { ascending: true });
         
-        if (fallbackError) throw fallbackError;
-        console.log("Fallback payments found:", fallbackData?.length || 0);
+        if (oneTimeError) throw oneTimeError;
         
-        if (fallbackData && fallbackData.length > 0) {
-          // Additional filter to only keep payments that clearly belong to this series
-          // We'll check if they have valid installment numbers
-          const validPayments = fallbackData.filter(payment => 
-            payment.installment_number !== null && 
-            payment.total_installments !== null
-          );
-          
-          setRelatedPayments(validPayments);
+        if (oneTimePayments && oneTimePayments.length > 0) {
+          console.log("Found one-time payments:", oneTimePayments.length);
+          setRelatedPayments(oneTimePayments);
         } else {
           setRelatedPayments([]);
         }
