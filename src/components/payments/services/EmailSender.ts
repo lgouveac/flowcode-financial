@@ -57,13 +57,15 @@ export const sendPaymentEmail = async (payment: Payment) => {
     throw new Error(`Erro ao obter dados do cliente: ${clientError.message}`);
   }
   
-  // Determine responsible name - THIS IS THE CRITICAL FIX
-  // Add explicit logging of the responsible_name value
+  // Determine responsible name - use responsible_name with an explicit fallback to partner_name
   console.log("Client responsible_name for payment email:", clientData.responsible_name);
   console.log("Client partner_name for payment email:", clientData.partner_name);
   
-  // Explicitly use responsible_name first, then fall back to partner_name
-  const responsibleName = clientData.responsible_name || clientData.partner_name || "Responsável";
+  // Explicitly check for null or undefined
+  const responsibleName = (clientData.responsible_name !== null && clientData.responsible_name !== undefined && clientData.responsible_name !== '') 
+    ? clientData.responsible_name 
+    : (clientData.partner_name || "Responsável");
+  
   console.log("Using responsible name for payment email:", responsibleName);
   
   // Prepare installment information

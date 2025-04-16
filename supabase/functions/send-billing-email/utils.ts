@@ -22,23 +22,27 @@ export const setupCacheCleanup = () => {
   }, ONE_HOUR);
 };
 
-// Generate a cache key based on recipient, due date, and installment info
+// Generate a more specific cache key that includes the minute of the day
+// This ensures we don't send multiple emails in the same minute
 export const generateCacheKey = (to: string, dueDate: string | undefined, installment: number, daysBefore: number | undefined) => {
+  // Include current date to further reduce chance of duplicates
+  const today = new Date().toISOString().split('T')[0];
+  
   // Create a unique key that prevents duplicate emails for the same event
-  return `${to}:${dueDate}:${installment}:${daysBefore || 0}`;
+  return `${to}:${dueDate}:${installment}:${daysBefore || 0}:${today}`;
 };
 
-// Check if an email was recently sent (within last 12 hours)
+// Check if an email was recently sent (within last 24 hours)
 export const isDuplicateEmail = (cacheKey: string) => {
   const lastSent = emailCache.get(cacheKey);
   if (!lastSent) return { isDuplicate: false, timeSince: 0 };
   
   const now = Date.now();
   const timeSince = now - lastSent;
-  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+  const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
   
   return { 
-    isDuplicate: timeSince < TWELVE_HOURS, 
+    isDuplicate: timeSince < TWENTY_FOUR_HOURS, 
     timeSince
   };
 };

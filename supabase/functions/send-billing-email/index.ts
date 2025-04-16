@@ -89,10 +89,57 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       console.log(`📄 Found template: ${template.name}`);
-      console.log(`📄 Template content: ${template.content}`);
       
       subject = template.subject;
       content = template.content;
+      
+      // Check if this is a recurring billing notification
+      let isRecurringNotification = false;
+      if (
+        template.type === 'clients' && 
+        template.subtype === 'recurring' && 
+        requestData.data?.dueDate && 
+        requestData.data?.currentInstallment
+      ) {
+        isRecurringNotification = true;
+      }
+      
+      // Check if we have already sent this notification by checking the logs
+      if (isRecurringNotification && to) {
+        // Initialize a database client to check for sent emails
+        try {
+          // Check for any emails sent today with similar data
+          const { data: recentEmails, error: checkError } = await supabase
+            .from('email_notification_log')
+            .select('*')
+            .eq('client_id', requestData.data?.recipientName ? requestData.data.recipientName : '')
+            .gte('sent_at', new Date(new Date().setHours(0,0,0,0)).toISOString())
+            .order('sent_at', { ascending: false });
+            
+          if (recentEmails && recentEmails.length > 0) {
+            console.log(`Found ${recentEmails.length} recent emails for this client today`);
+            
+            // If there are more than one emails already sent today, skip this one
+            if (recentEmails.length >= 1) {
+              console.log(`⚠️ Already sent ${recentEmails.length} emails to this client today. Skipping to prevent overload.`);
+              return new Response(JSON.stringify({ 
+                status: "success", 
+                message: "Email skipped (daily limit reached)",
+                content: { existingEmails: recentEmails.length }
+              }), {
+                status: 200,
+                headers: {
+                  "Content-Type": "application/json",
+                  ...corsHeaders,
+                },
+              });
+            }
+          }
+        } catch (dbError) {
+          console.error("Error checking email logs:", dbError);
+          // Continue anyway if we can't check the database
+        }
+      }
       
       // Combine data from requestData.data and direct parameters
       emailData = {
@@ -154,14 +201,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     console.log(`📧 Preparing email to: ${to}`);
-    console.log(`📧 Email data:`, JSON.stringify(emailData, null, 2));
     
     // Process email content and subject
     const processedContent = processEmailContent(content, emailData);
     const processedSubject = processEmailSubject(subject, emailData);
-    
-    console.log(`📧 Processed content: ${processedContent}`);
-    console.log(`📧 Processed subject: ${processedSubject}`);
     
     // Convert to HTML
     const htmlContent = convertToHtml(processedContent);

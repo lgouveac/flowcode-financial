@@ -77,8 +77,14 @@ serve(async (req) => {
     
     console.log("Found default template:", template.name);
     
+    // Get the current day and month
+    const today = new Date();
+    const currentDayMonth = `${today.getMonth() + 1}-${today.getDate()}`;
+    console.log(`Current date for notification check: ${currentDayMonth}`);
+    
     // Process pending billings
     let notificationsSent = 0;
+    let notificationsSkipped = 0;
     
     for (const interval of intervals) {
       // Get the proper date for this interval
@@ -133,20 +139,32 @@ serve(async (req) => {
         // Check if we've already sent this notification in this run
         if (sentNotificationsCache.has(cacheKey)) {
           console.log(`Already sent notification for billing ${billing.id} in this run. Skipping.`);
+          notificationsSkipped++;
           continue;
         }
         
         // Check if this notification was already logged today
-        const { data: existingLogs } = await supabase
+        const startOfDay = new Date(currentDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(currentDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        const { data: existingLogs, error: logError } = await supabase
           .from('email_notification_log')
           .select('*')
           .eq('billing_id', billing.id)
           .eq('days_before', interval.days_before)
-          .gte('sent_at', new Date(new Date().setHours(0,0,0,0)).toISOString())
-          .lte('sent_at', new Date(new Date().setHours(23,59,59,999)).toISOString());
+          .gte('sent_at', startOfDay.toISOString())
+          .lte('sent_at', endOfDay.toISOString());
+        
+        if (logError) {
+          console.error(`Error checking notification logs: ${logError.message}`);
+        }
         
         if (existingLogs && existingLogs.length > 0) {
           console.log(`Notification already sent today for billing ${billing.id}. Skipping.`);
+          notificationsSkipped++;
           continue;
         }
         
@@ -204,7 +222,7 @@ serve(async (req) => {
             continue;
           }
           
-          // Log the notification
+          // Log the notification immediately after sending
           const { error: logError } = await supabase
             .from('email_notification_log')
             .insert({
@@ -229,13 +247,14 @@ serve(async (req) => {
       }
     }
     
-    console.log(`Notifications process completed. Sent ${notificationsSent} notifications.`);
+    console.log(`Notifications process completed. Sent ${notificationsSent} notifications, skipped ${notificationsSkipped} duplicates.`);
     
     return new Response(
       JSON.stringify({ 
         success: true,
         message: `Billing notifications triggered successfully`,
-        sentCount: notificationsSent
+        sentCount: notificationsSent,
+        skippedCount: notificationsSkipped
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
