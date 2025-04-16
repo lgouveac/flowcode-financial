@@ -126,7 +126,22 @@ export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
       // Get the base description without installment info
       const baseDescription = description.split(' (')[0];
       
-      // Query for active recurring or one-time payments specifically
+      // Check if we have any related email notification logs
+      const { data: logData, error: logError } = await supabase
+        .from('email_notification_log')
+        .select('*')
+        .eq('client_id', clientId)
+        .eq('payment_type', 'recurring')
+        .order('sent_at', { ascending: false })
+        .limit(5);
+        
+      if (logError) {
+        console.error("Error checking email logs:", logError);
+      } else if (logData && logData.length > 0) {
+        console.log("Found email notification logs:", logData.length);
+      }
+      
+      // Query for installment payments related to this billing
       const { data, error } = await supabase
         .from('payments')
         .select(`

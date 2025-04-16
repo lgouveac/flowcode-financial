@@ -7,6 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Track which notifications have been sent in this execution to prevent duplicates
+const sentNotificationsCache = new Set<string>();
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -124,6 +127,29 @@ serve(async (req) => {
           continue;
         }
         
+        // Generate a cache key to prevent duplicates
+        const cacheKey = `${billing.id}:${dueDate.toISOString()}:${interval.days_before}`;
+        
+        // Check if we've already sent this notification in this run
+        if (sentNotificationsCache.has(cacheKey)) {
+          console.log(`Already sent notification for billing ${billing.id} in this run. Skipping.`);
+          continue;
+        }
+        
+        // Check if this notification was already logged today
+        const { data: existingLogs } = await supabase
+          .from('email_notification_log')
+          .select('*')
+          .eq('billing_id', billing.id)
+          .eq('days_before', interval.days_before)
+          .gte('sent_at', new Date(new Date().setHours(0,0,0,0)).toISOString())
+          .lte('sent_at', new Date(new Date().setHours(23,59,59,999)).toISOString());
+        
+        if (existingLogs && existingLogs.length > 0) {
+          console.log(`Notification already sent today for billing ${billing.id}. Skipping.`);
+          continue;
+        }
+        
         console.log(`Sending notification for billing ${billing.id} due on ${dueDate.toISOString()}`);
         
         const client = billing.clients;
@@ -140,33 +166,15 @@ serve(async (req) => {
         // Calculate days until due
         const daysUntilDue = interval.days_before;
         
-        // Determine responsible name - THIS IS THE CRITICAL FIX
-        // Add explicit logging of the responsible_name value
+        // Determine responsible name
         console.log("Client responsible_name:", client.responsible_name);
         console.log("Client partner_name:", client.partner_name);
         
         const responsibleName = client.responsible_name || client.partner_name || "Responsável";
         console.log("Using responsible name:", responsibleName);
         
-        console.log("Sending email with data:", {
-          to: client.email,
-          templateId: template.id,
-          data: {
-            recipientName: client.name,
-            responsibleName: responsibleName,
-            billingValue: billing.amount,
-            dueDate: dueDate.toISOString(),
-            daysUntilDue: daysUntilDue,
-            currentInstallment: billing.current_installment,
-            totalInstallments: billing.installments,
-            descricaoServico: billing.description,
-            paymentMethod: paymentMethodStr
-          }
-        });
-        
-        // Extra details for debug
-        console.log(`Current installment: ${billing.current_installment || 1}`);
-        console.log(`Total installments: ${billing.installments || 1}`);
+        // Mark this notification as sent in our runtime cache
+        sentNotificationsCache.add(cacheKey);
         
         // Send the email notification
         try {

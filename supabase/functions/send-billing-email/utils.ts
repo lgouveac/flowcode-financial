@@ -1,66 +1,49 @@
 
-// Cache to prevent duplicate emails
-const emailSentCache = new Map<string, number>();
+// Email sending cache to prevent duplicates
+export const emailCache = new Map<string, number>();
 
-// Constants
-const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
-const CACHE_CLEANUP_INTERVAL_MS = 3600 * 1000; // 1 hour
-const DUPLICATE_PREVENTION_WINDOW_MS = 6 * 60 * 60 * 1000; // 6 hours
-
-// CORS headers for Edge Function
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-/**
- * Set up a periodic cache cleanup to prevent memory leaks
- */
-export function setupCacheCleanup() {
+// Clean up old cache entries every hour (to prevent memory leaks)
+export const setupCacheCleanup = () => {
+  const ONE_HOUR = 60 * 60 * 1000; // 1 hour in milliseconds
+  
   setInterval(() => {
     const now = Date.now();
-    for (const [key, timestamp] of emailSentCache.entries()) {
-      if (now - timestamp > CACHE_EXPIRY_MS) {
-        emailSentCache.delete(key);
+    for (const [key, timestamp] of emailCache.entries()) {
+      // Remove entries older than 24 hours
+      if (now - timestamp > 24 * ONE_HOUR) {
+        emailCache.delete(key);
       }
     }
-  }, CACHE_CLEANUP_INTERVAL_MS);
-}
+  }, ONE_HOUR);
+};
 
-/**
- * Generate a cache key for deduplication
- */
-export function generateCacheKey(
-  to: string,
-  dueDate: string,
-  installmentNumber: number,
-  daysUntilDue: number
-): string {
-  return `${to}_${dueDate}_${installmentNumber}_${daysUntilDue}`;
-}
+// Generate a cache key based on recipient, due date, and installment info
+export const generateCacheKey = (to: string, dueDate: string | undefined, installment: number, daysBefore: number | undefined) => {
+  // Create a unique key that prevents duplicate emails for the same event
+  return `${to}:${dueDate}:${installment}:${daysBefore || 0}`;
+};
 
-/**
- * Check if an email has already been sent recently
- */
-export function isDuplicateEmail(cacheKey: string): { isDuplicate: boolean; timeSince: number } {
-  const lastSent = emailSentCache.get(cacheKey);
-  if (!lastSent) {
-    return { isDuplicate: false, timeSince: 0 };
-  }
+// Check if an email was recently sent (within last 6 hours)
+export const isDuplicateEmail = (cacheKey: string) => {
+  const lastSent = emailCache.get(cacheKey);
+  if (!lastSent) return { isDuplicate: false, timeSince: 0 };
   
   const now = Date.now();
   const timeSince = now - lastSent;
+  const SIX_HOURS = 6 * 60 * 60 * 1000;
   
-  return {
-    isDuplicate: timeSince < DUPLICATE_PREVENTION_WINDOW_MS,
+  return { 
+    isDuplicate: timeSince < SIX_HOURS, 
     timeSince
   };
-}
+};
 
-/**
- * Record that an email has been sent
- */
-export function recordEmailSent(cacheKey: string): void {
-  emailSentCache.set(cacheKey, Date.now());
-}
+// Record that an email was sent
+export const recordEmailSent = (cacheKey: string) => {
+  emailCache.set(cacheKey, Date.now());
+};
