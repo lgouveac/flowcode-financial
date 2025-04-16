@@ -72,13 +72,22 @@ export const sendPaymentEmail = async (payment: Payment) => {
   const currentInstallment = payment.installment_number || 1;
   const totalInstallments = payment.total_installments || 1;
   
+  // Format amount to BRL currency
+  const formattedAmount = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(payment.amount);
+  
+  // Format due date
+  const formattedDueDate = dueDate.toLocaleDateString('pt-BR');
+  
   console.log('Sending email with data:', {
     to: clientData.email,
     templateId,
-    recipientName: clientData.name,
-    responsibleName: responsibleName,
-    amount: payment.amount,
-    dueDate: payment.due_date,
+    clientName: clientData.name, 
+    responsibleName,
+    amount: formattedAmount, // Now properly formatted
+    dueDate: formattedDueDate, // Now properly formatted
     description: payment.description,
     currentInstallment,
     totalInstallments,
@@ -94,14 +103,24 @@ export const sendPaymentEmail = async (payment: Payment) => {
         templateId: templateId,
         data: {
           recipientName: clientData.name,
-          responsibleName: responsibleName, // Explicitly pass this value
-          billingValue: payment.amount,
-          dueDate: payment.due_date,
+          responsibleName: responsibleName,
+          billingValue: formattedAmount, // Using formatted value
+          dueDate: formattedDueDate, // Using formatted date
           daysUntilDue: daysUntilDue,
           descricaoServico: payment.description,
           paymentMethod: paymentMethodStr,
           currentInstallment: currentInstallment,
-          totalInstallments: totalInstallments
+          totalInstallments: totalInstallments,
+          
+          // Add template variables in Portuguese format for backward compatibility
+          nome_cliente: clientData.name,
+          nome_responsavel: responsibleName,
+          valor_cobranca: formattedAmount,
+          data_vencimento: formattedDueDate,
+          descricao_servico: payment.description,
+          forma_pagamento: paymentMethodStr,
+          numero_parcela: currentInstallment,
+          total_parcelas: totalInstallments
         }
       })
     }
