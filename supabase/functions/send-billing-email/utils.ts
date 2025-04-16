@@ -28,17 +28,17 @@ export const generateCacheKey = (to: string, dueDate: string | undefined, instal
   return `${to}:${dueDate}:${installment}:${daysBefore || 0}`;
 };
 
-// Check if an email was recently sent (within last 6 hours)
+// Check if an email was recently sent (within last 12 hours)
 export const isDuplicateEmail = (cacheKey: string) => {
   const lastSent = emailCache.get(cacheKey);
   if (!lastSent) return { isDuplicate: false, timeSince: 0 };
   
   const now = Date.now();
   const timeSince = now - lastSent;
-  const SIX_HOURS = 6 * 60 * 60 * 1000;
+  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
   
   return { 
-    isDuplicate: timeSince < SIX_HOURS, 
+    isDuplicate: timeSince < TWELVE_HOURS, 
     timeSince
   };
 };
