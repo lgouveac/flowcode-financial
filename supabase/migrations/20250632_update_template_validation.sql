@@ -1,10 +1,10 @@
 
--- Update template validation function to accept 'reminder' subtype
+-- Update template validation function to accept 'contract' subtype
 CREATE OR REPLACE FUNCTION validate_template_type_subtype()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NEW.type = 'clients' AND NEW.subtype NOT IN ('recurring', 'oneTime', 'reminder') THEN
-    RAISE EXCEPTION 'Invalid subtype % for client templates. Must be one of: recurring, oneTime, reminder', NEW.subtype;
+  IF NEW.type = 'clients' AND NEW.subtype NOT IN ('recurring', 'oneTime', 'reminder', 'contract') THEN
+    RAISE EXCEPTION 'Invalid subtype % for client templates. Must be one of: recurring, oneTime, reminder, contract', NEW.subtype;
   END IF;
   
   IF NEW.type = 'employees' AND NEW.subtype NOT IN ('invoice', 'hours') THEN

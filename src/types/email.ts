@@ -1,6 +1,5 @@
-
 export type EmailTemplateType = 'clients' | 'employees';
-export type EmailTemplateSubtype = 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder';
+export type EmailTemplateSubtype = 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract';
 
 export interface EmailTemplate {
   id: string;
@@ -53,7 +52,17 @@ export const variablesList: VariablesType = {
       { name: '{dias_atraso}', description: 'Dias em atraso' },
       { name: '{descricao_servico}', description: 'Descrição do serviço' },
       { name: '{forma_pagamento}', description: 'Forma de pagamento' }
-    ]
+    ],
+    contract: [
+      { name: '{nome_cliente}', description: 'Nome do cliente' },
+      { name: '{nome_responsavel}', description: 'Nome do responsável' },
+      { name: '{cnpj}', description: 'CNPJ do cliente' },
+      { name: '{cpf}', description: 'CPF do cliente' },
+      { name: '{endereco}', description: 'Endereço do cliente' },
+      { name: '{valor_mensal}', description: 'Valor mensal do contrato' },
+      { name: '{data_inicio}', description: 'Data de início do contrato' },
+      { name: '{forma_pagamento}', description: 'Forma de pagamento' }
+    ],
   },
   employees: {
     invoice: [

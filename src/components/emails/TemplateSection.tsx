@@ -156,6 +156,11 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
                   <span className="hidden sm:inline">Lembrete de Pagamento</span>
                   <span className="sm:hidden">Lembrete</span>
                 </TabsTrigger>
+                <TabsTrigger value="contract" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden sm:inline">Contrato</span>
+                  <span className="sm:hidden">Contrato</span>
+                </TabsTrigger>
               </>
             )}
           </TabsList>

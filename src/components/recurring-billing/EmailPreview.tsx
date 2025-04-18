@@ -1,4 +1,3 @@
-
 import { Label } from "@/components/ui/label";
 import type { EmailTemplate } from "@/types/email";
 import { useTemplateVariables } from "@/hooks/useTemplateVariables";
@@ -10,11 +9,12 @@ interface EmailPreviewProps {
   responsibleName?: string;
   amount?: number;
   dueDay?: number;
+  dueDate?: string;
   description?: string;
   installments?: number;
   currentInstallment?: number;
-  dueDate?: string;
   paymentMethod?: 'pix' | 'boleto' | 'credit_card';
+  client?: { cnpj?: string; cpf?: string; address?: string };
 }
 
 export const EmailPreview = ({
@@ -28,7 +28,8 @@ export const EmailPreview = ({
   description,
   installments,
   currentInstallment,
-  paymentMethod
+  paymentMethod,
+  client
 }: EmailPreviewProps) => {
   const { renderTemplate } = useTemplateVariables();
   
@@ -84,7 +85,12 @@ export const EmailPreview = ({
     descricao_servico: description || "",
     numero_parcela: String(safeCurrentInstallment),
     total_parcelas: String(safeTotalInstallments),
-    forma_pagamento: paymentMethodText
+    forma_pagamento: paymentMethodText,
+    cnpj: client?.cnpj || "",
+    cpf: client?.cpf || "",
+    endereco: client?.address || "",
+    valor_mensal: formattedAmount,
+    data_inicio: new Date().toLocaleDateString('pt-BR'),
   };
 
   // Log the template data for debugging
