@@ -45,8 +45,21 @@ export const getPaymentMethodLabel = (method: string): string => {
 export const formatDateString = (dateStr: string | null | undefined): string => {
   if (!dateStr) return "-";
   try {
-    return format(new Date(dateStr), "dd/MM/yyyy");
+    const date = new Date(dateStr);
+    // Explicitly format to dd/MM/yyyy without time
+    return format(date, "dd/MM/yyyy");
   } catch (e) {
     return dateStr;
+  }
+};
+
+// Additional utility to strip time from a date string
+export const stripTimeFromDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr);
+    return format(date, "dd/MM/yyyy");
+  } catch (e) {
+    return dateStr.split('T')[0].split(' ')[0];
   }
 };
