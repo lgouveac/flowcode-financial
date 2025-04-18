@@ -9,7 +9,7 @@ export const useTemplateVariables = () => {
   const renderTemplate = (
     content: string,
     type: 'clients' | 'employees',
-    subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder',
+    subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract',
     data: TemplateData
   ) => {
     let renderedContent = content;
@@ -66,6 +66,16 @@ export const useTemplateVariables = () => {
         return 'PIX';
       case 'dias_atraso':
         return '0';
+      case 'cnpj':
+        return '[CNPJ do cliente]';
+      case 'cpf':
+        return '[CPF do cliente]';
+      case 'endereco':
+        return '[Endereço do cliente]';
+      case 'valor_mensal':
+        return 'R$ 0,00';
+      case 'data_inicio':
+        return new Date().toLocaleDateString('pt-BR');
       default:
         return `[${variableName}]`;
     }

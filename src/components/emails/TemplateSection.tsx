@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarIcon, RefreshCwIcon, Send, AlertTriangle } from "lucide-react";
+import { CalendarIcon, RefreshCwIcon, Send, AlertTriangle, FileText } from "lucide-react";
 import { TemplateEditor } from "./TemplateEditor";
 import { VariablesList } from "./VariablesList";
 import { EmailTemplate, variablesList } from "@/types/email";
