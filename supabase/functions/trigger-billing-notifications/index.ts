@@ -206,7 +206,7 @@ serve(async (req) => {
                   recipientName: client.name,
                   responsibleName: responsibleName,
                   billingValue: billing.amount,
-                  dueDate: dueDate.toISOString(),
+                  dueDate: dueDate.toLocaleDateString('pt-BR'),
                   daysUntilDue: daysUntilDue,
                   currentInstallment: billing.current_installment || 1,
                   totalInstallments: billing.installments || 1,
