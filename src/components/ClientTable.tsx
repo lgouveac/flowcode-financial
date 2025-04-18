@@ -1,4 +1,4 @@
-import { PlusIcon, Upload } from "lucide-react";
+import { PlusIcon, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import { EditClientDialog } from "./EditClientDialog";
 import { ImportCSV } from "./import/ImportCSV";
 import { ShareFormButton } from "./client/ShareFormButton";
 import type { Client, NewClient } from "@/types/client";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +31,8 @@ export const ClientTable = () => {
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const fetchClients = async () => {
     const { data, error } = await supabase
@@ -191,6 +195,17 @@ export const ClientTable = () => {
     }
   };
 
+  const filteredClients = clients.filter((client) => {
+    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         client.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         false;
+    
+    const matchesStatus = statusFilter === "all" || client.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div className="space-y-4 p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -217,6 +232,29 @@ export const ClientTable = () => {
           </Dialog>
         </div>
       </div>
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar clientes..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Filtrar por status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="active">Ativos</SelectItem>
+            <SelectItem value="inactive">Inativos</SelectItem>
+            <SelectItem value="overdue">Inadimplentes</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       
       <div className="rounded-lg border bg-card">
         <div className="w-full overflow-auto">
@@ -231,17 +269,17 @@ export const ClientTable = () => {
                 <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Ações</th>
               </tr>
             </thead>
-            <tbody>
-              {clients.map((client) => (
-                <ClientRow
-                  key={client.id}
-                  client={client}
+            <TableBody>
+              {filteredClients.map((client) => (
+                <ClientRow 
+                  key={client.id} 
+                  client={client} 
                   onUpdate={handleChange}
                   onClick={() => handleClientClick(client)}
                   onDelete={handleDeleteClient}
                 />
               ))}
-            </tbody>
+            </TableBody>
           </table>
         </div>
       </div>
