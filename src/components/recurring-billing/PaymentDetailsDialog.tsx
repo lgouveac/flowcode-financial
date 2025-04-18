@@ -1,433 +1,161 @@
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useEffect, useState } from "react";
-import type { Payment } from "@/types/payment";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  Table, 
-  TableHeader, 
-  TableBody, 
-  TableRow, 
-  TableHead, 
-  TableCell 
-} from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import { EmailTemplate } from "@/types/email";
+import { EmailPreview } from "./EmailPreview";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
   onClose: () => void;
-  billingId?: string;
-  payment?: Payment | null;
+  onUpdate: () => void;
+  billing: any;
+  templates?: EmailTemplate[];
+  clientName?: string;
 }
 
-export const PaymentDetailsDialog: React.FC<PaymentDetailsDialogProps> = ({
+export const PaymentDetailsDialog = ({
   open,
   onClose,
-  billingId,
-  payment: initialPayment,
-}) => {
-  const [payment, setPayment] = useState<Payment | null>(initialPayment || null);
-  const [relatedPayments, setRelatedPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(false);
+  onUpdate,
+  billing,
+  templates = [],
+  clientName,
+}: PaymentDetailsDialogProps) => {
+  const [status, setStatus] = useState(billing?.status || "pending");
+  const [emailTemplate, setEmailTemplate] = useState<string>(billing?.email_template || "");
+  const [disableNotifications, setDisableNotifications] = useState(billing?.disable_notifications || false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // If a direct payment object is provided, use it
-    if (initialPayment) {
-      setPayment(initialPayment);
+    if (billing) {
+      setStatus(billing.status);
+      setEmailTemplate(billing.email_template || "");
+      setDisableNotifications(billing.disable_notifications || false);
+    }
+  }, [billing]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const { error } = await supabase
+      .from("recurring_billing")
+      .update({ 
+        status,
+        email_template: emailTemplate,
+        disable_notifications: disableNotifications
+      })
+      .eq("id", billing.id);
+
+    if (error) {
+      console.error("Error updating billing:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o recebimento.",
+        variant: "destructive",
+      });
       return;
     }
 
-    // Otherwise, if billingId is provided, fetch the payment data
-    if (billingId && open) {
-      setLoading(true);
-      
-      const fetchPaymentData = async () => {
-        try {
-          // First try to get data from recurring_billing
-          const { data: billingData, error: billingError } = await supabase
-            .from('recurring_billing')
-            .select(`
-              *,
-              clients (
-                name,
-                email,
-                partner_name
-              )
-            `)
-            .eq('id', billingId)
-            .single();
-          
-          if (!billingError && billingData) {
-            // Convert the billing data to a payment format
-            const paymentData: Payment = {
-              id: billingData.id,
-              client_id: billingData.client_id,
-              description: billingData.description,
-              amount: billingData.amount,
-              due_date: new Date(new Date().getFullYear(), new Date().getMonth(), billingData.due_day).toISOString(),
-              payment_date: billingData.payment_date,
-              payment_method: billingData.payment_method,
-              status: billingData.status,
-              installment_number: billingData.current_installment,
-              total_installments: billingData.installments,
-              clients: billingData.clients
-            };
-            setPayment(paymentData);
-            
-            // Now fetch valid active payments for this recurring billing
-            if (billingData.client_id && billingData.description) {
-              fetchRelatedPaymentsForBilling(billingData.client_id, billingData.description);
-            }
-          } else {
-            // If not found in recurring_billing, try payments table
-            const { data: paymentData, error: paymentError } = await supabase
-              .from('payments')
-              .select(`
-                *,
-                clients (
-                  name,
-                  email,
-                  partner_name
-                )
-              `)
-              .eq('id', billingId)
-              .single();
-            
-            if (paymentError) throw paymentError;
-            setPayment(paymentData);
-          }
-        } catch (error) {
-          console.error("Error fetching payment:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      fetchPaymentData();
-    }
-  }, [billingId, initialPayment, open]);
+    toast({
+      title: "Sucesso",
+      description: "Recebimento atualizado com sucesso.",
+    });
 
-  // Fetch only the valid payments related to this recurring billing
-  const fetchRelatedPaymentsForBilling = async (clientId: string, description: string) => {
-    try {
-      console.log("Fetching related payments for client:", clientId, "with description:", description);
-      
-      // Get the base description without installment info
-      const baseDescription = description.split(' (')[0];
-      
-      // Check if we have any related email notification logs
-      const { data: logData, error: logError } = await supabase
-        .from('email_notification_log')
-        .select('*')
-        .eq('client_id', clientId)
-        .eq('payment_type', 'recurring')
-        .order('sent_at', { ascending: false })
-        .limit(5);
-        
-      if (logError) {
-        console.error("Error checking email logs:", logError);
-      } else if (logData && logData.length > 0) {
-        console.log("Found email notification logs:", logData.length);
-      }
-      
-      // Query for installment payments related to this billing
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          clients (
-            name,
-            email,
-            partner_name
-          )
-        `)
-        .eq('client_id', clientId)
-        .ilike('description', `${baseDescription} (%`)
-        .order('installment_number', { ascending: true });
-      
-      if (error) throw error;
-      
-      // If we found specific installment payments, use them
-      if (data && data.length > 0) {
-        console.log("Found specific installment payments:", data.length);
-        
-        // Make sure these are valid payments with installment info
-        const validPayments = data.filter(payment => 
-          payment.installment_number !== null && 
-          payment.total_installments !== null
-        );
-        
-        setRelatedPayments(validPayments);
-      } else {
-        console.log("No specific installment payments found, checking for one-time payments");
-        
-        // Look for one-time payments without installment numbers
-        const { data: oneTimePayments, error: oneTimeError } = await supabase
-          .from('payments')
-          .select(`
-            *,
-            clients (
-              name,
-              email,
-              partner_name
-            )
-          `)
-          .eq('client_id', clientId)
-          .eq('description', baseDescription)
-          .is('installment_number', null)
-          .order('due_date', { ascending: true });
-        
-        if (oneTimeError) throw oneTimeError;
-        
-        if (oneTimePayments && oneTimePayments.length > 0) {
-          console.log("Found one-time payments:", oneTimePayments.length);
-          setRelatedPayments(oneTimePayments);
-        } else {
-          setRelatedPayments([]);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching related payments:", error);
-      setRelatedPayments([]);
-    }
+    onUpdate();
+    onClose();
   };
 
-  // Reset payment when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setPayment(initialPayment || null);
-      setRelatedPayments([]);
-    }
-  }, [open, initialPayment]);
-
-  // Handle payment status update
-  const handleStatusChange = async (paymentId: string, newStatus: "pending" | "billed" | "awaiting_invoice" | "paid" | "overdue" | "cancelled" | "partially_paid") => {
-    try {
-      const { error } = await supabase
-        .from('payments')
-        .update({ status: newStatus })
-        .eq('id', paymentId);
-      
-      if (error) throw error;
-      
-      // Update local state
-      setRelatedPayments(prevPayments => 
-        prevPayments.map(p => 
-          p.id === paymentId ? { ...p, status: newStatus } : p
-        )
-      );
-      
-      toast({
-        title: "Status atualizado",
-        description: "O status do pagamento foi atualizado com sucesso.",
-      });
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o status do pagamento.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return <Badge className="bg-green-500 dark:bg-green-600">Pago</Badge>;
-      case 'pending':
-        return <Badge variant="secondary">Pendente</Badge>;
-      case 'overdue':
-        return <Badge variant="destructive">Atrasado</Badge>;
-      case 'cancelled':
-        return <Badge variant="outline">Cancelado</Badge>;
-      case 'partially_paid':
-        return <Badge className="bg-amber-500 dark:bg-amber-600">Parcialmente Pago</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
-  // Show loading or no payment state
-  if (loading) {
-    return (
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Recebimento</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Carregando dados do recebimento...
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-6 text-center">Carregando...</div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  if (!payment) {
-    return (
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Recebimento</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Não foi possível encontrar dados para este recebimento.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-6 text-center">Nenhum dado de recebimento encontrado.</div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+  const filteredTemplates = templates.filter(
+    (template) => template.type === "clients" && template.subtype === "recurring"
+  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl dark:bg-gray-900">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="dark:text-white">Detalhes do Recebimento</DialogTitle>
-          <DialogDescription className="text-muted-foreground dark:text-gray-400">
-            Informações detalhadas sobre este recebimento
-          </DialogDescription>
+          <DialogTitle>Detalhes do Recebimento</DialogTitle>
         </DialogHeader>
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">ID do Recebimento</TableCell>
-                <TableCell>{payment.id}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Cliente</TableCell>
-                <TableCell>{payment.clients?.name}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Valor</TableCell>
-                <TableCell>
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(payment.amount)}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Data de Vencimento</TableCell>
-                <TableCell>
-                  {format(new Date(payment.due_date), "dd 'de' MMMM 'de' yyyy", {
-                    locale: ptBR,
-                  })}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Status</TableCell>
-                <TableCell>{getStatusBadge(payment.status)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Descrição</TableCell>
-                <TableCell>{payment.description}</TableCell>
-              </TableRow>
-              {payment.payment_date && (
-                <TableRow>
-                  <TableCell className="font-medium">Data de Pagamento</TableCell>
-                  <TableCell>
-                    {format(new Date(payment.payment_date), "dd 'de' MMMM 'de' yyyy", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                </TableRow>
-              )}
-              {payment.payment_method && (
-                <TableRow>
-                  <TableCell className="font-medium">Método de Pagamento</TableCell>
-                  <TableCell>{payment.payment_method}</TableCell>
-                </TableRow>
-              )}
-              {payment.paid_amount && (
-                <TableRow>
-                  <TableCell className="font-medium">Valor Pago</TableCell>
-                  <TableCell>
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(payment.paid_amount)}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="paid">Pago</SelectItem>
+                <SelectItem value="cancelled">Cancelado</SelectItem>
+                <SelectItem value="overdue">Atrasado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* Related Payments Section */}
-        <div className="mt-6">
-          <h3 className="text-lg font-medium mb-3 dark:text-white">Parcelas Relacionadas</h3>
-          {relatedPayments.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Parcela</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {relatedPayments.map((relatedPayment) => (
-                    <TableRow key={relatedPayment.id}>
-                      <TableCell>
-                        {relatedPayment.installment_number}/{relatedPayment.total_installments}
-                      </TableCell>
-                      <TableCell>
-                        {new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        }).format(relatedPayment.amount)}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(relatedPayment.due_date), "dd/MM/yyyy", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>
-                        <Select
-                          value={relatedPayment.status}
-                          onValueChange={(value: "pending" | "billed" | "awaiting_invoice" | "paid" | "overdue" | "cancelled" | "partially_paid") => 
-                            handleStatusChange(relatedPayment.id, value)
-                          }
-                        >
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue>{getStatusBadge(relatedPayment.status)}</SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pendente</SelectItem>
-                            <SelectItem value="paid">Pago</SelectItem>
-                            <SelectItem value="overdue">Atrasado</SelectItem>
-                            <SelectItem value="cancelled">Cancelado</SelectItem>
-                            <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="py-4 text-center text-muted-foreground dark:text-gray-400">
-              Nenhuma parcela relacionada encontrada.
-            </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="disable_notifications"
+              checked={disableNotifications}
+              onCheckedChange={(checked) => setDisableNotifications(checked as boolean)}
+            />
+            <Label htmlFor="disable_notifications">
+              Desativar notificações automáticas
+            </Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Template de Email</Label>
+            <Select 
+              value={emailTemplate} 
+              onValueChange={setEmailTemplate}
+              disabled={disableNotifications}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o template" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredTemplates.length > 0 ? (
+                  filteredTemplates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    Nenhum template disponível
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {emailTemplate && !disableNotifications && (
+            <EmailPreview
+              selectedTemplate={emailTemplate}
+              templates={templates}
+              clientName={clientName}
+              amount={billing?.amount}
+              dueDay={billing?.due_day}
+              description={billing?.description}
+              installments={billing?.installments}
+              paymentMethod={billing?.payment_method}
+            />
           )}
-        </div>
+
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit">Salvar</Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
