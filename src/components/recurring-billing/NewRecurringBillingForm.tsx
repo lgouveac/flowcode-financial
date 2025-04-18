@@ -1,7 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { RecurringBilling } from "@/types/billing";
 import type { EmailTemplate } from "@/types/email";
 import { useRecurringBillingForm } from "@/hooks/useRecurringBillingForm";
@@ -14,7 +14,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NewRecurringBillingFormProps {
-  onSubmit: (billing: RecurringBilling & { email_template?: string; responsible_name?: string }) => void;
+  onSubmit: (billing: RecurringBilling & { email_template?: string; responsible_name?: string; disable_notifications?: boolean }) => void;
   onClose: () => void;
   clients: Array<{ id: string; name: string, partner_name?: string; responsible_name?: string }>;
   templates?: EmailTemplate[];
@@ -30,6 +30,7 @@ export const NewRecurringBillingForm = ({
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [responsibleName, setResponsibleName] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [disableNotifications, setDisableNotifications] = useState(false);
 
   // When client selection changes, try to get or update responsible name
   useEffect(() => {
@@ -93,10 +94,11 @@ export const NewRecurringBillingForm = ({
       }
     }
     
-    // Send both formData and responsible_name
+    // Send both formData, responsible_name and disable_notifications flag
     onSubmit({
       ...(formData as RecurringBilling & { email_template?: string }),
-      responsible_name: responsibleName
+      responsible_name: responsibleName,
+      disable_notifications: disableNotifications
     });
     
     onClose();
@@ -125,11 +127,23 @@ export const NewRecurringBillingForm = ({
         />
       </div>
 
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="disable_notifications"
+          checked={disableNotifications}
+          onCheckedChange={(checked) => setDisableNotifications(checked as boolean)}
+        />
+        <Label htmlFor="disable_notifications">
+          Desativar notificações automáticas
+        </Label>
+      </div>
+
       <div className="space-y-2">
         <Label>Template de Email</Label>
         <Select 
           onValueChange={(value) => updateFormData({ email_template: value })}
           value={formData.email_template}
+          disabled={disableNotifications}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecione o template" />
@@ -165,7 +179,7 @@ export const NewRecurringBillingForm = ({
         onChange={(value) => updateFormData({ payment_method: value })}
       />
 
-      {formData.email_template && (
+      {formData.email_template && !disableNotifications && (
         <EmailPreview
           selectedTemplate={formData.email_template}
           templates={templates}

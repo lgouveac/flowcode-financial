@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
@@ -27,11 +26,15 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
     onSuccess();
   };
 
-  const handleNewRecurring = async (billingData: Omit<RecurringBilling, 'id' | 'created_at' | 'updated_at' | 'current_installment'> & { email_template?: string; responsible_name?: string }) => {
+  const handleNewRecurring = async (billingData: Omit<RecurringBilling, 'id' | 'created_at' | 'updated_at' | 'current_installment'> & { 
+    email_template?: string; 
+    responsible_name?: string;
+    disable_notifications?: boolean;
+  }) => {
     console.log("Creating new recurring billing:", billingData);
 
-    // Extract responsible_name to update client
-    const { responsible_name, ...billingRecordData } = billingData;
+    // Extract responsible_name and disable_notifications to update client and billing
+    const { responsible_name, disable_notifications, ...billingRecordData } = billingData;
     
     // First, update the client's responsible_name if provided
     if (responsible_name && billingData.client_id) {
@@ -55,10 +58,13 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
       }
     }
 
-    // Now insert the billing record (without responsible_name)
+    // Now insert the billing record with the disable_notifications flag
     const { data, error } = await supabase
       .from('recurring_billing')
-      .insert(billingRecordData)
+      .insert({
+        ...billingRecordData,
+        disable_notifications: disable_notifications || false
+      })
       .select()
       .single();
 
