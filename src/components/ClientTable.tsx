@@ -12,6 +12,7 @@ import { ShareFormButton } from "./client/ShareFormButton";
 import type { Client, NewClient } from "@/types/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TableBody } from "@/components/ui/table";
 import { 
   AlertDialog,
   AlertDialogAction,
