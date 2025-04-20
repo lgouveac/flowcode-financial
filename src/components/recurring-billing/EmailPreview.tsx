@@ -72,13 +72,10 @@ export const EmailPreview = ({
                             paymentMethod === 'boleto' ? 'Boleto' : 
                             'Cartão de Crédito';
 
-  // Log responsible name for debugging
-  console.log("Email preview responsibleName:", responsibleName);
-
-  // Prepare data for template rendering with properly formatted values
+  // Prepare data for template rendering with all possible client fields
   const templateData = {
-    nome_cliente: clientName || "Cliente",
-    nome_responsavel: responsibleName || "Responsável",
+    nome_cliente: clientName || client?.name || "Cliente",
+    nome_responsavel: responsibleName || client?.responsible_name || client?.partner_name || "",
     valor_cobranca: formattedAmount,
     data_vencimento: formattedDueDate,
     plano_servico: description || "",
@@ -87,15 +84,15 @@ export const EmailPreview = ({
     total_parcelas: String(safeTotalInstallments),
     forma_pagamento: paymentMethodText,
     cnpj: client?.cnpj || "",
-    cpf: client?.cpf || "",
+    cpf: client?.cpf || client?.partner_cpf || "",
     endereco: client?.address || "",
     valor_mensal: formattedAmount,
     data_inicio: new Date().toLocaleDateString('pt-BR'),
+    partner_name: client?.partner_name || "",
+    partner_cpf: client?.partner_cpf || "",
+    company_name: client?.company_name || ""
+    // Add here any other client fields as desired
   };
-
-  // Log the template data for debugging
-  console.log("Template data:", templateData);
-  console.log("Template content before rendering:", selectedTemplateData.content);
 
   // Render the template content and subject
   const content = renderTemplate(
@@ -111,8 +108,6 @@ export const EmailPreview = ({
     selectedTemplateData.subtype, 
     templateData
   );
-
-  console.log("Rendered content:", content);
 
   return (
     <div className="space-y-2">
