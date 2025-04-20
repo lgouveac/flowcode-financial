@@ -1,3 +1,4 @@
+
 export type EmailTemplateType = 'clients' | 'employees';
 export type EmailTemplateSubtype = 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract';
 
@@ -24,6 +25,7 @@ export type VariablesType = {
   };
 };
 
+// Adding all client fields (CNPJ, CPF, endereço, nome do sócio, etc) to recurring, oneTime, and contract
 export const variablesList: VariablesType = {
   clients: {
     recurring: [
@@ -34,7 +36,16 @@ export const variablesList: VariablesType = {
       { name: '{plano_servico}', description: 'Descrição do serviço' },
       { name: '{numero_parcela}', description: 'Número da parcela atual' },
       { name: '{total_parcelas}', description: 'Total de parcelas' },
-      { name: '{forma_pagamento}', description: 'Forma de pagamento' }
+      { name: '{forma_pagamento}', description: 'Forma de pagamento' },
+      // Additional client variables:
+      { name: '{cnpj}', description: 'CNPJ do cliente' },
+      { name: '{cpf}', description: 'CPF do cliente' },
+      { name: '{endereco}', description: 'Endereço do cliente' },
+      { name: '{partner_name}', description: 'Nome do sócio/partner' },
+      { name: '{partner_cpf}', description: 'CPF do sócio/partner' },
+      { name: '{company_name}', description: 'Razão social/Nome da empresa' },
+      { name: '{valor_mensal}', description: 'Valor mensal do contrato' },
+      { name: '{data_inicio}', description: 'Data de início do contrato' }
     ],
     oneTime: [
       { name: '{nome_cliente}', description: 'Nome do cliente' },
@@ -42,7 +53,16 @@ export const variablesList: VariablesType = {
       { name: '{valor_cobranca}', description: 'Valor da cobrança' },
       { name: '{data_vencimento}', description: 'Data de vencimento' },
       { name: '{descricao_servico}', description: 'Descrição do serviço' },
-      { name: '{forma_pagamento}', description: 'Forma de pagamento' }
+      { name: '{forma_pagamento}', description: 'Forma de pagamento' },
+      // Additional client variables:
+      { name: '{cnpj}', description: 'CNPJ do cliente' },
+      { name: '{cpf}', description: 'CPF do cliente' },
+      { name: '{endereco}', description: 'Endereço do cliente' },
+      { name: '{partner_name}', description: 'Nome do sócio/partner' },
+      { name: '{partner_cpf}', description: 'CPF do sócio/partner' },
+      { name: '{company_name}', description: 'Razão social/Nome da empresa' },
+      { name: '{valor_mensal}', description: 'Valor mensal do contrato' },
+      { name: '{data_inicio}', description: 'Data de início do contrato' }
     ],
     reminder: [
       { name: '{nome_cliente}', description: 'Nome do cliente' },
@@ -51,7 +71,16 @@ export const variablesList: VariablesType = {
       { name: '{data_vencimento}', description: 'Data de vencimento' },
       { name: '{dias_atraso}', description: 'Dias em atraso' },
       { name: '{descricao_servico}', description: 'Descrição do serviço' },
-      { name: '{forma_pagamento}', description: 'Forma de pagamento' }
+      { name: '{forma_pagamento}', description: 'Forma de pagamento' },
+      // Additional client variables:
+      { name: '{cnpj}', description: 'CNPJ do cliente' },
+      { name: '{cpf}', description: 'CPF do cliente' },
+      { name: '{endereco}', description: 'Endereço do cliente' },
+      { name: '{partner_name}', description: 'Nome do sócio/partner' },
+      { name: '{partner_cpf}', description: 'CPF do sócio/partner' },
+      { name: '{company_name}', description: 'Razão social/Nome da empresa' },
+      { name: '{valor_mensal}', description: 'Valor mensal do contrato' },
+      { name: '{data_inicio}', description: 'Data de início do contrato' }
     ],
     contract: [
       { name: '{nome_cliente}', description: 'Nome do cliente' },
@@ -59,6 +88,9 @@ export const variablesList: VariablesType = {
       { name: '{cnpj}', description: 'CNPJ do cliente' },
       { name: '{cpf}', description: 'CPF do cliente' },
       { name: '{endereco}', description: 'Endereço do cliente' },
+      { name: '{partner_name}', description: 'Nome do sócio/partner' },
+      { name: '{partner_cpf}', description: 'CPF do sócio/partner' },
+      { name: '{company_name}', description: 'Razão social/Nome da empresa' },
       { name: '{valor_mensal}', description: 'Valor mensal do contrato' },
       { name: '{data_inicio}', description: 'Data de início do contrato' },
       { name: '{forma_pagamento}', description: 'Forma de pagamento' }
@@ -82,3 +114,4 @@ export const variablesList: VariablesType = {
     ]
   }
 };
+
