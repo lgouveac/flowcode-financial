@@ -23,18 +23,18 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
   const [statusFilter, setStatusFilter] = useState<RecurringBilling['status'] | 'all'>('all');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showDeleteRestricted, setShowDeleteRestricted] = useState(false);
-  const [restrictedMessage, setRestrictedMessage = useState("");
-  const [pendingAction, setPendingAction = useState<{
+  const [restrictedMessage, setRestrictedMessage] = useState("");
+  const [pendingAction, setPendingAction] = useState<{
     billingId: string;
     field: string;
     value: any;
   } | null>(null);
-  const [selectedBillingId, setSelectedBillingId = useState<string | null>(null);
-  const [showPaymentDetails, setShowPaymentDetails = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm = useState(false);
-  const [billingToDelete, setBillingToDelete = useState<string | null>(null);
-  const [showInstallmentConfirm, setShowInstallmentConfirm = useState(false);
-  const [pendingInstallment, setPendingInstallment = useState<{
+  const [selectedBillingId, setSelectedBillingId] = useState<string | null>(null);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [billingToDelete, setBillingToDelete] = useState<string | null>(null);
+  const [showInstallmentConfirm, setShowInstallmentConfirm] = useState(false);
+  const [pendingInstallment, setPendingInstallment] = useState<{
     billingId: string;
     currentInstallment: number;
     totalInstallments: number;
