@@ -271,6 +271,11 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
     }
   };
 
+  // Find the selected billing object using the selectedBillingId
+  const selectedBilling = selectedBillingId
+    ? billings.find((b) => b.id === selectedBillingId)
+    : null;
+
   return (
     <div className="space-y-4 pt-4 pl-4">
       <div className="flex flex-col sm:flex-row gap-4">
@@ -499,9 +504,9 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {selectedBillingId && (
+      {selectedBilling && (
         <PaymentDetailsDialog
-          billingId={selectedBillingId}
+          billing={selectedBilling}
           open={showPaymentDetails}
           onClose={handleDialogClose}
         />
