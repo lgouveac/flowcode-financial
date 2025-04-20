@@ -1,7 +1,9 @@
+
 import { Label } from "@/components/ui/label";
 import type { EmailTemplate } from "@/types/email";
 import { useTemplateVariables } from "@/hooks/useTemplateVariables";
 
+// Add full typing for client
 interface EmailPreviewProps {
   selectedTemplate?: string;
   templates: EmailTemplate[];
@@ -14,7 +16,16 @@ interface EmailPreviewProps {
   installments?: number;
   currentInstallment?: number;
   paymentMethod?: 'pix' | 'boleto' | 'credit_card';
-  client?: { cnpj?: string; cpf?: string; address?: string };
+  client?: {
+    cnpj?: string;
+    cpf?: string;
+    address?: string;
+    name?: string;
+    responsible_name?: string;
+    partner_name?: string;
+    partner_cpf?: string;
+    company_name?: string;
+  };
 }
 
 export const EmailPreview = ({
@@ -121,3 +132,4 @@ export const EmailPreview = ({
     </div>
   );
 };
+
