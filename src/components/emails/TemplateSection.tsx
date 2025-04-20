@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarIcon, RefreshCwIcon, Send, AlertTriangle, FileText } from "lucide-react";
@@ -33,6 +32,11 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
   });
 
   const { savedTemplates, isLoading, handleTemplateUpdate } = useEmailTemplates();
+
+  // Filter templates for the current section (type and subtype)
+  const currentTemplates = savedTemplates.filter(
+    template => template.type === type && template.subtype === currentType
+  );
 
   // Include 'contract' tab for clients (already appears in tab bar)
 
