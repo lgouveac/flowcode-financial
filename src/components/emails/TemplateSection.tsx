@@ -18,7 +18,10 @@ interface TemplateSectionProps {
 
 export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) => {
   const { toast } = useToast();
-  const [currentType, setCurrentType] = useState(type === 'employees' ? 'invoice' : 'recurring');
+  // Default tabs: add 'contract' for clients
+  const [currentType, setCurrentType] = useState(
+    type === 'employees' ? 'invoice' : 'recurring'
+  );
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [newTemplate, setNewTemplate] = useState<Partial<EmailTemplate>>({
@@ -31,16 +34,15 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
 
   const { savedTemplates, isLoading, handleTemplateUpdate } = useEmailTemplates();
 
-  // Filter templates based on current type/subtype
-  const currentTemplates = savedTemplates.filter(
-    template => template.type === type && template.subtype === currentType
-  );
+  // Include 'contract' tab for clients (already appears in tab bar)
 
-  const handleTypeChange = (type: string) => {
-    setCurrentType(type);
+  // Make sure contract is valid subtype for input/creation
+  const handleTypeChange = (newType: string) => {
+    setCurrentType(newType);
     setNewTemplate(prev => ({
       ...prev,
-      subtype: type as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder',
+      // contract is now allowed
+      subtype: newType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract',
     }));
   };
 

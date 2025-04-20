@@ -1,12 +1,22 @@
 
 import { EmailTemplate } from "@/types/email";
 
+// Include "contract" everywhere in type guards and unions!
 export const validateTemplateType = (type: string): type is 'clients' | 'employees' => {
   return type === 'clients' || type === 'employees';
 };
 
-export const validateTemplateSubtype = (subtype: string): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract' => {
-  return ['recurring', 'oneTime', 'invoice', 'hours', 'reminder', 'contract'].includes(subtype);
+export const validateTemplateSubtype = (
+  subtype: string
+): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract' => {
+  return [
+    'recurring',
+    'oneTime',
+    'invoice',
+    'hours',
+    'reminder',
+    'contract',
+  ].includes(subtype);
 };
 
 export const validateTemplate = (template: Partial<EmailTemplate>): boolean => {
