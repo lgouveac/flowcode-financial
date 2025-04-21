@@ -107,6 +107,66 @@ export const Overview = () => {
     }
   };
   
+  // Updated function to fetch top clients
+  const fetchTopClients = async () => {
+    setLoadingTopClients(true);
+    
+    try {
+      // Get date range based on selected period
+      const dates = getPeriodDates(period);
+      
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from('payments')
+        .select(`
+          amount,
+          client_id,
+          clients (
+            name
+          )
+        `)
+        .eq('status', 'paid')
+        .gte('payment_date', dates.start)
+        .lte('payment_date', dates.end);
+      
+      if (paymentsError) {
+        throw paymentsError;
+      }
+      
+      // Process data to get top clients
+      const clientTotals: Record<string, { client_id: string; client_name: string; total_amount: number }> = {};
+      
+      paymentsData?.forEach(payment => {
+        const clientId = payment.client_id;
+        const clientName = payment.clients?.name || 'Cliente';
+        const amount = payment.amount || 0;
+        
+        if (clientTotals[clientId]) {
+          clientTotals[clientId].total_amount += amount;
+        } else {
+          clientTotals[clientId] = {
+            client_id: clientId,
+            client_name: clientName,
+            total_amount: amount
+          };
+        }
+      });
+      
+      // Convert to array and sort
+      const sortedClients = Object.values(clientTotals).sort((a, b) => 
+        b.total_amount - a.total_amount
+      ).slice(0, 5);
+      
+      setTopClients(sortedClients);
+      
+      // Log data to help with debugging
+      console.log('Top clients data:', sortedClients);
+    } catch (error) {
+      console.error("Error fetching top clients:", error);
+    } finally {
+      setLoadingTopClients(false);
+    }
+  };
+  
   // Function to fetch pending payments
   const fetchPendingPayments = async () => {
     setLoadingPayments(true);
@@ -142,29 +202,6 @@ export const Overview = () => {
       console.error("Error fetching pending payments:", error);
     } finally {
       setLoadingPayments(false);
-    }
-  };
-  
-  // Function to fetch top clients
-  const fetchTopClients = async () => {
-    setLoadingTopClients(true);
-    
-    try {
-      const { data, error } = await supabase
-        .rpc('get_top_clients', { p_period: period });
-      
-      if (error) {
-        throw error;
-      }
-      
-      setTopClients(data || []);
-      
-      // Log data to help with debugging
-      console.log('Top clients data:', data);
-    } catch (error) {
-      console.error("Error fetching top clients:", error);
-    } finally {
-      setLoadingTopClients(false);
     }
   };
   
