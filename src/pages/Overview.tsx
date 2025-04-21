@@ -107,13 +107,22 @@ export const Overview = () => {
     }
   };
   
-  // Updated function to fetch top clients
+  // Updated function to fetch top clients with fixed type handling
   const fetchTopClients = async () => {
     setLoadingTopClients(true);
     
     try {
       // Get date range based on selected period
       const dates = getPeriodDates(period);
+      
+      // Define the type to match the Supabase response structure
+      interface PaymentWithClient {
+        amount: number;
+        client_id: string;
+        clients: {
+          name: string;
+        };
+      }
       
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
@@ -135,7 +144,7 @@ export const Overview = () => {
       // Process data to get top clients
       const clientTotals: Record<string, { client_id: string; client_name: string; total_amount: number }> = {};
       
-      paymentsData?.forEach(payment => {
+      (paymentsData as PaymentWithClient[])?.forEach(payment => {
         const clientId = payment.client_id;
         const clientName = payment.clients?.name || 'Cliente';
         const amount = payment.amount || 0;
