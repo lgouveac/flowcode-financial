@@ -3,23 +3,20 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplate } from "@/types/email";
-import { RecordType } from "../types/emailTest";
 
 export const useEmailTest = (template: EmailTemplate) => {
   const { toast } = useToast();
-  const [customEmail, setCustomEmail] = useState<string>("");
   const [selectedRecordId, setSelectedRecordId] = useState<string>("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [recordType, setRecordType] = useState<RecordType>("all");
   const [previewData, setPreviewData] = useState<any>(null);
 
   useEffect(() => {
     fetchRecords();
-  }, [template, recordType]);
+  }, [template]);
 
   useEffect(() => {
     if (selectedRecordId && records.length > 0) {
@@ -39,34 +36,15 @@ export const useEmailTest = (template: EmailTemplate) => {
       let data: any[] = [];
       
       if (template.type === 'clients') {
-        if (template.subtype === 'recurring' || recordType === 'recurring' || recordType === 'all') {
-          const { data: recurringData, error: recurringError } = await supabase
-            .from('recurring_billing') // Fixed: 'recurring_billings' -> 'recurring_billing'
-            .select(`
-              id, amount, due_day, description, installments, current_installment, payment_method,
-              client:client_id (id, name, email, partner_name)
-            `)
-            .limit(50);
-          
-          if (recurringError) throw recurringError;
-          
-          data = [...data, ...recurringData];
-        }
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('id, name, email, responsible_name, partner_name')
+          .order('name')
+          .limit(50);
         
-        if (template.subtype === 'oneTime' || recordType === 'oneTime' || recordType === 'all') {
-          const { data: paymentData, error: paymentError } = await supabase
-            .from('payments')
-            .select(`
-              id, amount, due_date, description, payment_method, status,
-              client:client_id (id, name, email, partner_name)
-            `)
-            .order('due_date', { ascending: false })
-            .limit(50);
-          
-          if (paymentError) throw paymentError;
-          
-          data = [...data, ...paymentData];
-        }
+        if (clientsError) throw clientsError;
+        
+        data = [...clientsData];
       } else if (template.type === 'employees') {
         const { data: employeeData, error: employeeError } = await supabase
           .from('employees')
@@ -75,7 +53,7 @@ export const useEmailTest = (template: EmailTemplate) => {
         
         if (employeeError) throw employeeError;
         
-        data = [...data, ...employeeData];
+        data = [...employeeData];
       }
       
       setRecords(data);
@@ -89,20 +67,16 @@ export const useEmailTest = (template: EmailTemplate) => {
 
   const updatePreviewData = (record: any) => {
     if (template.type === 'clients') {
-      if ('client' in record) {
-        // Payment or Recurring Billing
-        setPreviewData({
-          clientName: record.client?.name || "Cliente",
-          responsibleName: record.client?.partner_name || "Responsável",
-          amount: record.amount || 0,
-          dueDay: record.due_day || (record.due_date ? new Date(record.due_date).getDate() : 1),
-          dueDate: record.due_date,
-          description: record.description || "Serviço",
-          totalInstallments: record.installments || record.total_installments || 1,
-          currentInstallment: record.current_installment || 1,
-          paymentMethod: record.payment_method || "pix"
-        });
-      }
+      setPreviewData({
+        clientName: record.name || "Cliente",
+        responsibleName: record.responsible_name || record.partner_name || "Responsável",
+        amount: 100, // Default test value
+        dueDay: 15, // Default test day
+        description: "Serviço de teste",
+        totalInstallments: 1,
+        currentInstallment: 1,
+        paymentMethod: "pix"
+      });
     } else {
       // Employee
       setPreviewData({
@@ -121,28 +95,33 @@ export const useEmailTest = (template: EmailTemplate) => {
       setIsSendingEmail(true);
       setError(null);
       
-      if (mode === 'record' && !selectedRecordId) {
-        throw new Error('Please select a record first');
+      if (!selectedRecordId) {
+        throw new Error('Por favor, selecione um registro primeiro');
       }
       
-      if (mode === 'custom' && !customEmail) {
-        throw new Error('Please enter an email address');
+      const record = records.find(r => r.id === selectedRecordId);
+      if (!record || !record.email) {
+        throw new Error('Email do registro não encontrado');
       }
       
       const emailData: any = {
         templateId: template.id,
         type: template.type,
-        subtype: template.subtype
+        subtype: template.subtype,
+        to: record.email,
+        data: {
+          recipientName: record.name,
+          responsibleName: record.responsible_name || record.partner_name,
+          billingValue: 100,
+          dueDate: new Date().toISOString().split('T')[0],
+          currentInstallment: 1,
+          totalInstallments: 1,
+          paymentMethod: "pix",
+          descricaoServico: "Serviço de teste"
+        }
       };
       
-      if (mode === 'record') {
-        emailData.recordId = selectedRecordId;
-      } else {
-        emailData.to = customEmail;
-        emailData.testData = true;
-      }
-      
-      const { data, error: apiError } = await supabase.functions.invoke('send-email', {
+      const { data, error: apiError } = await supabase.functions.invoke('send-billing-email', {
         body: emailData
       });
       
@@ -150,7 +129,7 @@ export const useEmailTest = (template: EmailTemplate) => {
       
       toast({
         title: 'Email enviado com sucesso',
-        description: 'O email de teste foi enviado para o destinatário especificado.',
+        description: `O email de teste foi enviado para ${record.email}`,
       });
       
       return data;
@@ -167,11 +146,7 @@ export const useEmailTest = (template: EmailTemplate) => {
     }
   };
 
-  const [mode, setMode] = useState<'record' | 'custom'>('record');
-
   return {
-    customEmail,
-    setCustomEmail,
     selectedRecordId,
     setSelectedRecordId,
     selectedRecord,
@@ -181,10 +156,6 @@ export const useEmailTest = (template: EmailTemplate) => {
     handleRecordSelect,
     handleTestEmail,
     error,
-    previewData,
-    recordType,
-    setRecordType,
-    mode,
-    setMode
+    previewData
   };
 };

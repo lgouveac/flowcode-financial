@@ -10,12 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { LoadingButton } from "@/components/ui/loading-button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RecordSelector } from "./components/RecordSelector";
-import { RecipientField } from "./components/RecipientField";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEmailTest } from "./hooks/useEmailTest";
 import { TestEmailDialogProps } from "./types/emailTest";
 import { EmailPreview } from "./components/EmailPreview";
+import { Label } from "../ui/label";
 
 export const TestEmailDialog = ({
   template,
@@ -23,22 +22,14 @@ export const TestEmailDialog = ({
   onClose,
 }: TestEmailDialogProps) => {
   const {
-    customEmail,
-    setCustomEmail,
-    selectedRecord,
     selectedRecordId,
     setSelectedRecordId,
-    previewData,
     records,
     isLoadingRecords,
     isSendingEmail,
-    handleRecordSelect,
     handleTestEmail,
-    recordType,
-    setRecordType,
     error,
-    mode,
-    setMode
+    previewData
   } = useEmailTest(template);
 
   return (
@@ -51,64 +42,53 @@ export const TestEmailDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs
-          value={mode}
-          onValueChange={(value) => setMode(value as "record" | "custom")}
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="record">Selecionar Registro</TabsTrigger>
-            <TabsTrigger value="custom">Email Personalizado</TabsTrigger>
-          </TabsList>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Selecione um {template.type === 'clients' ? 'cliente' : 'funcionário'}</Label>
+            <Select
+              value={selectedRecordId}
+              onValueChange={setSelectedRecordId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={
+                  isLoadingRecords 
+                    ? "Carregando..." 
+                    : records.length === 0 
+                      ? "Nenhum registro disponível" 
+                      : `Selecione um ${template.type === 'clients' ? 'cliente' : 'funcionário'}`
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                {records.length === 0 ? (
+                  <div className="py-2 px-2 text-sm text-muted-foreground">
+                    Nenhum registro disponível
+                  </div>
+                ) : (
+                  records.map((record) => (
+                    <SelectItem key={record.id} value={record.id}>
+                      {record.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <TabsContent value="record" className="space-y-4 py-4">
-            <RecordSelector
-              selectedRecordId={selectedRecordId}
-              onRecordSelect={handleRecordSelect}
-              records={records}
-              isLoading={isLoadingRecords}
-              template={template}
-              recordType={recordType}
-              onRecordTypeChange={setRecordType}
-            />
-
-            {selectedRecordId && (
-              <EmailPreview
-                selectedTemplate={template.id}
-                templates={[template]}
-                clientName={previewData?.clientName}
-                responsibleName={previewData?.responsibleName}
-                amount={previewData?.amount}
-                dueDay={previewData?.dueDay}
-                dueDate={previewData?.dueDate}
-                description={previewData?.description}
-                installments={previewData?.totalInstallments}
-                currentInstallment={previewData?.currentInstallment}
-                paymentMethod={previewData?.paymentMethod as any}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="custom" className="space-y-4 py-4">
-            <RecipientField
-              customEmail={customEmail}
-              setCustomEmail={setCustomEmail}
-            />
-
+          {selectedRecordId && (
             <EmailPreview
               selectedTemplate={template.id}
               templates={[template]}
-              clientName="Cliente Teste"
-              responsibleName="Responsável Teste"
-              amount={100}
-              dueDay={15}
-              description="Teste de template"
-              installments={1}
-              currentInstallment={1}
-              paymentMethod="pix"
+              clientName={previewData?.clientName}
+              responsibleName={previewData?.responsibleName}
+              amount={previewData?.amount}
+              dueDay={previewData?.dueDay}
+              description={previewData?.description}
+              installments={previewData?.totalInstallments}
+              currentInstallment={previewData?.currentInstallment}
+              paymentMethod={previewData?.paymentMethod as any}
             />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -117,10 +97,7 @@ export const TestEmailDialog = ({
             Cancelar
           </Button>
           <LoadingButton
-            disabled={
-              (mode === "record" && !selectedRecordId) ||
-              (mode === "custom" && !customEmail)
-            }
+            disabled={!selectedRecordId}
             loading={isSendingEmail}
             onClick={handleTestEmail}
           >
