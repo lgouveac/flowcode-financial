@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +12,19 @@ import { supabase } from "@/lib/supabase";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import { EstimatedExpensesDialog } from "@/components/cash-flow/EstimatedExpensesDialog";
 import type { Payment } from "@/types/payment";
-import { FileText, Calculator, BarChart3 } from "lucide-react";
+import { FileText, Calculator, BarChart3, Users } from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+
+interface TopClient {
+  client_id: string;
+  client_name: string;
+  total_amount: number;
+}
 
 export const Overview = () => {
   const [period, setPeriod] = useState("current");
@@ -29,6 +40,9 @@ export const Overview = () => {
   const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [estimatedExpensesOpen, setEstimatedExpensesOpen] = useState(false);
+  const [topClientsOpen, setTopClientsOpen] = useState(false);
+  const [topClients, setTopClients] = useState<TopClient[]>([]);
+  const [loadingTopClients, setLoadingTopClients] = useState(false);
 
   // Format currency with consistent decimal places
   const formatCurrency = (value: number) => {
@@ -131,6 +145,29 @@ export const Overview = () => {
     }
   };
   
+  // Function to fetch top clients
+  const fetchTopClients = async () => {
+    setLoadingTopClients(true);
+    
+    try {
+      const { data, error } = await supabase
+        .rpc('get_top_clients', { p_period: period });
+      
+      if (error) {
+        throw error;
+      }
+      
+      setTopClients(data || []);
+      
+      // Log data to help with debugging
+      console.log('Top clients data:', data);
+    } catch (error) {
+      console.error("Error fetching top clients:", error);
+    } finally {
+      setLoadingTopClients(false);
+    }
+  };
+  
   // Handle click on the expected revenue card
   const handleExpectedRevenueClick = () => {
     fetchPendingPayments();
@@ -140,6 +177,12 @@ export const Overview = () => {
   // Handle click on the estimated expenses card
   const handleEstimatedExpensesClick = () => {
     setEstimatedExpensesOpen(true);
+  };
+
+  // Handle click on the top clients option
+  const handleTopClientsClick = () => {
+    fetchTopClients();
+    setTopClientsOpen(true);
   };
 
   // Calculate the total expected revenue (current revenue + expected future revenue)
@@ -238,17 +281,36 @@ export const Overview = () => {
             </SelectContent>
           </Select>
           
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filtrar categorias" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas Categorias</SelectItem>
-              <SelectItem value="investment">Investimento</SelectItem>
-              <SelectItem value="pro_labore">Pro Labore</SelectItem>
-              <SelectItem value="profit_distribution">Lucros</SelectItem>
-            </SelectContent>
-          </Select>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center justify-between whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 w-full sm:w-[180px]">
+                {categoryFilter === "all" ? "Todas Categorias" : 
+                 categoryFilter === "investment" ? "Investimento" :
+                 categoryFilter === "pro_labore" ? "Pro Labore" :
+                 categoryFilter === "profit_distribution" ? "Lucros" : 
+                 "Filtrar"}
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 h-4 w-4 opacity-50"><path d="m6 9 6 6 6-6"></path></svg>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[180px]">
+              <DropdownMenuItem onClick={() => setCategoryFilter("all")}>
+                Todas Categorias
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setCategoryFilter("investment")}>
+                Investimento
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setCategoryFilter("pro_labore")}>
+                Pro Labore
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setCategoryFilter("profit_distribution")}>
+                Lucros
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleTopClientsClick}>
+                <Users className="mr-2 h-4 w-4" />
+                Top Clientes
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -454,5 +516,46 @@ export const Overview = () => {
           refetchEstimatedExpenses();
         }}
       />
+
+      {/* Top Clients Modal */}
+      <Dialog open={topClientsOpen} onOpenChange={setTopClientsOpen}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Top Clientes - {period === "current" ? "Mês Atual" : 
+                          period === "last_month" ? "Mês Anterior" : 
+                          period === "last_3_months" ? "Últimos 3 Meses" : 
+                          period === "last_6_months" ? "Últimos 6 Meses" : 
+                          "Último Ano"}</DialogTitle>
+          </DialogHeader>
+          
+          {loadingTopClients ? (
+            <div className="flex justify-center py-8">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : (
+            <div className="mt-4">
+              {topClients.length > 0 ? (
+                <div className="space-y-4">
+                  {topClients.map((client, index) => (
+                    <div key={client.client_id} className="flex justify-between items-center border-b pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg">{index + 1}.</span>
+                        <span className="font-medium">{client.client_name}</span>
+                      </div>
+                      <span className="font-semibold text-green-600 dark:text-green-400">
+                        {formatCurrency(client.total_amount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Nenhum cliente encontrado com pagamentos neste período.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>;
 };
