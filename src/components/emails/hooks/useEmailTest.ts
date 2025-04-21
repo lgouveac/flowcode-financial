@@ -36,15 +36,34 @@ export const useEmailTest = (template: EmailTemplate) => {
       let data: any[] = [];
       
       if (template.type === 'clients') {
-        const { data: clientsData, error: clientsError } = await supabase
-          .from('clients')
-          .select('id, name, email, responsible_name, partner_name')
-          .order('name')
+        // For client templates, fetch payments instead of just clients
+        // This will get real payment data for the test
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from('payments')
+          .select('*, clients(id, name, email, responsible_name, partner_name)')
+          .order('due_date', { ascending: false })
           .limit(50);
         
-        if (clientsError) throw clientsError;
+        if (paymentsError) throw paymentsError;
         
-        data = [...clientsData];
+        data = paymentsData.map(payment => ({
+          id: payment.id,
+          name: `${payment.clients.name} - ${payment.description} (${new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(payment.amount)})`,
+          email: payment.clients.email,
+          responsible_name: payment.clients.responsible_name,
+          partner_name: payment.clients.partner_name,
+          amount: payment.amount,
+          due_date: payment.due_date,
+          description: payment.description,
+          installment_number: payment.installment_number || 1,
+          total_installments: payment.total_installments || 1,
+          payment_method: payment.payment_method,
+          client_id: payment.client_id
+        }));
+        
       } else if (template.type === 'employees') {
         const { data: employeeData, error: employeeError } = await supabase
           .from('employees')
@@ -67,15 +86,29 @@ export const useEmailTest = (template: EmailTemplate) => {
 
   const updatePreviewData = (record: any) => {
     if (template.type === 'clients') {
+      // Format currency
+      const formattedAmount = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(record.amount);
+      
+      // Format date
+      const formattedDate = record.due_date ? 
+        new Date(record.due_date).toLocaleDateString('pt-BR') : 
+        new Date().toLocaleDateString('pt-BR');
+      
       setPreviewData({
-        clientName: record.name || "Cliente",
+        clientName: record.name.split(' - ')[0] || "Cliente",
         responsibleName: record.responsible_name || record.partner_name || "Responsável",
-        amount: 100, // Default test value
-        dueDay: 15, // Default test day
-        description: "Serviço de teste",
-        totalInstallments: 1,
-        currentInstallment: 1,
-        paymentMethod: "pix"
+        amount: record.amount, 
+        formattedAmount: formattedAmount,
+        dueDay: new Date(record.due_date).getDate(),
+        dueDate: formattedDate,
+        description: record.description || "Serviço de teste",
+        totalInstallments: record.total_installments || 1,
+        currentInstallment: record.installment_number || 1,
+        paymentMethod: record.payment_method || "pix",
+        clientId: record.client_id
       });
     } else {
       // Employee
@@ -84,10 +117,6 @@ export const useEmailTest = (template: EmailTemplate) => {
         employeeEmail: record.email || "email@example.com",
       });
     }
-  };
-
-  const handleRecordSelect = (id: string) => {
-    setSelectedRecordId(id);
   };
 
   const handleTestEmail = async () => {
@@ -104,20 +133,31 @@ export const useEmailTest = (template: EmailTemplate) => {
         throw new Error('Email do registro não encontrado');
       }
       
+      // Get the formatted amount
+      const formattedAmount = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(record.amount || 0);
+      
+      // Format the payment method
+      let paymentMethodText = 'PIX';
+      if (record.payment_method === 'boleto') paymentMethodText = 'Boleto';
+      if (record.payment_method === 'credit_card') paymentMethodText = 'Cartão de Crédito';
+      
       const emailData: any = {
         templateId: template.id,
         type: template.type,
         subtype: template.subtype,
         to: record.email,
         data: {
-          recipientName: record.name,
-          responsibleName: record.responsible_name || record.partner_name,
-          billingValue: 100,
-          dueDate: new Date().toISOString().split('T')[0],
-          currentInstallment: 1,
-          totalInstallments: 1,
-          paymentMethod: "pix",
-          descricaoServico: "Serviço de teste"
+          recipientName: record.name.split(' - ')[0] || 'Cliente',
+          responsibleName: record.responsible_name || record.partner_name || 'Responsável',
+          billingValue: formattedAmount,
+          dueDate: record.due_date ? new Date(record.due_date).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
+          currentInstallment: record.installment_number || 1,
+          totalInstallments: record.total_installments || 1,
+          paymentMethod: paymentMethodText,
+          descricaoServico: record.description || "Serviço de teste"
         }
       };
       
@@ -153,7 +193,6 @@ export const useEmailTest = (template: EmailTemplate) => {
     records,
     isLoadingRecords,
     isSendingEmail,
-    handleRecordSelect,
     handleTestEmail,
     error,
     previewData

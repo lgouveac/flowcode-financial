@@ -44,7 +44,7 @@ export const TestEmailDialog = ({
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Selecione um {template.type === 'clients' ? 'cliente' : 'funcionário'}</Label>
+            <Label>Selecione um {template.type === 'clients' ? 'recebimento' : 'funcionário'}</Label>
             <Select
               value={selectedRecordId}
               onValueChange={setSelectedRecordId}
@@ -55,7 +55,7 @@ export const TestEmailDialog = ({
                     ? "Carregando..." 
                     : records.length === 0 
                       ? "Nenhum registro disponível" 
-                      : `Selecione um ${template.type === 'clients' ? 'cliente' : 'funcionário'}`
+                      : `Selecione um ${template.type === 'clients' ? 'recebimento' : 'funcionário'}`
                 } />
               </SelectTrigger>
               <SelectContent>
@@ -74,7 +74,7 @@ export const TestEmailDialog = ({
             </Select>
           </div>
 
-          {selectedRecordId && (
+          {selectedRecordId && previewData && (
             <EmailPreview
               selectedTemplate={template.id}
               templates={[template]}
@@ -82,6 +82,7 @@ export const TestEmailDialog = ({
               responsibleName={previewData?.responsibleName}
               amount={previewData?.amount}
               dueDay={previewData?.dueDay}
+              dueDate={previewData?.dueDate}
               description={previewData?.description}
               installments={previewData?.totalInstallments}
               currentInstallment={previewData?.currentInstallment}
