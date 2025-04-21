@@ -38,8 +38,6 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
     template => template.type === type && template.subtype === currentType
   );
 
-  // Include 'contract' tab for clients (already appears in tab bar)
-
   // Make sure contract is valid subtype for input/creation
   const handleTypeChange = (newType: string) => {
     setCurrentType(newType);
@@ -104,7 +102,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
       
       const templateToSave = {
         ...newTemplate,
-        subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder'
+        subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract'
       };
       
       const success = await onSaveTemplate(templateToSave);
@@ -117,7 +115,7 @@ export const TemplateSection = ({ type, onSaveTemplate }: TemplateSectionProps) 
         
         setNewTemplate({
           type: type,
-          subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder',
+          subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract',
           name: '',
           subject: '',
           content: '',
