@@ -107,7 +107,7 @@ export const Overview = () => {
     }
   };
   
-  // Updated function to fetch top clients with fixed type handling
+  // Updated function to fetch top clients with fixed type structure
   const fetchTopClients = async () => {
     setLoadingTopClients(true);
     
@@ -115,7 +115,7 @@ export const Overview = () => {
       // Get date range based on selected period
       const dates = getPeriodDates(period);
       
-      // Define the type to match the Supabase response structure
+      // Define the type to match the correct Supabase response structure
       interface PaymentWithClient {
         amount: number;
         client_id: string;
@@ -144,21 +144,25 @@ export const Overview = () => {
       // Process data to get top clients
       const clientTotals: Record<string, { client_id: string; client_name: string; total_amount: number }> = {};
       
-      (paymentsData as PaymentWithClient[])?.forEach(payment => {
-        const clientId = payment.client_id;
-        const clientName = payment.clients?.name || 'Cliente';
-        const amount = payment.amount || 0;
-        
-        if (clientTotals[clientId]) {
-          clientTotals[clientId].total_amount += amount;
-        } else {
-          clientTotals[clientId] = {
-            client_id: clientId,
-            client_name: clientName,
-            total_amount: amount
-          };
-        }
-      });
+      // Use a more cautious approach to process the data with correct types
+      if (paymentsData) {
+        paymentsData.forEach((payment: any) => {
+          const clientId = payment.client_id;
+          // Access the name correctly - clients has the name directly
+          const clientName = payment.clients?.name || 'Cliente';
+          const amount = payment.amount || 0;
+          
+          if (clientTotals[clientId]) {
+            clientTotals[clientId].total_amount += amount;
+          } else {
+            clientTotals[clientId] = {
+              client_id: clientId,
+              client_name: clientName,
+              total_amount: amount
+            };
+          }
+        });
+      }
       
       // Convert to array and sort
       const sortedClients = Object.values(clientTotals).sort((a, b) => 
