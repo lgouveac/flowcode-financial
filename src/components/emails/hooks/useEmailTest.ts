@@ -25,60 +25,82 @@ export const useEmailTest = (template: EmailTemplate) => {
         setSelectedRecord(record);
         updatePreviewData(record);
       }
+    } else {
+      setPreviewData(null);
+      setSelectedRecord(null);
     }
   }, [selectedRecordId, records]);
 
+  // Adicionamos apenas recebimentos ativos, não deletados, e do cliente ativo
   const fetchRecords = async () => {
     setIsLoadingRecords(true);
     setError(null);
-    
     try {
       let data: any[] = [];
-      
       if (template.type === 'clients') {
-        // For client templates, fetch payments instead of just clients
-        // This will get real payment data for the test
+        // Exibe só recebimentos ativos, com clientes ativos e que tenham email
         const { data: paymentsData, error: paymentsError } = await supabase
           .from('payments')
-          .select('*, clients(id, name, email, responsible_name, partner_name)')
+          .select(`
+            *,
+            clients:clients (
+              id,
+              name,
+              email,
+              responsible_name,
+              partner_name,
+              status
+            )
+          `)
           .order('due_date', { ascending: false })
-          .limit(50);
-        
+          .limit(100); // maior limite de exibição
+
         if (paymentsError) throw paymentsError;
-        
-        data = paymentsData.map(payment => ({
-          id: payment.id,
-          name: `${payment.clients.name} - ${payment.description} (${new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-          }).format(payment.amount)})`,
-          email: payment.clients.email,
-          responsible_name: payment.clients.responsible_name,
-          partner_name: payment.clients.partner_name,
-          amount: payment.amount,
-          due_date: payment.due_date,
-          description: payment.description,
-          installment_number: payment.installment_number || 1,
-          total_installments: payment.total_installments || 1,
-          payment_method: payment.payment_method,
-          client_id: payment.client_id
-        }));
-        
+
+        // Filtrar para exibir SÓ recebimentos de clientes ativos com email E que não estejam "cancelled", "overdue", "paid"
+        data = paymentsData
+          .filter(payment => {
+            const clientActive = payment.clients && payment.clients.status === 'active';
+            const clientEmail = payment.clients && payment.clients.email;
+            const paymentStatusOk = !["overdue", "cancelled"].includes(payment.status);
+            return clientActive && clientEmail && paymentStatusOk;
+          })
+          .map(payment => ({
+            id: payment.id,
+            name: `${payment.clients.name} - ${payment.description} (${new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(payment.amount)})`,
+            email: payment.clients.email,
+            responsible_name: payment.clients.responsible_name,
+            partner_name: payment.clients.partner_name,
+            amount: payment.amount,
+            due_date: payment.due_date,
+            description: payment.description,
+            installment_number: payment.installment_number || 1,
+            total_installments: payment.total_installments || 1,
+            payment_method: payment.payment_method,
+            client_id: payment.client_id
+          }));
+
       } else if (template.type === 'employees') {
+        // Funcionários ativos com email
         const { data: employeeData, error: employeeError } = await supabase
           .from('employees')
-          .select('id, name, email')
-          .limit(50);
-        
+          .select('id, name, email, status')
+          .eq('status', 'active')
+          .limit(100);
+
         if (employeeError) throw employeeError;
-        
-        data = [...employeeData];
+
+        data = employeeData.filter(e => !!e.email);
       }
-      
+
       setRecords(data);
     } catch (err: any) {
       console.error('Error fetching records:', err);
       setError(err.message || 'Failed to load records');
+      setRecords([]);
     } finally {
       setIsLoadingRecords(false);
     }
@@ -91,12 +113,12 @@ export const useEmailTest = (template: EmailTemplate) => {
         style: 'currency',
         currency: 'BRL'
       }).format(record.amount);
-      
+
       // Format date
-      const formattedDate = record.due_date ? 
-        new Date(record.due_date).toLocaleDateString('pt-BR') : 
-        new Date().toLocaleDateString('pt-BR');
-      
+      const formattedDate = record.due_date
+        ? new Date(record.due_date).toLocaleDateString('pt-BR')
+        : new Date().toLocaleDateString('pt-BR');
+
       setPreviewData({
         clientName: record.name.split(' - ')[0] || "Cliente",
         responsibleName: record.responsible_name || record.partner_name || "Responsável",
@@ -111,7 +133,6 @@ export const useEmailTest = (template: EmailTemplate) => {
         clientId: record.client_id
       });
     } else {
-      // Employee
       setPreviewData({
         employeeName: record.name || "Funcionário",
         employeeEmail: record.email || "email@example.com",
@@ -123,27 +144,25 @@ export const useEmailTest = (template: EmailTemplate) => {
     try {
       setIsSendingEmail(true);
       setError(null);
-      
+
       if (!selectedRecordId) {
         throw new Error('Por favor, selecione um registro primeiro');
       }
-      
+
       const record = records.find(r => r.id === selectedRecordId);
       if (!record || !record.email) {
         throw new Error('Email do registro não encontrado');
       }
-      
-      // Get the formatted amount
+
       const formattedAmount = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
       }).format(record.amount || 0);
-      
-      // Format the payment method
+
       let paymentMethodText = 'PIX';
       if (record.payment_method === 'boleto') paymentMethodText = 'Boleto';
       if (record.payment_method === 'credit_card') paymentMethodText = 'Cartão de Crédito';
-      
+
       const emailData: any = {
         templateId: template.id,
         type: template.type,
@@ -160,18 +179,18 @@ export const useEmailTest = (template: EmailTemplate) => {
           descricaoServico: record.description || "Serviço de teste"
         }
       };
-      
+
       const { data, error: apiError } = await supabase.functions.invoke('send-billing-email', {
         body: emailData
       });
-      
+
       if (apiError) throw apiError;
-      
+
       toast({
         title: 'Email enviado com sucesso',
         description: `O email de teste foi enviado para ${record.email}`,
       });
-      
+
       return data;
     } catch (err: any) {
       setError(err.message || 'Falha ao enviar o email de teste');
@@ -198,3 +217,5 @@ export const useEmailTest = (template: EmailTemplate) => {
     previewData
   };
 };
+
+// O ARQUIVO ESTÁ FICANDO LONGO! Considere me pedir depois para refatorá-lo em hooks pequenos!

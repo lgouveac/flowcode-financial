@@ -1,5 +1,6 @@
 
 import * as React from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +16,7 @@ import { useEmailTest } from "./hooks/useEmailTest";
 import { TestEmailDialogProps } from "./types/emailTest";
 import { EmailPreview } from "./components/EmailPreview";
 import { Label } from "../ui/label";
+import { Input } from "@/components/ui/input";
 
 export const TestEmailDialog = ({
   template,
@@ -32,6 +34,23 @@ export const TestEmailDialog = ({
     previewData
   } = useEmailTest(template);
 
+  // Busca local
+  const [search, setSearch] = useState("");
+  // Memoize os registros filtrados pela busca
+  const filteredRecords = useMemo(() => {
+    if (!search) return records;
+    return records.filter(r =>
+      r.name?.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [records, search]);
+
+  // Ao alterar o search, se o registro selecionado não existir mais no filtro, limpa seleção
+  React.useEffect(() => {
+    if (selectedRecordId && !filteredRecords.some(r => r.id === selectedRecordId)) {
+      setSelectedRecordId("");
+    }
+  }, [search, filteredRecords, selectedRecordId, setSelectedRecordId]);
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
@@ -45,6 +64,12 @@ export const TestEmailDialog = ({
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Selecione um {template.type === 'clients' ? 'recebimento' : 'funcionário'}</Label>
+            <Input
+              className="mb-2"
+              placeholder={`Buscar ${template.type === 'clients' ? 'recebimento' : 'funcionário'}...`}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
             <Select
               value={selectedRecordId}
               onValueChange={setSelectedRecordId}
@@ -53,18 +78,18 @@ export const TestEmailDialog = ({
                 <SelectValue placeholder={
                   isLoadingRecords 
                     ? "Carregando..." 
-                    : records.length === 0 
+                    : filteredRecords.length === 0 
                       ? "Nenhum registro disponível" 
                       : `Selecione um ${template.type === 'clients' ? 'recebimento' : 'funcionário'}`
                 } />
               </SelectTrigger>
               <SelectContent>
-                {records.length === 0 ? (
+                {filteredRecords.length === 0 ? (
                   <div className="py-2 px-2 text-sm text-muted-foreground">
                     Nenhum registro disponível
                   </div>
                 ) : (
-                  records.map((record) => (
+                  filteredRecords.map((record) => (
                     <SelectItem key={record.id} value={record.id}>
                       {record.name}
                     </SelectItem>
@@ -74,6 +99,7 @@ export const TestEmailDialog = ({
             </Select>
           </div>
 
+          {/* PreviewData só aparece se houver registro selecionado E (dados de preview já carregados) */}
           {selectedRecordId && previewData && (
             <EmailPreview
               selectedTemplate={template.id}
