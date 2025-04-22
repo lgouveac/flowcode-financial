@@ -10,10 +10,19 @@ import { useBillingData } from "@/hooks/useBillingData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NewPaymentDialog } from "./payments/NewPaymentDialog";
 import { Input } from "./ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const RecurringBilling = () => {
-  const { billings, payments, clients, templates, fetchBillings, fetchPayments } = useBillingData();
+  // --- FIX: Type for 'billings' includes optional 'clients' property ---
+  const { billings, payments, clients, templates, fetchBillings, fetchPayments } =
+    useBillingData() as {
+      billings: Array<import("@/types/billing").RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
+      payments: typeof payments;
+      clients: typeof clients;
+      templates: typeof templates;
+      fetchBillings: typeof fetchBillings;
+      fetchPayments: typeof fetchPayments;
+    };
   const [showSettings, setShowSettings] = useState(false);
   const [showNewPaymentDialog, setShowNewPaymentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("recurring");
