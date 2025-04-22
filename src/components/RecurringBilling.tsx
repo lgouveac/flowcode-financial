@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
@@ -13,16 +14,8 @@ import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const RecurringBilling = () => {
-  // --- FIX: Type for 'billings' includes optional 'clients' property ---
-  const { billings, payments, clients, templates, fetchBillings, fetchPayments } =
-    useBillingData() as {
-      billings: Array<import("@/types/billing").RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
-      payments: typeof payments;
-      clients: typeof clients;
-      templates: typeof templates;
-      fetchBillings: typeof fetchBillings;
-      fetchPayments: typeof fetchPayments;
-    };
+  // --------- FIX: Remove explicit typing to avoid circular references ---------
+  const { billings, payments, clients, templates, fetchBillings, fetchPayments } = useBillingData();
   const [showSettings, setShowSettings] = useState(false);
   const [showNewPaymentDialog, setShowNewPaymentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("recurring");
