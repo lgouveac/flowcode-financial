@@ -10,14 +10,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useState, useEffect } from "react";
 import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Copy } from "lucide-react";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
   onRefresh?: () => void;
+  enableDuplicate?: boolean; // NOVO PROP
 }
 
-export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
+export const BillingTable = ({ billings, onRefresh, enableDuplicate = false }: BillingTableProps) => {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RecurringBilling['status'] | 'all'>('all');
@@ -276,6 +277,12 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
     ? billings.find((b) => b.id === selectedBillingId)
     : null;
 
+  // Função para duplicar cobrança recorrente (a ser implementada)
+  const handleDuplicate = (billing: RecurringBilling & { clients?: { name: string; responsible_name?: string } }) => {
+    alert("Funcionalidade de duplicar recorrente ainda não implementada! Mas será possível aqui duplicar:\n\n" + billing.description);
+    // No futuro: abrir dialog de Novo Recorrente preenchido.
+  };
+
   return (
     <div className="space-y-4 pt-4 pl-4">
       <div className="flex flex-col sm:flex-row gap-4">
@@ -316,6 +323,7 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
             <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Ações</TableHead>
+            {enableDuplicate && <TableHead className="w-[60px] text-right"></TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -323,115 +331,130 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
             const matchesSearch = search.toLowerCase() === '' || 
               billing.clients?.name.toLowerCase().includes(search.toLowerCase()) ||
               billing.description.toLowerCase().includes(search.toLowerCase());
-            
             const matchesStatus = statusFilter === 'all' || billing.status === statusFilter;
-            
             return matchesSearch && matchesStatus;
           }).map((billing) => (
-            <TableRow 
-              key={billing.id} 
-              className="group hover:bg-muted/50 cursor-pointer"
-              onClick={(e) => handleRowClick(billing.id, e)}
-            >
-              <TableCell>{billing.clients?.name}</TableCell>
-              <TableCell>{billing.clients?.responsible_name || "—"}</TableCell>
-              <TableCell className="relative">
-                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
-                  <EditableCell
-                    value={billing.description}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="relative">
-                <div className="editable-cell flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                  <EditableCell
-                    value={billing.current_installment.toString()}
-                    onChange={(value) => {
-                      const newValue = parseInt(value);
-                      if (isNaN(newValue) || newValue < 1) return;
-                      if (newValue > billing.installments) return;
-                      handleUpdateBilling(billing.id, 'current_installment', newValue);
-                    }}
-                    type="number"
-                  />
-                  <span>/</span>
-                  <EditableCell
-                    value={billing.installments.toString()}
-                    onChange={(value) => {
-                      const newValue = parseInt(value);
-                      if (isNaN(newValue) || newValue < 1) return;
-                      handleUpdateInstallments(billing.id, billing.current_installment, newValue);
-                    }}
-                    type="number"
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="relative">
-                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
-                  <EditableCell
-                    value={billing.amount.toString()}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
-                    type="number"
-                  />
-                </div>
-              </TableCell>
-              <TableCell className="relative">
-                <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
-                  <EditableCell
-                    value={billing.due_day.toString()}
-                    onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
-                    type="number"
-                  />
-                </div>
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <Select
-                  value={billing.payment_method}
-                  onValueChange={(value) => handleUpdateBilling(billing.id, 'payment_method', value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="boleto">Boleto</SelectItem>
-                    <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <Select
-                  value={billing.status}
-                  onValueChange={(value) => handleUpdateBilling(billing.id, 'status', value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      <Badge variant={getStatusBadgeVariant(billing.status)}>
-                        {getStatusLabel(billing.status)}
-                      </Badge>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="billed">Faturado</SelectItem>
-                    <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                    <SelectItem value="overdue">Atrasado</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </TableCell>
-              <TableCell onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => handleDeleteClick(e, billing.id)}
-                  className="opacity-50 hover:opacity-100"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </TableCell>
-            </TableRow>
+            <>
+              <TableRow 
+                key={billing.id} 
+                className="group hover:bg-muted/50 cursor-pointer"
+                onClick={(e) => handleRowClick(billing.id, e)}
+              >
+                <TableCell>{billing.clients?.name}</TableCell>
+                <TableCell>{billing.clients?.responsible_name || "—"}</TableCell>
+                <TableCell className="relative">
+                  <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
+                    <EditableCell
+                      value={billing.description}
+                      onChange={(value) => handleUpdateBilling(billing.id, 'description', value)}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="relative">
+                  <div className="editable-cell flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <EditableCell
+                      value={billing.current_installment.toString()}
+                      onChange={(value) => {
+                        const newValue = parseInt(value);
+                        if (isNaN(newValue) || newValue < 1) return;
+                        if (newValue > billing.installments) return;
+                        handleUpdateBilling(billing.id, 'current_installment', newValue);
+                      }}
+                      type="number"
+                    />
+                    <span>/</span>
+                    <EditableCell
+                      value={billing.installments.toString()}
+                      onChange={(value) => {
+                        const newValue = parseInt(value);
+                        if (isNaN(newValue) || newValue < 1) return;
+                        handleUpdateInstallments(billing.id, billing.current_installment, newValue);
+                      }}
+                      type="number"
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="relative">
+                  <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
+                    <EditableCell
+                      value={billing.amount.toString()}
+                      onChange={(value) => handleUpdateBilling(billing.id, 'amount', parseFloat(value))}
+                      type="number"
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="relative">
+                  <div className="editable-cell" onClick={(e) => e.stopPropagation()}>
+                    <EditableCell
+                      value={billing.due_day.toString()}
+                      onChange={(value) => handleUpdateBilling(billing.id, 'due_day', parseInt(value))}
+                      type="number"
+                    />
+                  </div>
+                </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={billing.payment_method}
+                    onValueChange={(value) => handleUpdateBilling(billing.id, 'payment_method', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pix">PIX</SelectItem>
+                      <SelectItem value="boleto">Boleto</SelectItem>
+                      <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={billing.status}
+                    onValueChange={(value) => handleUpdateBilling(billing.id, 'status', value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue>
+                        <Badge variant={getStatusBadgeVariant(billing.status)}>
+                          {getStatusLabel(billing.status)}
+                        </Badge>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="billed">Faturado</SelectItem>
+                      <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                      <SelectItem value="overdue">Atrasado</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => handleDeleteClick(e, billing.id)}
+                    className="opacity-50 hover:opacity-100"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TableCell>
+                {enableDuplicate && (
+                  <TableCell className="text-right pr-4">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      title="Duplicar cobrança recorrente"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDuplicate(billing);
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            </>
           ))}
         </TableBody>
       </Table>

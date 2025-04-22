@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
@@ -28,10 +27,10 @@ export const RecurringBilling = () => {
     fetchPayments();
   };
 
-  // Recorrentes filtrados como pontuais
+  // Corrigido para usar billing.clients
   const filteredBillings = useMemo(() => {
     return billings.filter(billing => {
-      const client = billing.client?.name || "";
+      const client = billing.clients?.name || "";
       const description = billing.description.toLowerCase();
       const search = billingSearch.toLowerCase();
       const matchesSearch = client.toLowerCase().includes(search) || description.includes(search);
@@ -109,7 +108,7 @@ export const RecurringBilling = () => {
           <BillingTable 
             billings={filteredBillings}
             onRefresh={handleSuccess}
-            enableDuplicate // prop para habilitar duplicar (usar em BillingTable)
+            enableDuplicate // prop habilita duplicar nos recorrentes!
           />
         </TabsContent>
 
@@ -149,13 +148,13 @@ export const RecurringBilling = () => {
               </Select>
             </div>
           </div>
-          {/* Removido botão duplicado */}
+          {/* Botão duplicado já foi removido! */}
           <PaymentTable 
             payments={oneTimePayments} 
             onRefresh={handleSuccess}
             searchTerm={paymentSearch}
             statusFilter={paymentStatusFilter}
-            enableDuplicate // nova prop para permitir duplicar
+            enableDuplicate
           />
         </TabsContent>
       </Tabs>
@@ -175,4 +174,3 @@ export const RecurringBilling = () => {
     </div>
   );
 };
-
