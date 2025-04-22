@@ -31,7 +31,7 @@ export const useEmailTest = (template: EmailTemplate) => {
     }
   }, [selectedRecordId, records]);
 
-  // Adicionamos apenas recebimentos ativos, não deletados, e do cliente ativo
+  // Busca somente recebimentos realmente ativos, não deletados, clientes ativos, não "overdue", "paid", "cancelled", e cliente realmente ainda existente
   const fetchRecords = async () => {
     setIsLoadingRecords(true);
     setError(null);
@@ -49,21 +49,28 @@ export const useEmailTest = (template: EmailTemplate) => {
               email,
               responsible_name,
               partner_name,
+              partner_cpf,
+              cnpj,
+              cpf,
+              address,
+              company_name,
               status
             )
           `)
           .order('due_date', { ascending: false })
-          .limit(100); // maior limite de exibição
+          .limit(100);
 
         if (paymentsError) throw paymentsError;
 
-        // Filtrar para exibir SÓ recebimentos de clientes ativos com email E que não estejam "cancelled", "overdue", "paid"
+        // Só mostrar recebimentos com clientes realmente ativos/vivos e que tenham email
         data = paymentsData
           .filter(payment => {
-            const clientActive = payment.clients && payment.clients.status === 'active';
-            const clientEmail = payment.clients && payment.clients.email;
-            const paymentStatusOk = !["overdue", "cancelled"].includes(payment.status);
-            return clientActive && clientEmail && paymentStatusOk;
+            const client = payment.clients;
+            const clientActive = client && client.status === 'active';
+            const clientEmailExists = client && !!client.email;
+            const paymentStatusOk = !["overdue", "cancelled", "paid"].includes(payment.status);
+            // Tira pagamentos sem cliente (soft/foreign delete)
+            return !!client && clientActive && clientEmailExists && paymentStatusOk;
           })
           .map(payment => ({
             id: payment.id,
@@ -72,8 +79,17 @@ export const useEmailTest = (template: EmailTemplate) => {
               currency: 'BRL'
             }).format(payment.amount)})`,
             email: payment.clients.email,
+            // Enviar objeto completo do cliente
+            client: {
+              ...payment.clients
+            },
             responsible_name: payment.clients.responsible_name,
             partner_name: payment.clients.partner_name,
+            partner_cpf: payment.clients.partner_cpf,
+            cnpj: payment.clients.cnpj,
+            cpf: payment.clients.cpf,
+            address: payment.clients.address,
+            company_name: payment.clients.company_name,
             amount: payment.amount,
             due_date: payment.due_date,
             description: payment.description,
@@ -106,6 +122,7 @@ export const useEmailTest = (template: EmailTemplate) => {
     }
   };
 
+  // Agora usa sempre o objeto client completo
   const updatePreviewData = (record: any) => {
     if (template.type === 'clients') {
       // Format currency
@@ -122,7 +139,7 @@ export const useEmailTest = (template: EmailTemplate) => {
       setPreviewData({
         clientName: record.name.split(' - ')[0] || "Cliente",
         responsibleName: record.responsible_name || record.partner_name || "Responsável",
-        amount: record.amount, 
+        amount: record.amount,
         formattedAmount: formattedAmount,
         dueDay: new Date(record.due_date).getDate(),
         dueDate: formattedDate,
@@ -130,7 +147,10 @@ export const useEmailTest = (template: EmailTemplate) => {
         totalInstallments: record.total_installments || 1,
         currentInstallment: record.installment_number || 1,
         paymentMethod: record.payment_method || "pix",
-        clientId: record.client_id
+        clientId: record.client_id,
+        client: {
+          ...record.client // Isso inclui cnpj, cpf, partner_name, partner_cpf, endereco, company_name etc
+        }
       });
     } else {
       setPreviewData({
@@ -176,7 +196,9 @@ export const useEmailTest = (template: EmailTemplate) => {
           currentInstallment: record.installment_number || 1,
           totalInstallments: record.total_installments || 1,
           paymentMethod: paymentMethodText,
-          descricaoServico: record.description || "Serviço de teste"
+          descricaoServico: record.description || "Serviço de teste",
+          // Passando campos do cliente se houver
+          ...record.client,
         }
       };
 
@@ -217,5 +239,4 @@ export const useEmailTest = (template: EmailTemplate) => {
     previewData
   };
 };
-
 // O ARQUIVO ESTÁ FICANDO LONGO! Considere me pedir depois para refatorá-lo em hooks pequenos!

@@ -36,7 +36,6 @@ export const TestEmailDialog = ({
 
   // Busca local
   const [search, setSearch] = useState("");
-  // Memoize os registros filtrados pela busca
   const filteredRecords = useMemo(() => {
     if (!search) return records;
     return records.filter(r =>
@@ -113,6 +112,8 @@ export const TestEmailDialog = ({
               installments={previewData?.totalInstallments}
               currentInstallment={previewData?.currentInstallment}
               paymentMethod={previewData?.paymentMethod as any}
+              // Passar o cliente completo para as variáveis
+              client={previewData?.client}
             />
           )}
         </div>
