@@ -14,7 +14,7 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEmailTest } from "./hooks/useEmailTest";
 import { TestEmailDialogProps } from "./types/emailTest";
-import { EmailPreview } from "./components/EmailPreview";
+import { EmailPreview } from "../recurring-billing/EmailPreview"; // Corrigido: usar EmailPreview correto
 import { Label } from "../ui/label";
 import { Input } from "@/components/ui/input";
 
@@ -98,7 +98,7 @@ export const TestEmailDialog = ({
             </Select>
           </div>
 
-          {/* PreviewData só aparece se houver registro selecionado E (dados de preview já carregados) */}
+          {/* Dá preview só se houver registro selecionado e previewData */}
           {selectedRecordId && previewData && (
             <EmailPreview
               selectedTemplate={template.id}
@@ -111,9 +111,8 @@ export const TestEmailDialog = ({
               description={previewData?.description}
               installments={previewData?.totalInstallments}
               currentInstallment={previewData?.currentInstallment}
-              paymentMethod={previewData?.paymentMethod as any}
-              // Passar o cliente completo para as variáveis
-              client={previewData?.client}
+              paymentMethod={previewData?.paymentMethod}
+              client={previewData?.client} // agora passando o objeto completo de cliente
             />
           )}
         </div>

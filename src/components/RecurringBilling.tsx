@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
 import { PaymentTable } from "./payments/PaymentTable";
@@ -20,18 +20,26 @@ export const RecurringBilling = () => {
   const [activeTab, setActiveTab] = useState("recurring");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [billingSearch, setBillingSearch] = useState("");
+  const [billingStatusFilter, setBillingStatusFilter] = useState("all");
 
   const handleSuccess = () => {
     fetchBillings();
     fetchPayments();
   };
 
-  // Subscribe to changes from child components
-  const handleRefreshData = () => {
-    handleSuccess();
-  };
+  // Recorrentes filtrados como pontuais
+  const filteredBillings = useMemo(() => {
+    return billings.filter(billing => {
+      const client = billing.client?.name || "";
+      const description = billing.description.toLowerCase();
+      const search = billingSearch.toLowerCase();
+      const matchesSearch = client.toLowerCase().includes(search) || description.includes(search);
+      const matchesStatus = billingStatusFilter === "all" || billing.status === billingStatusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [billings, billingSearch, billingStatusFilter]);
 
-  // Filter out recurring payments (those with installment info)
   // Only show one-time payments in the "Pontuais" tab
   const oneTimePayments = payments.filter(payment => 
     payment.installment_number === null || payment.installment_number === undefined
@@ -66,12 +74,45 @@ export const RecurringBilling = () => {
           <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
           <TabsTrigger value="onetime">Pontuais</TabsTrigger>
         </TabsList>
+
         <TabsContent value="recurring" className="border rounded-lg">
+          {/* Busca e filtro iguais aos pontuais */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-4 pt-4 px-4">
+            <div className="relative flex-1">
+              <Input
+                placeholder="Buscar por cliente ou descrição..."
+                value={billingSearch}
+                onChange={(e) => setBillingSearch(e.target.value)}
+                className="pl-9"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="w-full sm:w-[200px]">
+              <Select
+                value={billingStatusFilter}
+                onValueChange={(value) => setBillingStatusFilter(value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="paid">Pago</SelectItem>
+                  <SelectItem value="overdue">Atrasado</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <BillingTable 
-            billings={billings} 
-            onRefresh={handleRefreshData} 
+            billings={filteredBillings}
+            onRefresh={handleSuccess}
+            enableDuplicate // prop para habilitar duplicar (usar em BillingTable)
           />
         </TabsContent>
+
         <TabsContent value="onetime" className="border rounded-lg">
           <div className="flex justify-between items-center mb-4 pt-4 px-4">
             <h2 className="text-lg font-medium">Recebimentos Pontuais</h2>
@@ -79,7 +120,6 @@ export const RecurringBilling = () => {
               Novo Recebimento Pontual
             </Button>
           </div>
-          
           <div className="flex flex-col sm:flex-row gap-4 mb-4 px-4">
             <div className="relative flex-1">
               <Input
@@ -109,12 +149,13 @@ export const RecurringBilling = () => {
               </Select>
             </div>
           </div>
-          
+          {/* Removido botão duplicado */}
           <PaymentTable 
             payments={oneTimePayments} 
-            onRefresh={handleRefreshData}
+            onRefresh={handleSuccess}
             searchTerm={paymentSearch}
             statusFilter={paymentStatusFilter}
+            enableDuplicate // nova prop para permitir duplicar
           />
         </TabsContent>
       </Tabs>
@@ -134,3 +175,4 @@ export const RecurringBilling = () => {
     </div>
   );
 };
+
