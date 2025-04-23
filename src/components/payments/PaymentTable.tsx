@@ -4,6 +4,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components
 import { Payment } from "@/types/payment";
 import { PaymentRow } from "./PaymentRow";
 import { EmptyState } from "./EmptyState";
+import { EmailTemplate } from "@/types/email";
 
 interface PaymentTableProps {
   payments?: Payment[];
@@ -11,6 +12,7 @@ interface PaymentTableProps {
   searchTerm?: string;
   statusFilter?: string;
   enableDuplicate?: boolean;
+  templates?: EmailTemplate[];
 }
 
 export const PaymentTable = ({ 
@@ -18,7 +20,8 @@ export const PaymentTable = ({
   onRefresh,
   searchTerm = "",
   statusFilter = "all",
-  enableDuplicate = false
+  enableDuplicate = false,
+  templates = []
 }: PaymentTableProps) => {
   const filteredPayments = useMemo(() => {
     return payments.filter(payment => {
@@ -39,33 +42,32 @@ export const PaymentTable = ({
   }
 
   return (
-    <div className="overflow-hidden rounded-md border">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Descrição</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Vencimento</TableHead>
-              <TableHead>Método</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPayments.map((payment) => (
-              <PaymentRow 
-                key={payment.id}
-                payment={payment} 
-                onEmailSent={() => onRefresh?.()}
-                onPaymentUpdated={() => onRefresh?.()}
-                enableDuplicate={enableDuplicate}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Cliente</TableHead>
+            <TableHead>Descrição</TableHead>
+            <TableHead>Valor</TableHead>
+            <TableHead>Vencimento</TableHead>
+            <TableHead>Método</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredPayments.map((payment) => (
+            <PaymentRow 
+              key={payment.id}
+              payment={payment} 
+              onEmailSent={() => onRefresh?.()}
+              onPaymentUpdated={() => onRefresh?.()}
+              enableDuplicate={enableDuplicate}
+              templates={templates}
+            />
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };

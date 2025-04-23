@@ -10,18 +10,28 @@ import { useToast } from "@/components/ui/use-toast";
 import { Mail, Pencil, Trash2, Copy } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
+import type { EmailTemplate } from "@/types/email";
 
 interface PaymentRowProps {
   payment: Payment;
   onEmailSent: () => void;
   onPaymentUpdated: () => void;
   enableDuplicate?: boolean;
+  templates?: EmailTemplate[];
 }
 
-export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated, enableDuplicate = false }: PaymentRowProps) => {
+export const PaymentRow = ({ 
+  payment, 
+  onEmailSent, 
+  onPaymentUpdated, 
+  enableDuplicate = false,
+  templates = []
+}: PaymentRowProps) => {
   const { toast } = useToast();
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -149,6 +159,7 @@ export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated, enableDupli
             variant="ghost"
             size="icon"
             title="Editar"
+            onClick={() => setShowEditDialog(true)}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -184,7 +195,7 @@ export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated, enableDupli
                 <Trash2 className="h-4 w-4" />
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="bg-background">
               <AlertDialogHeader>
                 <AlertDialogTitle>Excluir Recebimento</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -203,6 +214,16 @@ export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated, enableDupli
             </AlertDialogContent>
           </AlertDialog>
         </div>
+
+        {showEditDialog && (
+          <PaymentDetailsDialog
+            open={showEditDialog}
+            onClose={() => setShowEditDialog(false)}
+            onUpdate={onPaymentUpdated}
+            payment={payment}
+            templates={templates}
+          />
+        )}
       </TableCell>
     </TableRow>
   );
