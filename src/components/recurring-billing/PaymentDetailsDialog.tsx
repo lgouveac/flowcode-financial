@@ -1,14 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { RecurringBilling } from "@/types/billing";
 import type { Payment } from "@/types/payment";
+import { Input } from "@/components/ui/input";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
@@ -23,127 +23,128 @@ export const PaymentDetailsDialog = ({
   onUpdate,
   billing,
 }: PaymentDetailsDialogProps) => {
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [description, setDescription] = useState(billing.description);
+  const [amount, setAmount] = useState(billing.amount.toString());
+  const [dueDay, setDueDay] = useState(billing.due_day.toString());
+  const [paymentMethod, setPaymentMethod] = useState(billing.payment_method);
+  const [status, setStatus] = useState(billing.status);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (open && billing) {
-      fetchPayments();
+    if (open) {
+      setDescription(billing.description);
+      setAmount(billing.amount.toString());
+      setDueDay(billing.due_day.toString());
+      setPaymentMethod(billing.payment_method);
+      setStatus(billing.status);
     }
   }, [open, billing]);
 
-  const fetchPayments = async () => {
+  const handleSave = async () => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('client_id', billing.client_id)
-        .order('due_date', { ascending: true });
+      const { error } = await supabase
+        .from('recurring_billing')
+        .update({
+          description,
+          amount: parseFloat(amount),
+          due_day: parseInt(dueDay),
+          payment_method: paymentMethod,
+          status,
+        })
+        .eq('id', billing.id);
 
       if (error) throw error;
 
-      setPayments(data || []);
-    } catch (error) {
-      console.error("Error fetching payments:", error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar os pagamentos.",
-        variant: "destructive",
+        title: "Cobrança atualizada",
+        description: "As alterações foram salvas com sucesso."
       });
-    } finally {
-      setLoading(false);
+
+      onUpdate();
+      onClose();
+    } catch (error) {
+      console.error("Error updating billing:", error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível salvar as alterações.",
+        variant: "destructive"
+      });
     }
-  };
-
-  const getStatusBadgeVariant = (status: Payment['status']) => {
-    switch (status) {
-      case 'paid':
-        return 'success';
-      case 'pending':
-        return 'secondary';
-      case 'overdue':
-        return 'destructive';
-      case 'cancelled':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusLabel = (status: Payment['status']) => {
-    switch (status) {
-      case 'paid':
-        return 'Pago';
-      case 'pending':
-        return 'Pendente';
-      case 'overdue':
-        return 'Atrasado';
-      case 'cancelled':
-        return 'Cancelado';
-      default:
-        return status;
-    }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { 
-      style: 'currency', 
-      currency: 'BRL' 
-    }).format(value);
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('pt-BR');
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Detalhes do Recebimento - {billing.description}</DialogTitle>
+          <DialogTitle>Editar Cobrança Recorrente</DialogTitle>
         </DialogHeader>
 
-        <div className="mt-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Parcela</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Vencimento</TableHead>
-                <TableHead>Método</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((payment, index) => (
-                <TableRow key={payment.id}>
-                  <TableCell>{index + 1}/{billing.installments}</TableCell>
-                  <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                  <TableCell>{formatDate(payment.due_date)}</TableCell>
-                  <TableCell>{payment.payment_method.toUpperCase()}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(payment.status)}>
-                      {getStatusLabel(payment.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Enviar email"
-                      >
-                        <Mail className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <label>Descrição</label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          
+          <div className="grid gap-2">
+            <label>Valor</label>
+            <Input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <label>Dia do Vencimento</label>
+            <Input
+              type="number"
+              min="1"
+              max="31"
+              value={dueDay}
+              onChange={(e) => setDueDay(e.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <label>Método de Pagamento</label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pix">PIX</SelectItem>
+                <SelectItem value="boleto">Boleto</SelectItem>
+                <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <label>Status</label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="paid">Pago</SelectItem>
+                <SelectItem value="overdue">Atrasado</SelectItem>
+                <SelectItem value="cancelled">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-4">
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSave}>
+            Salvar Alterações
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
