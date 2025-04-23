@@ -29,7 +29,7 @@ export const RecurringBilling = () => {
     fetchPayments();
   };
 
-  // Corrigido para usar billing.clients
+  // Updated to properly use the clients property which is now defined in the type
   const filteredBillings = useMemo(() => {
     return billings.filter(billing => {
       const client = billing.clients?.name || "";

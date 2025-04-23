@@ -14,6 +14,11 @@ export interface RecurringBilling {
   updated_at?: string;
   installments: number;
   current_installment: number;
+  clients?: { 
+    name: string; 
+    responsible_name?: string;
+    partner_name?: string;
+  };
 }
 
 export type NewRecurringBilling = Omit<RecurringBilling, 'id' | 'created_at' | 'updated_at' | 'current_installment'>;
