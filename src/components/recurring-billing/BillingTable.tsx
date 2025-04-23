@@ -5,14 +5,14 @@ import { RecurringBillingRow } from "./RecurringBillingRow";
 import { useState } from "react";
 import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
   onRefresh?: () => void;
-  enableDuplicate?: boolean;
 }
 
-export const BillingTable = ({ billings, onRefresh, enableDuplicate = false }: BillingTableProps) => {
+export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
   const [selectedBilling, setSelectedBilling] = useState<RecurringBilling | null>(null);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const { toast } = useToast();
@@ -30,12 +30,46 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate = false }: B
     }
   };
 
-  const handleDuplicate = (billing: RecurringBilling) => {
-    // TODO: Implement duplication logic
-    toast({
-      title: "Em breve",
-      description: "A funcionalidade de duplicar cobrança recorrente será implementada em breve.",
-    });
+  const handleDuplicate = async (billing: RecurringBilling) => {
+    try {
+      // Create a new billing object without id and creation dates
+      const newBilling = {
+        client_id: billing.client_id,
+        description: `${billing.description} (Cópia)`,
+        amount: billing.amount,
+        due_day: billing.due_day,
+        payment_method: billing.payment_method,
+        start_date: billing.start_date,
+        end_date: billing.end_date,
+        status: 'pending',
+        installments: billing.installments,
+        current_installment: 1,
+      };
+
+      const { data, error } = await supabase
+        .from('recurring_billing')
+        .insert([newBilling])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Cobrança duplicada",
+        description: "A cobrança recorrente foi duplicada com sucesso."
+      });
+
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error("Erro ao duplicar cobrança:", error);
+      toast({
+        title: "Erro ao duplicar",
+        description: "Não foi possível duplicar a cobrança.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -45,13 +79,11 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate = false }: B
           <TableRow>
             <TableHead>Cliente</TableHead>
             <TableHead>Descrição</TableHead>
-            <TableHead>Parcela</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Dia do Vencimento</TableHead>
             <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Ações</TableHead>
-            {enableDuplicate && <TableHead className="w-[60px] text-right"></TableHead>}
+            <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -61,7 +93,7 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate = false }: B
               billing={billing}
               onRefresh={onRefresh || (() => {})}
               onOpenDetails={handleOpenDetails}
-              onDuplicate={enableDuplicate ? handleDuplicate : undefined}
+              onDuplicate={handleDuplicate}
             />
           ))}
         </TableBody>

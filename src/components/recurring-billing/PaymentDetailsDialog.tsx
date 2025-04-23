@@ -1,23 +1,20 @@
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Mail } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { EmailTemplate } from "@/types/email";
-import { EmailPreview } from "./EmailPreview";
+import type { RecurringBilling } from "@/types/billing";
+import type { Payment } from "@/types/payment";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
   onClose: () => void;
   onUpdate: () => void;
-  billing: any;
-  templates?: EmailTemplate[];
-  clientName?: string;
+  billing: RecurringBilling;
 }
 
 export const PaymentDetailsDialog = ({
@@ -25,137 +22,129 @@ export const PaymentDetailsDialog = ({
   onClose,
   onUpdate,
   billing,
-  templates = [],
-  clientName,
 }: PaymentDetailsDialogProps) => {
-  const [status, setStatus] = useState(billing?.status || "pending");
-  const [emailTemplate, setEmailTemplate] = useState<string>(billing?.email_template || "");
-  const [disableNotifications, setDisableNotifications] = useState(billing?.disable_notifications || false);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (billing) {
-      setStatus(billing.status);
-      setEmailTemplate(billing.email_template || "");
-      setDisableNotifications(billing.disable_notifications || false);
+    if (open && billing) {
+      fetchPayments();
     }
-  }, [billing]);
+  }, [open, billing]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const { error } = await supabase
-      .from("recurring_billing")
-      .update({ 
-        status,
-        email_template: emailTemplate,
-        disable_notifications: disableNotifications
-      })
-      .eq("id", billing.id);
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('client_id', billing.client_id)
+        .order('due_date', { ascending: true });
 
-    if (error) {
-      console.error("Error updating billing:", error);
+      if (error) throw error;
+
+      setPayments(data || []);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível atualizar o recebimento.",
+        description: "Não foi possível carregar os pagamentos.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    toast({
-      title: "Sucesso",
-      description: "Recebimento atualizado com sucesso.",
-    });
-
-    onUpdate();
-    onClose();
   };
 
-  const filteredTemplates = templates.filter(
-    (template) => template.type === "clients" && template.subtype === "recurring"
-  );
+  const getStatusBadgeVariant = (status: Payment['status']) => {
+    switch (status) {
+      case 'paid':
+        return 'success';
+      case 'pending':
+        return 'secondary';
+      case 'overdue':
+        return 'destructive';
+      case 'cancelled':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: Payment['status']) => {
+    switch (status) {
+      case 'paid':
+        return 'Pago';
+      case 'pending':
+        return 'Pendente';
+      case 'overdue':
+        return 'Atrasado';
+      case 'cancelled':
+        return 'Cancelado';
+      default:
+        return status;
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    }).format(value);
+  };
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString('pt-BR');
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Detalhes do Recebimento</DialogTitle>
+          <DialogTitle>Detalhes do Recebimento - {billing.description}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="paid">Pago</SelectItem>
-                <SelectItem value="cancelled">Cancelado</SelectItem>
-                <SelectItem value="overdue">Atrasado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="disable_notifications"
-              checked={disableNotifications}
-              onCheckedChange={(checked) => setDisableNotifications(checked as boolean)}
-            />
-            <Label htmlFor="disable_notifications">
-              Desativar notificações automáticas
-            </Label>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Template de Email</Label>
-            <Select 
-              value={emailTemplate} 
-              onValueChange={setEmailTemplate}
-              disabled={disableNotifications}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o template" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredTemplates.length > 0 ? (
-                  filteredTemplates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="p-4 text-center text-muted-foreground">
-                    Nenhum template disponível
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {emailTemplate && !disableNotifications && (
-            <EmailPreview
-              selectedTemplate={emailTemplate}
-              templates={templates}
-              clientName={clientName}
-              amount={billing?.amount}
-              dueDay={billing?.due_day}
-              description={billing?.description}
-              installments={billing?.installments}
-              paymentMethod={billing?.payment_method}
-            />
-          )}
-
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit">Salvar</Button>
-          </div>
-        </form>
+        <div className="mt-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Parcela</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Vencimento</TableHead>
+                <TableHead>Método</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payments.map((payment, index) => (
+                <TableRow key={payment.id}>
+                  <TableCell>{index + 1}/{billing.installments}</TableCell>
+                  <TableCell>{formatCurrency(payment.amount)}</TableCell>
+                  <TableCell>{formatDate(payment.due_date)}</TableCell>
+                  <TableCell>{payment.payment_method.toUpperCase()}</TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusBadgeVariant(payment.status)}>
+                      {getStatusLabel(payment.status)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Enviar email"
+                      >
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </DialogContent>
     </Dialog>
   );
