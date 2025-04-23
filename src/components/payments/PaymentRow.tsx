@@ -7,7 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Payment } from "@/types/payment";
 import { useToast } from "@/components/ui/use-toast";
-import { Mail, Pencil, Trash2 } from "lucide-react";
+import { Mail, Pencil, Trash2, Copy } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,11 +15,13 @@ interface PaymentRowProps {
   payment: Payment;
   onEmailSent: () => void;
   onPaymentUpdated: () => void;
+  enableDuplicate?: boolean;
 }
 
-export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated }: PaymentRowProps) => {
+export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated, enableDuplicate = false }: PaymentRowProps) => {
   const { toast } = useToast();
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -48,6 +50,44 @@ export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated }: PaymentRo
     }
   };
 
+  const handleDuplicate = async () => {
+    try {
+      setDuplicating(true);
+      
+      // Get a copy of the payment without the id field
+      const { id, created_at, updated_at, payment_date, ...paymentCopy } = payment;
+      
+      // Create a new payment with the copied data
+      const { data, error } = await supabase
+        .from('payments')
+        .insert({
+          ...paymentCopy,
+          description: `${payment.description} (Cópia)`,
+          status: 'pending', // Always set the copy to pending
+          payment_date: null, // Reset payment date for the copy
+          paid_amount: null  // Reset paid amount for the copy
+        })
+        .select();
+
+      if (error) throw error;
+
+      toast({
+        title: "Recebimento duplicado",
+        description: "Uma cópia do recebimento foi criada com sucesso."
+      });
+      onPaymentUpdated();
+    } catch (error) {
+      console.error("Erro ao duplicar recebimento:", error);
+      toast({
+        title: "Erro ao duplicar",
+        description: "Não foi possível duplicar o recebimento.",
+        variant: "destructive"
+      });
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
   const getStatusBadgeVariant = (status: Payment['status']) => {
     switch (status) {
       case 'paid':
@@ -58,6 +98,8 @@ export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated }: PaymentRo
         return 'destructive';
       case 'cancelled':
         return 'outline';
+      case 'partially_paid':
+        return 'warning';
       default:
         return 'secondary';
     }
@@ -73,6 +115,8 @@ export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated }: PaymentRo
         return 'Atrasado';
       case 'cancelled':
         return 'Cancelado';
+      case 'partially_paid':
+        return 'Parcialmente Pago';
       default:
         return status;
     }
@@ -108,6 +152,7 @@ export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated }: PaymentRo
           >
             <Pencil className="h-4 w-4" />
           </Button>
+          
           <Button
             variant="ghost"
             size="icon"
@@ -115,6 +160,19 @@ export const PaymentRow = ({ payment, onEmailSent, onPaymentUpdated }: PaymentRo
           >
             <Mail className="h-4 w-4" />
           </Button>
+          
+          {enableDuplicate && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Duplicar"
+              onClick={handleDuplicate}
+              disabled={duplicating}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          )}
+          
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button 

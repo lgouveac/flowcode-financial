@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,18 +8,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/lib/supabase";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import { EstimatedExpensesDialog } from "@/components/cash-flow/EstimatedExpensesDialog";
 import type { Payment } from "@/types/payment";
-import { FileText, Calculator, BarChart3, Users } from "lucide-react";
+import { FileText, Calculator, BarChart3, Users, CalendarRange, TrendingUp } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  AreaChart,
+  Area
+} from 'recharts';
 
 interface TopClient {
   client_id: string;
@@ -26,9 +39,20 @@ interface TopClient {
   total_amount: number;
 }
 
+interface FutureProjection {
+  month: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+}
+
 export const Overview = () => {
   const [period, setPeriod] = useState("current");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [futureProjections, setFutureProjections] = useState<FutureProjection[]>([]);
+  const [projectionsLoading, setProjectionsLoading] = useState(false);
+  const [projectionDialogOpen, setProjectionDialogOpen] = useState(false);
+  
   const {
     metrics,
     isLoading
@@ -106,6 +130,106 @@ export const Overview = () => {
         };
     }
   };
+  
+  const fetchFutureProjections = async () => {
+    setProjectionsLoading(true);
+    try {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      // Projection data for 12 months
+      const projections: FutureProjection[] = [];
+      
+      // First get all recurring billing to project revenue
+      const { data: recurringData, error: recurringError } = await supabase
+        .from('recurring_billing')
+        .select('*')
+        .in('status', ['pending', 'awaiting_invoice', 'billed']);
+        
+      if (recurringError) throw recurringError;
+      
+      // Get future payments already scheduled (one-time or installments)
+      const { data: futurePaymentsData, error: paymentsError } = await supabase
+        .from('payments')
+        .select('*')
+        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid'])
+        .gte('due_date', new Date().toISOString());
+      
+      if (paymentsError) throw paymentsError;
+      
+      // Get estimated monthly expenses
+      const { data: estimatedExpensesData, error: expensesError } = await supabase
+        .from('estimated_expenses')
+        .select('*');
+      
+      if (expensesError) throw expensesError;
+      
+      // Calculate monthly totals for the next 12 months
+      for (let i = 0; i < 12; i++) {
+        const monthDate = new Date(currentYear, currentMonth + i, 1);
+        const monthName = monthDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        const year = monthDate.getFullYear();
+        const month = monthDate.getMonth() + 1;
+        
+        // Start of month and end of month
+        const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
+        const lastDayOfMonth = new Date(year, month, 0).getDate();
+        const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${lastDayOfMonth}`;
+        
+        // Calculate revenue from recurring billing for this month
+        const recurringRevenue = (recurringData || []).reduce((sum, billing) => {
+          // Check if the billing is active for this month
+          return sum + Number(billing.amount);
+        }, 0);
+        
+        // Calculate revenue from scheduled one-time payments for this month
+        const scheduledRevenue = (futurePaymentsData || []).reduce((sum, payment) => {
+          const dueDate = new Date(payment.due_date);
+          const paymentYear = dueDate.getFullYear();
+          const paymentMonth = dueDate.getMonth() + 1;
+          
+          if (paymentYear === year && paymentMonth === month) {
+            // For partially paid payments, only count the remaining amount
+            if (payment.status === 'partially_paid' && payment.paid_amount) {
+              return sum + (Number(payment.amount) - Number(payment.paid_amount));
+            }
+            return sum + Number(payment.amount);
+          }
+          return sum;
+        }, 0);
+        
+        // Calculate expenses from estimated expenses
+        const monthlyExpenses = (estimatedExpensesData || []).reduce((sum, expense) => {
+          return sum + Number(expense.amount);
+        }, 0);
+        
+        // Total revenue and profit
+        const totalRevenue = recurringRevenue + scheduledRevenue;
+        const profit = totalRevenue - monthlyExpenses;
+        
+        projections.push({
+          month: monthName,
+          revenue: parseFloat(totalRevenue.toFixed(2)),
+          expenses: parseFloat(monthlyExpenses.toFixed(2)),
+          profit: parseFloat(profit.toFixed(2))
+        });
+      }
+      
+      setFutureProjections(projections);
+      
+    } catch (error) {
+      console.error("Error fetching future projections:", error);
+    } finally {
+      setProjectionsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
+    if (projectionDialogOpen) {
+      fetchFutureProjections();
+    }
+  }, [projectionDialogOpen]);
   
   // Updated function to fetch top clients with fixed type structure
   const fetchTopClients = async () => {
@@ -235,6 +359,11 @@ export const Overview = () => {
     setTopClientsOpen(true);
   };
 
+  // Handle click on future projections
+  const handleFutureProjectionsClick = () => {
+    setProjectionDialogOpen(true);
+  };
+
   // Calculate the total expected revenue (current revenue + expected future revenue)
   const totalExpectedRevenue = (metrics.totalRevenue || 0) + (metrics.expectedRevenue || 0);
   
@@ -358,6 +487,10 @@ export const Overview = () => {
               <DropdownMenuItem onClick={handleTopClientsClick}>
                 <Users className="mr-2 h-4 w-4" />
                 Top Clientes
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleFutureProjectionsClick}>
+                <TrendingUp className="mr-2 h-4 w-4" />
+                Projeções Futuras
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -603,6 +736,104 @@ export const Overview = () => {
                   <p className="text-muted-foreground">Nenhum cliente encontrado com pagamentos neste período.</p>
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Future Projections Modal */}
+      <Dialog open={projectionDialogOpen} onOpenChange={setProjectionDialogOpen}>
+        <DialogContent className="w-full max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Projeções Financeiras - Próximos 12 Meses</DialogTitle>
+            <DialogDescription>
+              Previsão de receitas, despesas e lucros para os próximos 12 meses.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {projectionsLoading ? (
+            <div className="flex justify-center py-8">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : (
+            <div className="mt-4 space-y-6">
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={futureProjections}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis 
+                      tickFormatter={(value) => 
+                        new Intl.NumberFormat('pt-BR', { 
+                          notation: 'compact',
+                          compactDisplay: 'short',
+                          currency: 'BRL'
+                        }).format(value)
+                      }
+                    />
+                    <Tooltip 
+                      formatter={(value) => 
+                        new Intl.NumberFormat('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL' 
+                        }).format(Number(value))
+                      } 
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="revenue" name="Receita" stroke="#4ade80" strokeWidth={2} />
+                    <Line type="monotone" dataKey="expenses" name="Despesas" stroke="#f43f5e" strokeWidth={2} />
+                    <Line type="monotone" dataKey="profit" name="Lucro" stroke="#3b82f6" strokeWidth={2} activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="rounded-md border">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="p-3 text-left">Mês</th>
+                        <th className="p-3 text-right">Receita</th>
+                        <th className="p-3 text-right">Despesas</th>
+                        <th className="p-3 text-right">Lucro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {futureProjections.map((projection, index) => (
+                        <tr key={index} className="border-b hover:bg-muted/50">
+                          <td className="p-3">{projection.month}</td>
+                          <td className="p-3 text-right text-green-600 dark:text-green-400">
+                            {formatCurrency(projection.revenue)}
+                          </td>
+                          <td className="p-3 text-right text-red-600 dark:text-red-400">
+                            {formatCurrency(projection.expenses)}
+                          </td>
+                          <td className="p-3 text-right font-medium">
+                            {formatCurrency(projection.profit)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t bg-muted/50 font-semibold">
+                        <td className="p-3">Total</td>
+                        <td className="p-3 text-right text-green-600 dark:text-green-400">
+                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.revenue, 0))}
+                        </td>
+                        <td className="p-3 text-right text-red-600 dark:text-red-400">
+                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.expenses, 0))}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.profit, 0))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>

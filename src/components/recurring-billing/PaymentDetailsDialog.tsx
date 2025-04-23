@@ -26,8 +26,8 @@ export const PaymentDetailsDialog = ({
   const [description, setDescription] = useState(billing.description);
   const [amount, setAmount] = useState(billing.amount.toString());
   const [dueDay, setDueDay] = useState(billing.due_day.toString());
-  const [paymentMethod, setPaymentMethod] = useState(billing.payment_method);
-  const [status, setStatus] = useState(billing.status);
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "boleto" | "credit_card">(billing.payment_method);
+  const [status, setStatus] = useState<"pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid">(billing.status);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -110,7 +110,10 @@ export const PaymentDetailsDialog = ({
 
           <div className="grid gap-2">
             <label>Método de Pagamento</label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+            <Select 
+              value={paymentMethod} 
+              onValueChange={(value: "pix" | "boleto" | "credit_card") => setPaymentMethod(value)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -124,7 +127,10 @@ export const PaymentDetailsDialog = ({
 
           <div className="grid gap-2">
             <label>Status</label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select 
+              value={status} 
+              onValueChange={(value: "pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid") => setStatus(value)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -133,6 +139,9 @@ export const PaymentDetailsDialog = ({
                 <SelectItem value="paid">Pago</SelectItem>
                 <SelectItem value="overdue">Atrasado</SelectItem>
                 <SelectItem value="cancelled">Cancelado</SelectItem>
+                <SelectItem value="billed">Faturado</SelectItem>
+                <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+                <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -39,30 +39,33 @@ export const PaymentTable = ({
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Vencimento</TableHead>
-            <TableHead>Método</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredPayments.map((payment) => (
-            <PaymentRow 
-              key={payment.id}
-              payment={payment} 
-              onEmailSent={() => onRefresh?.()}
-              onPaymentUpdated={() => onRefresh?.()}
-            />
-          ))}
-        </TableBody>
-      </Table>
+    <div className="overflow-hidden rounded-md border">
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Vencimento</TableHead>
+              <TableHead>Método</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredPayments.map((payment) => (
+              <PaymentRow 
+                key={payment.id}
+                payment={payment} 
+                onEmailSent={() => onRefresh?.()}
+                onPaymentUpdated={() => onRefresh?.()}
+                enableDuplicate={enableDuplicate}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };
