@@ -10,9 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
   onRefresh?: () => void;
+  enableDuplicate?: boolean;
 }
 
-export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
+export const BillingTable = ({ billings, onRefresh, enableDuplicate }: BillingTableProps) => {
   const [selectedBilling, setSelectedBilling] = useState<RecurringBilling | null>(null);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const { toast } = useToast();
@@ -41,7 +42,7 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
         payment_method: billing.payment_method,
         start_date: billing.start_date,
         end_date: billing.end_date,
-        status: 'pending',
+        status: 'pending' as const,
         installments: billing.installments,
         current_installment: 1,
       };
@@ -93,7 +94,7 @@ export const BillingTable = ({ billings, onRefresh }: BillingTableProps) => {
               billing={billing}
               onRefresh={onRefresh || (() => {})}
               onOpenDetails={handleOpenDetails}
-              onDuplicate={handleDuplicate}
+              onDuplicate={enableDuplicate ? handleDuplicate : undefined}
             />
           ))}
         </TableBody>

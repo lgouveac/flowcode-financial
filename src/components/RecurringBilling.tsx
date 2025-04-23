@@ -110,7 +110,7 @@ export const RecurringBilling = () => {
           <BillingTable 
             billings={filteredBillings}
             onRefresh={handleSuccess}
-            enableDuplicate // prop habilita duplicar nos recorrentes!
+            enableDuplicate
           />
         </TabsContent>
 
