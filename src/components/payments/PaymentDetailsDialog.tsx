@@ -31,7 +31,7 @@ export const PaymentDetailsDialog = ({
   const [dueDate, setDueDate] = useState(payment.due_date);
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "boleto" | "credit_card">(payment.payment_method);
   const [status, setStatus] = useState<"pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid">(payment.status);
-  const [emailTemplate, setEmailTemplate] = useState<string>(payment.email_template || "");
+  const [emailTemplate, setEmailTemplate] = useState<string>(payment.email_template || "none");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export const PaymentDetailsDialog = ({
       setDueDate(payment.due_date);
       setPaymentMethod(payment.payment_method);
       setStatus(payment.status);
-      setEmailTemplate(payment.email_template || "");
+      setEmailTemplate(payment.email_template || "none");
     }
   }, [open, payment]);
 
@@ -59,7 +59,7 @@ export const PaymentDetailsDialog = ({
           due_date: dueDate,
           payment_method: paymentMethod,
           status,
-          email_template: emailTemplate || null
+          email_template: emailTemplate === "none" ? null : emailTemplate
         })
         .eq('id', payment.id);
 
@@ -164,7 +164,7 @@ export const PaymentDetailsDialog = ({
                 <SelectValue placeholder="Selecione um template" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 {templates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     {template.name}
