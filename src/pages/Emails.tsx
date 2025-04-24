@@ -1,4 +1,5 @@
-import { PlusIcon, Upload } from "lucide-react";
+
+import { PlusIcon, Send } from "lucide-react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemplateSection } from "@/components/emails/TemplateSection";
@@ -11,10 +12,12 @@ import { createTemplate } from "@/services/templateService";
 import { useToast } from "@/hooks/use-toast";
 import { TestEmailDialog } from "@/components/emails/TestEmailDialog";
 import { EmployeeEmailSettings } from "@/components/emails/EmployeeEmailSettings";
+import { SendEmailDialog } from "@/components/emails/SendEmailDialog";
 
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [employeeSettingsOpen, setEmployeeSettingsOpen] = useState(false);
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [currentTemplateType, setCurrentTemplateType] = useState<'clients' | 'employees'>('clients');
   const { toast } = useToast();
@@ -44,6 +47,13 @@ export default function Emails() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Emails e Notificações</h1>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setSendEmailOpen(true)}
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Enviar Email
+          </Button>
           <TestEmployeeNotificationButton />
         </div>
       </div>
@@ -101,6 +111,11 @@ export default function Emails() {
       }} /> : null}
       
       <EmployeeEmailSettings open={employeeSettingsOpen} onClose={() => setEmployeeSettingsOpen(false)} />
+      
+      <SendEmailDialog
+        open={sendEmailOpen}
+        onClose={() => setSendEmailOpen(false)}
+      />
     </div>
   );
-};
+}
