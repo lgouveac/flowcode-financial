@@ -66,7 +66,7 @@ export const EmployeeSettings = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <TestEmployeeNotificationButton />
+                  <TestEmployeeNotificationButton /> {/* This component was causing errors */}
                 </div>
               </div>
               

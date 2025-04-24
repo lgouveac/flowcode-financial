@@ -5,6 +5,7 @@ import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { TemplateEditor } from "./TemplateEditor";
 import { VariablesList } from "./VariablesList";
 import { SavedTemplatesTable } from "./SavedTemplatesTable";
+import { TestEmailDialog } from "./TestEmailDialog"; // Added missing import
 
 interface TemplateSectionProps {
   type: 'clients' | 'employees';

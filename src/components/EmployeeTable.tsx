@@ -213,7 +213,7 @@ export const EmployeeTable = () => {
         <TableHeader onSettingsClick={() => setSettingsOpen(true)} />
         <div className="flex items-center gap-2">
           <ImportCSV />
-          <TestEmployeeNotificationButton />
+          <TestEmployeeNotificationButton /> {/* This component was causing errors */}
         </div>
       </div>
 
