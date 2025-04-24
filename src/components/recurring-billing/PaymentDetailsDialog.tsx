@@ -31,8 +31,8 @@ export const PaymentDetailsDialog = ({
   billing, 
   open, 
   onClose, 
-  onUpdate,
-  templates = []
+  onUpdate, 
+  templates = [] 
 }: PaymentDetailsDialogProps) => {
   const [status, setStatus] = useState<PaymentStatus>(billing.status as PaymentStatus);
   const [paymentDate, setPaymentDate] = useState<Date | undefined>(billing.payment_date ? new Date(billing.payment_date) : undefined);
@@ -136,43 +136,77 @@ export const PaymentDetailsDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-border">
         <DialogHeader>
           <DialogTitle>Detalhes do Pagamento</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Client and Description fields */}
             <div>
               <Label htmlFor="client">Cliente</Label>
-              <Input id="client" defaultValue={billing.clients?.name} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="client"
+                defaultValue={billing.clients?.name}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
             <div>
               <Label htmlFor="description">Descrição</Label>
-              <Input id="description" defaultValue={billing.description} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="description"
+                defaultValue={billing.description}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
           </div>
 
+          {/* Amount, Due Day, and Payment Method fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="amount">Valor</Label>
-              <Input id="amount" defaultValue={formatCurrency(billing.amount)} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="amount"
+                defaultValue={formatCurrency(billing.amount)}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
             <div>
               <Label htmlFor="due_day">Dia do Vencimento</Label>
-              <Input id="due_day" type="number" defaultValue={billing.due_day} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="due_day"
+                type="number"
+                defaultValue={billing.due_day}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
             <div>
               <Label htmlFor="payment_method">Método de Pagamento</Label>
-              <Input id="payment_method" defaultValue={billing.payment_method} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="payment_method"
+                defaultValue={billing.payment_method}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
           </div>
 
+          {/* Status, Start Date, and End Date fields */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="status">Status</Label>
               <Select value={status} onValueChange={handleStatusChange} disabled={!isEditing}>
-                <SelectTrigger className="w-full bg-gray-100 text-gray-700">
+                <SelectTrigger className="bg-muted text-foreground">
                   <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -188,22 +222,51 @@ export const PaymentDetailsDialog = ({
             </div>
             <div>
               <Label htmlFor="start_date">Data de Início</Label>
-              <Input id="start_date" type="date" defaultValue={billing.start_date} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="start_date"
+                type="date"
+                defaultValue={billing.start_date}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
             <div>
               <Label htmlFor="end_date">Data de Término</Label>
-              <Input id="end_date" type="date" defaultValue={billing.end_date || ''} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="end_date"
+                type="date"
+                defaultValue={billing.end_date || ''}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
           </div>
 
+          {/* Installments fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="installments">Parcelas</Label>
-              <Input id="installments" type="number" defaultValue={billing.installments} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="installments"
+                type="number"
+                defaultValue={billing.installments}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
             <div>
               <Label htmlFor="current_installment">Parcela Atual</Label>
-              <Input id="current_installment" type="number" defaultValue={billing.current_installment} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+              <Input
+                id="current_installment"
+                type="number"
+                defaultValue={billing.current_installment}
+                className="bg-muted text-foreground"
+                disabled={!isEditing}
+                onChange={handleInputChange}
+              />
             </div>
           </div>
         </div>
@@ -219,13 +282,29 @@ export const PaymentDetailsDialog = ({
               Enviar Cobrança
             </Button>
           </div>
-          <Button size="sm" onClick={toggleEditing}>
-            {isEditing ? "Salvar" : <Edit className="h-4 w-4 mr-2" />}
-            {isEditing ? "Salvar" : "Editar"}
+          <Button 
+            size="sm" 
+            onClick={toggleEditing}
+            variant={isEditing ? "default" : "secondary"}
+          >
+            {isEditing ? (
+              "Salvar"
+            ) : (
+              <>
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </>
+            )}
           </Button>
         </div>
       </DialogContent>
-      <SendInvoiceDialog open={openSendInvoice} onClose={() => setOpenSendInvoice(false)} billing={billing} templates={templates} />
+
+      <SendInvoiceDialog
+        open={openSendInvoice}
+        onClose={() => setOpenSendInvoice(false)}
+        billing={billing}
+        templates={templates}
+      />
     </Dialog>
   );
 };
