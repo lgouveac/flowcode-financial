@@ -6,14 +6,16 @@ import { useState } from "react";
 import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { EmailTemplate } from "@/types/email";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
   onRefresh?: () => void;
   enableDuplicate?: boolean;
+  templates?: EmailTemplate[];
 }
 
-export const BillingTable = ({ billings, onRefresh, enableDuplicate }: BillingTableProps) => {
+export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates = [] }: BillingTableProps) => {
   const [selectedBilling, setSelectedBilling] = useState<RecurringBilling | null>(null);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const { toast } = useToast();
@@ -106,6 +108,7 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate }: BillingTa
           open={showPaymentDetails}
           onClose={handleCloseDetails}
           onUpdate={onRefresh || (() => {})}
+          templates={templates}
         />
       )}
     </div>

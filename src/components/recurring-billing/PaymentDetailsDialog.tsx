@@ -1,226 +1,228 @@
-
-import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RecurringBilling } from "@/types/billing";
+import { EmailTemplate } from "@/types/email";
+import { formatCurrency } from "@/utils/formatters";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Edit, Copy, Mail } from "lucide-react";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import type { RecurringBilling } from "@/types/billing";
-import type { Payment } from "@/types/payment";
-import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatCurrency } from "@/utils/formatters";
-import { PaymentStatusBadge } from "../payments/PaymentStatusBadge";
+import { PaymentStatus } from "../payments/PaymentStatus";
+import { SendInvoiceDialog } from "./SendInvoiceDialog";
 
 interface PaymentDetailsDialogProps {
+  billing: RecurringBilling;
   open: boolean;
   onClose: () => void;
   onUpdate: () => void;
-  billing: RecurringBilling;
+  templates?: EmailTemplate[];
 }
 
-export const PaymentDetailsDialog = ({
-  open,
-  onClose,
+export const PaymentDetailsDialog = ({ 
+  billing, 
+  open, 
+  onClose, 
   onUpdate,
-  billing,
+  templates = []
 }: PaymentDetailsDialogProps) => {
-  const [description, setDescription] = useState(billing.description);
-  const [amount, setAmount] = useState(billing.amount.toString());
-  const [dueDay, setDueDay] = useState(billing.due_day.toString());
-  const [paymentMethod, setPaymentMethod] = useState<"pix" | "boleto" | "credit_card">(billing.payment_method);
-  const [status, setStatus] = useState<"pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid">(billing.status);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [status, setStatus] = useState<PaymentStatus>(billing.status as PaymentStatus);
+  const [paymentDate, setPaymentDate] = useState<Date | undefined>(billing.payment_date ? new Date(billing.payment_date) : undefined);
+  const [isEditing, setIsEditing] = useState(false);
+  const [openSendInvoice, setOpenSendInvoice] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (open) {
-      setDescription(billing.description);
-      setAmount(billing.amount.toString());
-      setDueDay(billing.due_day.toString());
-      setPaymentMethod(billing.payment_method);
-      setStatus(billing.status);
-      fetchRelatedPayments();
-    }
-  }, [open, billing]);
-
-  const fetchRelatedPayments = async () => {
-    setLoadingPayments(true);
-    try {
-      // Query for payments with the same description from the same client
-      // This will return all installments of a recurring payment
-      const { data, error } = await supabase
-        .from("payments")
-        .select("*, clients(name)")
-        .eq("client_id", billing.client_id)
-        .eq("description", billing.description.split(' (')[0])
-        .order("due_date", { ascending: false });
-
-      if (error) throw error;
-      setPayments(data || []);
-    } catch (error) {
-      console.error("Error fetching related payments:", error);
-    } finally {
-      setLoadingPayments(false);
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // You can handle individual input changes here if needed
+    console.log(`Input ${name} changed to ${value}`);
   };
 
-  const handleSave = async () => {
+  const handleStatusChange = async (newStatus: PaymentStatus) => {
     try {
       const { error } = await supabase
         .from('recurring_billing')
-        .update({
-          description,
-          amount: parseFloat(amount),
-          due_day: parseInt(dueDay),
-          payment_method: paymentMethod,
-          status,
-        })
+        .update({ status: newStatus })
         .eq('id', billing.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao atualizar status:", error);
+        toast({
+          title: "Erro ao atualizar",
+          description: "Não foi possível atualizar o status.",
+          variant: "destructive"
+        });
+        return;
+      }
 
+      setStatus(newStatus);
       toast({
-        title: "Cobrança atualizada",
-        description: "As alterações foram salvas com sucesso."
+        title: "Status atualizado",
+        description: "O status da cobrança foi atualizado com sucesso."
       });
-
       onUpdate();
-      onClose();
     } catch (error) {
-      console.error("Error updating billing:", error);
+      console.error("Erro ao atualizar status:", error);
       toast({
         title: "Erro ao atualizar",
-        description: "Não foi possível salvar as alterações.",
+        description: "Não foi possível atualizar o status.",
         variant: "destructive"
       });
     }
   };
 
+  const handlePaymentDateChange = async (date: Date | undefined) => {
+    try {
+      const paymentDateString = date ? date.toISOString() : null;
+
+      const { error } = await supabase
+        .from('recurring_billing')
+        .update({ payment_date: paymentDateString })
+        .eq('id', billing.id);
+
+      if (error) {
+        console.error("Erro ao atualizar data de pagamento:", error);
+        toast({
+          title: "Erro ao atualizar",
+          description: "Não foi possível atualizar a data de pagamento.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setPaymentDate(date);
+      toast({
+        title: "Data de pagamento atualizada",
+        description: "A data de pagamento da cobrança foi atualizada com sucesso."
+      });
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao atualizar data de pagamento:", error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar a data de pagamento.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const toggleEditing = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleCopyDetails = () => {
+    const details = `
+      Cliente: ${billing.clients?.name}
+      Descrição: ${billing.description}
+      Valor: ${formatCurrency(billing.amount)}
+      Vencimento: ${format(new Date(billing.due_day), 'dd/MM/yyyy', { locale: ptBR })}
+      Status: ${status}
+    `;
+
+    navigator.clipboard.writeText(details);
+    toast({
+      title: "Detalhes copiados",
+      description: "Os detalhes da cobrança foram copiados para a área de transferência."
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl bg-background">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Cobrança Recorrente</DialogTitle>
+          <DialogTitle>Detalhes do Pagamento</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <label>Descrição</label>
-              <Input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="client">Cliente</Label>
+              <Input id="client" defaultValue={billing.clients?.name} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
             </div>
-            
-            <div className="grid gap-2">
-              <label>Valor</label>
-              <Input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
+            <div>
+              <Label htmlFor="description">Descrição</Label>
+              <Input id="description" defaultValue={billing.description} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
             </div>
+          </div>
 
-            <div className="grid gap-2">
-              <label>Dia do Vencimento</label>
-              <Input
-                type="number"
-                min="1"
-                max="31"
-                value={dueDay}
-                onChange={(e) => setDueDay(e.target.value)}
-              />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="amount">Valor</Label>
+              <Input id="amount" defaultValue={formatCurrency(billing.amount)} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
             </div>
-
-            <div className="grid gap-2">
-              <label>Método de Pagamento</label>
-              <Select 
-                value={paymentMethod} 
-                onValueChange={(value: "pix" | "boleto" | "credit_card") => setPaymentMethod(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                </SelectContent>
-              </Select>
+            <div>
+              <Label htmlFor="due_day">Dia do Vencimento</Label>
+              <Input id="due_day" type="number" defaultValue={billing.due_day} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
             </div>
+            <div>
+              <Label htmlFor="payment_method">Método de Pagamento</Label>
+              <Input id="payment_method" defaultValue={billing.payment_method} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+            </div>
+          </div>
 
-            <div className="grid gap-2">
-              <label>Status</label>
-              <Select 
-                value={status} 
-                onValueChange={(value: "pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid") => setStatus(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={status} onValueChange={handleStatusChange} disabled={!isEditing}>
+                <SelectTrigger className="w-full bg-gray-100 text-gray-700">
+                  <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="billed">Cobrado</SelectItem>
+                  <SelectItem value="awaiting_invoice">Aguardando Nota Fiscal</SelectItem>
                   <SelectItem value="paid">Pago</SelectItem>
                   <SelectItem value="overdue">Atrasado</SelectItem>
                   <SelectItem value="cancelled">Cancelado</SelectItem>
-                  <SelectItem value="billed">Faturado</SelectItem>
-                  <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
                   <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="flex justify-end gap-4 mt-6">
-              <Button variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSave}>
-                Salvar Alterações
-              </Button>
+            <div>
+              <Label htmlFor="start_date">Data de Início</Label>
+              <Input id="start_date" type="date" defaultValue={billing.start_date} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+            </div>
+            <div>
+              <Label htmlFor="end_date">Data de Término</Label>
+              <Input id="end_date" type="date" defaultValue={billing.end_date || ''} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Pagamentos Relacionados</h3>
-            {loadingPayments ? (
-              <p>Carregando pagamentos...</p>
-            ) : payments.length > 0 ? (
-              <div className="overflow-auto max-h-[400px] border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Vencimento</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {payments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell>
-                          {format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                        <TableCell>
-                          <PaymentStatusBadge status={payment.status} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <p className="text-muted-foreground">Nenhum pagamento encontrado para esta cobrança recorrente.</p>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="installments">Parcelas</Label>
+              <Input id="installments" type="number" defaultValue={billing.installments} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+            </div>
+            <div>
+              <Label htmlFor="current_installment">Parcela Atual</Label>
+              <Input id="current_installment" type="number" defaultValue={billing.current_installment} className="bg-gray-100 text-gray-700" disabled={!isEditing} onChange={handleInputChange} />
+            </div>
           </div>
         </div>
+
+        <div className="flex justify-between">
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleCopyDetails}>
+              <Copy className="h-4 w-4 mr-2" />
+              Copiar Detalhes
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setOpenSendInvoice(true)}>
+              <Mail className="h-4 w-4 mr-2" />
+              Enviar Cobrança
+            </Button>
+          </div>
+          <Button size="sm" onClick={toggleEditing}>
+            {isEditing ? "Salvar" : <Edit className="h-4 w-4 mr-2" />}
+            {isEditing ? "Salvar" : "Editar"}
+          </Button>
+        </div>
       </DialogContent>
+      <SendInvoiceDialog open={openSendInvoice} onClose={() => setOpenSendInvoice(false)} billing={billing} templates={templates} />
     </Dialog>
   );
 };
