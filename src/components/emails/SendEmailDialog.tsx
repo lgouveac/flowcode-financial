@@ -1,6 +1,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -15,13 +15,30 @@ import { Send } from "lucide-react";
 interface SendEmailDialogProps {
   open: boolean;
   onClose: () => void;
+  initialClientId?: string;
+  initialTemplateId?: string;
 }
 
-export function SendEmailDialog({ open, onClose }: SendEmailDialogProps) {
+export function SendEmailDialog({ 
+  open, 
+  onClose,
+  initialClientId,
+  initialTemplateId
+}: SendEmailDialogProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [selectedClient, setSelectedClient] = useState<string>("");
   const { toast } = useToast();
   const { savedTemplates, isLoading: isLoadingTemplates } = useEmailTemplates();
+
+  // Set initial values if provided
+  useEffect(() => {
+    if (initialClientId) {
+      setSelectedClient(initialClientId);
+    }
+    if (initialTemplateId) {
+      setSelectedTemplate(initialTemplateId);
+    }
+  }, [initialClientId, initialTemplateId]);
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],
@@ -85,6 +102,7 @@ export function SendEmailDialog({ open, onClose }: SendEmailDialogProps) {
                 <ClientSelector 
                   clients={clients}
                   onSelect={setSelectedClient}
+                  initialValue={selectedClient}
                 />
               )}
             </div>

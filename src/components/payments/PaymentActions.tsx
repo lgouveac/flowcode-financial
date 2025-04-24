@@ -8,6 +8,7 @@ import type { Payment } from "@/types/payment";
 import type { EmailTemplate } from "@/types/email";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { SendEmailDialog } from "@/components/emails/SendEmailDialog";
 
 interface PaymentActionsProps {
   payment: Payment;
@@ -26,6 +27,7 @@ export const PaymentActions = ({
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -58,28 +60,21 @@ export const PaymentActions = ({
     try {
       setDuplicating(true);
       
-      // Extract only the fields we want to copy, explicitly omitting nested objects and fields we don't want to duplicate
-      const { 
-        id, 
-        created_at, 
-        updated_at, 
-        payment_date, 
-        // Remove clients from destructuring
-        ...paymentCopy 
-      } = payment;
-      
-      // If the payment has a clients property, it should not be included in the insertion
-      // This explicitly fixes the "Could not find the 'clients' column of 'payments'" error
+      // Create a clean payment object for duplication
+      // Only include fields that exist in the payments table
+      const paymentToDuplicate = {
+        client_id: payment.client_id,
+        description: `${payment.description} (Cópia)`,
+        amount: payment.amount,
+        due_date: payment.due_date,
+        payment_method: payment.payment_method,
+        status: 'pending',
+        email_template: payment.email_template
+      };
       
       const { error } = await supabase
         .from('payments')
-        .insert({
-          ...paymentCopy,
-          description: `${payment.description} (Cópia)`,
-          status: 'pending',
-          payment_date: null,
-          paid_amount: null
-        })
+        .insert(paymentToDuplicate)
         .select();
 
       if (error) throw error;
@@ -116,6 +111,7 @@ export const PaymentActions = ({
         variant="ghost"
         size="icon"
         title="Enviar email"
+        onClick={() => setShowEmailDialog(true)}
       >
         <Mail className="h-4 w-4" />
       </Button>
@@ -169,6 +165,15 @@ export const PaymentActions = ({
           onUpdate={onPaymentUpdated}
           payment={payment}
           templates={templates}
+        />
+      )}
+
+      {showEmailDialog && (
+        <SendEmailDialog
+          open={showEmailDialog}
+          onClose={() => setShowEmailDialog(false)}
+          initialClientId={payment.client_id}
+          initialTemplateId={payment.email_template}
         />
       )}
     </div>
