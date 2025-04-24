@@ -5,9 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface ClientSelectorProps {
   clients: Array<{ id: string; name: string; responsible_name?: string; partner_name?: string }>;
   onSelect: (clientId: string) => void;
+  initialValue?: string;
 }
 
-export const ClientSelector = ({ clients, onSelect }: ClientSelectorProps) => {
+export const ClientSelector = ({ clients, onSelect, initialValue }: ClientSelectorProps) => {
   return (
     <div className="space-y-2">
       <Label>Cliente</Label>
@@ -22,6 +23,7 @@ export const ClientSelector = ({ clients, onSelect }: ClientSelectorProps) => {
           }
           onSelect(value);
         }}
+        defaultValue={initialValue}
         required
       >
         <SelectTrigger>

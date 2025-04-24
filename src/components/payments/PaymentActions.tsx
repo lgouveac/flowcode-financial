@@ -6,7 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
 import type { Payment } from "@/types/payment";
 import type { EmailTemplate } from "@/types/email";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SendEmailDialog } from "@/components/emails/SendEmailDialog";
 
@@ -68,7 +68,7 @@ export const PaymentActions = ({
         amount: payment.amount,
         due_date: payment.due_date,
         payment_method: payment.payment_method,
-        status: 'pending',
+        status: 'pending' as const, // Type assertion to narrow the string type
         email_template: payment.email_template
       };
       
