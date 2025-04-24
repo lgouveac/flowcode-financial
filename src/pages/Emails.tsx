@@ -1,11 +1,8 @@
-
-import { PlusIcon, Send } from "lucide-react";
+import { Send, FileText, RefreshCw, CalendarCheck } from "lucide-react";
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemplateSection } from "@/components/emails/TemplateSection";
 import { Button } from "@/components/ui/button";
 import { TestEmployeeNotificationButton } from "@/components/emails/TestEmployeeNotificationButton";
-import { ReminderEmailSettings } from "@/components/emails/ReminderEmailSettings";
 import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsManager";
 import { EmailTemplate } from "@/types/email";
 import { createTemplate } from "@/services/templateService";
@@ -13,13 +10,20 @@ import { useToast } from "@/hooks/use-toast";
 import { TestEmailDialog } from "@/components/emails/TestEmailDialog";
 import { EmployeeEmailSettings } from "@/components/emails/EmployeeEmailSettings";
 import { SendEmailDialog } from "@/components/emails/SendEmailDialog";
+import { TemplateCategoryButton } from "@/components/emails/TemplateCategoryButton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Emails() {
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const [employeeSettingsOpen, setEmployeeSettingsOpen] = useState(false);
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
+  const [showCCRecipients, setShowCCRecipients] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [currentTemplateType, setCurrentTemplateType] = useState<'clients' | 'employees'>('clients');
+  const [currentSubtype, setCurrentSubtype] = useState<string>(
+    currentTemplateType === 'clients' ? 'recurring' : 'invoice'
+  );
+  
   const { toast } = useToast();
 
   const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
@@ -41,12 +45,20 @@ export default function Emails() {
       return false;
     }
   };
-  
+
   return (
     <div className="space-y-6 px-2 sm:px-4 md:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Emails e Notificações</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+          Emails e Notificações
+        </h1>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowCCRecipients(true)}
+          >
+            Destinatários CC
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => setSendEmailOpen(true)}
@@ -58,63 +70,96 @@ export default function Emails() {
         </div>
       </div>
 
-      <Tabs defaultValue="templates" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-[600px] ml-0">
-          <TabsTrigger value="templates">Templates de Email</TabsTrigger>
-          <TabsTrigger value="reminders">Lembretes de Pagamento</TabsTrigger>
-          <TabsTrigger value="cc-recipients">Destinatários CC</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="templates" className="mt-4">
-          <div>
-            <Tabs defaultValue="clients" onValueChange={(value) => setCurrentTemplateType(value as 'clients' | 'employees')}>
-              <TabsList className="grid grid-cols-2 w-full max-w-[400px] ml-0 mb-6">
-                <TabsTrigger value="clients">
-                  <span className="hidden sm:inline">Templates de Cliente</span>
-                  <span className="sm:hidden">Cliente</span>
-                </TabsTrigger>
-                <TabsTrigger value="employees">
-                  <span className="hidden sm:inline">Templates de Funcionário</span>
-                  <span className="sm:hidden">Funcionário</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="clients" className="mt-4">
-                <TemplateSection type="clients" onSaveTemplate={handleSaveTemplate} />
-              </TabsContent>
-              
-              <TabsContent value="employees" className="mt-4">
-                <TemplateSection type="employees" onSaveTemplate={handleSaveTemplate} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="reminders" className="mt-4">
-          <ReminderEmailSettings />
-        </TabsContent>
-        
-        <TabsContent value="cc-recipients">
-          <EmailCCRecipientsManager />
-        </TabsContent>
-      </Tabs>
+      <div className="flex flex-col gap-6">
+        <Select value={currentTemplateType} onValueChange={(value: 'clients' | 'employees') => {
+          setCurrentTemplateType(value);
+          setCurrentSubtype(value === 'clients' ? 'recurring' : 'invoice');
+        }}>
+          <SelectTrigger className="w-[280px]">
+            <SelectValue placeholder="Selecione o tipo de template" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="clients">Templates de Cliente</SelectItem>
+            <SelectItem value="employees">Templates de Funcionário</SelectItem>
+          </SelectContent>
+        </Select>
 
-      {selectedTemplate ? <TestEmailDialog open={testEmailOpen} onClose={() => setTestEmailOpen(false)} template={{
-        id: selectedTemplate,
-        name: "",
-        subject: "",
-        content: "",
-        type: "clients",
-        subtype: "recurring",
-        created_at: "",
-        updated_at: ""
-      }} /> : null}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {currentTemplateType === 'clients' ? (
+            <>
+              <TemplateCategoryButton
+                icon={RefreshCw}
+                label="Cobrança Recorrente"
+                onClick={() => setCurrentSubtype('recurring')}
+                active={currentSubtype === 'recurring'}
+              />
+              <TemplateCategoryButton
+                icon={CalendarCheck}
+                label="Cobrança Pontual"
+                onClick={() => setCurrentSubtype('oneTime')}
+                active={currentSubtype === 'oneTime'}
+              />
+              <TemplateCategoryButton
+                icon={FileText}
+                label="Contrato"
+                onClick={() => setCurrentSubtype('contract')}
+                active={currentSubtype === 'contract'}
+              />
+            </>
+          ) : (
+            <>
+              <TemplateCategoryButton
+                icon={FileText}
+                label="Template NF"
+                onClick={() => setCurrentSubtype('invoice')}
+                active={currentSubtype === 'invoice'}
+              />
+              <TemplateCategoryButton
+                icon={CalendarCheck}
+                label="Template Horas"
+                onClick={() => setCurrentSubtype('hours')}
+                active={currentSubtype === 'hours'}
+              />
+            </>
+          )}
+        </div>
+
+        <TemplateSection 
+          type={currentTemplateType} 
+          onSaveTemplate={handleSaveTemplate} 
+        />
+      </div>
+
+      {selectedTemplate && (
+        <TestEmailDialog 
+          open={testEmailOpen} 
+          onClose={() => setTestEmailOpen(false)} 
+          template={{
+            id: selectedTemplate,
+            name: "",
+            subject: "",
+            content: "",
+            type: "clients",
+            subtype: "recurring",
+            created_at: "",
+            updated_at: ""
+          }} 
+        />
+      )}
       
-      <EmployeeEmailSettings open={employeeSettingsOpen} onClose={() => setEmployeeSettingsOpen(false)} />
+      <EmployeeEmailSettings 
+        open={employeeSettingsOpen} 
+        onClose={() => setEmployeeSettingsOpen(false)} 
+      />
       
       <SendEmailDialog
         open={sendEmailOpen}
         onClose={() => setSendEmailOpen(false)}
+      />
+
+      <EmailCCRecipientsManager 
+        open={showCCRecipients}
+        onClose={() => setShowCCRecipients(false)}
       />
     </div>
   );

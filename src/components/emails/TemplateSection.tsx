@@ -1,29 +1,23 @@
 import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarIcon, RefreshCwIcon, Send, AlertTriangle, FileText } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { EmailTemplate, variablesList } from "@/types/email";
+import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { TemplateEditor } from "./TemplateEditor";
 import { VariablesList } from "./VariablesList";
-import { EmailTemplate, variablesList } from "@/types/email";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { TestEmailDialog } from "./TestEmailDialog";
 import { SavedTemplatesTable } from "./SavedTemplatesTable";
-import { useEmailTemplates } from "@/hooks/useEmailTemplates";
+
 interface TemplateSectionProps {
   type: 'clients' | 'employees';
   onSaveTemplate: (template: Partial<EmailTemplate>) => Promise<boolean>;
 }
+
 export const TemplateSection = ({
   type,
   onSaveTemplate
 }: TemplateSectionProps) => {
-  const {
-    toast
-  } = useToast();
-  // Default tabs: add 'contract' for clients
-  const [currentType, setCurrentType] = useState(type === 'employees' ? 'invoice' : 'recurring');
-  const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
+  const { toast } = useToast();
   const [testEmailOpen, setTestEmailOpen] = useState(false);
+  const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState<Partial<EmailTemplate>>({
     type: type,
     subtype: type === 'employees' ? 'invoice' : 'recurring',
@@ -37,22 +31,20 @@ export const TemplateSection = ({
     handleTemplateUpdate
   } = useEmailTemplates();
 
-  // Filter templates for the current section (type and subtype)
-  const currentTemplates = savedTemplates.filter(template => template.type === type && template.subtype === currentType);
+  const currentTemplates = savedTemplates.filter(template => template.type === type && template.subtype === (newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring')));
 
-  // Make sure contract is valid subtype for input/creation
   const handleTypeChange = (newType: string) => {
-    setCurrentType(newType);
     setNewTemplate(prev => ({
       ...prev,
-      // contract is now allowed
       subtype: newType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract'
     }));
   };
+
   const handleDragStart = (e: React.DragEvent, variable: string) => {
     setDraggingVariable(variable);
     e.dataTransfer.setData('text/plain', variable);
   };
+
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault();
     const variable = e.dataTransfer.getData('text/plain');
@@ -84,15 +76,18 @@ export const TemplateSection = ({
     }
     setDraggingVariable(null);
   };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
+
   const handleInputChange = (field: keyof EmailTemplate, value: string | number) => {
     setNewTemplate(prev => ({
       ...prev,
       [field]: value
     }));
   };
+
   const handleSaveTemplate = async () => {
     if (!newTemplate.name || !newTemplate.subject || !newTemplate.content) {
       toast({
@@ -102,25 +97,29 @@ export const TemplateSection = ({
       });
       return;
     }
+
     try {
-      // Log template being saved
       console.log("Saving template:", {
         ...newTemplate,
-        subtype: currentType
+        subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring')
       });
+
       const templateToSave = {
         ...newTemplate,
-        subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract'
+        subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring') as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract'
       };
+
       const success = await onSaveTemplate(templateToSave);
+
       if (success) {
         toast({
           title: "Template salvo",
           description: "O template foi salvo com sucesso!"
         });
+
         setNewTemplate({
           type: type,
-          subtype: currentType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract',
+          subtype: type === 'employees' ? 'invoice' : 'recurring',
           name: '',
           subject: '',
           content: ''
@@ -135,53 +134,40 @@ export const TemplateSection = ({
       });
     }
   };
-  const currentVariables = variablesList[type]?.[currentType as keyof (typeof variablesList.clients | typeof variablesList.employees)] || [];
-  return <>
-      <Tabs defaultValue={type === 'employees' ? 'invoice' : 'recurring'} onValueChange={handleTypeChange}>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-          <TabsList className="w-full sm:w-auto">
-            {type === 'employees' ? <>
-                <TabsTrigger value="invoice">Template NF</TabsTrigger>
-                <TabsTrigger value="hours">Template Horas</TabsTrigger>
-              </> : <>
-                <TabsTrigger value="recurring" className="flex items-center gap-2">
-                  <RefreshCwIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Cobrança Recorrente</span>
-                  <span className="sm:hidden">Recorrente</span>
-                </TabsTrigger>
-                <TabsTrigger value="oneTime" className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Cobrança Pontual</span>
-                  <span className="sm:hidden">Pontual</span>
-                </TabsTrigger>
-                <TabsTrigger value="reminder" className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Lembrete de Pagamento</span>
-                  <span className="sm:hidden">Lembrete</span>
-                </TabsTrigger>
-                <TabsTrigger value="contract" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  <span className="hidden sm:inline">Contrato</span>
-                  <span className="sm:hidden">Contrato</span>
-                </TabsTrigger>
-              </>}
-          </TabsList>
-          
-          
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <TemplateEditor type={type} currentType={currentType} template={newTemplate} onInputChange={handleInputChange} onSave={handleSaveTemplate} onDragOver={handleDragOver} onDrop={handleDrop} />
+  const currentVariables = variablesList[type]?.[newTemplate.subtype as keyof (typeof variablesList.clients | typeof variablesList.employees)] || [];
 
-            <SavedTemplatesTable templates={currentTemplates} onTemplateUpdate={handleTemplateUpdate} isLoading={isLoading} />
-          </div>
-          <div className="order-first lg:order-last mb-6 lg:mb-0">
-            <VariablesList variables={currentVariables} onDragStart={handleDragStart} />
-          </div>
-        </div>
-      </Tabs>
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-6">
+        <TemplateEditor 
+          type={type} 
+          currentType={newTemplate.subtype || ''} 
+          template={newTemplate} 
+          onInputChange={handleInputChange} 
+          onSave={handleSaveTemplate} 
+          onDragOver={handleDragOver} 
+          onDrop={handleDrop} 
+        />
 
-      <TestEmailDialog template={newTemplate as EmailTemplate} open={testEmailOpen} onClose={() => setTestEmailOpen(false)} />
-    </>;
+        <SavedTemplatesTable 
+          templates={currentTemplates} 
+          onTemplateUpdate={handleTemplateUpdate} 
+          isLoading={isLoading} 
+        />
+      </div>
+      <div className="order-first lg:order-last mb-6 lg:mb-0">
+        <VariablesList 
+          variables={currentVariables} 
+          onDragStart={handleDragStart} 
+        />
+      </div>
+
+      <TestEmailDialog 
+        template={newTemplate as EmailTemplate} 
+        open={testEmailOpen} 
+        onClose={() => setTestEmailOpen(false)} 
+      />
+    </div>
+  );
 };
