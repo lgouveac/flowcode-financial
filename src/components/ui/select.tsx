@@ -45,6 +45,10 @@ const SelectContent = React.forwardRef<
         className
       )}
       position={position}
+      style={{
+        backgroundColor: 'var(--background)',  // Ensure background color is applied
+        zIndex: 1000  // Increase z-index to ensure it's above other elements
+      }}
       {...props}
     >
       <SelectPrimitive.Viewport

@@ -126,7 +126,8 @@ export const RecurringBilling = () => {
             onRefresh={handleSuccess} 
             searchTerm={paymentSearch} 
             statusFilter={paymentStatusFilter} 
-            templates={templates} 
+            templates={templates}
+            enableDuplicate={true}
           />
         </TabsContent>
       </Tabs>
