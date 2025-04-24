@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
@@ -12,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { NewPaymentDialog } from "./payments/NewPaymentDialog";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 export const RecurringBilling = () => {
   const {
     billings,
@@ -22,7 +20,6 @@ export const RecurringBilling = () => {
     fetchBillings,
     fetchPayments
   } = useBillingData();
-  
   const [showSettings, setShowSettings] = useState(false);
   const [showNewPaymentDialog, setShowNewPaymentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("recurring");
@@ -30,7 +27,6 @@ export const RecurringBilling = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [billingSearch, setBillingSearch] = useState("");
   const [billingStatusFilter, setBillingStatusFilter] = useState("all");
-  
   const handleSuccess = () => {
     fetchBillings();
     fetchPayments();
@@ -52,7 +48,6 @@ export const RecurringBilling = () => {
   const oneTimePayments = useMemo(() => {
     return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
   }, [payments]);
-  
   return <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
@@ -98,9 +93,7 @@ export const RecurringBilling = () => {
         <TabsContent value="onetime" className="border rounded-lg">
           <div className="flex justify-between items-center mb-4 pt-4 px-4">
             <h2 className="text-lg font-medium">Recebimentos Pontuais</h2>
-            <Button onClick={() => setShowNewPaymentDialog(true)}>
-              Novo Recebimento
-            </Button>
+            
           </div>
           <div className="flex flex-col sm:flex-row gap-4 mb-4 px-4">
             <div className="relative flex-1">
@@ -123,25 +116,12 @@ export const RecurringBilling = () => {
               </Select>
             </div>
           </div>
-          <PaymentTable 
-            payments={oneTimePayments} 
-            onRefresh={handleSuccess} 
-            searchTerm={paymentSearch} 
-            statusFilter={paymentStatusFilter} 
-            templates={templates}
-            enableDuplicate={true}
-          />
+          <PaymentTable payments={oneTimePayments} onRefresh={handleSuccess} searchTerm={paymentSearch} statusFilter={paymentStatusFilter} templates={templates} enableDuplicate={true} />
         </TabsContent>
       </Tabs>
 
       <NotificationSettings open={showSettings} onClose={() => setShowSettings(false)} />
 
-      <NewPaymentDialog 
-        open={showNewPaymentDialog} 
-        onClose={() => setShowNewPaymentDialog(false)} 
-        onSuccess={handleSuccess} 
-        clients={clients} 
-        templates={templates} 
-      />
+      <NewPaymentDialog open={showNewPaymentDialog} onClose={() => setShowNewPaymentDialog(false)} onSuccess={handleSuccess} clients={clients} templates={templates} />
     </div>;
 };
