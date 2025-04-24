@@ -37,6 +37,18 @@ export const PaymentTable = ({
     });
   }, [payments, searchTerm, statusFilter]);
 
+  const handleEmailSent = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handlePaymentUpdated = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
   if (filteredPayments.length === 0) {
     return <EmptyState />;
   }
@@ -60,8 +72,8 @@ export const PaymentTable = ({
             <PaymentRow 
               key={payment.id}
               payment={payment} 
-              onEmailSent={() => onRefresh?.()}
-              onPaymentUpdated={() => onRefresh?.()}
+              onEmailSent={handleEmailSent}
+              onPaymentUpdated={handlePaymentUpdated}
               enableDuplicate={enableDuplicate}
               templates={templates}
             />

@@ -46,8 +46,9 @@ const SelectContent = React.forwardRef<
       )}
       position={position}
       style={{
-        backgroundColor: 'var(--background)',  // Ensure background color is applied
-        zIndex: 1000  // Increase z-index to ensure it's above other elements
+        backgroundColor: 'var(--background)',
+        color: 'var(--foreground)',
+        zIndex: 1000
       }}
       {...props}
     >

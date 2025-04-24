@@ -49,7 +49,9 @@ export const RecurringBilling = () => {
   }, [billings, billingSearch, billingStatusFilter]);
 
   // Only show one-time payments in the "Pontuais" tab
-  const oneTimePayments = payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
+  const oneTimePayments = useMemo(() => {
+    return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
+  }, [payments]);
   
   return <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
@@ -90,7 +92,7 @@ export const RecurringBilling = () => {
               </Select>
             </div>
           </div>
-          <BillingTable billings={filteredBillings} onRefresh={handleSuccess} enableDuplicate />
+          <BillingTable billings={filteredBillings} onRefresh={handleSuccess} enableDuplicate templates={templates} />
         </TabsContent>
 
         <TabsContent value="onetime" className="border rounded-lg">

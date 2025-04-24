@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatCurrency } from "@/utils/formatters";
+import { PaymentStatusBadge } from "../payments/PaymentStatusBadge";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
@@ -49,11 +51,13 @@ export const PaymentDetailsDialog = ({
   const fetchRelatedPayments = async () => {
     setLoadingPayments(true);
     try {
+      // Query for payments with the same description from the same client
+      // This will return all installments of a recurring payment
       const { data, error } = await supabase
         .from("payments")
         .select("*, clients(name)")
         .eq("client_id", billing.client_id)
-        .eq("description", billing.description)
+        .eq("description", billing.description.split(' (')[0])
         .order("due_date", { ascending: false });
 
       if (error) throw error;
@@ -94,47 +98,6 @@ export const PaymentDetailsDialog = ({
         description: "Não foi possível salvar as alterações.",
         variant: "destructive"
       });
-    }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { 
-      style: 'currency', 
-      currency: 'BRL' 
-    }).format(value);
-  };
-
-  const getStatusBadgeVariant = (status: Payment['status']) => {
-    switch (status) {
-      case 'paid':
-        return 'success';
-      case 'pending':
-        return 'secondary';
-      case 'overdue':
-        return 'destructive';
-      case 'cancelled':
-        return 'outline';
-      case 'partially_paid':
-        return 'warning';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusLabel = (status: Payment['status']) => {
-    switch (status) {
-      case 'paid':
-        return 'Pago';
-      case 'pending':
-        return 'Pendente';
-      case 'overdue':
-        return 'Atrasado';
-      case 'cancelled':
-        return 'Cancelado';
-      case 'partially_paid':
-        return 'Parcialmente Pago';
-      default:
-        return status;
     }
   };
 
@@ -245,9 +208,7 @@ export const PaymentDetailsDialog = ({
                         </TableCell>
                         <TableCell>{formatCurrency(payment.amount)}</TableCell>
                         <TableCell>
-                          <Badge variant={getStatusBadgeVariant(payment.status)}>
-                            {getStatusLabel(payment.status)}
-                          </Badge>
+                          <PaymentStatusBadge status={payment.status} />
                         </TableCell>
                       </TableRow>
                     ))}
