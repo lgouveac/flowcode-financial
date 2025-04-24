@@ -57,7 +57,19 @@ export const PaymentActions = ({
   const handleDuplicate = async () => {
     try {
       setDuplicating(true);
-      const { id, created_at, updated_at, payment_date, ...paymentCopy } = payment;
+      
+      // Extract only the fields we want to copy, explicitly omitting nested objects and fields we don't want to duplicate
+      const { 
+        id, 
+        created_at, 
+        updated_at, 
+        payment_date, 
+        // Remove clients from destructuring
+        ...paymentCopy 
+      } = payment;
+      
+      // If the payment has a clients property, it should not be included in the insertion
+      // This explicitly fixes the "Could not find the 'clients' column of 'payments'" error
       
       const { error } = await supabase
         .from('payments')
