@@ -1,7 +1,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { TemplateForm } from "@/components/emails/TemplateForm";
-import { EmailTemplate } from "@/types/email";
+import { EmailTemplate, EmailTemplateSubtype } from "@/types/email";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,7 @@ interface NewTemplateDialogProps {
 
 export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
   const [type, setType] = useState<'clients' | 'employees'>('clients');
-  const [subtype, setSubtype] = useState<string>('recurring');
+  const [subtype, setSubtype] = useState<EmailTemplateSubtype>('recurring');
   const { toast } = useToast();
 
   const [template, setTemplate] = useState<Partial<EmailTemplate>>({
@@ -82,7 +82,10 @@ export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
 
             <div className="space-y-2">
               <Label>Subtipo</Label>
-              <Select value={subtype} onValueChange={setSubtype}>
+              <Select 
+                value={subtype} 
+                onValueChange={(value: EmailTemplateSubtype) => setSubtype(value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o subtipo" />
                 </SelectTrigger>

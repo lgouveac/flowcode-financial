@@ -10,6 +10,7 @@ import { createTemplate } from "@/services/templateService";
 import { useToast } from "@/hooks/use-toast";
 import { NewTemplateDialog } from "@/components/emails/NewTemplateDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TemplateCategoryButton } from "@/components/emails/TemplateCategoryButton";
 
 export default function Emails() {
   const [newTemplateOpen, setNewTemplateOpen] = useState(false);
