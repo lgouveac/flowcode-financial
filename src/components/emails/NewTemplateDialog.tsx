@@ -95,11 +95,13 @@ export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
                       <SelectItem value="recurring">Cobrança Recorrente</SelectItem>
                       <SelectItem value="oneTime">Cobrança Pontual</SelectItem>
                       <SelectItem value="contract">Contrato</SelectItem>
+                      <SelectItem value="novo_subtipo">Novo Subtipo</SelectItem>
                     </>
                   ) : (
                     <>
                       <SelectItem value="invoice">Template NF</SelectItem>
                       <SelectItem value="hours">Template Horas</SelectItem>
+                      <SelectItem value="novo_subtipo">Novo Subtipo</SelectItem>
                     </>
                   )}
                 </SelectContent>
