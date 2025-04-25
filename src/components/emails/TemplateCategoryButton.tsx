@@ -20,14 +20,14 @@ export const TemplateCategoryButton = ({
     <Button
       variant="outline"
       className={cn(
-        "flex flex-col items-center justify-center gap-2 h-24 w-full sm:w-48",
+        "flex flex-col items-center justify-center gap-1 h-20 w-full",
         "text-sm border-2",
         active && "border-primary bg-primary/5"
       )}
       onClick={onClick}
     >
-      <Icon className="h-6 w-6" />
-      <span className="text-center">{label}</span>
+      <Icon className="h-5 w-5" />
+      <span className="text-center text-xs">{label}</span>
     </Button>
   );
 };

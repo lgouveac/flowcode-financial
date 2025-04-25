@@ -1,4 +1,4 @@
-import { Send, FileText, RefreshCw, CalendarCheck } from "lucide-react";
+import { Send, FileText, RefreshCw, CalendarCheck, Plus } from "lucide-react";
 import { useState } from "react";
 import { TemplateSection } from "@/components/emails/TemplateSection";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export default function Emails() {
   };
 
   return (
-    <div className="space-y-6 px-2 sm:px-4 md:px-6">
+    <div className="space-y-4 px-2 sm:px-4 md:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
           Emails e Notificações
@@ -70,21 +70,32 @@ export default function Emails() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6">
-        <Select value={currentTemplateType} onValueChange={(value: 'clients' | 'employees') => {
-          setCurrentTemplateType(value);
-          setCurrentSubtype(value === 'clients' ? 'recurring' : 'invoice');
-        }}>
-          <SelectTrigger className="w-[280px]">
-            <SelectValue placeholder="Selecione o tipo de template" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="clients">Templates de Cliente</SelectItem>
-            <SelectItem value="employees">Templates de Funcionário</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
+          <Select value={currentTemplateType} onValueChange={(value: 'clients' | 'employees') => {
+            setCurrentTemplateType(value);
+            setCurrentSubtype(value === 'clients' ? 'recurring' : 'invoice');
+          }}>
+            <SelectTrigger className="w-[280px]">
+              <SelectValue placeholder="Selecione o tipo de template" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="clients">Templates de Cliente</SelectItem>
+              <SelectItem value="employees">Templates de Funcionário</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setSendEmailOpen(true)}
+            className="w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Tipo de Email
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {currentTemplateType === 'clients' ? (
             <>
               <TemplateCategoryButton
