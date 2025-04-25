@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableHeader,
@@ -18,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 interface EmailCCRecipientsManagerProps {
@@ -32,6 +34,7 @@ export const EmailCCRecipientsManager = ({
   const { toast } = useToast();
   const [recipients, setRecipients] = useState<{id: string, email: string}[]>([]);
   const [newRecipient, setNewRecipient] = useState("");
+  const [notificationsActive, setNotificationsActive] = useState(true);
 
   useEffect(() => {
     const fetchRecipients = async () => {
@@ -51,10 +54,29 @@ export const EmailCCRecipientsManager = ({
       }
     };
 
+    // Get notification status from localStorage
+    const storedStatus = localStorage.getItem("ccNotificationsActive");
+    if (storedStatus !== null) {
+      setNotificationsActive(storedStatus === "true");
+    }
+
     if (open) {
       fetchRecipients();
     }
   }, [open]);
+
+  const toggleNotifications = () => {
+    const newStatus = !notificationsActive;
+    setNotificationsActive(newStatus);
+    localStorage.setItem("ccNotificationsActive", String(newStatus));
+    
+    toast({
+      title: newStatus ? "Notificações ativadas" : "Notificações desativadas",
+      description: newStatus 
+        ? "Os destinatários CC receberão emails normalmente." 
+        : "Os destinatários CC não receberão emails."
+    });
+  };
 
   const addRecipient = async () => {
     if (newRecipient && !recipients.some(r => r.email === newRecipient)) {
@@ -114,6 +136,18 @@ export const EmailCCRecipientsManager = ({
           <DialogTitle>Destinatários em Cópia (CC)</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Switch 
+                id="cc-active" 
+                checked={notificationsActive} 
+                onCheckedChange={toggleNotifications} 
+              />
+              <Label htmlFor="cc-active">
+                {notificationsActive ? "Notificações ativas" : "Notificações desativadas"}
+              </Label>
+            </div>
+          </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -121,12 +155,12 @@ export const EmailCCRecipientsManager = ({
               id="email"
               value={newRecipient}
               onChange={(e) => setNewRecipient(e.target.value)}
-              className="col-span-3"
+              className="col-span-2"
             />
+            <Button onClick={addRecipient} disabled={!newRecipient}>
+              Adicionar
+            </Button>
           </div>
-          <Button onClick={addRecipient} disabled={!newRecipient}>
-            Adicionar Destinatário
-          </Button>
         </div>
         <div className="space-y-4">
           {recipients.length > 0 ? (
@@ -154,6 +188,9 @@ export const EmailCCRecipientsManager = ({
             <p className="text-muted-foreground">Nenhum destinatário CC adicionado.</p>
           )}
         </div>
+        <DialogFooter className="flex justify-end mt-6">
+          <Button onClick={onClose}>Fechar</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

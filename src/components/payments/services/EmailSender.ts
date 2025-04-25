@@ -81,13 +81,27 @@ export const sendPaymentEmail = async (payment: Payment) => {
   // Format due date
   const formattedDueDate = dueDate.toLocaleDateString('pt-BR');
   
+  // Get CC Recipients
+  const shouldAddCC = localStorage.getItem("ccNotificationsActive") !== "false";
+  let ccRecipients: string[] = [];
+  
+  if (shouldAddCC) {
+    const { data: ccData } = await supabase
+      .from('email_cc_recipients')
+      .select('email')
+      .eq('is_active', true);
+      
+    ccRecipients = ccData?.map(item => item.email) || [];
+  }
+  
   console.log('Sending email with data:', {
     to: clientData.email,
     templateId,
+    cc: shouldAddCC ? ccRecipients : [],
     clientName: clientData.name, 
     responsibleName,
-    amount: formattedAmount, // Now properly formatted
-    dueDate: formattedDueDate, // Now properly formatted
+    amount: formattedAmount,
+    dueDate: formattedDueDate,
     description: payment.description,
     currentInstallment,
     totalInstallments,
@@ -100,6 +114,7 @@ export const sendPaymentEmail = async (payment: Payment) => {
     {
       body: JSON.stringify({
         to: clientData.email,
+        cc: shouldAddCC ? ccRecipients : [],
         templateId: templateId,
         data: {
           recipientName: clientData.name,
