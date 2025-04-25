@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { EmailTemplate } from "@/types/email";
 import { fetchTemplates, updateTemplate } from "@/services/templateService";
 
-// Include contract in type label logic
+// Include novo_subtipo in type label logic
 export const useEmailTemplates = () => {
   const { toast } = useToast();
   const [savedTemplates, setSavedTemplates] = useState<EmailTemplate[]>([]);
@@ -15,15 +16,17 @@ export const useEmailTemplates = () => {
       if (subtype === 'oneTime') return 'Cobrança Pontual';
       if (subtype === 'reminder') return 'Lembrete de Pagamento';
       if (subtype === 'contract') return 'Contrato';
+      if (subtype === 'novo_subtipo') return 'Novo Subtipo';
     }
     if (type === 'employees') {
       if (subtype === 'invoice') return 'Nota Fiscal';
       if (subtype === 'hours') return 'Horas';
+      if (subtype === 'novo_subtipo') return 'Novo Subtipo';
     }
     return subtype;
   };
 
-  // Validation list now includes 'contract'
+  // Validation list now includes 'novo_subtipo'
   const validateTemplates = (templates: EmailTemplate[]) => {
     const requiredTemplates = [
       { type: 'employees', subtype: 'invoice' },

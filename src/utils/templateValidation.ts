@@ -1,14 +1,14 @@
 
 import { EmailTemplate } from "@/types/email";
 
-// Include "contract" everywhere in type guards and unions!
+// Include "novo_subtipo" in the type guards and unions!
 export const validateTemplateType = (type: string): type is 'clients' | 'employees' => {
   return type === 'clients' || type === 'employees';
 };
 
 export const validateTemplateSubtype = (
   subtype: string
-): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract' => {
+): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract' | 'novo_subtipo' => {
   return [
     'recurring',
     'oneTime',
@@ -16,6 +16,7 @@ export const validateTemplateSubtype = (
     'hours',
     'reminder',
     'contract',
+    'novo_subtipo',
   ].includes(subtype);
 };
 

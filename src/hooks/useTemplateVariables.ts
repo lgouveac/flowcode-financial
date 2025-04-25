@@ -9,7 +9,7 @@ export const useTemplateVariables = () => {
   const renderTemplate = (
     content: string,
     type: 'clients' | 'employees',
-    subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract',
+    subtype: 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract' | 'novo_subtipo',
     data: TemplateData
   ) => {
     let renderedContent = content;
@@ -76,6 +76,10 @@ export const useTemplateVariables = () => {
         return 'R$ 0,00';
       case 'data_inicio':
         return new Date().toLocaleDateString('pt-BR');
+      case 'nome_funcionario':
+        return 'Funcionário';
+      case 'email_funcionario':
+        return 'email@exemplo.com';
       default:
         return `[${variableName}]`;
     }

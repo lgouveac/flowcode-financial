@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { EmailTemplate } from "@/types/email";
+import { EmailTemplate, EmailTemplateSubtype } from "@/types/email";
 
 interface UseTestEmailProps {
   type: 'clients' | 'employees';
@@ -43,7 +43,8 @@ export const useTestEmail = ({ type, template }: UseTestEmailProps) => {
       nome_funcionario: "Maria Santos",
       valor_nota: "R$ 3.000,00",
       mes_referencia: "Março/2024",
-      total_horas: "160"
+      total_horas: "160",
+      email_funcionario: "funcionario@empresa.com"
     };
 
     if (!id || !testData) return baseData;
@@ -60,6 +61,7 @@ export const useTestEmail = ({ type, template }: UseTestEmailProps) => {
       return {
         ...baseData,
         nome_funcionario: selected.name,
+        email_funcionario: selected.email || "funcionario@empresa.com"
       };
     }
   };

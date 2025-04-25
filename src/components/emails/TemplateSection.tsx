@@ -1,11 +1,12 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { EmailTemplate, variablesList } from "@/types/email";
+import { EmailTemplate, EmailTemplateSubtype, variablesList } from "@/types/email";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { TemplateEditor } from "./TemplateEditor";
 import { VariablesList } from "./VariablesList";
 import { SavedTemplatesTable } from "./SavedTemplatesTable";
-import { TestEmailDialog } from "./TestEmailDialog"; // Added missing import
+import { TestEmailDialog } from "./TestEmailDialog";
 
 interface TemplateSectionProps {
   type: 'clients' | 'employees';
@@ -37,7 +38,7 @@ export const TemplateSection = ({
   const handleTypeChange = (newType: string) => {
     setNewTemplate(prev => ({
       ...prev,
-      subtype: newType as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract'
+      subtype: newType as EmailTemplateSubtype
     }));
   };
 
@@ -107,7 +108,7 @@ export const TemplateSection = ({
 
       const templateToSave = {
         ...newTemplate,
-        subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring') as 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract'
+        subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring') as EmailTemplateSubtype
       };
 
       const success = await onSaveTemplate(templateToSave);
