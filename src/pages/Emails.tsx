@@ -1,3 +1,4 @@
+
 import { Send, FileText, RefreshCw, CalendarCheck, Plus } from "lucide-react";
 import { useState } from "react";
 import { TemplateSection } from "@/components/emails/TemplateSection";
@@ -7,18 +8,12 @@ import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsM
 import { EmailTemplate } from "@/types/email";
 import { createTemplate } from "@/services/templateService";
 import { useToast } from "@/hooks/use-toast";
-import { TestEmailDialog } from "@/components/emails/TestEmailDialog";
-import { EmployeeEmailSettings } from "@/components/emails/EmployeeEmailSettings";
-import { SendEmailDialog } from "@/components/emails/SendEmailDialog";
-import { TemplateCategoryButton } from "@/components/emails/TemplateCategoryButton";
+import { NewTemplateDialog } from "@/components/emails/NewTemplateDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Emails() {
-  const [testEmailOpen, setTestEmailOpen] = useState(false);
-  const [employeeSettingsOpen, setEmployeeSettingsOpen] = useState(false);
-  const [sendEmailOpen, setSendEmailOpen] = useState(false);
+  const [newTemplateOpen, setNewTemplateOpen] = useState(false);
   const [showCCRecipients, setShowCCRecipients] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [currentTemplateType, setCurrentTemplateType] = useState<'clients' | 'employees'>('clients');
   const [currentSubtype, setCurrentSubtype] = useState<string>(
     currentTemplateType === 'clients' ? 'recurring' : 'invoice'
@@ -61,10 +56,10 @@ export default function Emails() {
           </Button>
           <Button 
             variant="outline" 
-            onClick={() => setSendEmailOpen(true)}
+            onClick={() => setNewTemplateOpen(true)}
           >
-            <Send className="h-4 w-4 mr-2" />
-            Enviar Email
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Template
           </Button>
           <TestEmployeeNotificationButton />
         </div>
@@ -84,15 +79,6 @@ export default function Emails() {
               <SelectItem value="employees">Templates de Funcionário</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button
-            variant="outline"
-            onClick={() => setSendEmailOpen(true)}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Tipo de Email
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -141,31 +127,9 @@ export default function Emails() {
         />
       </div>
 
-      {selectedTemplate && (
-        <TestEmailDialog 
-          open={testEmailOpen} 
-          onClose={() => setTestEmailOpen(false)} 
-          template={{
-            id: selectedTemplate,
-            name: "",
-            subject: "",
-            content: "",
-            type: "clients",
-            subtype: "recurring",
-            created_at: "",
-            updated_at: ""
-          }} 
-        />
-      )}
-      
-      <EmployeeEmailSettings 
-        open={employeeSettingsOpen} 
-        onClose={() => setEmployeeSettingsOpen(false)} 
-      />
-      
-      <SendEmailDialog
-        open={sendEmailOpen}
-        onClose={() => setSendEmailOpen(false)}
+      <NewTemplateDialog
+        open={newTemplateOpen}
+        onClose={() => setNewTemplateOpen(false)}
       />
 
       <EmailCCRecipientsManager 

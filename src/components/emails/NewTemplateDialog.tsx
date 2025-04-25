@@ -1,13 +1,12 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { TemplateForm } from "@/components/emails/TemplateForm";
 import { EmailTemplate } from "@/types/email";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { createTemplate } from "@/services/templateService";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewTemplateDialogProps {
   open: boolean;
@@ -16,39 +15,38 @@ interface NewTemplateDialogProps {
 
 export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
   const [type, setType] = useState<'clients' | 'employees'>('clients');
-  const [subtype, setSubtype] = useState('recurring');
-  const [name, setName] = useState('');
-  const [subject, setSubject] = useState('');
-  const [content, setContent] = useState('');
+  const [subtype, setSubtype] = useState<string>('recurring');
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!name || !subject || !content) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos para criar o template.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const [template, setTemplate] = useState<Partial<EmailTemplate>>({
+    name: '',
+    subject: '',
+    content: '',
+    type: 'clients',
+    subtype: 'recurring'
+  });
 
+  const handleInputChange = (field: keyof EmailTemplate, value: string) => {
+    setTemplate(prev => ({
+      ...prev,
+      [field]: value,
+      type,
+      subtype
+    }));
+  };
+
+  const handleSave = async () => {
     try {
-      // Implementation will be added later
-      console.log("Creating template:", { type, subtype, name, subject, content });
-      
+      await createTemplate(template);
       toast({
         title: "Template criado",
         description: "O template foi criado com sucesso!"
       });
-      
       onClose();
-    } catch (error) {
-      console.error('Error creating template:', error);
+    } catch (error: any) {
       toast({
         title: "Erro ao criar template",
-        description: "Não foi possível criar o template. Tente novamente.",
+        description: error.message,
         variant: "destructive"
       });
     }
@@ -56,88 +54,72 @@ export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Novo Template de E-mail</DialogTitle>
+          <DialogTitle>Novo Template de Email</DialogTitle>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Tipo</Label>
-              <Select value={type} onValueChange={(value: 'clients' | 'employees') => setType(value)}>
+
+        <div className="space-y-6 py-4">
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label>Tipo de Template</Label>
+              <Select 
+                value={type} 
+                onValueChange={(value: 'clients' | 'employees') => {
+                  setType(value);
+                  setSubtype(value === 'clients' ? 'recurring' : 'invoice');
+                }}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="clients">Clientes</SelectItem>
-                  <SelectItem value="employees">Funcionários</SelectItem>
+                  <SelectItem value="clients">Template de Cliente</SelectItem>
+                  <SelectItem value="employees">Template de Funcionário</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
-            <div>
+
+            <div className="space-y-2">
               <Label>Subtipo</Label>
               <Select value={subtype} onValueChange={setSubtype}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o subtipo" />
                 </SelectTrigger>
                 <SelectContent>
                   {type === 'clients' ? (
                     <>
                       <SelectItem value="recurring">Cobrança Recorrente</SelectItem>
                       <SelectItem value="oneTime">Cobrança Pontual</SelectItem>
-                      <SelectItem value="reminder">Lembrete de Pagamento</SelectItem>
                       <SelectItem value="contract">Contrato</SelectItem>
                     </>
                   ) : (
                     <>
-                      <SelectItem value="invoice">Nota Fiscal</SelectItem>
-                      <SelectItem value="hours">Horas</SelectItem>
+                      <SelectItem value="invoice">Template NF</SelectItem>
+                      <SelectItem value="hours">Template Horas</SelectItem>
                     </>
                   )}
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          <div>
-            <Label>Nome do Template</Label>
-            <Input 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Template Padrão de Cobrança"
+            <TemplateForm
+              type={type}
+              currentType={subtype}
+              template={template}
+              onInputChange={handleInputChange}
+              onSave={handleSave}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e, id) => {
+                e.preventDefault();
+                // Handle variable drops here if needed
+              }}
+              onTestEmail={() => {
+                // Handle test email if needed
+              }}
             />
           </div>
-
-          <div>
-            <Label>Assunto</Label>
-            <Input 
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Ex: Cobrança - {mes_referencia}"
-            />
-          </div>
-
-          <div>
-            <Label>Conteúdo</Label>
-            <Textarea 
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Digite o conteúdo do email aqui..."
-              className="min-h-[200px]"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              Criar Template
-            </Button>
-          </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
