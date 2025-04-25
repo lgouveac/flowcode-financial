@@ -1,4 +1,6 @@
+
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,24 +30,34 @@ export const EmailCCRecipientsManager = ({
   onClose
 }: EmailCCRecipientsManagerProps) => {
   const { toast } = useToast();
-  const [recipients, setRecipients] = useState<string[]>([]);
+  const [recipients, setRecipients] = useState<{id: string, email: string}[]>([]);
   const [newRecipient, setNewRecipient] = useState("");
 
   useEffect(() => {
-    // Load recipients from local storage on component mount
-    const storedRecipients = localStorage.getItem("ccRecipients");
-    if (storedRecipients) {
-      setRecipients(JSON.parse(storedRecipients));
+    const fetchRecipients = async () => {
+      const { data, error } = await supabase
+        .from('email_cc_recipients')
+        .select('id, email')
+        .eq('is_active', true);
+
+      if (error) {
+        toast({
+          title: "Erro ao carregar destinatários",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        setRecipients(data || []);
+      }
+    };
+
+    if (open) {
+      fetchRecipients();
     }
-  }, []);
+  }, [open]);
 
-  useEffect(() => {
-    // Save recipients to local storage whenever the recipients state changes
-    localStorage.setItem("ccRecipients", JSON.stringify(recipients));
-  }, [recipients]);
-
-  const addRecipient = () => {
-    if (newRecipient && !recipients.includes(newRecipient)) {
+  const addRecipient = async () => {
+    if (newRecipient && !recipients.some(r => r.email === newRecipient)) {
       if (!isValidEmail(newRecipient)) {
         toast({
           title: "Email inválido",
@@ -54,17 +66,43 @@ export const EmailCCRecipientsManager = ({
         });
         return;
       }
-      setRecipients([...recipients, newRecipient]);
-      setNewRecipient("");
+
+      const { data, error } = await supabase
+        .from('email_cc_recipients')
+        .insert({ email: newRecipient, is_active: true })
+        .select();
+
+      if (error) {
+        toast({
+          title: "Erro ao adicionar destinatário",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else if (data) {
+        setRecipients([...recipients, data[0]]);
+        setNewRecipient("");
+      }
     }
   };
 
-  const removeRecipient = (recipientToRemove: string) => {
-    setRecipients(recipients.filter((recipient) => recipient !== recipientToRemove));
+  const removeRecipient = async (recipientId: string) => {
+    const { error } = await supabase
+      .from('email_cc_recipients')
+      .update({ is_active: false })
+      .eq('id', recipientId);
+
+    if (error) {
+      toast({
+        title: "Erro ao remover destinatário",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      setRecipients(recipients.filter((recipient) => recipient.id !== recipientId));
+    }
   };
 
   const isValidEmail = (email: string): boolean => {
-    // Basic email validation regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
@@ -101,10 +139,10 @@ export const EmailCCRecipientsManager = ({
               </TableHeader>
               <TableBody>
                 {recipients.map((recipient) => (
-                  <TableRow key={recipient}>
-                    <TableCell>{recipient}</TableCell>
+                  <TableRow key={recipient.id}>
+                    <TableCell>{recipient.email}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => removeRecipient(recipient)}>
+                      <Button variant="ghost" size="sm" onClick={() => removeRecipient(recipient.id)}>
                         Remover
                       </Button>
                     </TableCell>
