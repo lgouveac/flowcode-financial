@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { EmailTemplate, EmailTemplateSubtype, variablesList } from "@/types/email";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
@@ -27,6 +27,20 @@ export const TemplateSection = ({
     subject: '',
     content: ''
   });
+  
+  // CRITICAL FIX: Update the template type and subtype when the prop changes
+  useEffect(() => {
+    console.log(`Type prop changed to: ${type}, updating template type`);
+    const defaultSubtype = type === 'employees' ? 'invoice' : 'recurring';
+    console.log(`Setting default subtype to: ${defaultSubtype}`);
+    
+    setNewTemplate(prev => ({
+      ...prev,
+      type: type,
+      subtype: defaultSubtype
+    }));
+  }, [type]);
+  
   const {
     savedTemplates,
     isLoading,
@@ -37,11 +51,11 @@ export const TemplateSection = ({
     template.type === type && template.subtype === newTemplate.subtype
   );
 
-  const handleTypeChange = (newType: string) => {
-    console.log(`Changing template subtype to: ${newType}`);
+  const handleTypeChange = (newSubtype: string) => {
+    console.log(`Changing template subtype to: ${newSubtype}`);
     setNewTemplate(prev => ({
       ...prev,
-      subtype: newType as EmailTemplateSubtype
+      subtype: newSubtype as EmailTemplateSubtype
     }));
   };
 
@@ -106,11 +120,13 @@ export const TemplateSection = ({
     try {
       console.log("Saving template:", {
         ...newTemplate,
+        type: type, // CRITICAL FIX: Ensure we're using the current type
         subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring')
       });
 
       const templateToSave = {
         ...newTemplate,
+        type: type, // CRITICAL FIX: Ensure we're using the current type
         subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring') as EmailTemplateSubtype
       };
 
@@ -143,23 +159,16 @@ export const TemplateSection = ({
   // CRITICAL FIX: Get the current subtype from the template state
   const subtypeKey = newTemplate.subtype as EmailTemplateSubtype;
   
-  // Log info to debug the variables issue
-  console.log("TemplateSection type:", type);
-  console.log("TemplateSection subtype:", subtypeKey);
-  console.log("TemplateSection variablesList:", variablesList);
+  console.log("TemplateSection component data:", {
+    type: type,
+    subtype: subtypeKey,
+    templateType: newTemplate.type,
+    templateSubtype: newTemplate.subtype
+  });
   
-  // CRITICAL FIX: Get the variables specifically for the current type and subtype
-  let currentVariables = [];
-  
-  if (type === 'employees') {
-    // Get variables for the selected employee template subtype
-    currentVariables = variablesList.employees[subtypeKey] || [];
-    console.log("Employee variables for", subtypeKey, ":", currentVariables);
-  } else {
-    // Get variables for the selected client template subtype
-    currentVariables = variablesList.clients[subtypeKey] || [];
-    console.log("Client variables for", subtypeKey, ":", currentVariables);
-  }
+  // CRITICAL FIX: Always use the correct variables for the current type and subtype
+  const currentVariables = variablesList[type]?.[subtypeKey] || [];
+  console.log(`${type} variables for ${subtypeKey}:`, currentVariables);
   
   // CRITICAL FIX: Ensure we always have variables available
   if (currentVariables.length === 0) {

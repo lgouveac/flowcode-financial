@@ -1,6 +1,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TemplateEditor } from "./TemplateEditor";
 import { EmailTemplate, variablesList } from "@/types/email";
 import { useToast } from "@/components/ui/use-toast";
@@ -21,6 +21,11 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemp
   const [testEmailOpen, setTestEmailOpen] = useState(false);
   const { toast } = useToast();
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
+  
+  // CRITICAL FIX: Update edited template when original template changes
+  useEffect(() => {
+    setEditedTemplate(template);
+  }, [template]);
 
   const handleInputChange = (field: keyof EmailTemplate, value: string | number) => {
     setEditedTemplate(prev => ({ ...prev, [field]: value }));
@@ -79,24 +84,12 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemp
     e.preventDefault();
   };
 
-  // CRITICAL FIX: Make sure we get the right variables for the template type and subtype
+  // CRITICAL FIX: Get the correct variables for the template type and subtype
   console.log("EditTemplateDialog - Template:", template);
   
   // Get the correct variables based on template type and subtype
-  let currentVariables = [];
-  
-  if (template.type === 'employees') {
-    currentVariables = variablesList.employees[template.subtype] || [];
-    console.log("EditTemplateDialog - Showing employee variables for", template.subtype, ":", currentVariables);
-  } else {
-    currentVariables = variablesList.clients[template.subtype] || [];
-    console.log("EditTemplateDialog - Showing client variables for", template.subtype, ":", currentVariables);
-  }
-  
-  // CRITICAL FIX: Make sure we always have variables
-  if (currentVariables.length === 0) {
-    console.warn(`No variables found for ${template.type}.${template.subtype}. This should not happen.`);
-  }
+  const currentVariables = variablesList[template.type]?.[template.subtype] || [];
+  console.log(`EditTemplateDialog - ${template.type} variables for ${template.subtype}:`, currentVariables);
 
   return (
     <>
