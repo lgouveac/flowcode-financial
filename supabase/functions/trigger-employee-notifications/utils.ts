@@ -7,11 +7,25 @@ export const corsHeaders = {
 
 // Helper for preparing template data from employee and monthly value
 export function prepareTemplateData(employee: any, monthlyValue: any) {
+  // Add more detailed data to help with template rendering
   return {
     nome_funcionario: employee.name,
+    email_funcionario: employee.email,
     valor_nota: monthlyValue.amount,
-    data_nota: new Date().toISOString().split('T')[0]
+    data_nota: new Date().toISOString().split('T')[0],
+    mes_referencia: formatMonthYear(monthlyValue.month)
   };
+}
+
+// Format date as month/year in PT-BR format
+function formatMonthYear(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  } catch (e) {
+    console.error("Error formatting date:", e);
+    return dateStr;
+  }
 }
 
 // Logging helpers
@@ -64,9 +78,9 @@ export async function fetchCCRecipients(supabase: any) {
       throw error;
     }
     
-    return recipients.map((r: any) => r.email);
+    return recipients?.map((r: any) => r.email) || [];
   } catch (error) {
-    logError("Error fetching CC recipients", error);
+    logError("Error fetching CC recipients", error as Error);
     return []; // Return empty array if there's an error
   }
 }

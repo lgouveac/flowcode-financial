@@ -7,7 +7,7 @@ export async function sendEmployeeEmail(
   supabase: any,
   employee: any,
   emailTemplate: any,
-  templateData: Record<string, string>
+  templateData: Record<string, string | number>
 ): Promise<{ success: boolean; result?: any; error?: string }> {
   try {
     logMessage(`Sending email to ${employee.name} (${employee.email})`, "📧");
@@ -23,7 +23,7 @@ export async function sendEmployeeEmail(
           cc: ccRecipients,
           templateId: emailTemplate.id,
           type: "employees",
-          subtype: "invoice",
+          subtype: emailTemplate.subtype || "invoice",
           data: templateData
         }
       }
@@ -35,7 +35,7 @@ export async function sendEmployeeEmail(
 
     logMessage(`Email sent to ${employee.name}: ${JSON.stringify(emailResponse)}`, "✅");
     return { success: true, result: emailResponse };
-  } catch (error) {
+  } catch (error: any) {
     logError(`Error processing employee ${employee.name}`, error);
     return { success: false, error: error.message };
   }
@@ -46,6 +46,7 @@ export async function fetchEmployeesWithValues(supabase: any, month: string): Pr
   try {
     logMessage(`Fetching employees with monthly values for month: ${month}`, "🔍");
     
+    // Modified to use a more direct approach to fetch employees with values
     const { data: employeesWithValues, error: employeesError } = await supabase
       .from("employees")
       .select(`
@@ -54,20 +55,25 @@ export async function fetchEmployeesWithValues(supabase: any, month: string): Pr
         email, 
         position, 
         status,
-        employee_monthly_values!inner(id, amount, month, notes)
+        employee_monthly_values(id, amount, month, notes)
       `)
       .eq("status", "active")
-      .eq("employee_monthly_values.month", month);
+      .filter("employee_monthly_values.month", "eq", month);
 
     if (employeesError) {
       logError("Error fetching employees with values", employeesError);
       throw new Error(`Failed to fetch employees with values: ${employeesError.message}`);
     }
 
+    // Filter to only include employees who have monthly values
+    const validEmployees = employeesWithValues?.filter(emp => 
+      emp.employee_monthly_values && emp.employee_monthly_values.length > 0
+    ) || [];
+
     // More detailed logging about what was found
-    if (employeesWithValues && employeesWithValues.length > 0) {
-      logMessage(`Found ${employeesWithValues.length} active employees with values for ${month}`, "👥");
-      employeesWithValues.forEach(emp => {
+    if (validEmployees.length > 0) {
+      logMessage(`Found ${validEmployees.length} active employees with values for ${month}`, "👥");
+      validEmployees.forEach(emp => {
         logMessage(`Employee with values: ${emp.name}, Values: ${JSON.stringify(emp.employee_monthly_values)}`, "👤");
       });
     } else {
@@ -105,8 +111,8 @@ export async function fetchEmployeesWithValues(supabase: any, month: string): Pr
       }
     }
 
-    return employeesWithValues || [];
-  } catch (error) {
+    return validEmployees;
+  } catch (error: any) {
     logError("Error in fetchEmployeesWithValues", error);
     throw error;
   }
@@ -114,27 +120,34 @@ export async function fetchEmployeesWithValues(supabase: any, month: string): Pr
 
 // Fetch default email template for employees
 export async function fetchEmailTemplate(supabase: any): Promise<any> {
-  const { data: emailTemplate, error: templateError } = await supabase
-    .from("email_templates")
-    .select("*")
-    .eq("type", "employees")
-    .eq("subtype", "invoice")
-    .eq("is_default", true)
-    .limit(1)
-    .maybeSingle();
+  try {
+    // Modified to look for any appropriate employee template
+    const { data: emailTemplates, error: templatesError } = await supabase
+      .from("email_templates")
+      .select("*")
+      .eq("type", "employees")
+      .in("subtype", ["invoice", "hours"]);
 
-  if (templateError) {
-    logError("Error fetching email template", templateError);
-    throw new Error(`Failed to fetch email template: ${templateError.message}`);
+    if (templatesError) {
+      logError("Error fetching email templates", templatesError);
+      throw new Error(`Failed to fetch email templates: ${templatesError.message}`);
+    }
+
+    if (!emailTemplates || emailTemplates.length === 0) {
+      logError("No email templates found for employees", new Error("Missing template"));
+      throw new Error("No email templates found for employee emails");
+    }
+
+    // Prefer default templates, but use any template if no default is found
+    const defaultTemplate = emailTemplates.find(t => t.is_default === true);
+    const template = defaultTemplate || emailTemplates[0];
+    
+    logMessage(`Found email template: ${template.name} (${template.subtype})`, "📝");
+    return template;
+  } catch (error: any) {
+    logError("Error fetching email template", error);
+    throw error;
   }
-
-  if (!emailTemplate) {
-    logError("No default email template found for employees", new Error("Missing template"));
-    throw new Error("No default email template found for employee emails");
-  }
-
-  logMessage(`Found email template: ${emailTemplate.name}`, "📝");
-  return emailTemplate;
 }
 
 // Fetch global settings for email notifications

@@ -97,7 +97,7 @@ serve(async (req) => {
     if (emailSettings?.notification_time && !isTestMode && !forceDay) {
       const configuredTime = emailSettings.notification_time;
       
-      if (!isTimeMatch(currentTime, configuredTime, 1)) {
+      if (!isTimeMatch(currentTime, configuredTime, 5)) { // Increased time window to 5 minutes
         logMessage("Not the configured time to send employee emails. Skipping.", "⏭️");
         return new Response(
           JSON.stringify({ 
@@ -123,59 +123,14 @@ serve(async (req) => {
       logMessage(`Current month formatted: ${currentMonth}`, "📆");
     }
     
-    // Get active employees with their monthly values
+    // Get active employees with their monthly values - THIS IS THE KEY FIX
     const employeesWithValues = await fetchEmployeesWithValues(supabase, currentMonth);
 
     if (debugMode) {
       logMessage(`Found ${employeesWithValues.length} employees with values for month ${currentMonth}`, "👥");
-      
-      // Perform additional diagnostic queries in debug mode
-      const { data: allEmployees, error: empError } = await supabase
-        .from("employees")
-        .select("id, name, email, status")
-        .eq("status", "active");
-        
-      if (empError) {
-        logError("Error fetching all employees", empError);
-      } else {
-        logMessage(`Total active employees: ${allEmployees?.length || 0}`, "👤");
-        
-        for (const emp of allEmployees || []) {
-          logMessage(`Active employee: ${emp.name} (${emp.email})`, "👤");
-          
-          // Check if this employee has monthly values for the current month
-          const { data: monthlyValues, error: mvError } = await supabase
-            .from("employee_monthly_values")
-            .select("*")
-            .eq("employee_id", emp.id)
-            .eq("month", currentMonth);
-            
-          if (mvError) {
-            logError(`Error fetching monthly values for ${emp.name}`, mvError);
-          } else if (monthlyValues && monthlyValues.length > 0) {
-            logMessage(`${emp.name} has ${monthlyValues.length} monthly value(s) for ${currentMonth}: ${JSON.stringify(monthlyValues.map(mv => ({ id: mv.id, amount: mv.amount })))}`, "💰");
-          } else {
-            logMessage(`${emp.name} has NO monthly values for ${currentMonth}`, "❌");
-            
-            // Check all monthly values for this employee to help troubleshoot
-            const { data: allValues, error: allMvError } = await supabase
-              .from("employee_monthly_values")
-              .select("*")
-              .eq("employee_id", emp.id);
-              
-            if (allMvError) {
-              logError(`Error fetching all monthly values for ${emp.name}`, allMvError);
-            } else if (allValues && allValues.length > 0) {
-              logMessage(`${emp.name} has values for other months: ${JSON.stringify(allValues.map(mv => ({ id: mv.id, month: mv.month, amount: mv.amount })))}`, "📅");
-            } else {
-              logMessage(`${emp.name} has NO monthly values at all`, "❌");
-            }
-          }
-        }
-      }
     }
 
-    // Get the default email template for employees
+    // Get the email template(s) for employees
     const emailTemplate = await fetchEmailTemplate(supabase);
 
     // Send emails to each employee
@@ -184,11 +139,11 @@ serve(async (req) => {
     
     for (const employee of employeesWithValues) {
       try {
-        // Extract the monthly value for this employee
+        // Use the first monthly value in the array
         const monthlyValue = employee.employee_monthly_values[0];
         
         if (!monthlyValue) {
-          logMessage(`No monthly value found for employee: ${employee.name} (${employee.id})`, "⚠️");
+          logMessage(`No monthly value found for employee ${employee.name} despite being in the list`, "⚠️");
           continue;
         }
         
@@ -199,7 +154,7 @@ serve(async (req) => {
         // Prepare the variable data for the template
         const templateData = prepareTemplateData(employee, monthlyValue);
         
-        // Send email
+        // Send email 
         const result = await sendEmployeeEmail(supabase, employee, emailTemplate, templateData);
         
         if (result.success) {
@@ -207,9 +162,9 @@ serve(async (req) => {
           logMessage(`Successfully sent email to ${employee.name} (${employee.email})`, "✅");
         } else {
           emailErrors.push({ employee: employee.name, error: result.error });
-          logError(`Failed to send email to ${employee.name}`, new Error(result.error));
+          logError(`Failed to send email to ${employee.name}`, new Error(result.error || "Unknown error"));
         }
-      } catch (error) {
+      } catch (error: any) {
         logError(`Error processing employee ${employee.name}`, error);
         emailErrors.push({ employee: employee.name, error: error.message });
       }
@@ -237,7 +192,7 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     logError("Error in employee notification process", error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
