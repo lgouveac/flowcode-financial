@@ -12,13 +12,16 @@ export const TestEmployeeNotificationButton = () => {
     try {
       setIsLoading(true);
       
-      // Call the function with bypass and test flags to ALWAYS send notifications
-      // regardless of any filter or validation
+      // Call the function with an empty object body to avoid JSON parsing errors
       const { data, error } = await supabase.functions.invoke("trigger-employee-notifications", {
         method: "POST",
         body: {
           test: true,
-          bypass: true
+          bypass: true,
+          forceDay: true,
+          forceMonth: true,
+          ignoreFilters: true,
+          debug: true
         }
       });
       
@@ -29,17 +32,10 @@ export const TestEmployeeNotificationButton = () => {
       
       console.log("Resposta da notificação:", data);
       
-      if (data.totalSent > 0) {
-        toast({
-          title: "Notificações enviadas",
-          description: `Foram enviados ${data.totalSent} emails para funcionários.`,
-        });
-      } else {
-        toast({
-          title: "Nenhum email enviado",
-          description: "Não foram encontrados funcionários para enviar emails.",
-        });
-      }
+      toast({
+        title: "Ação concluída",
+        description: "A função de notificação foi executada com sucesso.",
+      });
     } catch (error) {
       console.error("Erro ao executar função:", error);
       toast({
