@@ -34,8 +34,8 @@ export const RecurringBillingPaymentsDialog = ({
     try {
       setLoading(true);
       
-      // Updated query to only fetch payments related to this specific recurring billing
-      // by checking both client_id and description that should contain the installment number pattern
+      // Query payments specifically for this recurring billing by looking for 
+      // exact pattern in description: "Description (X/12)" where 12 is the total installments
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -45,7 +45,8 @@ export const RecurringBillingPaymentsDialog = ({
           )
         `)
         .eq('client_id', billing.client_id)
-        .ilike('description', `${billing.description}%`)
+        .eq('total_installments', billing.installments) // Match exact number of installments
+        .ilike('description', `${billing.description.split('(')[0].trim()}%`) // Match the base description
         .order('installment_number', { ascending: true });
         
       if (error) {
@@ -53,12 +54,12 @@ export const RecurringBillingPaymentsDialog = ({
         return;
       }
       
-      // Further filter to ensure we get exactly the payments for this recurring billing
-      // by checking the description format with the installment pattern
+      // Additional filter to make absolutely sure we get only the relevant payments
       const filteredPayments = data?.filter(payment => {
-        // Match description pattern like "Description (X/Y)" where Y matches billing.installments
-        const regex = new RegExp(`\\(\\d+\\/${billing.installments}\\)$`);
-        return regex.test(payment.description);
+        // Check if this payment belongs to this exact billing cycle
+        // by ensuring the description pattern matches
+        return payment.description.startsWith(billing.description.split('(')[0].trim()) && 
+               payment.total_installments === billing.installments;
       }) || [];
       
       setPayments(filteredPayments);
