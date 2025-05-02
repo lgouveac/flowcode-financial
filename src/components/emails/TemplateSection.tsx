@@ -137,7 +137,11 @@ export const TemplateSection = ({
     }
   };
 
-  const currentVariables = variablesList[type]?.[newTemplate.subtype as keyof (typeof variablesList.clients | typeof variablesList.employees)] || [];
+  // Fix: Make sure currentVariables correctly retrieves variables for the selected template type and subtype
+  const subtypeKey = newTemplate.subtype as keyof (typeof variablesList.clients | typeof variablesList.employees);
+  const currentVariables = variablesList[type]?.[subtypeKey] || [];
+  
+  console.log("Current variables for", type, subtypeKey, ":", currentVariables);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -149,7 +153,8 @@ export const TemplateSection = ({
           onInputChange={handleInputChange} 
           onSave={handleSaveTemplate} 
           onDragOver={handleDragOver} 
-          onDrop={handleDrop} 
+          onDrop={handleDrop}
+          onTypeChange={handleTypeChange}
         />
 
         <SavedTemplatesTable 

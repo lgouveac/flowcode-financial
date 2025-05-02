@@ -42,6 +42,12 @@ export default function Emails() {
     }
   };
 
+  // Update the subtype when the template type changes
+  const handleTemplateTypeChange = (type: 'clients' | 'employees') => {
+    setCurrentTemplateType(type);
+    setCurrentSubtype(type === 'clients' ? 'recurring' : 'invoice');
+  };
+
   return (
     <div className="space-y-4 px-2 sm:px-4 md:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -68,10 +74,7 @@ export default function Emails() {
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4 items-start">
-          <Select value={currentTemplateType} onValueChange={(value: 'clients' | 'employees') => {
-            setCurrentTemplateType(value);
-            setCurrentSubtype(value === 'clients' ? 'recurring' : 'invoice');
-          }}>
+          <Select value={currentTemplateType} onValueChange={(value: 'clients' | 'employees') => handleTemplateTypeChange(value)}>
             <SelectTrigger className="w-[280px]">
               <SelectValue placeholder="Selecione o tipo de template" />
             </SelectTrigger>

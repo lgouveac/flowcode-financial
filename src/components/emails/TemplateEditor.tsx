@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { EmailTemplate } from "@/types/email";
+import { EmailTemplate, EmailTemplateSubtype } from "@/types/email";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface TemplateEditorProps {
   type: "clients" | "employees";
@@ -14,17 +15,51 @@ interface TemplateEditorProps {
   onSave: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, targetId: string) => void;
+  onTypeChange?: (newType: string) => void;
 }
 
 export const TemplateEditor = ({
+  type,
+  currentType,
   template,
   onInputChange,
   onSave,
   onDragOver,
   onDrop,
+  onTypeChange,
 }: TemplateEditorProps) => {
   return (
     <div className="space-y-4 w-full max-w-full">
+      {onTypeChange && (
+        <div>
+          <Label htmlFor="template-subtype" className="text-sm sm:text-base">Tipo de Template</Label>
+          <Select
+            value={currentType}
+            onValueChange={(value) => onTypeChange(value)}
+          >
+            <SelectTrigger id="template-subtype" className="w-full mt-1">
+              <SelectValue placeholder="Selecione o tipo de template" />
+            </SelectTrigger>
+            <SelectContent>
+              {type === 'clients' ? (
+                <>
+                  <SelectItem value="recurring">Cobrança Recorrente</SelectItem>
+                  <SelectItem value="oneTime">Cobrança Pontual</SelectItem>
+                  <SelectItem value="contract">Contrato</SelectItem>
+                  <SelectItem value="novo_subtipo">Novo Subtipo</SelectItem>
+                </>
+              ) : (
+                <>
+                  <SelectItem value="invoice">Template NF</SelectItem>
+                  <SelectItem value="hours">Template Horas</SelectItem>
+                  <SelectItem value="novo_subtipo">Novo Subtipo</SelectItem>
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       <div>
         <Label htmlFor="template-name" className="text-sm sm:text-base">Nome do Template</Label>
         <Input
