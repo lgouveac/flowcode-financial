@@ -9,7 +9,8 @@ import {
   fetchCCRecipients 
 } from "./utils.ts";
 import { 
-  fetchEmailTemplate
+  fetchEmailTemplate,
+  sendEmployeeEmail
 } from "./email-service.ts";
 
 serve(async (req) => {
@@ -38,6 +39,8 @@ serve(async (req) => {
       // If parsing fails, just log and continue with empty object
       console.error("Error parsing request body:", parseError);
       requestBody = {};
+      // Default to bypass mode if there's a parsing error
+      bypass = true;
     }
     
     logMessage(`Employee notification trigger function called ${test ? "in TEST MODE" : ""} with BYPASS=${bypass}`, "🔔");
@@ -52,20 +55,21 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get all employees regardless of status - no filtering
-    const { data: allEmployees, error: employeeError } = await supabase
+    // If this is a test or bypass request, get all employees regardless of status
+    const { data: employees, error: employeeError } = await supabase
       .from("employees")
-      .select("id, name, email, position");
+      .select("id, name, email, position, status")
+      .eq(bypass ? undefined : "status", bypass ? undefined : "active");
     
     if (employeeError) {
       throw new Error("Failed to fetch employees: " + employeeError.message);
     }
     
-    if (!allEmployees || allEmployees.length === 0) {
+    if (!employees || employees.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "No employees found in the database", 
+          message: "No employees found matching the criteria", 
           totalSent: 0
         }),
         {
@@ -75,34 +79,44 @@ serve(async (req) => {
       );
     }
     
-    logMessage(`Found ${allEmployees.length} employees`, "👥");
+    logMessage(`Found ${employees.length} employees ${bypass ? "(ignoring status filter)" : "with active status"}`, "👥");
     
-    // Get a template for sending emails - any template will do
+    // Get template for sending emails
     const emailTemplate = await fetchEmailTemplate(supabase);
     
     // Send emails to all employees
     const sentEmails = [];
     const emailErrors = [];
     
-    for (const employee of allEmployees) {
+    for (const employee of employees) {
       try {
-        logMessage(`Processing employee: ${employee.name}`, "📧");
+        logMessage(`Processing employee: ${employee.name} (${employee.email}) - Status: ${employee.status}`, "📧");
         
         // Get CC recipients
         const ccRecipients = await fetchCCRecipients(supabase);
         
-        // Prepare dummy data for the template
+        // Fetch monthly value for this employee (if exists)
+        const { data: monthlyValues } = await supabase
+          .from("employee_monthly_values")
+          .select("amount, month, notes")
+          .eq("employee_id", employee.id)
+          .order("month", { ascending: false })
+          .limit(1);
+          
+        const monthlyValue = monthlyValues && monthlyValues.length > 0 ? monthlyValues[0] : null;
+        
+        // Prepare template data with all available information
         const templateData = {
           nome_funcionario: employee.name || "Funcionário",
           email_funcionario: employee.email || "email@exemplo.com",
-          valor_nota: 0,
+          valor_nota: monthlyValue?.amount || 0,
           data_nota: new Date().toISOString().split('T')[0],
           mes_referencia: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
           posicao: employee.position || "Colaborador",
-          observacoes: "Teste de notificação"
+          observacoes: monthlyValue?.notes || "Nota fiscal mensal"
         };
         
-        // Send email directly
+        // Send email directly - without any validation
         const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
           'send-email',
           {
@@ -121,8 +135,13 @@ serve(async (req) => {
           throw new Error(`Error sending email: ${emailError.message}`);
         }
 
-        sentEmails.push({ employee: employee.name, email: employee.email });
-        logMessage(`Successfully sent email to ${employee.name} (${employee.email})`, "✅");
+        sentEmails.push({ 
+          employee: employee.name, 
+          email: employee.email, 
+          templateId: emailTemplate.id,
+          templateType: emailTemplate.subtype
+        });
+        logMessage(`Successfully sent email to ${employee.name} (${employee.email}) with template ${emailTemplate.name}`, "✅");
       } catch (error: any) {
         logError(`Error processing employee ${employee.name}`, error);
         emailErrors.push({ employee: employee.name, error: error.message });
@@ -137,7 +156,7 @@ serve(async (req) => {
         errors: emailErrors,
         totalSent: sentEmails.length,
         totalErrors: emailErrors.length,
-        totalEmployees: allEmployees?.length || 0
+        totalEmployees: employees?.length || 0
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

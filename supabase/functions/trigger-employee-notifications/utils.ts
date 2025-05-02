@@ -19,7 +19,7 @@ export function prepareTemplateData(employee: any, monthlyValue: any) {
     data_nota: new Date().toISOString().split('T')[0],
     mes_referencia: formatMonthYear(monthDate.toISOString()),
     posicao: employee.position || "Colaborador",
-    observacoes: monthlyValue?.notes || ""
+    observacoes: monthlyValue?.notes || "Nota fiscal mensal"
   };
 }
 
@@ -30,7 +30,7 @@ function formatMonthYear(dateStr: string): string {
     return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   } catch (e) {
     console.error("Error formatting date:", e);
-    return dateStr;
+    return new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   }
 }
 
@@ -51,7 +51,7 @@ export function formatYearMonth(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-// Time functions that always return true - no checks
+// Time functions - simplified to always return true
 export function isConfiguredDay(): boolean {
   return true;
 }
