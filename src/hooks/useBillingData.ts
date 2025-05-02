@@ -108,7 +108,14 @@ export const useBillingData = () => {
 
       if (error) throw error;
 
-      setTemplates(data || []);
+      // Convert template types to match EmailTemplate type
+      const typedTemplates = data?.map(template => ({
+        ...template,
+        type: template.type as any,
+        subtype: template.subtype as any
+      }));
+      
+      setTemplates(typedTemplates || []);
     } catch (error) {
       console.error('Error fetching templates:', error);
     }

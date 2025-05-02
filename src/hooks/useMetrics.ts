@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -40,6 +41,7 @@ export const useMetrics = (period: string = 'current') => {
     // Initialize new metrics
     investmentExpenses: 0,
     proLaboreExpenses: 0,
+    profitDistributionExpenses: 0,
     operationalExpenses: 0,
     adjustedProfit: 0,
     // Initialize changes
@@ -180,7 +182,7 @@ export const useMetrics = (period: string = 'current') => {
 
         if (previousClientsError) throw previousClientsError;
 
-        // IMPORTANT FIX: Fetch pending payments without date filtering to make sure we get all pending payments
+        // FIXED: Fetch pending payments - don't filter by date to get all pending
         const { data: expectedPayments, error: expectedPaymentsError } = await supabase
           .from('payments')
           .select('amount, paid_amount, status')
@@ -191,7 +193,7 @@ export const useMetrics = (period: string = 'current') => {
         // Log for debugging
         console.log('All expected payments for calculation:', expectedPayments);
 
-        // Fetch recurring billing data
+        // FIXED: Fetch recurring billing data - count each billing only once
         const { data: expectedRecurring, error: expectedRecurringError } = await supabase
           .from('recurring_billing')
           .select('amount, due_day, status, installments, current_installment')
@@ -210,7 +212,7 @@ export const useMetrics = (period: string = 'current') => {
             return sum + Number(item.amount);
           }, 0);
         
-        // FIXED: For recurring payments, count each active recurring billing once
+        // FIXED: For recurring payments, count each billing only once
         const currentExpectedRecurringTotal = (expectedRecurring || [])
           .reduce((sum, item) => sum + Number(item.amount), 0);
         
