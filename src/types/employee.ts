@@ -20,3 +20,19 @@ export interface EstimatedExpense {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface Employee {
+  id: string;
+  name: string;
+  type: "fixed" | "freelancer";
+  status: "active" | "inactive";
+  payment_method: string;
+  last_invoice?: string;
+  cnpj?: string;
+  pix?: string;
+  address?: string;
+  position?: string;
+  phone?: string;
+  email: string;
+  preferred_template?: "invoice" | "hours" | "novo_subtipo";
+}

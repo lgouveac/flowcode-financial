@@ -63,6 +63,7 @@ export async function fetchEmployeesWithValues(supabase: any, month: string, ign
         cnpj,
         payment_method,
         status,
+        preferred_template,
         employee_monthly_values(id, amount, month, notes)
       `);
     
@@ -149,11 +150,11 @@ export async function fetchEmployeesWithValues(supabase: any, month: string, ign
   }
 }
 
-// Fetch default email template for employees
-export async function fetchEmailTemplate(supabase: any): Promise<any> {
+// Fetch all email templates for employees and find the appropriate one based on employee preference or default
+export async function fetchEmailTemplate(supabase: any, preferredType?: string): Promise<any> {
   try {
-    // Modified to look for any appropriate employee template
-    const { data: emailTemplates, error: templatesError } = await supabase
+    // Get all employee templates
+    const { data: allTemplates, error: templatesError } = await supabase
       .from("email_templates")
       .select("*")
       .eq("type", "employees")
@@ -164,16 +165,34 @@ export async function fetchEmailTemplate(supabase: any): Promise<any> {
       throw new Error(`Failed to fetch email templates: ${templatesError.message}`);
     }
 
-    if (!emailTemplates || emailTemplates.length === 0) {
+    if (!allTemplates || allTemplates.length === 0) {
       logError("No email templates found for employees", new Error("Missing template"));
       throw new Error("No email templates found for employee emails");
     }
 
-    // Prefer default templates, but use any template if no default is found
-    const defaultTemplate = emailTemplates.find(t => t.is_default === true);
-    const template = defaultTemplate || emailTemplates[0];
+    let template;
+
+    // If a preferred type is specified, look for that template type first
+    if (preferredType) {
+      logMessage(`Looking for preferred template type: ${preferredType}`, "🔍");
+      
+      // First try to find a default template with the preferred type
+      template = allTemplates.find(t => t.subtype === preferredType && t.is_default === true);
+      
+      // If no default found, use any template of the preferred type
+      if (!template) {
+        template = allTemplates.find(t => t.subtype === preferredType);
+      }
+    }
+
+    // If no template found by preference, use default template logic
+    if (!template) {
+      // Prefer default templates, but use any template if no default is found
+      const defaultTemplate = allTemplates.find(t => t.is_default === true);
+      template = defaultTemplate || allTemplates[0];
+    }
     
-    logMessage(`Found email template: ${template.name} (${template.subtype})`, "📝");
+    logMessage(`Selected email template: ${template.name} (${template.subtype})`, "📝");
     return template;
   } catch (error: any) {
     logError("Error fetching email template", error);
