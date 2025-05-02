@@ -1,8 +1,7 @@
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const TestEmployeeNotificationButton = () => {
@@ -13,22 +12,16 @@ export const TestEmployeeNotificationButton = () => {
     try {
       setIsLoading(true);
       
-      // Chamar a função edge sem nenhum filtro ou validação
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke("trigger-employee-notifications", {
+      // Call the function with an empty object body to avoid JSON parsing errors
+      const { data, error } = await supabase.functions.invoke("trigger-employee-notifications", {
         method: "POST",
         body: {
           test: true,
-          bypass: true, // Bypass ALL checks
+          bypass: true,
           forceDay: true,
-          forceMonth: true, 
+          forceMonth: true,
           ignoreFilters: true,
           debug: true
-        },
-        headers: {
-          "Content-Type": "application/json"
         }
       });
       
@@ -41,7 +34,7 @@ export const TestEmployeeNotificationButton = () => {
       
       toast({
         title: "Ação concluída",
-        description: data.message || "A função de notificação foi executada. Verifique os logs para mais detalhes.",
+        description: "A função de notificação foi executada com sucesso.",
       });
     } catch (error) {
       console.error("Erro ao executar função:", error);
@@ -56,15 +49,12 @@ export const TestEmployeeNotificationButton = () => {
   };
 
   return (
-    <Button 
+    <LoadingButton 
       variant="outline" 
       onClick={handleTestNotification} 
-      disabled={isLoading}
+      loading={isLoading}
     >
-      {isLoading ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : null}
       Testar Notificação
-    </Button>
+    </LoadingButton>
   );
 };
