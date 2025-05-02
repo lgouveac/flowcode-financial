@@ -140,19 +140,25 @@ export const TemplateSection = ({
     }
   };
 
-  // Get the proper subtypeKey and ensure it's a valid key for the current template type
+  // Fix: Use the correct method to access variables based on type and subtype
   const subtypeKey = newTemplate.subtype as EmailTemplateSubtype;
-  
-  // Access the correct variables list for the current template type and subtype
   let currentVariables = [];
+  
+  // Debug logs to help identify the issue
+  console.log("Current template type:", type);
+  console.log("Current template subtype:", subtypeKey);
+  console.log("All variables available:", variablesList);
+  
+  // Fix the way we access variables - make sure we get the right ones
   if (type === 'employees') {
+    // Access the employees variables using the correct subtype
     currentVariables = variablesList.employees[subtypeKey] || [];
+    console.log("Employee variables found:", currentVariables);
   } else {
+    // Access the clients variables using the correct subtype
     currentVariables = variablesList.clients[subtypeKey] || [];
+    console.log("Client variables found:", currentVariables);
   }
-
-  console.log("Current template:", type, subtypeKey);
-  console.log("Variables available:", currentVariables);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

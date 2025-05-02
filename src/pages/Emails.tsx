@@ -1,6 +1,6 @@
 
 import { Send, FileText, RefreshCw, CalendarCheck, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TemplateSection } from "@/components/emails/TemplateSection";
 import { Button } from "@/components/ui/button";
 import { TestEmployeeNotificationButton } from "@/components/emails/TestEmployeeNotificationButton";
@@ -21,6 +21,11 @@ export default function Emails() {
   );
   
   const { toast } = useToast();
+
+  // Update currentSubtype whenever the template type changes
+  useEffect(() => {
+    setCurrentSubtype(currentTemplateType === 'clients' ? 'recurring' : 'invoice');
+  }, [currentTemplateType]);
 
   const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
     try {
@@ -44,6 +49,7 @@ export default function Emails() {
 
   // Update the subtype when the template type changes
   const handleTemplateTypeChange = (type: 'clients' | 'employees') => {
+    console.log(`Changing template type from ${currentTemplateType} to ${type}`);
     setCurrentTemplateType(type);
     setCurrentSubtype(type === 'clients' ? 'recurring' : 'invoice');
   };
@@ -120,6 +126,12 @@ export default function Emails() {
                 label="Template Horas"
                 onClick={() => setCurrentSubtype('hours')}
                 active={currentSubtype === 'hours'}
+              />
+              <TemplateCategoryButton
+                icon={Send}
+                label="Novo Subtipo"
+                onClick={() => setCurrentSubtype('novo_subtipo')}
+                active={currentSubtype === 'novo_subtipo'}
               />
             </>
           )}

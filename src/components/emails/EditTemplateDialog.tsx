@@ -79,7 +79,21 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemp
     e.preventDefault();
   };
 
-  const currentVariables = variablesList[template.type]?.[template.subtype as keyof (typeof variablesList.clients | typeof variablesList.employees)] || [];
+  // Fix: Properly get variables for the current template type and subtype
+  let currentVariables = [];
+  
+  // Add debug logs
+  console.log("Template in EditTemplateDialog:", template);
+  
+  if (template.type === 'employees') {
+    // Get employee variables for this subtype
+    currentVariables = variablesList.employees[template.subtype] || [];
+    console.log("Employee variables found in dialog:", currentVariables);
+  } else {
+    // Get client variables for this subtype
+    currentVariables = variablesList.clients[template.subtype] || [];
+    console.log("Client variables found in dialog:", currentVariables);
+  }
 
   return (
     <>
