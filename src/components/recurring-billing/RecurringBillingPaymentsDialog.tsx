@@ -34,7 +34,8 @@ export const RecurringBillingPaymentsDialog = ({
     try {
       setLoading(true);
       
-      // Fetch payments that have installment numbers (related to this recurring billing)
+      // Updated query to only fetch payments related to this specific recurring billing
+      // by checking both client_id and description that should contain the installment number pattern
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -44,15 +45,23 @@ export const RecurringBillingPaymentsDialog = ({
           )
         `)
         .eq('client_id', billing.client_id)
-        .not('installment_number', 'is', null)
-        .order('due_date', { ascending: true });
+        .ilike('description', `${billing.description}%`)
+        .order('installment_number', { ascending: true });
         
       if (error) {
         console.error("Error fetching payments:", error);
         return;
       }
       
-      setPayments(data || []);
+      // Further filter to ensure we get exactly the payments for this recurring billing
+      // by checking the description format with the installment pattern
+      const filteredPayments = data?.filter(payment => {
+        // Match description pattern like "Description (X/Y)" where Y matches billing.installments
+        const regex = new RegExp(`\\(\\d+\\/${billing.installments}\\)$`);
+        return regex.test(payment.description);
+      }) || [];
+      
+      setPayments(filteredPayments);
     } catch (error) {
       console.error("Failed to fetch payments:", error);
     } finally {
