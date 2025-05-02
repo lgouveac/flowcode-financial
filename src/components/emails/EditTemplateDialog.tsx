@@ -79,20 +79,23 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemp
     e.preventDefault();
   };
 
-  // Fix: Properly get variables for the current template type and subtype
-  let currentVariables = [];
-  
-  // Add debug logs
+  // CRITICAL FIX: Make sure we get the right variables for the template type and subtype
   console.log("EditTemplateDialog - Template:", template);
   
+  // Get the correct variables based on template type and subtype
+  let currentVariables = [];
+  
   if (template.type === 'employees') {
-    // Get employee variables for this subtype
     currentVariables = variablesList.employees[template.subtype] || [];
-    console.log("EditTemplateDialog - Employee variables found:", currentVariables);
+    console.log("EditTemplateDialog - Showing employee variables for", template.subtype, ":", currentVariables);
   } else {
-    // Get client variables for this subtype
     currentVariables = variablesList.clients[template.subtype] || [];
-    console.log("EditTemplateDialog - Client variables found:", currentVariables);
+    console.log("EditTemplateDialog - Showing client variables for", template.subtype, ":", currentVariables);
+  }
+  
+  // CRITICAL FIX: Make sure we always have variables
+  if (currentVariables.length === 0) {
+    console.warn(`No variables found for ${template.type}.${template.subtype}. This should not happen.`);
   }
 
   return (

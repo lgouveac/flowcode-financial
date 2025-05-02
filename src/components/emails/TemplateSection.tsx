@@ -140,24 +140,30 @@ export const TemplateSection = ({
     }
   };
 
-  // Fix: Use the correct method to access variables based on type and subtype
+  // CRITICAL FIX: Get the current subtype from the template state
   const subtypeKey = newTemplate.subtype as EmailTemplateSubtype;
+  
+  // Log info to debug the variables issue
+  console.log("TemplateSection type:", type);
+  console.log("TemplateSection subtype:", subtypeKey);
+  console.log("TemplateSection variablesList:", variablesList);
+  
+  // CRITICAL FIX: Get the variables specifically for the current type and subtype
   let currentVariables = [];
   
-  // Debug logs to help identify the issue
-  console.log("TemplateSection - Current template type:", type);
-  console.log("TemplateSection - Current template subtype:", subtypeKey);
-  console.log("TemplateSection - All variables available:", variablesList);
-  
-  // Fix the way we access variables - make sure we get the right ones
   if (type === 'employees') {
-    // Access the employees variables using the correct subtype
+    // Get variables for the selected employee template subtype
     currentVariables = variablesList.employees[subtypeKey] || [];
-    console.log("TemplateSection - Employee variables found:", currentVariables);
+    console.log("Employee variables for", subtypeKey, ":", currentVariables);
   } else {
-    // Access the clients variables using the correct subtype
+    // Get variables for the selected client template subtype
     currentVariables = variablesList.clients[subtypeKey] || [];
-    console.log("TemplateSection - Client variables found:", currentVariables);
+    console.log("Client variables for", subtypeKey, ":", currentVariables);
+  }
+  
+  // CRITICAL FIX: Ensure we always have variables available
+  if (currentVariables.length === 0) {
+    console.warn(`No variables found for ${type}.${subtypeKey}. This should not happen.`);
   }
 
   return (

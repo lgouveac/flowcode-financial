@@ -9,7 +9,7 @@ interface VariablesListProps {
 }
 
 export const VariablesList = ({ variables, onDragStart }: VariablesListProps) => {
-  // Add debug log to check variables
+  // Add debug log to check variables being received
   console.log("VariablesList received variables:", variables);
   
   return (

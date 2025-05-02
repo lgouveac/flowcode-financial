@@ -5,7 +5,7 @@ import { TemplateSection } from "@/components/emails/TemplateSection";
 import { Button } from "@/components/ui/button";
 import { TestEmployeeNotificationButton } from "@/components/emails/TestEmployeeNotificationButton";
 import { EmailCCRecipientsManager } from "@/components/emails/EmailCCRecipientsManager";
-import { EmailTemplate } from "@/types/email";
+import { EmailTemplate, EmailTemplateSubtype } from "@/types/email";
 import { createTemplate } from "@/services/templateService";
 import { useToast } from "@/hooks/use-toast";
 import { NewTemplateDialog } from "@/components/emails/NewTemplateDialog";
@@ -16,7 +16,7 @@ export default function Emails() {
   const [newTemplateOpen, setNewTemplateOpen] = useState(false);
   const [showCCRecipients, setShowCCRecipients] = useState(false);
   const [currentTemplateType, setCurrentTemplateType] = useState<'clients' | 'employees'>('clients');
-  const [currentSubtype, setCurrentSubtype] = useState<string>(
+  const [currentSubtype, setCurrentSubtype] = useState<EmailTemplateSubtype>(
     currentTemplateType === 'clients' ? 'recurring' : 'invoice'
   );
   
@@ -24,7 +24,11 @@ export default function Emails() {
 
   // Update currentSubtype whenever the template type changes
   useEffect(() => {
-    setCurrentSubtype(currentTemplateType === 'clients' ? 'recurring' : 'invoice');
+    // CRITICAL FIX: Set correct default subtype when type changes
+    console.log("Template type changed to:", currentTemplateType);
+    const defaultSubtype: EmailTemplateSubtype = currentTemplateType === 'clients' ? 'recurring' : 'invoice';
+    console.log("Setting default subtype to:", defaultSubtype);
+    setCurrentSubtype(defaultSubtype);
   }, [currentTemplateType]);
 
   const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
@@ -51,7 +55,9 @@ export default function Emails() {
   const handleTemplateTypeChange = (type: 'clients' | 'employees') => {
     console.log(`Changing template type from ${currentTemplateType} to ${type}`);
     setCurrentTemplateType(type);
-    setCurrentSubtype(type === 'clients' ? 'recurring' : 'invoice');
+    // CRITICAL FIX: Reset subtype when type changes to ensure proper defaults
+    const newDefaultSubtype: EmailTemplateSubtype = type === 'clients' ? 'recurring' : 'invoice';
+    setCurrentSubtype(newDefaultSubtype);
   };
 
   return (
@@ -80,7 +86,10 @@ export default function Emails() {
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4 items-start">
-          <Select value={currentTemplateType} onValueChange={(value: 'clients' | 'employees') => handleTemplateTypeChange(value)}>
+          <Select 
+            value={currentTemplateType} 
+            onValueChange={(value: 'clients' | 'employees') => handleTemplateTypeChange(value)}
+          >
             <SelectTrigger className="w-[280px]">
               <SelectValue placeholder="Selecione o tipo de template" />
             </SelectTrigger>
@@ -112,6 +121,12 @@ export default function Emails() {
                 onClick={() => setCurrentSubtype('contract')}
                 active={currentSubtype === 'contract'}
               />
+              <TemplateCategoryButton
+                icon={Send}
+                label="Novo Subtipo"
+                onClick={() => setCurrentSubtype('novo_subtipo')}
+                active={currentSubtype === 'novo_subtipo'}
+              />
             </>
           ) : (
             <>
@@ -138,7 +153,7 @@ export default function Emails() {
         </div>
 
         <TemplateSection 
-          type={currentTemplateType} 
+          type={currentTemplateType}
           onSaveTemplate={handleSaveTemplate} 
         />
       </div>
