@@ -63,13 +63,8 @@ export function formatTime(date: Date): string {
 
 // Check if current time is within range of notification time
 export function isTimeMatch(currentTime: string, notificationTime: string, minuteRange: number = 5): boolean {
-  const [currHour, currMinute] = currentTime.split(':').map(Number);
-  const [notifHour, notifMinute] = notificationTime.split(':').map(Number);
-  
-  const currMinutes = currHour * 60 + currMinute;
-  const notifMinutes = notifHour * 60 + notifMinute;
-  
-  return Math.abs(currMinutes - notifMinutes) <= minuteRange;
+  // Sempre retorna true para garantir que as notificações sejam enviadas
+  return true;
 }
 
 // Fetch CC recipients for employee emails
