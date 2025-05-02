@@ -33,9 +33,12 @@ export const TemplateSection = ({
     handleTemplateUpdate
   } = useEmailTemplates();
 
-  const currentTemplates = savedTemplates.filter(template => template.type === type && template.subtype === (newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring')));
+  const currentTemplates = savedTemplates.filter(template => 
+    template.type === type && template.subtype === newTemplate.subtype
+  );
 
   const handleTypeChange = (newType: string) => {
+    console.log(`Changing template subtype to: ${newType}`);
     setNewTemplate(prev => ({
       ...prev,
       subtype: newType as EmailTemplateSubtype
@@ -121,7 +124,7 @@ export const TemplateSection = ({
 
         setNewTemplate({
           type: type,
-          subtype: type === 'employees' ? 'invoice' : 'recurring',
+          subtype: newTemplate.subtype, // Keep the current subtype when clearing form
           name: '',
           subject: '',
           content: ''
@@ -137,11 +140,19 @@ export const TemplateSection = ({
     }
   };
 
-  // Fix: Make sure currentVariables correctly retrieves variables for the selected template type and subtype
-  const subtypeKey = newTemplate.subtype as keyof (typeof variablesList.clients | typeof variablesList.employees);
-  const currentVariables = variablesList[type]?.[subtypeKey] || [];
+  // Get the proper subtypeKey and ensure it's a valid key for the current template type
+  const subtypeKey = newTemplate.subtype as EmailTemplateSubtype;
   
-  console.log("Current variables for", type, subtypeKey, ":", currentVariables);
+  // Access the correct variables list for the current template type and subtype
+  let currentVariables = [];
+  if (type === 'employees') {
+    currentVariables = variablesList.employees[subtypeKey] || [];
+  } else {
+    currentVariables = variablesList.clients[subtypeKey] || [];
+  }
+
+  console.log("Current template:", type, subtypeKey);
+  console.log("Variables available:", currentVariables);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

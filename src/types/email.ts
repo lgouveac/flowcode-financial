@@ -1,3 +1,4 @@
+
 export type EmailTemplateType = 'clients' | 'employees';
 export type EmailTemplateSubtype = 'recurring' | 'oneTime' | 'invoice' | 'hours' | 'reminder' | 'contract' | 'novo_subtipo';
 
