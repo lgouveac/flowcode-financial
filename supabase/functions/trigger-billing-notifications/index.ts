@@ -100,7 +100,8 @@ serve(async (req) => {
             id, name, email, responsible_name, partner_name
           )
         `)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .eq('disable_notifications', false); // Only select billings that don't have notifications disabled
       
       if (!billings || billings.length === 0) {
         console.log(`No pending billings found for interval: ${interval.days_before} days`);

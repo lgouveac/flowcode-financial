@@ -12,7 +12,7 @@ export const TestEmployeeNotificationButton = () => {
     try {
       setIsLoading(true);
       
-      // Call the function with an empty object body to avoid JSON parsing errors
+      // Call the function with proper parameters for testing
       const { data, error } = await supabase.functions.invoke("trigger-employee-notifications", {
         method: "POST",
         body: {

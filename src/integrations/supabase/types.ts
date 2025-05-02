@@ -545,6 +545,7 @@ export type Database = {
           created_at: string | null
           current_installment: number
           description: string
+          disable_notifications: boolean
           due_day: number
           email_template: string | null
           end_date: string | null
@@ -562,6 +563,7 @@ export type Database = {
           created_at?: string | null
           current_installment?: number
           description: string
+          disable_notifications?: boolean
           due_day: number
           email_template?: string | null
           end_date?: string | null
@@ -579,6 +581,7 @@ export type Database = {
           created_at?: string | null
           current_installment?: number
           description?: string
+          disable_notifications?: boolean
           due_day?: number
           email_template?: string | null
           end_date?: string | null
