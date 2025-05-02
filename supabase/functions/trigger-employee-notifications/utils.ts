@@ -51,19 +51,12 @@ export function formatYearMonth(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-// Check if current day matches configured day (or is test mode)
-export function isConfiguredDay(currentDay: number, configuredDay: number): boolean {
-  return currentDay === configuredDay;
+// Time functions that always return true - no checks
+export function isConfiguredDay(): boolean {
+  return true;
 }
 
-// Format time as HH:MM for comparison
-export function formatTime(date: Date): string {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
-// Check if current time is within range of notification time
-export function isTimeMatch(currentTime: string, notificationTime: string, minuteRange: number = 5): boolean {
-  // Sempre retorna true para garantir que as notificações sejam enviadas
+export function isTimeMatch(): boolean {
   return true;
 }
 

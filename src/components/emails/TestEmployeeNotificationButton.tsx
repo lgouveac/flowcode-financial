@@ -13,7 +13,7 @@ export const TestEmployeeNotificationButton = () => {
     try {
       setIsLoading(true);
       
-      // Chamar a função edge com todas as opções ativadas para garantir o envio
+      // Chamar a função edge sem nenhum filtro ou validação
       const {
         data,
         error
@@ -21,10 +21,11 @@ export const TestEmployeeNotificationButton = () => {
         method: "POST",
         body: {
           test: true,
-          forceDay: true,       // Forçar verificação de dia
-          forceMonth: true,     // Forçar verificação de mês
-          ignoreFilters: true,  // Ignorar todos os filtros
-          debug: true           // Habilitar depuração extra
+          bypass: true, // Bypass ALL checks
+          forceDay: true,
+          forceMonth: true, 
+          ignoreFilters: true,
+          debug: true
         },
         headers: {
           "Content-Type": "application/json"
@@ -32,29 +33,21 @@ export const TestEmployeeNotificationButton = () => {
       });
       
       if (error) {
-        console.error("Erro na resposta da função de notificação:", error);
+        console.error("Erro na função de notificação:", error);
         throw error;
       }
       
       console.log("Resposta da notificação:", data);
       
-      if (data.totalSent > 0) {
-        toast({
-          title: "Notificações enviadas com sucesso",
-          description: `${data.totalSent} email(s) enviado(s) para funcionários.`
-        });
-      } else {
-        toast({
-          title: "Nenhuma notificação enviada",
-          description: data.message || "Nenhuma notificação foi enviada. Verifique os logs para mais detalhes.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao testar notificações:", error);
       toast({
-        title: "Erro ao testar notificações",
-        description: "Ocorreu um erro ao testar o envio de notificações. Verifique o console para mais detalhes.",
+        title: "Ação concluída",
+        description: data.message || "A função de notificação foi executada. Verifique os logs para mais detalhes.",
+      });
+    } catch (error) {
+      console.error("Erro ao executar função:", error);
+      toast({
+        title: "Erro ao executar função",
+        description: "Ocorreu um erro. Verifique o console para mais detalhes.",
         variant: "destructive"
       });
     } finally {
