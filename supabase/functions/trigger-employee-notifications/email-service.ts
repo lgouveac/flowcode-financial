@@ -42,12 +42,11 @@ export async function sendEmployeeEmail(
 }
 
 // Fetch active employees with their monthly values for the current month
-export async function fetchEmployeesWithValues(supabase: any, month: string): Promise<any[]> {
+export async function fetchEmployeesWithValues(supabase: any, month: string, ignoreFilters: boolean = false): Promise<any[]> {
   try {
-    logMessage(`Fetching employees with monthly values for month: ${month}`, "🔍");
+    logMessage(`Fetching employees with monthly values for month: ${month}, ignoreFilters: ${ignoreFilters}`, "🔍");
     
-    // Modified to use a more direct approach to fetch employees with values
-    const { data: employeesWithValues, error: employeesError } = await supabase
+    let query = supabase
       .from("employees")
       .select(`
         id, 
@@ -56,62 +55,85 @@ export async function fetchEmployeesWithValues(supabase: any, month: string): Pr
         position, 
         status,
         employee_monthly_values(id, amount, month, notes)
-      `)
-      .eq("status", "active")
-      .filter("employee_monthly_values.month", "eq", month);
+      `);
+    
+    // Only apply filter if ignoreFilters is false
+    if (!ignoreFilters) {
+      query = query.eq("status", "active");
+    }
+    
+    // If ignoring filters completely, we don't filter by month in the employee_monthly_values
+    if (!ignoreFilters) {
+      query = query.filter("employee_monthly_values.month", "eq", month);
+    }
+    
+    const { data: employeesWithValues, error: employeesError } = await query;
 
     if (employeesError) {
       logError("Error fetching employees with values", employeesError);
       throw new Error(`Failed to fetch employees with values: ${employeesError.message}`);
     }
 
-    // Filter to only include employees who have monthly values
-    const validEmployees = employeesWithValues?.filter(emp => 
-      emp.employee_monthly_values && emp.employee_monthly_values.length > 0
-    ) || [];
-
-    // More detailed logging about what was found
-    if (validEmployees.length > 0) {
-      logMessage(`Found ${validEmployees.length} active employees with values for ${month}`, "👥");
-      validEmployees.forEach(emp => {
-        logMessage(`Employee with values: ${emp.name}, Values: ${JSON.stringify(emp.employee_monthly_values)}`, "👤");
-      });
-    } else {
-      logMessage(`No active employees found with values for ${month}`, "⚠️");
+    // If ignoring filters, get all employees regardless of values
+    if (ignoreFilters) {
+      logMessage(`Retrieved ${employeesWithValues?.length || 0} employees in total (ignoring filters)`, "👥");
       
-      // Let's check if there are any monthly values for this month at all
-      const { data: allMonthlyValues, error: allValuesError } = await supabase
-        .from("employee_monthly_values")
-        .select("id, employee_id, amount, month")
-        .eq("month", month);
-        
-      if (allValuesError) {
-        logError("Error checking all monthly values", allValuesError);
-      } else if (allMonthlyValues && allMonthlyValues.length > 0) {
-        logMessage(`Found ${allMonthlyValues.length} monthly values for ${month}, but no active employees match`, "❓");
-        
-        // For each monthly value, check the employee status
-        for (const mv of allMonthlyValues) {
-          const { data: empData, error: empError } = await supabase
-            .from("employees")
-            .select("id, name, status")
-            .eq("id", mv.employee_id)
-            .single();
-            
-          if (empError) {
-            logMessage(`Error looking up employee ${mv.employee_id}: ${empError.message}`, "❌");
-          } else if (empData) {
-            logMessage(`Monthly value ${mv.id} belongs to ${empData.name} (status: ${empData.status})`, "ℹ️");
-          } else {
-            logMessage(`Monthly value ${mv.id} belongs to non-existent employee ${mv.employee_id}`, "❌");
-          }
-        }
+      // Ensure each employee has at least an empty array for monthly values
+      const processedEmployees = employeesWithValues.map(emp => ({
+        ...emp,
+        employee_monthly_values: emp.employee_monthly_values || []
+      }));
+      
+      return processedEmployees;
+    } else {
+      // Filter to only include employees who have monthly values
+      const validEmployees = employeesWithValues?.filter(emp => 
+        emp.employee_monthly_values && emp.employee_monthly_values.length > 0
+      ) || [];
+      
+      // More detailed logging about what was found
+      if (validEmployees.length > 0) {
+        logMessage(`Found ${validEmployees.length} employees with values for ${month}`, "👥");
+        validEmployees.forEach(emp => {
+          logMessage(`Employee with values: ${emp.name}, Values: ${JSON.stringify(emp.employee_monthly_values)}`, "👤");
+        });
       } else {
-        logMessage(`No monthly values found at all for ${month}`, "❌");
+        logMessage(`No employees found with values for ${month}`, "⚠️");
+        
+        // Let's check if there are any monthly values for this month at all
+        const { data: allMonthlyValues, error: allValuesError } = await supabase
+          .from("employee_monthly_values")
+          .select("id, employee_id, amount, month")
+          .eq("month", month);
+          
+        if (allValuesError) {
+          logError("Error checking all monthly values", allValuesError);
+        } else if (allMonthlyValues && allMonthlyValues.length > 0) {
+          logMessage(`Found ${allMonthlyValues.length} monthly values for ${month}, but no active employees match`, "❓");
+          
+          // For each monthly value, check the employee status
+          for (const mv of allMonthlyValues) {
+            const { data: empData, error: empError } = await supabase
+              .from("employees")
+              .select("id, name, status")
+              .eq("id", mv.employee_id)
+              .single();
+              
+            if (empError) {
+              logMessage(`Error looking up employee ${mv.employee_id}: ${empError.message}`, "❌");
+            } else if (empData) {
+              logMessage(`Monthly value ${mv.id} belongs to ${empData.name} (status: ${empData.status})`, "ℹ️");
+            } else {
+              logMessage(`Monthly value ${mv.id} belongs to non-existent employee ${mv.employee_id}`, "❌");
+            }
+          }
+        } else {
+          logMessage(`No monthly values found at all for ${month}`, "❌");
+        }
       }
-    }
 
-    return validEmployees;
+      return validEmployees;
+    }
   } catch (error: any) {
     logError("Error in fetchEmployeesWithValues", error);
     throw error;
@@ -126,7 +148,7 @@ export async function fetchEmailTemplate(supabase: any): Promise<any> {
       .from("email_templates")
       .select("*")
       .eq("type", "employees")
-      .in("subtype", ["invoice", "hours"]);
+      .in("subtype", ["invoice", "hours", "novo_subtipo"]);
 
     if (templatesError) {
       logError("Error fetching email templates", templatesError);

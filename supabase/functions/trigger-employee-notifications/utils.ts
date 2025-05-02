@@ -7,13 +7,19 @@ export const corsHeaders = {
 
 // Helper for preparing template data from employee and monthly value
 export function prepareTemplateData(employee: any, monthlyValue: any) {
+  // Handle the case where monthlyValue might be null
+  const amount = monthlyValue?.amount || 0;
+  const monthDate = monthlyValue?.month ? new Date(monthlyValue.month) : new Date();
+  
   // Add more detailed data to help with template rendering
   return {
-    nome_funcionario: employee.name,
-    email_funcionario: employee.email,
-    valor_nota: monthlyValue.amount,
+    nome_funcionario: employee.name || "Funcionário",
+    email_funcionario: employee.email || "email@exemplo.com",
+    valor_nota: amount,
     data_nota: new Date().toISOString().split('T')[0],
-    mes_referencia: formatMonthYear(monthlyValue.month)
+    mes_referencia: formatMonthYear(monthDate.toISOString()),
+    posicao: employee.position || "Colaborador",
+    observacoes: monthlyValue?.notes || ""
   };
 }
 

@@ -53,7 +53,9 @@ export const TestEmployeeNotificationButton = () => {
         method: "POST",
         body: {
           test: true,
-          forceDay: true, // Force the day check to pass regardless of current day
+          forceDay: true, // Force the day check to pass
+          forceMonth: true, // Force month check
+          ignoreFilters: true, // Skip all filters
           debug: true // Enable extra debugging
         },
         headers: {
@@ -88,7 +90,7 @@ export const TestEmployeeNotificationButton = () => {
         toast({
           title: "Nenhuma notificação enviada",
           description: employeeInfo,
-          variant: "warning"
+          variant: "default" // Changed from "warning" to "default" to fix the error
         });
       }
     } catch (error) {

@@ -29,18 +29,29 @@ serve(async (req) => {
     // Parse request body
     let isTestMode = false;
     let forceDay = false;
+    let forceMonth = false;
+    let ignoreFilters = false; 
     let debugMode = false;
     
     try {
-      const { test, forceDay: forceDayParam, debug } = await req.json();
+      const { 
+        test, 
+        forceDay: forceDayParam, 
+        forceMonth: forceMonthParam,
+        ignoreFilters: ignoreFiltersParam, 
+        debug 
+      } = await req.json();
+      
       isTestMode = !!test;
       forceDay = !!forceDayParam;
+      forceMonth = !!forceMonthParam;
+      ignoreFilters = !!ignoreFiltersParam;
       debugMode = !!debug;
     } catch (e) {
       // If no JSON body or parse error, assume not test mode
     }
     
-    logMessage(`Employee notification trigger function called ${isTestMode ? "in TEST MODE" : ""} ${forceDay ? "with FORCE DAY" : ""} ${debugMode ? "with DEBUG" : ""}`, "🔔");
+    logMessage(`Employee notification trigger function called ${isTestMode ? "in TEST MODE" : ""} ${forceDay ? "with FORCE DAY" : ""} ${forceMonth ? "with FORCE MONTH" : ""} ${ignoreFilters ? "with IGNORE FILTERS" : ""} ${debugMode ? "with DEBUG" : ""}`, "🔔");
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
@@ -64,7 +75,7 @@ serve(async (req) => {
     const currentDay = now.getDate();
     const currentTime = formatTime(now);
     
-    // Only proceed if today is the configured day to send emails or in test mode
+    // Only proceed if today is the configured day to send emails or in test mode or if force/ignore filters
     const sendDay = globalSettings?.employee_emails_send_day || 5; // Default to 5th day of month
     
     if (debugMode) {
@@ -72,10 +83,11 @@ serve(async (req) => {
       logMessage(`Email Settings: ${JSON.stringify(emailSettings)}`, "🛠️");
       logMessage(`Current day: ${currentDay}, Configured send day: ${sendDay}`, "📅");
       logMessage(`Current time: ${currentTime}, Configured time: ${emailSettings?.notification_time || 'not set'}`, "🕒");
+      logMessage(`Force day: ${forceDay}, Force month: ${forceMonth}, Ignore filters: ${ignoreFilters}`, "⚙️");
     }
     
-    // Skip day check if in test mode or force day is true
-    if (!isTestMode && !forceDay && !isConfiguredDay(currentDay, sendDay)) {
+    // Skip day check if in test mode or force day is true or ignore filters
+    if (!isTestMode && !forceDay && !ignoreFilters && !isConfiguredDay(currentDay, sendDay)) {
       logMessage("Not the configured day to send employee emails. Skipping.", "⏭️");
       return new Response(
         JSON.stringify({ 
@@ -84,7 +96,8 @@ serve(async (req) => {
           currentDay,
           configuredDay: sendDay,
           isTestMode,
-          forceDay
+          forceDay,
+          ignoreFilters
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -93,8 +106,8 @@ serve(async (req) => {
       );
     }
 
-    // If we have configured notification time and we're not in test mode, check time
-    if (emailSettings?.notification_time && !isTestMode && !forceDay) {
+    // If we have configured notification time and we're not in test mode or ignore filters, check time
+    if (emailSettings?.notification_time && !isTestMode && !forceDay && !ignoreFilters) {
       const configuredTime = emailSettings.notification_time;
       
       if (!isTimeMatch(currentTime, configuredTime, 5)) { // Increased time window to 5 minutes
@@ -106,7 +119,8 @@ serve(async (req) => {
             currentTime,
             configuredTime,
             isTestMode,
-            forceDay
+            forceDay,
+            ignoreFilters
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -116,18 +130,35 @@ serve(async (req) => {
       }
     }
 
-    // Get the current month in YYYY-MM-01 format
-    const currentMonth = formatYearMonth(now);
-    
+    // Get the current month in YYYY-MM-01 format or use a specific month for testing
+    let currentMonth = formatYearMonth(now);
     if (debugMode) {
       logMessage(`Current month formatted: ${currentMonth}`, "📆");
     }
     
     // Get active employees with their monthly values - THIS IS THE KEY FIX
-    const employeesWithValues = await fetchEmployeesWithValues(supabase, currentMonth);
+    const employeesWithValues = await fetchEmployeesWithValues(supabase, currentMonth, ignoreFilters);
 
     if (debugMode) {
       logMessage(`Found ${employeesWithValues.length} employees with values for month ${currentMonth}`, "👥");
+    }
+
+    // If no employees found, return early
+    if (employeesWithValues.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "No employees with monthly values found", 
+          totalSent: 0,
+          totalErrors: 0,
+          totalEmployees: 0,
+          currentMonth
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
     }
 
     // Get the email template(s) for employees
@@ -142,17 +173,17 @@ serve(async (req) => {
         // Use the first monthly value in the array
         const monthlyValue = employee.employee_monthly_values[0];
         
-        if (!monthlyValue) {
+        if (!monthlyValue && !ignoreFilters) {
           logMessage(`No monthly value found for employee ${employee.name} despite being in the list`, "⚠️");
           continue;
         }
         
         if (debugMode) {
-          logMessage(`Processing employee: ${employee.name}, Value: ${monthlyValue.amount}`, "📧");
+          logMessage(`Processing employee: ${employee.name}, Value: ${monthlyValue?.amount || 'N/A'}`, "📧");
         }
         
         // Prepare the variable data for the template
-        const templateData = prepareTemplateData(employee, monthlyValue);
+        const templateData = prepareTemplateData(employee, monthlyValue || { amount: 0, month: currentMonth });
         
         // Send email 
         const result = await sendEmployeeEmail(supabase, employee, emailTemplate, templateData);
@@ -185,7 +216,8 @@ serve(async (req) => {
         configuredTime: emailSettings?.notification_time,
         currentMonth,
         isTestMode,
-        forceDay
+        forceDay,
+        ignoreFilters
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
