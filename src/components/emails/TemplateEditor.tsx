@@ -28,6 +28,9 @@ export const TemplateEditor = ({
   onDrop,
   onTypeChange,
 }: TemplateEditorProps) => {
+  // Debug logs to help identify issues
+  console.log("TemplateEditor props:", { type, currentType, template });
+  
   return (
     <div className="space-y-4 w-full max-w-full">
       {onTypeChange && (
@@ -35,7 +38,10 @@ export const TemplateEditor = ({
           <Label htmlFor="template-subtype" className="text-sm sm:text-base">Tipo de Template</Label>
           <Select
             value={currentType}
-            onValueChange={(value) => onTypeChange(value)}
+            onValueChange={(value) => {
+              console.log("Changing template subtype to:", value);
+              onTypeChange(value);
+            }}
           >
             <SelectTrigger id="template-subtype" className="w-full mt-1">
               <SelectValue placeholder="Selecione o tipo de template" />

@@ -83,16 +83,16 @@ export const EditTemplateDialog = ({ template, open, onClose, onSave }: EditTemp
   let currentVariables = [];
   
   // Add debug logs
-  console.log("Template in EditTemplateDialog:", template);
+  console.log("EditTemplateDialog - Template:", template);
   
   if (template.type === 'employees') {
     // Get employee variables for this subtype
     currentVariables = variablesList.employees[template.subtype] || [];
-    console.log("Employee variables found in dialog:", currentVariables);
+    console.log("EditTemplateDialog - Employee variables found:", currentVariables);
   } else {
     // Get client variables for this subtype
     currentVariables = variablesList.clients[template.subtype] || [];
-    console.log("Client variables found in dialog:", currentVariables);
+    console.log("EditTemplateDialog - Client variables found:", currentVariables);
   }
 
   return (

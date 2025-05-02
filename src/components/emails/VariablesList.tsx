@@ -9,6 +9,9 @@ interface VariablesListProps {
 }
 
 export const VariablesList = ({ variables, onDragStart }: VariablesListProps) => {
+  // Add debug log to check variables
+  console.log("VariablesList received variables:", variables);
+  
   return (
     <Card className="sticky top-4 w-full">
       <CardHeader className="px-3 py-2">

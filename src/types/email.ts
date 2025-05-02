@@ -97,7 +97,16 @@ export const variablesList: VariablesType = {
     ],
     novo_subtipo: [
       { name: '{nome_cliente}', description: 'Nome do cliente' },
-      { name: '{nome_responsavel}', description: 'Nome do responsável' }
+      { name: '{nome_responsavel}', description: 'Nome do responsável' },
+      { name: '{cnpj}', description: 'CNPJ do cliente' },
+      { name: '{cpf}', description: 'CPF do cliente' },
+      { name: '{endereco}', description: 'Endereço do cliente' },
+      { name: '{partner_name}', description: 'Nome do sócio/partner' },
+      { name: '{partner_cpf}', description: 'CPF do sócio/partner' },
+      { name: '{company_name}', description: 'Razão social/Nome da empresa' },
+      { name: '{valor_cobranca}', description: 'Valor da cobrança' },
+      { name: '{data_vencimento}', description: 'Data de vencimento' },
+      { name: '{forma_pagamento}', description: 'Forma de pagamento' }
     ]
   },
   employees: {
@@ -138,7 +147,10 @@ export const variablesList: VariablesType = {
       { name: '{pix}', description: 'Chave PIX do funcionário' },
       { name: '{cnpj}', description: 'CNPJ do funcionário' },
       { name: '{valor_mensal}', description: 'Valor mensal do funcionário' },
-      { name: '{payment_method}', description: 'Método de pagamento' }
+      { name: '{payment_method}', description: 'Método de pagamento' },
+      { name: '{mes_referencia}', description: 'Mês de referência' },
+      { name: '{valor_nota}', description: 'Valor da nota fiscal' },
+      { name: '{data_nota}', description: 'Data da nota fiscal' }
     ]
   }
 };
