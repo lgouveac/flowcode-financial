@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -685,6 +684,7 @@ export const Overview = () => {
             <PaymentTable 
               payments={pendingPayments} 
               onRefresh={fetchPendingPayments}
+              templates={[]}
             />
           )}
         </DialogContent>
@@ -796,47 +796,4 @@ export const Overview = () => {
                     <thead>
                       <tr className="border-b bg-muted/50">
                         <th className="p-3 text-left">Mês</th>
-                        <th className="p-3 text-right">Receita</th>
-                        <th className="p-3 text-right">Despesas</th>
-                        <th className="p-3 text-right">Lucro</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {futureProjections.map((projection, index) => (
-                        <tr key={index} className="border-b hover:bg-muted/50">
-                          <td className="p-3">{projection.month}</td>
-                          <td className="p-3 text-right text-green-600 dark:text-green-400">
-                            {formatCurrency(projection.revenue)}
-                          </td>
-                          <td className="p-3 text-right text-red-600 dark:text-red-400">
-                            {formatCurrency(projection.expenses)}
-                          </td>
-                          <td className="p-3 text-right font-medium">
-                            {formatCurrency(projection.profit)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t bg-muted/50 font-semibold">
-                        <td className="p-3">Total</td>
-                        <td className="p-3 text-right text-green-600 dark:text-green-400">
-                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.revenue, 0))}
-                        </td>
-                        <td className="p-3 text-right text-red-600 dark:text-red-400">
-                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.expenses, 0))}
-                        </td>
-                        <td className="p-3 text-right">
-                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.profit, 0))}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>;
-};
+                        <th className="p-3 text-right">

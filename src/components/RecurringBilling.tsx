@@ -145,7 +145,7 @@ export const RecurringBilling = () => {
           <PaymentTable payments={oneTimePayments} onRefresh={handleSuccess} searchTerm={paymentSearch} statusFilter={paymentStatusFilter} templates={templates} enableDuplicate={true} />
         </TabsContent>
 
-        {/* New Tab: Expected Revenue (Pending Payments + Recurring Billings) */}
+        {/* "Receita Esperada" tab (Pending Payments + Recurring Billings) */}
         <TabsContent value="pending" className="border rounded-lg">
           <div className="p-4 bg-muted/20">
             <h2 className="text-lg font-semibold mb-4">Receita Esperada Total</h2>
