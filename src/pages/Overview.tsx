@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -811,4 +812,97 @@ export const Overview = () => {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">Nenhum cliente
+                  <p className="text-muted-foreground">Nenhum cliente encontrado com pagamentos neste período.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Future Projections Modal */}
+      <Dialog open={projectionDialogOpen} onOpenChange={setProjectionDialogOpen}>
+        <DialogContent className="w-full max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Projeções Financeiras - Próximos 12 Meses</DialogTitle>
+            <DialogDescription>
+              Previsão de receitas, despesas e lucros para os próximos 12 meses.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {projectionsLoading ? (
+            <div className="flex justify-center py-8">
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : (
+            <div className="mt-4 space-y-6">
+              <div className="h-80 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={futureProjections}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis 
+                      tickFormatter={(value) => 
+                        new Intl.NumberFormat('pt-BR', { 
+                          notation: 'compact',
+                          compactDisplay: 'short',
+                          currency: 'BRL'
+                        }).format(value)
+                      }
+                    />
+                    <Tooltip 
+                      formatter={(value) => 
+                        new Intl.NumberFormat('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL' 
+                        }).format(Number(value))
+                      } 
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="revenue" name="Receita" stroke="#4ade80" strokeWidth={2} />
+                    <Line type="monotone" dataKey="expenses" name="Despesas" stroke="#f43f5e" strokeWidth={2} />
+                    <Line type="monotone" dataKey="profit" name="Lucro" stroke="#3b82f6" strokeWidth={2} activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="rounded-md border">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        <th className="p-2 text-left font-medium">Mês</th>
+                        <th className="p-2 text-right font-medium">Receita</th>
+                        <th className="p-2 text-right font-medium">Despesas</th>
+                        <th className="p-2 text-right font-medium">Lucro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {futureProjections.map((projection) => (
+                        <tr key={projection.month} className="border-b">
+                          <td className="p-2 font-medium">{projection.month}</td>
+                          <td className="p-2 text-right text-green-600 dark:text-green-400">
+                            {formatCurrency(projection.revenue)}
+                          </td>
+                          <td className="p-2 text-right text-red-600 dark:text-red-400">
+                            {formatCurrency(projection.expenses)}
+                          </td>
+                          <td className="p-2 text-right font-semibold">
+                            {formatCurrency(projection.profit)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
