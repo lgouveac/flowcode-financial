@@ -25,7 +25,7 @@ export const PaymentRow = ({
   templates = []
 }: PaymentRowProps) => {
   return (
-    <TableRow>
+    <TableRow className="hover:bg-muted/50">
       <TableCell>{payment.clients?.name}</TableCell>
       <TableCell>{payment.description}</TableCell>
       <TableCell>{formatCurrency(payment.amount)}</TableCell>
