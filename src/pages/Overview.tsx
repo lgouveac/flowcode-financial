@@ -67,7 +67,6 @@ export const Overview = () => {
   const [topClients, setTopClients] = useState<TopClient[]>([]);
   const [loadingTopClients, setLoadingTopClients] = useState(false);
 
-  // Format currency with consistent decimal places
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -77,12 +76,10 @@ export const Overview = () => {
     }).format(value);
   };
 
-  // Ensure accurate calculation by using proper number handling
   useEffect(() => {
     console.log('Overview metrics before display:', metrics);
   }, [metrics]);
   
-  // Helper function to get period date ranges
   const getPeriodDates = (selectedPeriod: string) => {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -341,24 +338,20 @@ export const Overview = () => {
     }
   };
   
-  // Handle click on the expected revenue card
   const handleExpectedRevenueClick = () => {
     fetchPendingPayments();
     setPendingPaymentsOpen(true);
   };
 
-  // Handle click on the estimated expenses card
   const handleEstimatedExpensesClick = () => {
     setEstimatedExpensesOpen(true);
   };
 
-  // Handle click on the top clients option
   const handleTopClientsClick = () => {
     fetchTopClients();
     setTopClientsOpen(true);
   };
 
-  // Handle click on future projections
   const handleFutureProjectionsClick = () => {
     setProjectionDialogOpen(true);
   };
@@ -807,4 +800,7 @@ export const Overview = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-
+                      <tr className="border-b bg-muted/50">
+                        <th className="h-10 px-4 text-left font-medium">Mês</th>
+                        <th className="h-10 px-4 text-left font-medium">Receita</th>
+                        <th className="h-10 px-4 text
