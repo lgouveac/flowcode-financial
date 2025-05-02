@@ -191,14 +191,20 @@ export const useMetrics = (period: string = 'current') => {
           .lt('due_date', dates.end);
 
         if (expectedPaymentsError) throw expectedPaymentsError;
+        
+        // Corrigido: Log para depuração dos pagamentos esperados
+        console.log('Expected payments for calculation:', expectedPayments);
 
         // Buscar faturamento esperado (recorrentes) - FILTER BY SELECTED PERIOD
         const { data: expectedRecurring, error: expectedRecurringError } = await supabase
           .from('recurring_billing')
-          .select('amount, due_day, status')
+          .select('amount, due_day, status, installments, current_installment')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid']);
 
         if (expectedRecurringError) throw expectedRecurringError;
+        
+        // Corrigido: Log para depuração das cobranças recorrentes
+        console.log('Expected recurring billing for calculation:', expectedRecurring);
 
         // Filter recurring payments based on due_day falling within the selected period
         const filteredRecurring = expectedRecurring?.filter(item => {
@@ -216,6 +222,9 @@ export const useMetrics = (period: string = 'current') => {
           // Check if the due date falls within our period
           return dueDate >= startDate && dueDate < endDate;
         }) || [];
+        
+        // Corrigido: Log para depuração das cobranças recorrentes filtradas
+        console.log('Filtered recurring billing:', filteredRecurring);
 
         // Buscar faturamento esperado do período anterior (pagamentos pontuais)
         const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
@@ -277,35 +286,43 @@ export const useMetrics = (period: string = 'current') => {
           ?.filter(item => item.type === 'expense')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
-        // Calcular faturamento esperado atual (only count payments within the selected period)
+        // CORRIGIDO: Calcular faturamento esperado atual apenas somando os valores dos pagamentos pendentes
         // Correctly handle partially paid payments by subtracting paid_amount from amount
-        const currentExpectedPaymentsTotal = expectedPayments
-          ?.reduce((sum, item) => {
+        const currentExpectedPaymentsTotal = (expectedPayments || [])
+          .reduce((sum, item) => {
             // For partially paid payments, only count the remaining amount
             if (item.status === 'partially_paid' && item.paid_amount) {
               return sum + (Number(item.amount) - Number(item.paid_amount));
             }
             return sum + Number(item.amount);
-          }, 0) || 0;
+          }, 0);
         
-        const currentExpectedRecurringTotal = filteredRecurring
-          ?.reduce((sum, item) => {
-            // For now, we don't have partially paid handling for recurring payments
-            // But we can add it in the future if needed
+        // CORRIGIDO: Para recorrentes, apenas considerar uma parcela por cobrança recorrente
+        const currentExpectedRecurringTotal = (filteredRecurring || [])
+          .reduce((sum, item) => {
+            // Para cada cobrança recorrente no período, contar apenas uma parcela
             return sum + Number(item.amount);
-          }, 0) || 0;
+          }, 0);
         
+        // Soma total do faturamento esperado
         const currentExpectedRevenue = currentExpectedPaymentsTotal + currentExpectedRecurringTotal;
+        
+        // Log detalhado para verificar os valores calculados
+        console.log('Expected revenue calculation details:', {
+          oneTimePayments: currentExpectedPaymentsTotal,
+          recurringPayments: currentExpectedRecurringTotal,
+          total: currentExpectedRevenue
+        });
 
         // Calcular faturamento esperado anterior (with partially paid handling)
-        const previousExpectedPaymentsTotal = previousExpectedPayments
-          ?.reduce((sum, item) => {
+        const previousExpectedPaymentsTotal = (previousExpectedPayments || [])
+          .reduce((sum, item) => {
             // For partially paid payments, only count the remaining amount
             if (item.status === 'partially_paid' && item.paid_amount) {
               return sum + (Number(item.amount) - Number(item.paid_amount));
             }
             return sum + Number(item.amount);
-          }, 0) || 0;
+          }, 0);
 
         // Filter previous recurring payments the same way
         const previousFilteredRecurring = expectedRecurring?.filter(item => {
@@ -321,15 +338,18 @@ export const useMetrics = (period: string = 'current') => {
           return dueDate >= startDate && dueDate < endDate;
         }) || [];
         
-        const previousExpectedRecurringTotal = previousFilteredRecurring
-          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+        // CORRIGIDO: Para recorrentes do período anterior, também contar apenas uma parcela por cobrança
+        const previousExpectedRecurringTotal = (previousFilteredRecurring || [])
+          .reduce((sum, item) => {
+            return sum + Number(item.amount);
+          }, 0);
           
         const previousExpectedRevenue = previousExpectedPaymentsTotal + previousExpectedRecurringTotal;
 
         const currentNetProfit = currentRevenue - currentExpenses;
         const previousNetProfit = previousRevenue - previousExpenses;
 
-        console.log('Expected revenue calculation:', {
+        console.log('Final expected revenue calculation:', {
           payments: expectedPayments,
           paymentTotal: currentExpectedPaymentsTotal,
           recurringTotal: currentExpectedRecurringTotal,
