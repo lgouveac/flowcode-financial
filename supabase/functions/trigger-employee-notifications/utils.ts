@@ -19,7 +19,13 @@ export function prepareTemplateData(employee: any, monthlyValue: any) {
     data_nota: new Date().toISOString().split('T')[0],
     mes_referencia: formatMonthYear(monthDate.toISOString()),
     posicao: employee.position || "Colaborador",
-    observacoes: monthlyValue?.notes || ""
+    observacoes: monthlyValue?.notes || "",
+    phone: employee.phone || "",
+    address: employee.address || "",
+    pix: employee.pix || "",
+    cnpj: employee.cnpj || "",
+    payment_method: employee.payment_method || "",
+    valor_mensal: amount
   };
 }
 

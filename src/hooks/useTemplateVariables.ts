@@ -80,6 +80,16 @@ export const useTemplateVariables = () => {
         return 'Funcionário';
       case 'email_funcionario':
         return 'email@exemplo.com';
+      case 'phone':
+        return '[Telefone]';
+      case 'address':
+        return '[Endereço]';
+      case 'pix':
+        return '[Chave PIX]';
+      case 'payment_method':
+        return 'PIX';
+      case 'posicao':
+        return 'Colaborador';
       default:
         return `[${variableName}]`;
     }

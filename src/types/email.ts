@@ -108,17 +108,37 @@ export const variablesList: VariablesType = {
       { name: '{data_nota}', description: 'Data da nota fiscal' },
       { name: '{mes_referencia}', description: 'Mês de referência' },
       { name: '{posicao}', description: 'Cargo/função do funcionário' },
-      { name: '{observacoes}', description: 'Observações adicionais' }
+      { name: '{observacoes}', description: 'Observações adicionais' },
+      { name: '{email_funcionario}', description: 'Email do funcionário' },
+      { name: '{phone}', description: 'Telefone do funcionário' },
+      { name: '{address}', description: 'Endereço do funcionário' },
+      { name: '{pix}', description: 'Chave PIX do funcionário' },
+      { name: '{cnpj}', description: 'CNPJ do funcionário' },
+      { name: '{payment_method}', description: 'Método de pagamento' }
     ],
     hours: [
       { name: '{nome_funcionario}', description: 'Nome do funcionário' },
       { name: '{total_horas}', description: 'Total de horas' },
       { name: '{periodo}', description: 'Período de referência' },
-      { name: '{valor_mensal}', description: 'Valor mensal do funcionário' }
+      { name: '{valor_mensal}', description: 'Valor mensal do funcionário' },
+      { name: '{email_funcionario}', description: 'Email do funcionário' },
+      { name: '{phone}', description: 'Telefone do funcionário' },
+      { name: '{address}', description: 'Endereço do funcionário' },
+      { name: '{posicao}', description: 'Cargo/função do funcionário' },
+      { name: '{pix}', description: 'Chave PIX do funcionário' },
+      { name: '{cnpj}', description: 'CNPJ do funcionário' },
+      { name: '{payment_method}', description: 'Método de pagamento' }
     ],
     novo_subtipo: [
       { name: '{nome_funcionario}', description: 'Nome do funcionário' },
-      { name: '{email_funcionario}', description: 'Email do funcionário' }
+      { name: '{email_funcionario}', description: 'Email do funcionário' },
+      { name: '{phone}', description: 'Telefone do funcionário' },
+      { name: '{address}', description: 'Endereço do funcionário' },
+      { name: '{posicao}', description: 'Cargo/função do funcionário' },
+      { name: '{pix}', description: 'Chave PIX do funcionário' },
+      { name: '{cnpj}', description: 'CNPJ do funcionário' },
+      { name: '{valor_mensal}', description: 'Valor mensal do funcionário' },
+      { name: '{payment_method}', description: 'Método de pagamento' }
     ]
   }
 };

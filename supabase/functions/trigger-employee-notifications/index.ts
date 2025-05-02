@@ -55,7 +55,7 @@ serve(async (req) => {
     // Get all employees regardless of status - no filtering
     const { data: allEmployees, error: employeeError } = await supabase
       .from("employees")
-      .select("id, name, email, position");
+      .select("id, name, email, position, phone, address, pix, cnpj, payment_method");
     
     if (employeeError) {
       throw new Error("Failed to fetch employees: " + employeeError.message);
@@ -91,16 +91,18 @@ serve(async (req) => {
         // Get CC recipients
         const ccRecipients = await fetchCCRecipients(supabase);
         
-        // Prepare dummy data for the template
-        const templateData = {
-          nome_funcionario: employee.name || "Funcionário",
-          email_funcionario: employee.email || "email@exemplo.com",
-          valor_nota: 0,
-          data_nota: new Date().toISOString().split('T')[0],
-          mes_referencia: new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
-          posicao: employee.position || "Colaborador",
-          observacoes: "Teste de notificação"
-        };
+        // Get employee's current monthly value
+        const { data: monthlyValues } = await supabase
+          .from("employee_monthly_values")
+          .select("*")
+          .eq("employee_id", employee.id)
+          .order("month", { ascending: false })
+          .limit(1);
+        
+        const monthlyValue = monthlyValues && monthlyValues.length > 0 ? monthlyValues[0] : null;
+        
+        // Prepare data for the template with all employee fields
+        const templateData = prepareTemplateData(employee, monthlyValue);
         
         // Send email directly
         const { data: emailResponse, error: emailError } = await supabase.functions.invoke(

@@ -52,7 +52,12 @@ export async function fetchEmployeesWithValues(supabase: any, month: string, ign
         id, 
         name, 
         email, 
-        position, 
+        position,
+        phone,
+        address,
+        pix,
+        cnpj,
+        payment_method,
         status,
         employee_monthly_values(id, amount, month, notes)
       `);
