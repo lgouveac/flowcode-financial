@@ -1,167 +1,250 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { RecurringBilling } from "@/types/billing";
-import { Payment } from "@/types/payment";
-import { EmailTemplate } from "@/types/email";
-import { Client } from "@/types/client";
 import { useToast } from "@/components/ui/use-toast";
+import type { RecurringBilling } from "@/types/billing";
+import type { Payment } from "@/types/payment";
+import type { EmailTemplate } from "@/types/email";
 
 export const useBillingData = () => {
   const [billings, setBillings] = useState<RecurringBilling[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fetch recurring billings
-  const fetchBillings = useCallback(async () => {
-    try {
-      setLoading(true);
+  const fetchBillingWithClients = async (billingData: any[]) => {
+    // Extract client IDs from billing data
+    const clientIds = [...new Set(billingData.map(item => item.client_id))];
+    
+    // Fetch all relevant clients in a single query
+    const { data: clientsData, error: clientsError } = await supabase
+      .from('clients')
+      .select('*')
+      .in('id', clientIds);
       
-      const { data, error } = await supabase
-        .from('recurring_billing')
-        .select(`
-          *,
-          clients (
-            id,
-            name,
-            responsible_name,
-            partner_name,
-            email
-          )
-        `)
-        .order('created_at', { ascending: false });
+    if (clientsError) {
+      console.error('Error fetching clients for billings:', clientsError);
+      return billingData;
+    }
+    
+    // Create a map of client data by ID for quick lookup
+    const clientsMap = (clientsData || []).reduce((acc, client) => {
+      acc[client.id] = client;
+      return acc;
+    }, {} as Record<string, any>);
+    
+    // Merge client data into billing objects
+    return billingData.map(billing => ({
+      ...billing,
+      clients: clientsMap[billing.client_id] || null
+    }));
+  };
 
-      if (error) throw error;
+  const fetchBillings = async () => {
+    console.log("Fetching billings...");
+    const { data, error } = await supabase
+      .from('recurring_billing')
+      .select('*');
 
-      console.log('Fetched recurring billings:', data);
-      setBillings(data || []);
-    } catch (error) {
-      console.error('Error fetching recurring billings:', error);
+    if (error) {
+      console.error('Error fetching billings:', error);
       toast({
-        title: "Erro ao carregar recebimentos recorrentes",
+        title: "Erro",
         description: "Não foi possível carregar os recebimentos recorrentes.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+      return;
     }
-  }, [toast]);
 
-  // Fetch one-time payments - getting only current month payments for UI display
-  const fetchPayments = useCallback(async () => {
-    try {
-      setLoading(true);
-      
-      // Get current month's range
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
-      const firstDayOfCurrentMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-      const lastDayOfCurrentMonth = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
-      
-      console.log(`Fetching payments from ${firstDayOfCurrentMonth} to ${lastDayOfCurrentMonth}`);
-      
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          clients (
-            id,
-            name,
-            email,
-            partner_name,
-            responsible_name
-          )
-        `)
-        .gte('due_date', firstDayOfCurrentMonth)
-        .lte('due_date', lastDayOfCurrentMonth)
-        .order('due_date', { ascending: true });
+    // Fetch and merge client data
+    if (data && data.length > 0) {
+      const billingsWithClients = await fetchBillingWithClients(data);
+      console.log("Billings fetched:", billingsWithClients);
+      setBillings(billingsWithClients || []);
+    } else {
+      setBillings([]);
+    }
+  };
 
-      if (error) throw error;
+  const fetchPaymentsWithClients = async (paymentData: any[]) => {
+    // Extract client IDs from payment data
+    const clientIds = [...new Set(paymentData.map(item => item.client_id))];
+    
+    // Fetch all relevant clients in a single query
+    const { data: clientsData, error: clientsError } = await supabase
+      .from('clients')
+      .select('*')
+      .in('id', clientIds);
+      
+    if (clientsError) {
+      console.error('Error fetching clients for payments:', clientsError);
+      return paymentData;
+    }
+    
+    // Create a map of client data by ID for quick lookup
+    const clientsMap = (clientsData || []).reduce((acc, client) => {
+      acc[client.id] = client;
+      return acc;
+    }, {} as Record<string, any>);
+    
+    // Merge client data into payment objects
+    return paymentData.map(payment => ({
+      ...payment,
+      clients: clientsMap[payment.client_id] || null
+    }));
+  };
 
-      console.log('Fetched current month payments:', data);
-      
-      // Debug: Show pending payments data to analyze for expected revenue calculation
-      const pendingPayments = data?.filter(payment => 
-        ['pending', 'billed', 'awaiting_invoice', 'partially_paid'].includes(payment.status)
-      );
-      
-      console.log('Pending payments data:', pendingPayments);
-      console.log('Number of pending payments:', pendingPayments?.length);
-      console.log('Total pending amount:', pendingPayments?.reduce((sum, p) => sum + Number(p.amount), 0));
-      
-      setPayments(data || []);
-    } catch (error) {
+  const fetchPayments = async () => {
+    console.log("Fetching payments...");
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
       console.error('Error fetching payments:', error);
       toast({
-        title: "Erro ao carregar pagamentos",
-        description: "Não foi possível carregar os pagamentos.",
+        title: "Erro",
+        description: "Não foi possível carregar os recebimentos pontuais.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+      return;
     }
-  }, [toast]);
 
-  // Fetch clients
-  const fetchClients = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('status', 'active');
+    // Fetch and merge client data
+    if (data && data.length > 0) {
+      const paymentsWithClients = await fetchPaymentsWithClients(data);
+      console.log("Payments fetched:", paymentsWithClients);
+      setPayments(paymentsWithClients || []);
+    } else {
+      setPayments([]);
+    }
+  };
 
-      if (error) throw error;
+  const fetchClients = async () => {
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, name');
 
-      setClients(data || []);
-    } catch (error) {
+    if (error) {
       console.error('Error fetching clients:', error);
+      return;
     }
-  }, []);
 
-  // Fetch email templates
-  const fetchTemplates = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('type', 'clients');
+    setClients(data || []);
+  };
 
-      if (error) throw error;
+  const validateTemplateType = (type: string): type is 'clients' | 'employees' => {
+    return type === 'clients' || type === 'employees';
+  };
 
-      // Convert template types to match EmailTemplate type
-      const typedTemplates = data?.map(template => ({
-        ...template,
-        type: template.type as any,
-        subtype: template.subtype as any
-      }));
-      
-      setTemplates(typedTemplates || []);
-    } catch (error) {
+  const validateTemplateSubtype = (subtype: string): subtype is 'recurring' | 'oneTime' | 'invoice' | 'hours' => {
+    return ['recurring', 'oneTime', 'invoice', 'hours'].includes(subtype);
+  };
+
+  const fetchTemplates = async () => {
+    const { data, error } = await supabase
+      .from('email_templates')
+      .select('*');
+
+    if (error) {
       console.error('Error fetching templates:', error);
+      return;
     }
-  }, []);
 
-  // Initial data fetch
+    const validTemplates = (data || []).reduce<EmailTemplate[]>((acc, template) => {
+      if (!template.id || !template.name || !template.subject || !template.content || 
+          !template.type || !template.subtype || !template.created_at || !template.updated_at) {
+        console.warn('Template missing required fields:', template);
+        return acc;
+      }
+
+      if (!validateTemplateType(template.type)) {
+        console.warn(`Invalid template type found: ${template.type}`);
+        return acc;
+      }
+
+      if (!validateTemplateSubtype(template.subtype)) {
+        console.warn(`Invalid template subtype found: ${template.subtype}`);
+        return acc;
+      }
+
+      acc.push({
+        id: template.id,
+        name: template.name,
+        subject: template.subject,
+        content: template.content,
+        type: template.type,
+        subtype: template.subtype,
+        created_at: template.created_at,
+        updated_at: template.updated_at
+      });
+
+      return acc;
+    }, []);
+
+    console.log("Templates fetched and validated:", validTemplates);
+    setTemplates(validTemplates);
+  };
+
   useEffect(() => {
     fetchBillings();
     fetchPayments();
     fetchClients();
     fetchTemplates();
-  }, [fetchBillings, fetchPayments, fetchClients, fetchTemplates]);
 
-  return { 
+    // Subscribe to changes in both tables
+    const billingChannel = supabase
+      .channel('billing-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'recurring_billing' },
+        () => {
+          console.log('Recurring billing changes detected, refreshing data...');
+          fetchBillings();
+          fetchPayments();
+        }
+      )
+      .subscribe();
+
+    const paymentsChannel = supabase
+      .channel('payment-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments' },
+        () => {
+          console.log('Payment changes detected, refreshing data...');
+          fetchPayments();
+        }
+      )
+      .subscribe();
+
+    const templatesChannel = supabase
+      .channel('template-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'email_templates' },
+        () => {
+          console.log('Template changes detected, refreshing data...');
+          fetchTemplates();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(billingChannel);
+      supabase.removeChannel(paymentsChannel);
+      supabase.removeChannel(templatesChannel);
+    };
+  }, []);
+
+  return {
     billings,
     payments,
     clients,
     templates,
-    loading,
     fetchBillings,
-    fetchPayments,
-    fetchClients,
-    fetchTemplates
+    fetchPayments
   };
 };

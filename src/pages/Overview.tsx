@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,6 +68,7 @@ export const Overview = () => {
   const [topClients, setTopClients] = useState<TopClient[]>([]);
   const [loadingTopClients, setLoadingTopClients] = useState(false);
 
+  // Format currency with consistent decimal places
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -76,10 +78,12 @@ export const Overview = () => {
     }).format(value);
   };
 
+  // Ensure accurate calculation by using proper number handling
   useEffect(() => {
     console.log('Overview metrics before display:', metrics);
   }, [metrics]);
   
+  // Helper function to get period date ranges
   const getPeriodDates = (selectedPeriod: string) => {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -338,20 +342,24 @@ export const Overview = () => {
     }
   };
   
+  // Handle click on the expected revenue card
   const handleExpectedRevenueClick = () => {
     fetchPendingPayments();
     setPendingPaymentsOpen(true);
   };
 
+  // Handle click on the estimated expenses card
   const handleEstimatedExpensesClick = () => {
     setEstimatedExpensesOpen(true);
   };
 
+  // Handle click on the top clients option
   const handleTopClientsClick = () => {
     fetchTopClients();
     setTopClientsOpen(true);
   };
 
+  // Handle click on future projections
   const handleFutureProjectionsClick = () => {
     setProjectionDialogOpen(true);
   };
@@ -435,8 +443,7 @@ export const Overview = () => {
     ? categoryStats 
     : categoryStats.filter(stat => stat.category === categoryFilter);
 
-  return (
-    <div className="space-y-8">
+  return <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h1 className="text-2xl font-semibold">Visão Geral</h1>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -492,16 +499,15 @@ export const Overview = () => {
 
       {/* Primary stats */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {primaryStats.map((stat, i) => (
-          <motion.div key={stat.title} initial={{
-            opacity: 0,
-            y: 20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            delay: i * 0.1
-          }}>
+        {primaryStats.map((stat, i) => <motion.div key={stat.title} initial={{
+        opacity: 0,
+        y: 20
+      }} animate={{
+        opacity: 1,
+        y: 0
+      }} transition={{
+        delay: i * 0.1
+      }}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -509,13 +515,10 @@ export const Overview = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
-                  <div className="space-y-2">
+                {isLoading ? <div className="space-y-2">
                     <Skeleton className="h-8 w-[100px]" />
                     <Skeleton className="h-4 w-[60px]" />
-                  </div>
-                ) : (
-                  <>
+                  </div> : <>
                     <div className="flex items-baseline gap-2">
                       <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
                       <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-500' : stat.change === '0%' ? 'text-gray-500' : 'text-red-500'}`}>
@@ -523,12 +526,10 @@ export const Overview = () => {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
-                  </>
-                )}
+                  </>}
               </CardContent>
             </Card>
-          </motion.div>
-        ))}
+          </motion.div>)}
       </div>
 
       {/* Estimates section */}
@@ -538,47 +539,41 @@ export const Overview = () => {
           <h2 className="text-xl font-semibold">Estimativas</h2>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {estimateStats.map((stat, i) => (
-            <motion.div key={stat.title} initial={{
-              opacity: 0,
-              y: 20
-            }} animate={{
-              opacity: 1,
-              y: 0
-            }} transition={{
-              delay: i * 0.1
-            }}>
-              <Card 
-                className={stat.onClick ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
-                onClick={stat.onClick}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </CardTitle>
-                  {stat.icon}
-                </CardHeader>
-                <CardContent>
-                  {(isLoading || (stat.title === "Despesa Estimada" && isLoadingEstimates)) ? (
-                    <div className="space-y-2">
-                      <Skeleton className="h-8 w-[100px]" />
-                      <Skeleton className="h-4 w-[60px]" />
+          {estimateStats.map((stat, i) => <motion.div key={stat.title} initial={{
+            opacity: 0,
+            y: 20
+          }} animate={{
+            opacity: 1,
+            y: 0
+          }} transition={{
+            delay: i * 0.1
+          }}>
+            <Card 
+              className={stat.onClick ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
+              onClick={stat.onClick}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                {stat.icon}
+              </CardHeader>
+              <CardContent>
+                {(isLoading || (stat.title === "Despesa Estimada" && isLoadingEstimates)) ? <div className="space-y-2">
+                    <Skeleton className="h-8 w-[100px]" />
+                    <Skeleton className="h-4 w-[60px]" />
+                  </div> : <>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
+                      <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-500' : stat.change === '0%' ? 'text-gray-500' : 'text-red-500'}`}>
+                        {stat.change}
+                      </span>
                     </div>
-                  ) : (
-                    <>
-                      <div className="flex items-baseline gap-2">
-                        <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
-                        <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-500' : stat.change === '0%' ? 'text-gray-500' : 'text-red-500'}`}>
-                          {stat.change}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                    <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
+                  </>}
+              </CardContent>
+            </Card>
+          </motion.div>)}
         </div>
       </div>
 
@@ -690,7 +685,6 @@ export const Overview = () => {
             <PaymentTable 
               payments={pendingPayments} 
               onRefresh={fetchPendingPayments}
-              templates={[]}
             />
           )}
         </DialogContent>
@@ -801,6 +795,48 @@ export const Overview = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/50">
-                        <th className="h-10 px-4 text-left font-medium">Mês</th>
-                        <th className="h-10 px-4 text-left font-medium">Receita</th>
-                        <th className="h-10 px-4 text
+                        <th className="p-3 text-left">Mês</th>
+                        <th className="p-3 text-right">Receita</th>
+                        <th className="p-3 text-right">Despesas</th>
+                        <th className="p-3 text-right">Lucro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {futureProjections.map((projection, index) => (
+                        <tr key={index} className="border-b hover:bg-muted/50">
+                          <td className="p-3">{projection.month}</td>
+                          <td className="p-3 text-right text-green-600 dark:text-green-400">
+                            {formatCurrency(projection.revenue)}
+                          </td>
+                          <td className="p-3 text-right text-red-600 dark:text-red-400">
+                            {formatCurrency(projection.expenses)}
+                          </td>
+                          <td className="p-3 text-right font-medium">
+                            {formatCurrency(projection.profit)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t bg-muted/50 font-semibold">
+                        <td className="p-3">Total</td>
+                        <td className="p-3 text-right text-green-600 dark:text-green-400">
+                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.revenue, 0))}
+                        </td>
+                        <td className="p-3 text-right text-red-600 dark:text-red-400">
+                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.expenses, 0))}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.profit, 0))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>;
+};
