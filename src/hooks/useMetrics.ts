@@ -194,7 +194,7 @@ export const useMetrics = (period: string = 'current') => {
         // Get current month's one-time pending payments
         const { data: currentMonthPendingPayments, error: pendingPaymentsError } = await supabase
           .from('payments')
-          .select('amount, paid_amount')
+          .select('id, amount, paid_amount, status, description, due_date')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid'])
           .gte('due_date', firstDayOfCurrentMonth)
           .lte('due_date', lastDayOfCurrentMonth);
@@ -206,7 +206,7 @@ export const useMetrics = (period: string = 'current') => {
         // Get current month's recurring pending payments
         const { data: currentMonthPendingRecurring, error: pendingRecurringError } = await supabase
           .from('recurring_billing')
-          .select('amount')
+          .select('id, amount, status, description')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid']);
 
         if (pendingRecurringError) throw pendingRecurringError;
@@ -216,6 +216,7 @@ export const useMetrics = (period: string = 'current') => {
         // Simple sum calculation for expected revenue
         const pendingPaymentsTotal = (currentMonthPendingPayments || [])
           .reduce((sum, item) => {
+            console.log(`Adding payment: ${item.description}, amount: ${item.amount}, paid: ${item.paid_amount || 0}, due: ${item.due_date}`);
             if (item.paid_amount) {
               return sum + (Number(item.amount) - Number(item.paid_amount));
             }
@@ -223,7 +224,10 @@ export const useMetrics = (period: string = 'current') => {
           }, 0);
           
         const pendingRecurringTotal = (currentMonthPendingRecurring || [])
-          .reduce((sum, item) => sum + Number(item.amount), 0);
+          .reduce((sum, item) => {
+            console.log(`Adding recurring: ${item.description}, amount: ${item.amount}`);
+            return sum + Number(item.amount);
+          }, 0);
         
         // Total expected revenue is just the sum of current month's pending payments
         const currentExpectedRevenue = pendingPaymentsTotal + pendingRecurringTotal;

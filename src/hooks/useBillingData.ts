@@ -79,6 +79,13 @@ export const useBillingData = () => {
       if (error) throw error;
 
       console.log('Fetched current month payments:', data);
+      
+      // Debug: Show pending payments data to analyze for expected revenue calculation
+      const pendingPayments = data?.filter(payment => 
+        ['pending', 'billed', 'awaiting_invoice', 'partially_paid'].includes(payment.status)
+      );
+      console.log('Pending payments data:', pendingPayments);
+      
       setPayments(data || []);
     } catch (error) {
       console.error('Error fetching payments:', error);
