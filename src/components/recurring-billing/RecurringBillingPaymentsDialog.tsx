@@ -6,7 +6,7 @@ import { Payment } from "@/types/payment";
 import { supabase } from "@/integrations/supabase/client";
 import { PaymentTable } from "../payments/PaymentTable";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Loader2 } from "lucide-react";
 
 interface RecurringBillingPaymentsDialogProps {
@@ -22,7 +22,7 @@ export const RecurringBillingPaymentsDialog = ({
 }: RecurringBillingPaymentsDialogProps) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     if (open) {
