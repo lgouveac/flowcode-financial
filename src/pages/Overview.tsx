@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +12,7 @@ import { supabase } from "@/lib/supabase";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import { EstimatedExpensesDialog } from "@/components/cash-flow/EstimatedExpensesDialog";
 import type { Payment } from "@/types/payment";
-import { FileText, Calculator, BarChart3, Users, CalendarRange, TrendingUp } from "lucide-react";
+import { FileText, Calculator, BarChart3, Users, TrendingUp } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -231,7 +230,6 @@ export const Overview = () => {
     }
   }, [projectionDialogOpen]);
   
-  // Updated function to fetch top clients with fixed type structure
   const fetchTopClients = async () => {
     setLoadingTopClients(true);
     
@@ -304,7 +302,7 @@ export const Overview = () => {
     }
   };
   
-  // Function to fetch pending payments
+  // Function to fetch pending payments - updated to fetch both recurring and one-time payments
   const fetchPendingPayments = async () => {
     setLoadingPayments(true);
     
@@ -312,7 +310,8 @@ export const Overview = () => {
       // Get date range based on selected period
       const dates = getPeriodDates(period);
       
-      const { data, error } = await supabase
+      // Fetch one-time payments first
+      const { data: oneTimePayments, error: oneTimeError } = await supabase
         .from('payments')
         .select(`
           *,
@@ -327,14 +326,79 @@ export const Overview = () => {
         .lte('due_date', dates.end)
         .order('due_date', { ascending: true });
       
-      if (error) {
-        throw error;
+      if (oneTimeError) {
+        throw oneTimeError;
       }
       
-      setPendingPayments(data || []);
+      // Now fetch recurring billing payments for the selected period
+      const { data: recurringBillings, error: recurringError } = await supabase
+        .from('recurring_billing')
+        .select(`
+          *,
+          clients (
+            name,
+            email,
+            partner_name
+          )
+        `)
+        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid']);
+        
+      if (recurringError) {
+        throw recurringError;
+      }
+      
+      // Process recurring billings to find those that should have payments in this period
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+      
+      // Convert recurring billings to payment objects for the current period
+      const recurringPayments = (recurringBillings || [])
+        .filter(billing => {
+          // Filter only recurring billings that should have a payment in the current period
+          const billingStartDate = new Date(billing.start_date);
+          const billingEndDate = billing.end_date ? new Date(billing.end_date) : null;
+          
+          // Check if the billing is active for the current period
+          const isStarted = billingStartDate <= now;
+          const isNotEnded = !billingEndDate || billingEndDate >= now;
+          
+          return isStarted && isNotEnded;
+        })
+        .map(billing => {
+          // Convert the recurring billing to a payment object
+          const dueDay = billing.due_day;
+          const dueDate = new Date(currentYear, currentMonth - 1, dueDay);
+          
+          // Format the due date to ISO string
+          const dueDateFormatted = dueDate.toISOString().split('T')[0];
+          
+          return {
+            id: `recurring-${billing.id}`,
+            client_id: billing.client_id,
+            description: `${billing.description} (Recorrente)`,
+            amount: billing.amount,
+            due_date: dueDateFormatted,
+            payment_method: billing.payment_method,
+            status: billing.status,
+            clients: billing.clients,
+            created_at: billing.created_at,
+            updated_at: billing.updated_at
+          } as Payment;
+        });
+      
+      // Combine both payment types
+      const allPendingPayments = [...(oneTimePayments || []), ...recurringPayments];
+      
+      // Sort by due date
+      allPendingPayments.sort((a, b) => {
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      });
+      
+      setPendingPayments(allPendingPayments);
       
       // Log data to help with debugging
-      console.log('Pending payments data:', data);
+      console.log('All pending payments:', allPendingPayments);
     } catch (error) {
       console.error("Error fetching pending payments:", error);
     } finally {
@@ -443,7 +507,8 @@ export const Overview = () => {
     ? categoryStats 
     : categoryStats.filter(stat => stat.category === categoryFilter);
 
-  return <div className="space-y-8">
+  return (
+    <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h1 className="text-2xl font-semibold">Visão Geral</h1>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -499,15 +564,16 @@ export const Overview = () => {
 
       {/* Primary stats */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {primaryStats.map((stat, i) => <motion.div key={stat.title} initial={{
-        opacity: 0,
-        y: 20
-      }} animate={{
-        opacity: 1,
-        y: 0
-      }} transition={{
-        delay: i * 0.1
-      }}>
+        {primaryStats.map((stat, i) => (
+          <motion.div key={stat.title} initial={{
+            opacity: 0,
+            y: 20
+          }} animate={{
+            opacity: 1,
+            y: 0
+          }} transition={{
+            delay: i * 0.1
+          }}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -515,10 +581,13 @@ export const Overview = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {isLoading ? <div className="space-y-2">
+                {isLoading ? (
+                  <div className="space-y-2">
                     <Skeleton className="h-8 w-[100px]" />
                     <Skeleton className="h-4 w-[60px]" />
-                  </div> : <>
+                  </div>
+                ) : (
+                  <>
                     <div className="flex items-baseline gap-2">
                       <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
                       <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-500' : stat.change === '0%' ? 'text-gray-500' : 'text-red-500'}`}>
@@ -526,10 +595,12 @@ export const Overview = () => {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
-                  </>}
+                  </>
+                )}
               </CardContent>
             </Card>
-          </motion.div>)}
+          </motion.div>
+        ))}
       </div>
 
       {/* Estimates section */}
@@ -539,41 +610,47 @@ export const Overview = () => {
           <h2 className="text-xl font-semibold">Estimativas</h2>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {estimateStats.map((stat, i) => <motion.div key={stat.title} initial={{
-            opacity: 0,
-            y: 20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            delay: i * 0.1
-          }}>
-            <Card 
-              className={stat.onClick ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
-              onClick={stat.onClick}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                {stat.icon}
-              </CardHeader>
-              <CardContent>
-                {(isLoading || (stat.title === "Despesa Estimada" && isLoadingEstimates)) ? <div className="space-y-2">
-                    <Skeleton className="h-8 w-[100px]" />
-                    <Skeleton className="h-4 w-[60px]" />
-                  </div> : <>
-                    <div className="flex items-baseline gap-2">
-                      <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
-                      <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-500' : stat.change === '0%' ? 'text-gray-500' : 'text-red-500'}`}>
-                        {stat.change}
-                      </span>
+          {estimateStats.map((stat, i) => (
+            <motion.div key={stat.title} initial={{
+              opacity: 0,
+              y: 20
+            }} animate={{
+              opacity: 1,
+              y: 0
+            }} transition={{
+              delay: i * 0.1
+            }}>
+              <Card 
+                className={stat.onClick ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}
+                onClick={stat.onClick}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {stat.title}
+                  </CardTitle>
+                  {stat.icon}
+                </CardHeader>
+                <CardContent>
+                  {(isLoading || (stat.title === "Despesa Estimada" && isLoadingEstimates)) ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-8 w-[100px]" />
+                      <Skeleton className="h-4 w-[60px]" />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
-                  </>}
-              </CardContent>
-            </Card>
-          </motion.div>)}
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
+                        <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-500' : stat.change === '0%' ? 'text-gray-500' : 'text-red-500'}`}>
+                          {stat.change}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2">{stat.description}</p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       </div>
 
@@ -685,6 +762,7 @@ export const Overview = () => {
             <PaymentTable 
               payments={pendingPayments} 
               onRefresh={fetchPendingPayments}
+              templates={[]}
             />
           )}
         </DialogContent>
@@ -733,110 +811,4 @@ export const Overview = () => {
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">Nenhum cliente encontrado com pagamentos neste período.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Future Projections Modal */}
-      <Dialog open={projectionDialogOpen} onOpenChange={setProjectionDialogOpen}>
-        <DialogContent className="w-full max-w-4xl h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Projeções Financeiras - Próximos 12 Meses</DialogTitle>
-            <DialogDescription>
-              Previsão de receitas, despesas e lucros para os próximos 12 meses.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {projectionsLoading ? (
-            <div className="flex justify-center py-8">
-              <Skeleton className="h-64 w-full" />
-            </div>
-          ) : (
-            <div className="mt-4 space-y-6">
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={futureProjections}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis 
-                      tickFormatter={(value) => 
-                        new Intl.NumberFormat('pt-BR', { 
-                          notation: 'compact',
-                          compactDisplay: 'short',
-                          currency: 'BRL'
-                        }).format(value)
-                      }
-                    />
-                    <Tooltip 
-                      formatter={(value) => 
-                        new Intl.NumberFormat('pt-BR', { 
-                          style: 'currency', 
-                          currency: 'BRL' 
-                        }).format(Number(value))
-                      } 
-                    />
-                    <Legend />
-                    <Line type="monotone" dataKey="revenue" name="Receita" stroke="#4ade80" strokeWidth={2} />
-                    <Line type="monotone" dataKey="expenses" name="Despesas" stroke="#f43f5e" strokeWidth={2} />
-                    <Line type="monotone" dataKey="profit" name="Lucro" stroke="#3b82f6" strokeWidth={2} activeDot={{ r: 8 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              
-              <div className="rounded-md border">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-muted/50">
-                        <th className="p-3 text-left">Mês</th>
-                        <th className="p-3 text-right">Receita</th>
-                        <th className="p-3 text-right">Despesas</th>
-                        <th className="p-3 text-right">Lucro</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {futureProjections.map((projection, index) => (
-                        <tr key={index} className="border-b hover:bg-muted/50">
-                          <td className="p-3">{projection.month}</td>
-                          <td className="p-3 text-right text-green-600 dark:text-green-400">
-                            {formatCurrency(projection.revenue)}
-                          </td>
-                          <td className="p-3 text-right text-red-600 dark:text-red-400">
-                            {formatCurrency(projection.expenses)}
-                          </td>
-                          <td className="p-3 text-right font-medium">
-                            {formatCurrency(projection.profit)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="border-t bg-muted/50 font-semibold">
-                        <td className="p-3">Total</td>
-                        <td className="p-3 text-right text-green-600 dark:text-green-400">
-                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.revenue, 0))}
-                        </td>
-                        <td className="p-3 text-right text-red-600 dark:text-red-400">
-                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.expenses, 0))}
-                        </td>
-                        <td className="p-3 text-right">
-                          {formatCurrency(futureProjections.reduce((sum, p) => sum + p.profit, 0))}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>;
-};
+                  <p className="text-muted-foreground">Nenhum cliente
