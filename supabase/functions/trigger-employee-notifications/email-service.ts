@@ -15,6 +15,9 @@ export async function sendEmployeeEmail(
     // Fetch CC recipients
     const ccRecipients = await fetchCCRecipients(supabase);
     
+    // Log the templateData to make debugging easier
+    logMessage(`Email template data: ${JSON.stringify(templateData)}`, "📝");
+    
     const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
       'send-email',
       {
@@ -46,6 +49,7 @@ export async function fetchEmployeesWithValues(supabase: any, month: string, ign
   try {
     logMessage(`Fetching employees with monthly values for month: ${month}, ignoreFilters: ${ignoreFilters}`, "🔍");
     
+    // Include ALL employee fields in the SELECT query
     let query = supabase
       .from("employees")
       .select(`
@@ -96,7 +100,7 @@ export async function fetchEmployeesWithValues(supabase: any, month: string, ign
         emp.employee_monthly_values && emp.employee_monthly_values.length > 0
       ) || [];
       
-      // More detailed logging about what was found
+      // Log detailed info for debugging
       if (validEmployees.length > 0) {
         logMessage(`Found ${validEmployees.length} employees with values for ${month}`, "👥");
         validEmployees.forEach(emp => {
@@ -105,7 +109,7 @@ export async function fetchEmployeesWithValues(supabase: any, month: string, ign
       } else {
         logMessage(`No employees found with values for ${month}`, "⚠️");
         
-        // Let's check if there are any monthly values for this month at all
+        // Check if there are any monthly values for this month at all
         const { data: allMonthlyValues, error: allValuesError } = await supabase
           .from("employee_monthly_values")
           .select("id, employee_id, amount, month")

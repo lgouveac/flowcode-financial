@@ -11,7 +11,7 @@ export function prepareTemplateData(employee: any, monthlyValue: any) {
   const amount = monthlyValue?.amount || 0;
   const monthDate = monthlyValue?.month ? new Date(monthlyValue.month) : new Date();
   
-  // Add more detailed data to help with template rendering
+  // Ensure all employee fields are included in the template data
   return {
     nome_funcionario: employee.name || "Funcionário",
     email_funcionario: employee.email || "email@exemplo.com",
