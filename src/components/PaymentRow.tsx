@@ -4,8 +4,8 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import type { Payment } from "@/types/payment";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PaymentStatusBadge } from "./PaymentStatusBadge";
-import { PaymentActions } from "./PaymentActions";
+import { PaymentStatusBadge } from "@/components/payments/PaymentStatusBadge";
+import { PaymentActions } from "@/components/payments/PaymentActions";
 import { formatCurrency } from "@/utils/formatters";
 import type { EmailTemplate } from "@/types/email";
 

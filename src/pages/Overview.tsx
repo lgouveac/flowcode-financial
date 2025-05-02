@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { CalendarIcon } from "@radix-ui/react-icons";
+import { Calendar as CalendarIcon } from "lucide-react"; // Changed from @radix-ui/react-icons to lucide-react
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -26,7 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
-import { PaymentRow } from "@/components/payments/PaymentRow";
+import { PaymentRow } from "@/components/PaymentRow";
 
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,6 +70,11 @@ const data: CardProps[] = [
   },
 ]
 
+// Extend the Payment type to include the isRecurring property
+interface PaymentWithRecurring extends Payment {
+  isRecurring?: boolean;
+}
+
 export const Overview = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -78,7 +84,7 @@ export const Overview = () => {
   const [loadingPending, setLoadingPending] = useState(true);
   const [loadingOverdue, setLoadingOverdue] = useState(true);
   const [pendingPaymentsOpen, setPendingPaymentsOpen] = useState(false);
-  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<PaymentWithRecurring[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const { toast } = useToast();
 
@@ -171,7 +177,7 @@ export const Overview = () => {
             created_at: billing.created_at,
             updated_at: billing.updated_at,
             isRecurring: true
-          } as Payment & { isRecurring: boolean };
+          } as PaymentWithRecurring;
         });
       
       // Debug log
