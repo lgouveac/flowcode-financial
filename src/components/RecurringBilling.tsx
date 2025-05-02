@@ -1,16 +1,18 @@
+
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
 import { PaymentTable } from "./payments/PaymentTable";
 import { NewBillingDialog } from "./recurring-billing/NewBillingDialog";
 import { NotificationSettings } from "./emails/NotificationSettings";
-import { Search, Settings, SlidersHorizontal } from "lucide-react";
+import { Search, Settings, SlidersHorizontal, PlusCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { useBillingData } from "@/hooks/useBillingData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { NewPaymentDialog } from "./payments/NewPaymentDialog";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 export const RecurringBilling = () => {
   const {
     billings,
@@ -27,6 +29,7 @@ export const RecurringBilling = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [billingSearch, setBillingSearch] = useState("");
   const [billingStatusFilter, setBillingStatusFilter] = useState("all");
+  
   const handleSuccess = () => {
     fetchBillings();
     fetchPayments();
@@ -48,6 +51,21 @@ export const RecurringBilling = () => {
   const oneTimePayments = useMemo(() => {
     return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
   }, [payments]);
+  
+  // Create a filter for pending payments specifically
+  const pendingPayments = useMemo(() => {
+    return payments.filter(payment => 
+      ['pending', 'billed', 'awaiting_invoice', 'partially_paid'].includes(payment.status)
+    );
+  }, [payments]);
+
+  // Create a filter for pending recurring billings
+  const pendingRecurringBillings = useMemo(() => {
+    return billings.filter(billing => 
+      ['pending', 'billed', 'awaiting_invoice', 'partially_paid'].includes(billing.status)
+    );
+  }, [billings]);
+
   return <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
@@ -60,9 +78,10 @@ export const RecurringBilling = () => {
       </div>
 
       <Tabs defaultValue="recurring" className="w-full" onValueChange={value => setActiveTab(value)}>
-        <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+        <TabsList className="grid w-full max-w-[600px] grid-cols-3">
           <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
           <TabsTrigger value="onetime">Pontuais</TabsTrigger>
+          <TabsTrigger value="pending">Receita Esperada</TabsTrigger>
         </TabsList>
 
         <TabsContent value="recurring" className="border rounded-lg">
@@ -93,7 +112,14 @@ export const RecurringBilling = () => {
         <TabsContent value="onetime" className="border rounded-lg">
           <div className="flex justify-between items-center mb-4 pt-4 px-4">
             <h2 className="text-lg font-medium">Recebimentos Pontuais</h2>
-            
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => setShowNewPaymentDialog(true)}
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Novo Recebimento
+            </Button>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 mb-4 px-4">
             <div className="relative flex-1">
@@ -117,6 +143,66 @@ export const RecurringBilling = () => {
             </div>
           </div>
           <PaymentTable payments={oneTimePayments} onRefresh={handleSuccess} searchTerm={paymentSearch} statusFilter={paymentStatusFilter} templates={templates} enableDuplicate={true} />
+        </TabsContent>
+
+        {/* New Tab: Expected Revenue (Pending Payments + Recurring Billings) */}
+        <TabsContent value="pending" className="border rounded-lg">
+          <div className="p-4 bg-muted/20">
+            <h2 className="text-lg font-semibold mb-4">Receita Esperada Total</h2>
+            
+            <div className="space-y-6">
+              {/* Pending One-time Payments Section */}
+              <div>
+                <h3 className="text-md font-medium mb-2 flex items-center">
+                  <span className="h-2 w-2 rounded-full bg-blue-500 mr-2"></span>
+                  Recebimentos Pontuais Pendentes
+                </h3>
+                <PaymentTable 
+                  payments={pendingPayments} 
+                  onRefresh={handleSuccess} 
+                  templates={templates}
+                  enableDuplicate={true}
+                />
+              </div>
+
+              {/* Pending Recurring Billings Section */}
+              <div>
+                <h3 className="text-md font-medium mb-2 flex items-center">
+                  <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
+                  Recebimentos Recorrentes Pendentes
+                </h3>
+                <BillingTable 
+                  billings={pendingRecurringBillings} 
+                  onRefresh={handleSuccess} 
+                  enableDuplicate 
+                  templates={templates}
+                />
+              </div>
+              
+              {/* Total Summary */}
+              <div className="bg-accent/20 p-4 rounded-md">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Total de Receita Esperada:</span>
+                  <span className="font-bold text-xl">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }).format(
+                      pendingPayments.reduce((sum, payment) => {
+                        if (payment.paid_amount) {
+                          return sum + (Number(payment.amount) - Number(payment.paid_amount));
+                        }
+                        return sum + Number(payment.amount);
+                      }, 0) +
+                      pendingRecurringBillings.reduce((sum, billing) => {
+                        return sum + Number(billing.amount);
+                      }, 0)
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 

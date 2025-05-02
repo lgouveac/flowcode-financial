@@ -25,9 +25,11 @@ export const useBillingData = () => {
         .select(`
           *,
           clients (
+            id,
             name,
             responsible_name,
-            partner_name
+            partner_name,
+            email
           )
         `)
         .order('created_at', { ascending: false });
@@ -46,7 +48,7 @@ export const useBillingData = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   // Fetch one-time payments - getting only current month payments for UI display
   const fetchPayments = useCallback(async () => {
@@ -67,9 +69,11 @@ export const useBillingData = () => {
         .select(`
           *,
           clients (
+            id,
             name,
             email,
-            partner_name
+            partner_name,
+            responsible_name
           )
         `)
         .gte('due_date', firstDayOfCurrentMonth)
@@ -84,7 +88,10 @@ export const useBillingData = () => {
       const pendingPayments = data?.filter(payment => 
         ['pending', 'billed', 'awaiting_invoice', 'partially_paid'].includes(payment.status)
       );
+      
       console.log('Pending payments data:', pendingPayments);
+      console.log('Number of pending payments:', pendingPayments?.length);
+      console.log('Total pending amount:', pendingPayments?.reduce((sum, p) => sum + Number(p.amount), 0));
       
       setPayments(data || []);
     } catch (error) {
@@ -97,7 +104,7 @@ export const useBillingData = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   // Fetch clients
   const fetchClients = useCallback(async () => {

@@ -26,7 +26,7 @@ export const PaymentRow = ({
 }: PaymentRowProps) => {
   return (
     <TableRow className="hover:bg-muted/50">
-      <TableCell>{payment.clients?.name}</TableCell>
+      <TableCell className="font-medium">{payment.clients?.name || "Cliente"}</TableCell>
       <TableCell>{payment.description}</TableCell>
       <TableCell>{formatCurrency(payment.amount)}</TableCell>
       <TableCell>
