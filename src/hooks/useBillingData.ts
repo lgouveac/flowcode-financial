@@ -48,12 +48,20 @@ export const useBillingData = () => {
     }
   }, []);
 
-  // Fetch one-time payments without date filtering - IMPORTANT FIX
+  // Fetch one-time payments - getting only current month payments for UI display
   const fetchPayments = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Remove all date filtering to make sure we get ALL payments
+      // Get current month's range
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const firstDayOfCurrentMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+      const lastDayOfCurrentMonth = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
+      
+      console.log(`Fetching payments from ${firstDayOfCurrentMonth} to ${lastDayOfCurrentMonth}`);
+      
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -64,11 +72,13 @@ export const useBillingData = () => {
             partner_name
           )
         `)
+        .gte('due_date', firstDayOfCurrentMonth)
+        .lte('due_date', lastDayOfCurrentMonth)
         .order('due_date', { ascending: true });
 
       if (error) throw error;
 
-      console.log('Fetched payments:', data);
+      console.log('Fetched current month payments:', data);
       setPayments(data || []);
     } catch (error) {
       console.error('Error fetching payments:', error);

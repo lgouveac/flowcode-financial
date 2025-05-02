@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -145,6 +144,7 @@ export const useMetrics = (period: string = 'current') => {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
+        setIsLoading(true);
         const dates = getPeriodDates(period);
         
         // Fetch data for current period
@@ -182,60 +182,66 @@ export const useMetrics = (period: string = 'current') => {
 
         if (previousClientsError) throw previousClientsError;
 
-        // FIXED: Fetch pending payments - don't filter by date to get all pending
-        const { data: expectedPayments, error: expectedPaymentsError } = await supabase
+        // *** SIMPLIFIED APPROACH: Get current month's pending payments ***
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const firstDayOfCurrentMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+        const lastDayOfCurrentMonth = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
+        
+        console.log(`Fetching pending payments from ${firstDayOfCurrentMonth} to ${lastDayOfCurrentMonth}`);
+
+        // Get current month's one-time pending payments
+        const { data: currentMonthPendingPayments, error: pendingPaymentsError } = await supabase
           .from('payments')
-          .select('amount, paid_amount, status')
-          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid']);
+          .select('amount, paid_amount')
+          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid'])
+          .gte('due_date', firstDayOfCurrentMonth)
+          .lte('due_date', lastDayOfCurrentMonth);
 
-        if (expectedPaymentsError) throw expectedPaymentsError;
+        if (pendingPaymentsError) throw pendingPaymentsError;
         
-        // Log for debugging
-        console.log('All expected payments for calculation:', expectedPayments);
-
-        // FIXED: Fetch recurring billing data - count each billing only once
-        const { data: expectedRecurring, error: expectedRecurringError } = await supabase
+        console.log('Current month pending payments:', currentMonthPendingPayments);
+        
+        // Get current month's recurring pending payments
+        const { data: currentMonthPendingRecurring, error: pendingRecurringError } = await supabase
           .from('recurring_billing')
-          .select('amount, due_day, status, installments, current_installment')
+          .select('amount')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid']);
 
-        if (expectedRecurringError) throw expectedRecurringError;
-        
-        console.log('All expected recurring billing for calculation:', expectedRecurring);
+        if (pendingRecurringError) throw pendingRecurringError;
 
-        // Calculate current expected payments total - correctly handling partially paid payments
-        const currentExpectedPaymentsTotal = (expectedPayments || [])
+        console.log('Current month pending recurring:', currentMonthPendingRecurring);
+        
+        // Simple sum calculation for expected revenue
+        const pendingPaymentsTotal = (currentMonthPendingPayments || [])
           .reduce((sum, item) => {
-            if (item.status === 'partially_paid' && item.paid_amount) {
+            if (item.paid_amount) {
               return sum + (Number(item.amount) - Number(item.paid_amount));
             }
             return sum + Number(item.amount);
           }, 0);
-        
-        // FIXED: For recurring payments, count each billing only once
-        const currentExpectedRecurringTotal = (expectedRecurring || [])
+          
+        const pendingRecurringTotal = (currentMonthPendingRecurring || [])
           .reduce((sum, item) => sum + Number(item.amount), 0);
         
-        // Total expected revenue is the sum of both types
-        const currentExpectedRevenue = currentExpectedPaymentsTotal + currentExpectedRecurringTotal;
+        // Total expected revenue is just the sum of current month's pending payments
+        const currentExpectedRevenue = pendingPaymentsTotal + pendingRecurringTotal;
         
-        // Detailed logging to track calculation
-        console.log('Expected revenue calculation details:', {
-          oneTimePayments: currentExpectedPaymentsTotal,
-          recurringPayments: currentExpectedRecurringTotal,
-          total: currentExpectedRevenue,
-          numberOfPayments: expectedPayments?.length || 0,
-          numberOfRecurring: expectedRecurring?.length || 0
+        console.log('Expected revenue calculation (SIMPLIFIED):', {
+          pendingPaymentsTotal,
+          pendingRecurringTotal,
+          currentExpectedRevenue,
+          numberOfPendingPayments: currentMonthPendingPayments?.length || 0,
+          numberOfPendingRecurring: currentMonthPendingRecurring?.length || 0
         });
 
-        // Fetch previous expected payments
-        const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
+        // For comparison with previous period (keep as is)
+        const { data: previousExpectedPayments } = await supabase
           .from('payments')
           .select('amount, paid_amount, status')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid'])
           .lt('due_date', dates.compareEnd);
-
-        if (prevExpectedPaymentsError) throw prevExpectedPaymentsError;
 
         // Calculate previous expected payments total
         const previousExpectedPaymentsTotal = (previousExpectedPayments || [])
@@ -274,7 +280,7 @@ export const useMetrics = (period: string = 'current') => {
         // Calculate adjusted profit
         const adjustedProfit = currentRevenue - currentOperationalExpenses;
 
-        // Calculate category-specific expenses for previous period
+        // Calculate previous category-specific expenses
         const previousInvestmentExpenses = previousData
           ?.filter(item => item.type === 'expense' && categorizeExpense(item) === 'investment')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
@@ -297,14 +303,12 @@ export const useMetrics = (period: string = 'current') => {
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
         // Get previous recurring billings
-        const { data: previousRecurring, error: prevRecurringError } = await supabase
+        const { data: previousRecurring } = await supabase
           .from('recurring_billing')
           .select('amount')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid']);
-          
-        if (prevRecurringError) throw prevRecurringError;
         
-        // Calculate previous expected recurring total - count each once
+        // Calculate previous expected recurring total
         const previousExpectedRecurringTotal = (previousRecurring || [])
           .reduce((sum, item) => sum + Number(item.amount), 0);
           
@@ -314,11 +318,11 @@ export const useMetrics = (period: string = 'current') => {
         const currentNetProfit = currentRevenue - currentExpenses;
         const previousNetProfit = previousRevenue - previousExpenses;
 
-        console.log('Final expected revenue calculation:', {
-          payments: expectedPayments?.length || 0,
-          paymentTotal: currentExpectedPaymentsTotal,
-          recurringTotal: currentExpectedRecurringTotal,
-          total: currentExpectedRevenue
+        // Log final calculation for debugging
+        console.log('Final expected revenue calculation (SIMPLIFIED):', {
+          pendingPaymentsTotal,
+          pendingRecurringTotal,
+          currentExpectedRevenue
         });
 
         // Set metrics state with all calculated values
