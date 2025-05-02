@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -261,6 +262,16 @@ export const useMetrics = (period: string = 'current') => {
           .lt('due_date', dates.compareEnd);
 
         if (prevExpectedPaymentsError) throw prevExpectedPaymentsError;
+
+        // Calculate previous expected payments total - THIS WAS MISSING
+        const previousExpectedPaymentsTotal = (previousExpectedPayments || [])
+          .reduce((sum, item) => {
+            // For partially paid payments, only count the remaining amount
+            if (item.status === 'partially_paid' && item.paid_amount) {
+              return sum + (Number(item.amount) - Number(item.paid_amount));
+            }
+            return sum + Number(item.amount);
+          }, 0);
 
         // Calcular métricas do período atual
         const currentRevenue = currentData
