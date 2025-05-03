@@ -2,6 +2,7 @@
 import { Label } from "@/components/ui/label";
 import type { EmailTemplate } from "@/types/email";
 import { useTemplateVariables } from "@/hooks/useTemplateVariables";
+import { format } from "date-fns";
 
 // Add full typing for client
 interface EmailPreviewProps {
@@ -55,16 +56,13 @@ export const EmailPreview = ({
     : "R$ 0,00";
 
   // Format due date  
-  let formattedDueDate = dueDate || "";
-  if (dueDay && !dueDate) {
-    const today = new Date();
-    const dueDateTime = new Date(today.getFullYear(), today.getMonth(), dueDay);
-    formattedDueDate = dueDateTime.toLocaleDateString('pt-BR');
-  } else if (dueDate) {
+  let formattedDueDate = "";
+  if (dueDate) {
     try {
+      // Parse the date string (handles both ISO format and yyyy-MM-dd)
       const dueDateObj = new Date(dueDate);
       if (!isNaN(dueDateObj.getTime())) {
-        formattedDueDate = dueDateObj.toLocaleDateString('pt-BR');
+        formattedDueDate = format(dueDateObj, 'dd/MM/yyyy');
       } else {
         formattedDueDate = "Data inválida";
       }
@@ -72,6 +70,12 @@ export const EmailPreview = ({
       console.error("Error formatting date:", e);
       formattedDueDate = "Data inválida";
     }
+  } else if (dueDay) {
+    const today = new Date();
+    const dueDateTime = new Date(today.getFullYear(), today.getMonth(), dueDay);
+    formattedDueDate = format(dueDateTime, 'dd/MM/yyyy');
+  } else {
+    formattedDueDate = format(new Date(), 'dd/MM/yyyy');
   }
 
   // Safe values for installments
@@ -93,16 +97,15 @@ export const EmailPreview = ({
     descricao_servico: description || "",
     numero_parcela: String(safeCurrentInstallment),
     total_parcelas: String(safeTotalInstallments),
-    forma_pagamento: paymentMethodText,
+    forma_pagamento: paymentMethodText || "PIX",
     cnpj: client?.cnpj || "",
     cpf: client?.cpf || client?.partner_cpf || "",
     endereco: client?.address || "",
     valor_mensal: formattedAmount,
-    data_inicio: new Date().toLocaleDateString('pt-BR'),
+    data_inicio: format(new Date(), 'dd/MM/yyyy'),
     partner_name: client?.partner_name || "",
     partner_cpf: client?.partner_cpf || "",
     company_name: client?.company_name || ""
-    // Add here any other client fields as desired
   };
 
   // Render the template content and subject
@@ -132,4 +135,3 @@ export const EmailPreview = ({
     </div>
   );
 };
-

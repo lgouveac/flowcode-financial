@@ -11,6 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface SendEmailDialogProps {
   open: boolean;
@@ -27,6 +28,12 @@ export function SendEmailDialog({
 }: SendEmailDialogProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [selectedClient, setSelectedClient] = useState<string>("");
+  const [emailData, setEmailData] = useState({
+    description: "Serviços de consultoria",
+    amount: 1500,
+    dueDate: new Date().toISOString().split('T')[0]
+  });
+  
   const { toast } = useToast();
   const { savedTemplates, isLoading: isLoadingTemplates } = useEmailTemplates();
 
@@ -45,7 +52,7 @@ export function SendEmailDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('clients')
-        .select('id, name, responsible_name, partner_name')
+        .select('id, name, responsible_name, partner_name, cnpj, cpf, address')
         .order('name');
       
       if (error) throw error;
@@ -53,10 +60,42 @@ export function SendEmailDialog({
     }
   });
 
+  // Get client payments if a client is selected
+  const { data: clientPayments } = useQuery({
+    queryKey: ['client_payments', selectedClient],
+    queryFn: async () => {
+      if (!selectedClient) return [];
+      
+      const { data, error } = await supabase
+        .from('payments')
+        .select('id, description, amount, due_date')
+        .eq('client_id', selectedClient)
+        .order('due_date', { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      
+      // If we have payment data, update the email data with the most recent payment
+      if (data && data.length > 0) {
+        const recentPayment = data[0];
+        setEmailData({
+          description: recentPayment.description || "Serviços de consultoria",
+          amount: recentPayment.amount || 1500,
+          dueDate: recentPayment.due_date || new Date().toISOString().split('T')[0]
+        });
+      }
+      
+      return data || [];
+    },
+    enabled: !!selectedClient
+  });
+
   const handleSendEmail = () => {
     // This will be implemented later when we add the email sending functionality
     console.log("Sending email to:", selectedClient);
     console.log("Using template:", selectedTemplate);
+    console.log("Email data:", emailData);
+    
     toast({
       title: "Email enviado",
       description: "O email foi enviado com sucesso!",
@@ -64,12 +103,19 @@ export function SendEmailDialog({
     onClose();
   };
 
+  const handleEmailDataChange = (field: string, value: string | number) => {
+    setEmailData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   const selectedTemplateData = savedTemplates.find(t => t.id === selectedTemplate);
   const selectedClientData = clients?.find(c => c.id === selectedClient);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Enviar Email</DialogTitle>
         </DialogHeader>
@@ -107,6 +153,39 @@ export function SendEmailDialog({
               )}
             </div>
 
+            <div className="space-y-4 border p-3 rounded-md">
+              <h3 className="font-medium">Dados do email</h3>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição do serviço</Label>
+                <Input
+                  id="description"
+                  value={emailData.description}
+                  onChange={(e) => handleEmailDataChange('description', e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="amount">Valor</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  value={emailData.amount}
+                  onChange={(e) => handleEmailDataChange('amount', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="dueDate">Data de vencimento</Label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={emailData.dueDate}
+                  onChange={(e) => handleEmailDataChange('dueDate', e.target.value)}
+                />
+              </div>
+            </div>
+
             <Button 
               className="w-full"
               disabled={!selectedTemplate || !selectedClient}
@@ -123,6 +202,10 @@ export function SendEmailDialog({
               templates={savedTemplates}
               clientName={selectedClientData?.name}
               responsibleName={selectedClientData?.responsible_name}
+              amount={emailData.amount}
+              dueDate={emailData.dueDate}
+              description={emailData.description}
+              client={selectedClientData}
             />
           </div>
         </div>
