@@ -107,19 +107,17 @@ export function SendEmailDialog({
         
         // Find an appropriate template
         if (billingData.email_template) {
-          setSelectedTemplate(billingData.email_template);
+          // Check if the template exists in our savedTemplates
+          const templateExists = savedTemplates.some(t => t.id === billingData.email_template);
+          if (templateExists) {
+            setSelectedTemplate(billingData.email_template);
+          } else {
+            // Find a default recurring template if the template doesn't exist
+            findDefaultTemplate();
+          }
         } else {
           // Find a default recurring template
-          const recurringTemplate = savedTemplates.find(t => 
-            t.type === 'clients' && t.subtype === 'recurring' && t.is_default
-          );
-          
-          if (recurringTemplate) {
-            setSelectedTemplate(recurringTemplate.id);
-          } else if (savedTemplates.length > 0) {
-            // If no default template, use the first available
-            setSelectedTemplate(savedTemplates[0].id);
-          }
+          findDefaultTemplate();
         }
         
         setIsLoading(false);
@@ -135,6 +133,20 @@ export function SendEmailDialog({
       }
     }
   }, [open, billingData, initialClientId, initialTemplateId, savedTemplates]);
+
+  // Helper function to find a default template
+  const findDefaultTemplate = () => {
+    const recurringTemplate = savedTemplates.find(t => 
+      t.type === 'clients' && t.subtype === 'recurring' && t.is_default
+    );
+    
+    if (recurringTemplate) {
+      setSelectedTemplate(recurringTemplate.id);
+    } else if (savedTemplates.length > 0) {
+      // If no default template, use the first available
+      setSelectedTemplate(savedTemplates[0].id);
+    }
+  };
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],

@@ -15,6 +15,7 @@ export interface RecurringBilling {
   installments: number;
   current_installment: number;
   disable_notifications?: boolean;
+  email_template?: string;
   clients?: { 
     name: string; 
     responsible_name?: string;
