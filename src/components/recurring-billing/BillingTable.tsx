@@ -4,7 +4,7 @@ import type { RecurringBilling } from "@/types/billing";
 import { RecurringBillingRow } from "./RecurringBillingRow";
 import { useState } from "react";
 import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplate } from "@/types/email";
 
@@ -47,6 +47,7 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
         status: 'pending' as const,
         installments: billing.installments,
         current_installment: 1,
+        email_template: billing.email_template
       };
 
       const { data, error } = await supabase

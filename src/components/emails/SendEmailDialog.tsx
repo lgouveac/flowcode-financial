@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { RecurringBilling } from "@/types/billing";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface SendEmailDialogProps {
   open: boolean;
@@ -35,7 +35,7 @@ export function SendEmailDialog({
   const [emailData, setEmailData] = useState({
     description: "Serviços de consultoria",
     amount: 1500,
-    dueDate: new Date().toISOString().split('T')[0]
+    dueDate: format(new Date(), 'yyyy-MM-dd')
   });
   const [isLoading, setIsLoading] = useState(false);
   
@@ -51,7 +51,7 @@ export function SendEmailDialog({
       try {
         const { data, error } = await supabase
           .from('recurring_billing')
-          .select('*, clients(name, responsible_name, partner_name, cnpj, cpf, address)')
+          .select('*, clients(name, responsible_name, partner_name, cnpj, cpf, address, email)')
           .eq('id', initialBillingId)
           .single();
         
@@ -77,6 +77,9 @@ export function SendEmailDialog({
 
   // Helper function to find a default template
   const findDefaultTemplate = () => {
+    if (!savedTemplates || savedTemplates.length === 0) return;
+    
+    // First try to find a default recurring template
     const recurringTemplate = savedTemplates.find(t => 
       t.type === 'clients' && t.subtype === 'recurring' && t.is_default
     );
@@ -89,6 +92,19 @@ export function SendEmailDialog({
     }
   };
 
+  // Calculate due date from due_day
+  const calculateDueDate = (dueDay: number) => {
+    const today = new Date();
+    const dueDate = new Date(today.getFullYear(), today.getMonth(), dueDay);
+    
+    // If the due date has passed this month, use next month
+    if (dueDate < today) {
+      dueDate.setMonth(dueDate.getMonth() + 1);
+    }
+    
+    return format(dueDate, 'yyyy-MM-dd');
+  };
+
   // Set initial values when dialog opens or data changes
   useEffect(() => {
     if (!open) return; // Don't do anything if dialog is closed
@@ -97,8 +113,10 @@ export function SendEmailDialog({
     
     // Reset loading after a small delay if it's still loading
     const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000); // 5 second timeout as a safety measure
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    }, 3000); // 3 second timeout as a safety measure
     
     try {
       // If we have billing data, immediately set the client and email data
@@ -107,16 +125,8 @@ export function SendEmailDialog({
         
         setSelectedClient(billingData.client_id);
         
-        // Calculate the due date based on due_day
-        const today = new Date();
-        const dueDate = new Date(today.getFullYear(), today.getMonth(), billingData.due_day);
-        
-        // If the due date has passed this month, use next month
-        if (dueDate < today) {
-          dueDate.setMonth(dueDate.getMonth() + 1);
-        }
-        
-        const formattedDueDate = format(dueDate, 'yyyy-MM-dd');
+        // Format due date properly from the due_day
+        const formattedDueDate = calculateDueDate(billingData.due_day);
         
         setEmailData({
           description: billingData.description || "Serviços de consultoria",
@@ -168,7 +178,7 @@ export function SendEmailDialog({
       
       const { data, error } = await supabase
         .from('clients')
-        .select('id, name, responsible_name, partner_name, cnpj, cpf, address')
+        .select('id, name, responsible_name, partner_name, cnpj, cpf, address, email')
         .order('name');
       
       if (error) throw error;
@@ -198,7 +208,7 @@ export function SendEmailDialog({
         setEmailData({
           description: recentPayment.description || "Serviços de consultoria",
           amount: recentPayment.amount || 1500,
-          dueDate: recentPayment.due_date || new Date().toISOString().split('T')[0]
+          dueDate: recentPayment.due_date || format(new Date(), 'yyyy-MM-dd')
         });
       }
       
@@ -347,6 +357,7 @@ export function SendEmailDialog({
                 dueDate={emailData.dueDate}
                 description={emailData.description}
                 client={selectedClientData}
+                paymentMethod={billingData?.payment_method || 'pix'}
               />
             </div>
           </div>

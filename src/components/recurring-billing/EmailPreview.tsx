@@ -3,8 +3,9 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { EmailTemplate } from "@/types/email";
-import { format, isValid } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatCurrency } from "@/utils/formatters";
 
 interface EmailPreviewProps {
   selectedTemplate: string;
@@ -50,13 +51,6 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({
     );
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
   const formatPaymentMethod = (method: string) => {
     switch (method) {
       case 'pix': return 'PIX';
@@ -69,11 +63,32 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({
   // Format the date properly
   let formattedDueDate = "";
   if (dueDate) {
-    const parsedDate = new Date(dueDate);
-    if (isValid(parsedDate)) {
-      formattedDueDate = format(parsedDate, 'dd/MM/yyyy', { locale: ptBR });
-    } else {
-      formattedDueDate = dueDate; // Keep as is if not valid
+    try {
+      // Try to parse the ISO date string
+      const parsedDate = parseISO(dueDate);
+      if (isValid(parsedDate)) {
+        formattedDueDate = format(parsedDate, 'dd/MM/yyyy', { locale: ptBR });
+      } else {
+        // Handle non-standard date formats
+        const parts = dueDate.split('-');
+        if (parts.length === 3) {
+          const dateObject = new Date(
+            parseInt(parts[0]), // year
+            parseInt(parts[1]) - 1, // month (0-indexed)
+            parseInt(parts[2]) // day
+          );
+          if (isValid(dateObject)) {
+            formattedDueDate = format(dateObject, 'dd/MM/yyyy', { locale: ptBR });
+          } else {
+            formattedDueDate = dueDate; // Keep as is if parsing fails
+          }
+        } else {
+          formattedDueDate = dueDate; // Keep as is for other formats
+        }
+      }
+    } catch (e) {
+      console.warn(`Could not format date: ${dueDate}`, e);
+      formattedDueDate = dueDate; // Keep original if format fails
     }
   } else if (dueDay) {
     // If only dueDay is provided
@@ -85,11 +100,12 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({
   }
 
   let content = template.content
-    .replace(/{nome_cliente}/gi, clientName)
+    .replace(/{nome_cliente}/gi, clientName || "")
     .replace(/{nome_responsavel}/gi, responsibleName || client?.responsible_name || "")
     .replace(/{valor_cobranca}/gi, formatCurrency(amount))
     .replace(/{data_vencimento}/gi, formattedDueDate)
     .replace(/{descricao_servico}/gi, description)
+    .replace(/{plano_servico}/gi, description)
     .replace(/{numero_parcela}/gi, currentInstallment.toString())
     .replace(/{total_parcelas}/gi, installments.toString())
     .replace(/{forma_pagamento}/gi, formatPaymentMethod(paymentMethod));
@@ -104,7 +120,7 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({
   }
 
   let subject = template.subject
-    .replace(/{nome_cliente}/gi, clientName)
+    .replace(/{nome_cliente}/gi, clientName || "")
     .replace(/{nome_responsavel}/gi, responsibleName || client?.responsible_name || "")
     .replace(/{valor_cobranca}/gi, formatCurrency(amount))
     .replace(/{data_vencimento}/gi, formattedDueDate);
