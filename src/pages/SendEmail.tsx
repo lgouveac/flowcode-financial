@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Send } from "lucide-react";
@@ -8,11 +8,18 @@ import { NewTemplateDialog } from "@/components/emails/NewTemplateDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SendEmailDialog } from "@/components/emails/SendEmailDialog";
+import { useSearchParams } from "react-router-dom";
 
 export default function SendEmail() {
   const [isNewTemplateDialogOpen, setIsNewTemplateDialogOpen] = useState(false);
   const [isSendEmailDialogOpen, setIsSendEmailDialogOpen] = useState(false);
   const { savedTemplates, isLoading: isLoadingTemplates } = useEmailTemplates();
+  const searchParams = useSearchParams()[0];
+  
+  // Get billing ID from URL if present
+  const billingId = searchParams.get("billingId");
+  const clientId = searchParams.get("clientId");
+  const templateId = searchParams.get("templateId");
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],
@@ -26,6 +33,13 @@ export default function SendEmail() {
       return data || [];
     }
   });
+
+  // Open send dialog automatically if billing ID is present
+  useEffect(() => {
+    if (billingId || clientId) {
+      setIsSendEmailDialogOpen(true);
+    }
+  }, [billingId, clientId]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -87,6 +101,9 @@ export default function SendEmail() {
       <SendEmailDialog
         open={isSendEmailDialogOpen}
         onClose={() => setIsSendEmailDialogOpen(false)}
+        initialBillingId={billingId || undefined}
+        initialClientId={clientId || undefined}
+        initialTemplateId={templateId || undefined}
       />
     </div>
   );

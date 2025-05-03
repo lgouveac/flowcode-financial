@@ -1,198 +1,140 @@
-
-import React, { useState } from "react";
-import { TableRow, TableCell } from "@/components/ui/table";
+import { useState } from "react";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Send, Copy, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { formatCurrency } from "@/lib/utils";
+import { RecurringBilling } from "@/types/billing";
+import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { RecurringBilling } from "@/types/billing";
-import { useToast } from "@/components/ui/use-toast";
-import { Copy, Mail, Pencil, Trash2 } from "lucide-react";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle,
-  AlertDialogTrigger 
-} from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { RecurringBillingPaymentsDialog } from "./RecurringBillingPaymentsDialog";
+import { EditBillingDialog } from "./EditBillingDialog";
+import { DeleteBillingDialog } from "./DeleteBillingDialog";
+import { DuplicateBillingDialog } from "./DuplicateBillingDialog";
+import { EmailTemplate } from "@/types/email";
 
 interface RecurringBillingRowProps {
   billing: RecurringBilling;
   onRefresh: () => void;
-  onOpenDetails: (billing: RecurringBilling) => void;
-  onDuplicate?: (billing: RecurringBilling) => void;
+  enableDuplicate?: boolean;
+  templates: EmailTemplate[];
 }
 
-export const RecurringBillingRow = ({ 
-  billing, 
-  onRefresh, 
-  onOpenDetails,
-  onDuplicate 
-}: RecurringBillingRowProps) => {
-  const { toast } = useToast();
-  const [deleting, setDeleting] = useState(false);
-  const [showPayments, setShowPayments] = useState(false);
+export const RecurringBillingRowStatus = {
+  pending: { label: "Pendente", color: "bg-yellow-500" },
+  paid: { label: "Pago", color: "bg-green-500" },
+  overdue: { label: "Atrasado", color: "bg-red-500" },
+  cancelled: { label: "Cancelado", color: "bg-gray-500" },
+  partially_paid: { label: "Parcialmente Pago", color: "bg-blue-500" },
+  billed: { label: "Faturado", color: "bg-purple-500" },
+  awaiting_invoice: { label: "Aguardando NF", color: "bg-orange-500" },
+};
 
-  const handleDelete = async () => {
+export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates }: RecurringBillingRowProps) => {
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+
+  const statusInfo = RecurringBillingRowStatus[billing.status] || RecurringBillingRowStatus.pending;
+  
+  const formatDate = (dateString: string) => {
     try {
-      setDeleting(true);
-      const { error } = await supabase
-        .from('recurring_billing')
-        .delete()
-        .eq('id', billing.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Cobrança excluída",
-        description: "A cobrança recorrente foi excluída com sucesso."
-      });
-      onRefresh();
-    } catch (error) {
-      console.error("Erro ao excluir cobrança:", error);
-      toast({
-        title: "Erro ao excluir",
-        description: "Não foi possível excluir a cobrança.",
-        variant: "destructive"
-      });
-    } finally {
-      setDeleting(false);
+      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+    } catch (e) {
+      return "Data inválida";
     }
   };
 
-  const getStatusBadgeVariant = (status: RecurringBilling['status']) => {
-    switch (status) {
-      case 'paid':
-        return 'success';
-      case 'pending':
-        return 'secondary';
-      case 'overdue':
-        return 'destructive';
-      case 'cancelled':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusLabel = (status: RecurringBilling['status']) => {
-    switch (status) {
-      case 'paid':
-        return 'Pago';
-      case 'pending':
-        return 'Pendente';
-      case 'overdue':
-        return 'Atrasado';
-      case 'cancelled':
-        return 'Cancelado';
-      default:
-        return status;
-    }
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { 
-      style: 'currency', 
-      currency: 'BRL' 
-    }).format(value);
+  const getDueDate = () => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), billing.due_day);
   };
 
   return (
-    <>
-      <TableRow 
-        onClick={() => setShowPayments(true)}
-        className="cursor-pointer hover:bg-muted/70"
-      >
-        <TableCell>{billing.clients?.name}</TableCell>
-        <TableCell>{billing.description}</TableCell>
-        <TableCell>{formatCurrency(billing.amount)}</TableCell>
-        <TableCell>Dia {billing.due_day}</TableCell>
-        <TableCell>{billing.payment_method.toUpperCase()}</TableCell>
-        <TableCell>
-          <Badge variant={getStatusBadgeVariant(billing.status)}>
-            {getStatusLabel(billing.status)}
-          </Badge>
-        </TableCell>
-        <TableCell>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              title="Editar"
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent row click
-                onOpenDetails(billing);
-              }}
-            >
-              <Pencil className="h-4 w-4" />
+    <TableRow>
+      <TableCell className="font-medium">{billing.clients?.name || "Cliente não encontrado"}</TableCell>
+      <TableCell>{billing.description}</TableCell>
+      <TableCell>{formatCurrency(billing.amount)}</TableCell>
+      <TableCell>Dia {billing.due_day}</TableCell>
+      <TableCell>
+        <Badge variant="outline" className={`${statusInfo.color} text-white`}>
+          {statusInfo.label}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        {billing.current_installment}/{billing.installments}
+      </TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Abrir menu</span>
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              title="Enviar email"
-              onClick={(e) => e.stopPropagation()} // Prevent row click
-            >
-              <Mail className="h-4 w-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  title="Excluir"
-                  onClick={(e) => e.stopPropagation()} // Prevent row click
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir Cobrança Recorrente</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir esta cobrança? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {deleting ? "Excluindo..." : "Excluir"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            {onDuplicate && (
-              <Button
-                variant="ghost"
-                size="icon"
-                title="Duplicar"
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent row click
-                  onDuplicate(billing);
-                }}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to={`/send-email?billingId=${billing.id}&clientId=${billing.client_id}`}>
+                <Send className="mr-2 h-4 w-4" />
+                Enviar Email
+              </Link>
+            </DropdownMenuItem>
+            {enableDuplicate && (
+              <DropdownMenuItem onClick={() => setShowDuplicateDialog(true)}>
+                <Copy className="mr-2 h-4 w-4" />
+                Duplicar
+              </DropdownMenuItem>
             )}
-          </div>
-        </TableCell>
-      </TableRow>
-      
-      {/* Dialog for showing related payments */}
-      <RecurringBillingPaymentsDialog
-        open={showPayments}
-        onClose={() => setShowPayments(false)}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-red-600"
+            >
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+
+      <EditBillingDialog
+        open={showEditDialog}
+        onClose={() => setShowEditDialog(false)}
         billing={billing}
+        onSuccess={onRefresh}
       />
-    </>
+
+      <DeleteBillingDialog
+        open={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        billingId={billing.id}
+        billingDescription={billing.description}
+        onSuccess={onRefresh}
+      />
+
+      {enableDuplicate && (
+        <DuplicateBillingDialog
+          open={showDuplicateDialog}
+          onClose={() => setShowDuplicateDialog(false)}
+          billing={billing}
+          onSuccess={onRefresh}
+          templates={templates}
+        />
+      )}
+    </TableRow>
   );
 };

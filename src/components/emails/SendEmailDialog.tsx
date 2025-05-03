@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,19 +11,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import type { RecurringBilling } from "@/types/billing";
 
 interface SendEmailDialogProps {
   open: boolean;
   onClose: () => void;
   initialClientId?: string;
   initialTemplateId?: string;
+  initialBillingId?: string;
 }
 
 export function SendEmailDialog({ 
   open, 
   onClose,
   initialClientId,
-  initialTemplateId
+  initialTemplateId,
+  initialBillingId
 }: SendEmailDialogProps) {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [selectedClient, setSelectedClient] = useState<string>("");
@@ -46,6 +48,62 @@ export function SendEmailDialog({
       setSelectedTemplate(initialTemplateId);
     }
   }, [initialClientId, initialTemplateId]);
+
+  // Fetch recurring billing data if initialBillingId is provided
+  const { data: billingData } = useQuery({
+    queryKey: ['billing', initialBillingId],
+    queryFn: async () => {
+      if (!initialBillingId) return null;
+      
+      const { data, error } = await supabase
+        .from('recurring_billing')
+        .select('*, clients(name, responsible_name, partner_name, cnpj, cpf, address)')
+        .eq('id', initialBillingId)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching billing:", error);
+        return null;
+      }
+      
+      // If we have billing data, update the client selection and email data
+      if (data) {
+        setSelectedClient(data.client_id);
+        
+        // Calculate the current month's due date based on due_day
+        const today = new Date();
+        const dueDate = new Date(today.getFullYear(), today.getMonth(), data.due_day);
+        
+        // If the due date has passed this month, use next month
+        if (dueDate < today) {
+          dueDate.setMonth(dueDate.getMonth() + 1);
+        }
+        
+        setEmailData({
+          description: data.description || "Serviços de consultoria",
+          amount: data.amount || 0,
+          dueDate: dueDate.toISOString().split('T')[0]
+        });
+        
+        // If there's a template associated with this billing, select it
+        if (data.email_template) {
+          setSelectedTemplate(data.email_template);
+        } else {
+          // Otherwise find a default recurring template
+          const recurringTemplate = savedTemplates.find(t => 
+            t.type === 'clients' && t.subtype === 'recurring' && t.is_default
+          );
+          
+          if (recurringTemplate) {
+            setSelectedTemplate(recurringTemplate.id);
+          }
+        }
+      }
+      
+      return data as RecurringBilling;
+    },
+    enabled: !!initialBillingId && !!savedTemplates.length
+  });
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],
@@ -75,8 +133,8 @@ export function SendEmailDialog({
       
       if (error) throw error;
       
-      // If we have payment data, update the email data with the most recent payment
-      if (data && data.length > 0) {
+      // Only update email data if we don't have billing data already
+      if (data && data.length > 0 && !initialBillingId) {
         const recentPayment = data[0];
         setEmailData({
           description: recentPayment.description || "Serviços de consultoria",
@@ -87,7 +145,7 @@ export function SendEmailDialog({
       
       return data || [];
     },
-    enabled: !!selectedClient
+    enabled: !!selectedClient && !initialBillingId
   });
 
   const handleSendEmail = () => {
