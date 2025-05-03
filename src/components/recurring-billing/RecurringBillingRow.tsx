@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -11,15 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/utils/formatters";
 import { RecurringBilling } from "@/types/billing";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { EditBillingDialog } from "./EditBillingDialog";
-import { DeleteBillingDialog } from "./DeleteBillingDialog";
-import { DuplicateBillingDialog } from "./DuplicateBillingDialog";
 import { EmailTemplate } from "@/types/email";
+import { useToast } from "@/hooks/use-toast";
 
 interface RecurringBillingRowProps {
   billing: RecurringBilling;
@@ -39,10 +38,7 @@ export const RecurringBillingRowStatus = {
 };
 
 export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates }: RecurringBillingRowProps) => {
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
-
+  const { toast } = useToast();
   const statusInfo = RecurringBillingRowStatus[billing.status] || RecurringBillingRowStatus.pending;
   
   const formatDate = (dateString: string) => {
@@ -56,6 +52,27 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
   const getDueDate = () => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), billing.due_day);
+  };
+
+  const handleEditClick = () => {
+    toast({
+      title: "Funcionalidade em desenvolvimento",
+      description: "A edição de cobranças será implementada em breve.",
+    });
+  };
+
+  const handleDeleteClick = () => {
+    toast({
+      title: "Funcionalidade em desenvolvimento",
+      description: "A exclusão de cobranças será implementada em breve.",
+    });
+  };
+
+  const handleDuplicateClick = () => {
+    toast({
+      title: "Funcionalidade em desenvolvimento",
+      description: "A duplicação de cobranças será implementada em breve.",
+    });
   };
 
   return (
@@ -83,7 +100,7 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
+            <DropdownMenuItem onClick={handleEditClick}>
               <CheckCircle2 className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
@@ -94,14 +111,14 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
               </Link>
             </DropdownMenuItem>
             {enableDuplicate && (
-              <DropdownMenuItem onClick={() => setShowDuplicateDialog(true)}>
+              <DropdownMenuItem onClick={handleDuplicateClick}>
                 <Copy className="mr-2 h-4 w-4" />
                 Duplicar
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem 
-              onClick={() => setShowDeleteDialog(true)}
+              onClick={handleDeleteClick}
               className="text-red-600"
             >
               <AlertTriangle className="mr-2 h-4 w-4" />
@@ -110,31 +127,6 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
           </DropdownMenuContent>
         </DropdownMenu>
       </TableCell>
-
-      <EditBillingDialog
-        open={showEditDialog}
-        onClose={() => setShowEditDialog(false)}
-        billing={billing}
-        onSuccess={onRefresh}
-      />
-
-      <DeleteBillingDialog
-        open={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
-        billingId={billing.id}
-        billingDescription={billing.description}
-        onSuccess={onRefresh}
-      />
-
-      {enableDuplicate && (
-        <DuplicateBillingDialog
-          open={showDuplicateDialog}
-          onClose={() => setShowDuplicateDialog(false)}
-          billing={billing}
-          onSuccess={onRefresh}
-          templates={templates}
-        />
-      )}
     </TableRow>
   );
 };
