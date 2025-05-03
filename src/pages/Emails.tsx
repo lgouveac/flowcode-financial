@@ -151,6 +151,7 @@ export default function Emails() {
 
         <TemplateSection 
           type={currentTemplateType}
+          subtype={currentSubtype}
           onSaveTemplate={handleSaveTemplate} 
         />
       </div>

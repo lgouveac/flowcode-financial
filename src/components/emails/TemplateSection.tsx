@@ -10,11 +10,13 @@ import { TestEmailDialog } from "./TestEmailDialog";
 
 interface TemplateSectionProps {
   type: 'clients' | 'employees';
+  subtype: EmailTemplateSubtype;
   onSaveTemplate: (template: Partial<EmailTemplate>) => Promise<boolean>;
 }
 
 export const TemplateSection = ({
   type,
+  subtype,
   onSaveTemplate
 }: TemplateSectionProps) => {
   const { toast } = useToast();
@@ -22,24 +24,24 @@ export const TemplateSection = ({
   const [draggingVariable, setDraggingVariable] = useState<string | null>(null);
   const [newTemplate, setNewTemplate] = useState<Partial<EmailTemplate>>({
     type: type,
-    subtype: type === 'employees' ? 'invoice' : 'recurring',
+    subtype: subtype,
     name: '',
     subject: '',
     content: ''
   });
   
-  // Fix for proper subtype management when type changes
+  // Update template when parent props change
   useEffect(() => {
-    console.log(`Type prop changed to: ${type}, updating template type`);
-    const defaultSubtype = type === 'employees' ? 'invoice' : 'recurring';
-    console.log(`Setting default subtype to: ${defaultSubtype}`);
-    
+    console.log(`Props changed - type: ${type}, subtype: ${subtype}`);
     setNewTemplate(prev => ({
       ...prev,
       type: type,
-      subtype: defaultSubtype
+      subtype: subtype,
+      name: '',
+      subject: '',
+      content: ''
     }));
-  }, [type]);
+  }, [type, subtype]);
   
   const {
     savedTemplates,
@@ -47,23 +49,10 @@ export const TemplateSection = ({
     handleTemplateUpdate
   } = useEmailTemplates();
 
-  // Critical fix: Filter templates correctly by both type AND subtype
+  // Filter templates by current type AND subtype
   const currentTemplates = savedTemplates.filter(template => 
-    template.type === type && template.subtype === newTemplate.subtype
+    template.type === type && template.subtype === subtype
   );
-
-  const handleTypeChange = (newSubtype: string) => {
-    console.log(`Changing template subtype to: ${newSubtype}`);
-    
-    // Reset form data when subtype changes to avoid confusion
-    setNewTemplate(prev => ({
-      type: type,
-      subtype: newSubtype as EmailTemplateSubtype,
-      name: '',
-      subject: '',
-      content: ''
-    }));
-  };
 
   const handleDragStart = (e: React.DragEvent, variable: string) => {
     setDraggingVariable(variable);
@@ -127,13 +116,13 @@ export const TemplateSection = ({
       console.log("Saving template:", {
         ...newTemplate,
         type: type,
-        subtype: newTemplate.subtype
+        subtype: subtype
       });
 
       const templateToSave = {
         ...newTemplate,
         type: type,
-        subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring') as EmailTemplateSubtype
+        subtype: subtype
       };
 
       const success = await onSaveTemplate(templateToSave);
@@ -147,7 +136,7 @@ export const TemplateSection = ({
         // Clear the form but maintain the current subtype
         setNewTemplate({
           type: type,
-          subtype: newTemplate.subtype,
+          subtype: subtype,
           name: '',
           subject: '',
           content: ''
@@ -162,33 +151,22 @@ export const TemplateSection = ({
       });
     }
   };
-
-  // Make sure we're always using the current subtype from the state
-  const subtypeKey = newTemplate.subtype as EmailTemplateSubtype;
   
-  console.log("TemplateSection component data:", {
-    type: type,
-    subtype: subtypeKey,
-    templateType: newTemplate.type,
-    templateSubtype: newTemplate.subtype
-  });
-  
-  // Always use the correct variables for the current type and subtype
-  const currentVariables = variablesList[type]?.[subtypeKey] || [];
-  console.log(`${type} variables for ${subtypeKey}:`, currentVariables);
+  // Get variables for the current type and subtype
+  const currentVariables = variablesList[type]?.[subtype] || [];
+  console.log(`Variables for ${type}.${subtype}:`, currentVariables);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         <TemplateEditor 
           type={type} 
-          currentType={newTemplate.subtype || ''} 
+          currentType={subtype} 
           template={newTemplate} 
           onInputChange={handleInputChange} 
           onSave={handleSaveTemplate} 
           onDragOver={handleDragOver} 
           onDrop={handleDrop}
-          onTypeChange={handleTypeChange}
         />
 
         <SavedTemplatesTable 
