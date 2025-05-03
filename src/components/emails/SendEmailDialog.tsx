@@ -37,18 +37,16 @@ export function SendEmailDialog({
     amount: 1500,
     dueDate: new Date().toISOString().split('T')[0]
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   
   const { toast } = useToast();
   const { savedTemplates, isLoading: isLoadingTemplates } = useEmailTemplates();
 
   // Fetch recurring billing data if initialBillingId is provided
-  const { data: billingData, isLoading: isLoadingBilling } = useQuery({
-    queryKey: ['billing', initialBillingId],
+  const { data: billingData, isLoading: isLoadingBilling, error: billingError } = useQuery({
+    queryKey: ['billing', initialBillingId, open],
     queryFn: async () => {
-      if (!initialBillingId) return null;
-      
-      setIsLoading(true);
+      if (!initialBillingId || !open) return null;
       
       try {
         const { data, error } = await supabase
@@ -72,16 +70,37 @@ export function SendEmailDialog({
       } catch (err) {
         console.error("Exception fetching billing:", err);
         return null;
-      } finally {
-        setIsLoading(false);
       }
     },
     enabled: !!initialBillingId && open
   });
 
-  // Set initial values if provided
+  // Helper function to find a default template
+  const findDefaultTemplate = () => {
+    const recurringTemplate = savedTemplates.find(t => 
+      t.type === 'clients' && t.subtype === 'recurring' && t.is_default
+    );
+    
+    if (recurringTemplate) {
+      setSelectedTemplate(recurringTemplate.id);
+    } else if (savedTemplates.length > 0) {
+      // If no default template, use the first available
+      setSelectedTemplate(savedTemplates[0].id);
+    }
+  };
+
+  // Set initial values when dialog opens or data changes
   useEffect(() => {
-    if (open) {
+    if (!open) return; // Don't do anything if dialog is closed
+    
+    setIsLoading(true);
+    
+    // Reset loading after a small delay if it's still loading
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000); // 5 second timeout as a safety measure
+    
+    try {
       // If we have billing data, immediately set the client and email data
       if (billingData) {
         console.log("Setting data from billing:", billingData);
@@ -125,32 +144,28 @@ export function SendEmailDialog({
       // If no billing data but initialClientId is provided
       else if (initialClientId) {
         setSelectedClient(initialClientId);
+        setIsLoading(false);
+      } else {
+        setIsLoading(false);
       }
       
       // Set initial template if provided
       if (initialTemplateId) {
         setSelectedTemplate(initialTemplateId);
       }
+    } catch (err) {
+      console.error("Error setting initial values:", err);
+      setIsLoading(false);
     }
-  }, [open, billingData, initialClientId, initialTemplateId, savedTemplates]);
-
-  // Helper function to find a default template
-  const findDefaultTemplate = () => {
-    const recurringTemplate = savedTemplates.find(t => 
-      t.type === 'clients' && t.subtype === 'recurring' && t.is_default
-    );
     
-    if (recurringTemplate) {
-      setSelectedTemplate(recurringTemplate.id);
-    } else if (savedTemplates.length > 0) {
-      // If no default template, use the first available
-      setSelectedTemplate(savedTemplates[0].id);
-    }
-  };
+    return () => clearTimeout(timer);
+  }, [open, billingData, initialClientId, initialTemplateId, savedTemplates]);
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
+      if (!open) return [];
+      
       const { data, error } = await supabase
         .from('clients')
         .select('id, name, responsible_name, partner_name, cnpj, cpf, address')
@@ -158,14 +173,15 @@ export function SendEmailDialog({
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: open
   });
 
   // Get client payments if a client is selected
   const { data: clientPayments } = useQuery({
-    queryKey: ['client_payments', selectedClient],
+    queryKey: ['client_payments', selectedClient, open],
     queryFn: async () => {
-      if (!selectedClient || billingData) return []; // Don't fetch payments if we have billing data
+      if (!selectedClient || !open || billingData) return []; // Don't fetch payments if we have billing data
       
       const { data, error } = await supabase
         .from('payments')
@@ -188,7 +204,7 @@ export function SendEmailDialog({
       
       return data || [];
     },
-    enabled: !!selectedClient && !initialBillingId && !billingData
+    enabled: !!selectedClient && !initialBillingId && !billingData && open
   });
 
   const handleSendEmail = () => {
@@ -213,6 +229,24 @@ export function SendEmailDialog({
 
   const selectedTemplateData = savedTemplates.find(t => t.id === selectedTemplate);
   const selectedClientData = clients?.find(c => c.id === selectedClient);
+
+  // Show error if billing fetch failed
+  if (billingError) {
+    console.error("Billing error:", billingError);
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Erro</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-destructive">Não foi possível carregar os dados da cobrança. Por favor, tente novamente.</p>
+            <Button onClick={onClose} className="w-full">Fechar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
