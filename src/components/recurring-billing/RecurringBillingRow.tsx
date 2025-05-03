@@ -25,6 +25,8 @@ interface RecurringBillingRowProps {
   onRefresh: () => void;
   enableDuplicate?: boolean;
   templates: EmailTemplate[];
+  onOpenDetails?: (billing: RecurringBilling) => void;
+  onDuplicate?: (billing: RecurringBilling) => Promise<void>;
 }
 
 export const RecurringBillingRowStatus = {
@@ -37,7 +39,7 @@ export const RecurringBillingRowStatus = {
   awaiting_invoice: { label: "Aguardando NF", color: "bg-orange-500" },
 };
 
-export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates }: RecurringBillingRowProps) => {
+export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates, onOpenDetails, onDuplicate }: RecurringBillingRowProps) => {
   const { toast } = useToast();
   const statusInfo = RecurringBillingRowStatus[billing.status] || RecurringBillingRowStatus.pending;
   
@@ -68,11 +70,29 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
     });
   };
 
-  const handleDuplicateClick = () => {
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "A duplicação de cobranças será implementada em breve.",
-    });
+  const handleDuplicateClick = async () => {
+    if (onDuplicate) {
+      try {
+        await onDuplicate(billing);
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível duplicar a cobrança.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "Funcionalidade em desenvolvimento",
+        description: "A duplicação de cobranças será implementada em breve.",
+      });
+    }
+  };
+
+  const handleViewDetails = () => {
+    if (onOpenDetails) {
+      onOpenDetails(billing);
+    }
   };
 
   return (

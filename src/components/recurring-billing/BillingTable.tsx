@@ -84,8 +84,8 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
             <TableHead>Descrição</TableHead>
             <TableHead>Valor</TableHead>
             <TableHead>Dia do Vencimento</TableHead>
-            <TableHead>Método</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Parcela</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -97,6 +97,8 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
               onRefresh={onRefresh || (() => {})}
               onOpenDetails={handleOpenDetails}
               onDuplicate={enableDuplicate ? handleDuplicate : undefined}
+              enableDuplicate={enableDuplicate}
+              templates={templates}
             />
           ))}
         </TableBody>
