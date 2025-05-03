@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { RecurringBilling } from "@/types/billing";
+import { format } from "date-fns";
 
 interface SendEmailDialogProps {
   open: boolean;
@@ -35,75 +37,104 @@ export function SendEmailDialog({
     amount: 1500,
     dueDate: new Date().toISOString().split('T')[0]
   });
+  const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
   const { savedTemplates, isLoading: isLoadingTemplates } = useEmailTemplates();
 
-  // Set initial values if provided
-  useEffect(() => {
-    if (initialClientId) {
-      setSelectedClient(initialClientId);
-    }
-    if (initialTemplateId) {
-      setSelectedTemplate(initialTemplateId);
-    }
-  }, [initialClientId, initialTemplateId]);
-
   // Fetch recurring billing data if initialBillingId is provided
-  const { data: billingData } = useQuery({
+  const { data: billingData, isLoading: isLoadingBilling } = useQuery({
     queryKey: ['billing', initialBillingId],
     queryFn: async () => {
       if (!initialBillingId) return null;
       
-      const { data, error } = await supabase
-        .from('recurring_billing')
-        .select('*, clients(name, responsible_name, partner_name, cnpj, cpf, address)')
-        .eq('id', initialBillingId)
-        .single();
+      setIsLoading(true);
       
-      if (error) {
-        console.error("Error fetching billing:", error);
-        return null;
-      }
-      
-      // If we have billing data, update the client selection and email data
-      if (data) {
-        setSelectedClient(data.client_id);
+      try {
+        const { data, error } = await supabase
+          .from('recurring_billing')
+          .select('*, clients(name, responsible_name, partner_name, cnpj, cpf, address)')
+          .eq('id', initialBillingId)
+          .single();
         
-        // Calculate the current month's due date based on due_day
+        if (error) {
+          console.error("Error fetching billing:", error);
+          toast({
+            title: "Erro ao carregar dados",
+            description: "Não foi possível carregar os dados da cobrança",
+            variant: "destructive"
+          });
+          return null;
+        }
+        
+        console.log("Loaded billing data:", data);
+        return data as RecurringBilling;
+      } catch (err) {
+        console.error("Exception fetching billing:", err);
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    enabled: !!initialBillingId && open
+  });
+
+  // Set initial values if provided
+  useEffect(() => {
+    if (open) {
+      // If we have billing data, immediately set the client and email data
+      if (billingData) {
+        console.log("Setting data from billing:", billingData);
+        
+        setSelectedClient(billingData.client_id);
+        
+        // Calculate the due date based on due_day
         const today = new Date();
-        const dueDate = new Date(today.getFullYear(), today.getMonth(), data.due_day);
+        const dueDate = new Date(today.getFullYear(), today.getMonth(), billingData.due_day);
         
         // If the due date has passed this month, use next month
         if (dueDate < today) {
           dueDate.setMonth(dueDate.getMonth() + 1);
         }
         
+        const formattedDueDate = format(dueDate, 'yyyy-MM-dd');
+        
         setEmailData({
-          description: data.description || "Serviços de consultoria",
-          amount: data.amount || 0,
-          dueDate: dueDate.toISOString().split('T')[0]
+          description: billingData.description || "Serviços de consultoria",
+          amount: billingData.amount || 0,
+          dueDate: formattedDueDate
         });
         
-        // If there's a template associated with this billing, select it
-        if (data.email_template) {
-          setSelectedTemplate(data.email_template);
+        // Find an appropriate template
+        if (billingData.email_template) {
+          setSelectedTemplate(billingData.email_template);
         } else {
-          // Otherwise find a default recurring template
+          // Find a default recurring template
           const recurringTemplate = savedTemplates.find(t => 
             t.type === 'clients' && t.subtype === 'recurring' && t.is_default
           );
           
           if (recurringTemplate) {
             setSelectedTemplate(recurringTemplate.id);
+          } else if (savedTemplates.length > 0) {
+            // If no default template, use the first available
+            setSelectedTemplate(savedTemplates[0].id);
           }
         }
+        
+        setIsLoading(false);
+      } 
+      // If no billing data but initialClientId is provided
+      else if (initialClientId) {
+        setSelectedClient(initialClientId);
       }
       
-      return data as RecurringBilling;
-    },
-    enabled: !!initialBillingId && !!savedTemplates.length
-  });
+      // Set initial template if provided
+      if (initialTemplateId) {
+        setSelectedTemplate(initialTemplateId);
+      }
+    }
+  }, [open, billingData, initialClientId, initialTemplateId, savedTemplates]);
 
   const { data: clients, isLoading: isLoadingClients } = useQuery({
     queryKey: ['clients'],
@@ -122,7 +153,7 @@ export function SendEmailDialog({
   const { data: clientPayments } = useQuery({
     queryKey: ['client_payments', selectedClient],
     queryFn: async () => {
-      if (!selectedClient) return [];
+      if (!selectedClient || billingData) return []; // Don't fetch payments if we have billing data
       
       const { data, error } = await supabase
         .from('payments')
@@ -145,7 +176,7 @@ export function SendEmailDialog({
       
       return data || [];
     },
-    enabled: !!selectedClient && !initialBillingId
+    enabled: !!selectedClient && !initialBillingId && !billingData
   });
 
   const handleSendEmail = () => {
@@ -178,95 +209,102 @@ export function SendEmailDialog({
           <DialogTitle>Enviar Email</DialogTitle>
         </DialogHeader>
         
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Template</Label>
-              <Select
-                value={selectedTemplate}
-                onValueChange={setSelectedTemplate}
-                disabled={isLoadingTemplates}
+        {isLoading || isLoadingBilling ? (
+          <div className="flex justify-center p-6">
+            <div className="animate-pulse">Carregando dados...</div>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Template</Label>
+                <Select
+                  value={selectedTemplate}
+                  onValueChange={setSelectedTemplate}
+                  disabled={isLoadingTemplates}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {savedTemplates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cliente</Label>
+                {clients && (
+                  <ClientSelector 
+                    clients={clients}
+                    onSelect={setSelectedClient}
+                    initialValue={selectedClient}
+                    disabled={!!initialBillingId}
+                  />
+                )}
+              </div>
+
+              <div className="space-y-4 border p-3 rounded-md">
+                <h3 className="font-medium">Dados do email</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrição do serviço</Label>
+                  <Input
+                    id="description"
+                    value={emailData.description}
+                    onChange={(e) => handleEmailDataChange('description', e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Valor</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={emailData.amount}
+                    onChange={(e) => handleEmailDataChange('amount', parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="dueDate">Data de vencimento</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={emailData.dueDate}
+                    onChange={(e) => handleEmailDataChange('dueDate', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <Button 
+                className="w-full"
+                disabled={!selectedTemplate || !selectedClient}
+                onClick={handleSendEmail}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um template" />
-                </SelectTrigger>
-                <SelectContent>
-                  {savedTemplates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Email
+              </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label>Cliente</Label>
-              {clients && (
-                <ClientSelector 
-                  clients={clients}
-                  onSelect={setSelectedClient}
-                  initialValue={selectedClient}
-                />
-              )}
+            <div>
+              <EmailPreview
+                selectedTemplate={selectedTemplate}
+                templates={savedTemplates}
+                clientName={selectedClientData?.name}
+                responsibleName={selectedClientData?.responsible_name}
+                amount={emailData.amount}
+                dueDate={emailData.dueDate}
+                description={emailData.description}
+                client={selectedClientData}
+              />
             </div>
-
-            <div className="space-y-4 border p-3 rounded-md">
-              <h3 className="font-medium">Dados do email</h3>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição do serviço</Label>
-                <Input
-                  id="description"
-                  value={emailData.description}
-                  onChange={(e) => handleEmailDataChange('description', e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="amount">Valor</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  value={emailData.amount}
-                  onChange={(e) => handleEmailDataChange('amount', parseFloat(e.target.value) || 0)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Data de vencimento</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={emailData.dueDate}
-                  onChange={(e) => handleEmailDataChange('dueDate', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <Button 
-              className="w-full"
-              disabled={!selectedTemplate || !selectedClient}
-              onClick={handleSendEmail}
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Enviar Email
-            </Button>
           </div>
-
-          <div>
-            <EmailPreview
-              selectedTemplate={selectedTemplate}
-              templates={savedTemplates}
-              clientName={selectedClientData?.name}
-              responsibleName={selectedClientData?.responsible_name}
-              amount={emailData.amount}
-              dueDate={emailData.dueDate}
-              description={emailData.description}
-              client={selectedClientData}
-            />
-          </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

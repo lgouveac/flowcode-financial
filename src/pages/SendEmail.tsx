@@ -8,15 +8,16 @@ import { NewTemplateDialog } from "@/components/emails/NewTemplateDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SendEmailDialog } from "@/components/emails/SendEmailDialog";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function SendEmail() {
   const [isNewTemplateDialogOpen, setIsNewTemplateDialogOpen] = useState(false);
   const [isSendEmailDialogOpen, setIsSendEmailDialogOpen] = useState(false);
   const { savedTemplates, isLoading: isLoadingTemplates } = useEmailTemplates();
-  const searchParams = useSearchParams()[0];
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
-  // Get billing ID from URL if present
+  // Get parameters from URL
   const billingId = searchParams.get("billingId");
   const clientId = searchParams.get("clientId");
   const templateId = searchParams.get("templateId");
@@ -34,12 +35,21 @@ export default function SendEmail() {
     }
   });
 
-  // Open send dialog automatically if billing ID is present
+  // Open send dialog automatically if any parameter is present
   useEffect(() => {
-    if (billingId || clientId) {
+    if (billingId || clientId || templateId) {
       setIsSendEmailDialogOpen(true);
     }
-  }, [billingId, clientId]);
+  }, [billingId, clientId, templateId]);
+  
+  // Handle dialog close and clear URL params
+  const handleDialogClose = () => {
+    setIsSendEmailDialogOpen(false);
+    // Clear URL parameters when dialog is closed
+    if (billingId || clientId || templateId) {
+      navigate('/send-email', { replace: true });
+    }
+  };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -82,6 +92,7 @@ export default function SendEmail() {
                 size="sm"
                 className="w-full"
                 onClick={() => {
+                  navigate(`/send-email?templateId=${template.id}`);
                   setIsSendEmailDialogOpen(true);
                 }}
               >
@@ -100,7 +111,7 @@ export default function SendEmail() {
 
       <SendEmailDialog
         open={isSendEmailDialogOpen}
-        onClose={() => setIsSendEmailDialogOpen(false)}
+        onClose={handleDialogClose}
         initialBillingId={billingId || undefined}
         initialClientId={clientId || undefined}
         initialTemplateId={templateId || undefined}

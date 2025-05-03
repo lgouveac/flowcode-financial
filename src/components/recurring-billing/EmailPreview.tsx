@@ -1,12 +1,13 @@
 
-import { Label } from "@/components/ui/label";
-import type { EmailTemplate } from "@/types/email";
-import { useTemplateVariables } from "@/hooks/useTemplateVariables";
-import { format } from "date-fns";
+import * as React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { EmailTemplate } from "@/types/email";
+import { format, isValid } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-// Add full typing for client
 interface EmailPreviewProps {
-  selectedTemplate?: string;
+  selectedTemplate: string;
   templates: EmailTemplate[];
   clientName?: string;
   responsibleName?: string;
@@ -17,121 +18,123 @@ interface EmailPreviewProps {
   installments?: number;
   currentInstallment?: number;
   paymentMethod?: 'pix' | 'boleto' | 'credit_card';
-  client?: {
-    cnpj?: string;
-    cpf?: string;
-    address?: string;
-    name?: string;
-    responsible_name?: string;
-    partner_name?: string;
-    partner_cpf?: string;
-    company_name?: string;
-  };
+  client?: any;
 }
 
-export const EmailPreview = ({
+export const EmailPreview: React.FC<EmailPreviewProps> = ({
   selectedTemplate,
   templates,
-  clientName,
-  responsibleName,
-  amount,
-  dueDay,
+  clientName = "Cliente Teste",
+  responsibleName = "Responsável Teste",
+  amount = 100,
+  dueDay = 15,
   dueDate,
-  description,
-  installments,
-  currentInstallment,
-  paymentMethod,
+  description = "Descrição do serviço",
+  installments = 1,
+  currentInstallment = 1,
+  paymentMethod = "pix",
   client
-}: EmailPreviewProps) => {
-  const { renderTemplate } = useTemplateVariables();
+}) => {
+  const template = templates.find((t) => t.id === selectedTemplate);
   
-  if (!selectedTemplate) return null;
-
-  const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
-  if (!selectedTemplateData) return null;
-
-  // Format amount to BRL currency
-  const formattedAmount = amount 
-    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount)
-    : "R$ 0,00";
-
-  // Format due date  
-  let formattedDueDate = "";
-  if (dueDate) {
-    try {
-      // Parse the date string (handles both ISO format and yyyy-MM-dd)
-      const dueDateObj = new Date(dueDate);
-      if (!isNaN(dueDateObj.getTime())) {
-        formattedDueDate = format(dueDateObj, 'dd/MM/yyyy');
-      } else {
-        formattedDueDate = "Data inválida";
-      }
-    } catch (e) {
-      console.error("Error formatting date:", e);
-      formattedDueDate = "Data inválida";
-    }
-  } else if (dueDay) {
-    const today = new Date();
-    const dueDateTime = new Date(today.getFullYear(), today.getMonth(), dueDay);
-    formattedDueDate = format(dueDateTime, 'dd/MM/yyyy');
-  } else {
-    formattedDueDate = format(new Date(), 'dd/MM/yyyy');
+  if (!template) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Prévia do Email</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Selecione um template para visualizar</p>
+        </CardContent>
+      </Card>
+    );
   }
 
-  // Safe values for installments
-  const safeCurrentInstallment = currentInstallment && currentInstallment > 0 ? currentInstallment : 1;
-  const safeTotalInstallments = installments && installments > 0 ? installments : 1;
-
-  // Payment method display text
-  const paymentMethodText = paymentMethod === 'pix' ? 'PIX' : 
-                            paymentMethod === 'boleto' ? 'Boleto' : 
-                            'Cartão de Crédito';
-
-  // Prepare data for template rendering with all possible client fields
-  const templateData = {
-    nome_cliente: clientName || client?.name || "Cliente",
-    nome_responsavel: responsibleName || client?.responsible_name || client?.partner_name || "",
-    valor_cobranca: formattedAmount,
-    data_vencimento: formattedDueDate,
-    plano_servico: description || "",
-    descricao_servico: description || "",
-    numero_parcela: String(safeCurrentInstallment),
-    total_parcelas: String(safeTotalInstallments),
-    forma_pagamento: paymentMethodText || "PIX",
-    cnpj: client?.cnpj || "",
-    cpf: client?.cpf || client?.partner_cpf || "",
-    endereco: client?.address || "",
-    valor_mensal: formattedAmount,
-    data_inicio: format(new Date(), 'dd/MM/yyyy'),
-    partner_name: client?.partner_name || "",
-    partner_cpf: client?.partner_cpf || "",
-    company_name: client?.company_name || ""
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   };
 
-  // Render the template content and subject
-  const content = renderTemplate(
-    selectedTemplateData.content, 
-    selectedTemplateData.type, 
-    selectedTemplateData.subtype, 
-    templateData
-  );
-  
-  const subject = renderTemplate(
-    selectedTemplateData.subject, 
-    selectedTemplateData.type, 
-    selectedTemplateData.subtype, 
-    templateData
-  );
+  const formatPaymentMethod = (method: string) => {
+    switch (method) {
+      case 'pix': return 'PIX';
+      case 'boleto': return 'Boleto';
+      case 'credit_card': return 'Cartão de Crédito';
+      default: return method;
+    }
+  };
+
+  // Format the date properly
+  let formattedDueDate = "";
+  if (dueDate) {
+    const parsedDate = new Date(dueDate);
+    if (isValid(parsedDate)) {
+      formattedDueDate = format(parsedDate, 'dd/MM/yyyy', { locale: ptBR });
+    } else {
+      formattedDueDate = dueDate; // Keep as is if not valid
+    }
+  } else if (dueDay) {
+    // If only dueDay is provided
+    const today = new Date();
+    const dueDateWithDay = new Date(today.getFullYear(), today.getMonth(), dueDay);
+    formattedDueDate = format(dueDateWithDay, 'dd/MM/yyyy', { locale: ptBR });
+  } else {
+    formattedDueDate = format(new Date(), 'dd/MM/yyyy', { locale: ptBR });
+  }
+
+  let content = template.content
+    .replace(/{nome_cliente}/gi, clientName)
+    .replace(/{nome_responsavel}/gi, responsibleName || client?.responsible_name || "")
+    .replace(/{valor_cobranca}/gi, formatCurrency(amount))
+    .replace(/{data_vencimento}/gi, formattedDueDate)
+    .replace(/{descricao_servico}/gi, description)
+    .replace(/{numero_parcela}/gi, currentInstallment.toString())
+    .replace(/{total_parcelas}/gi, installments.toString())
+    .replace(/{forma_pagamento}/gi, formatPaymentMethod(paymentMethod));
+
+  // Add other client data if available
+  if (client) {
+    content = content
+      .replace(/{cnpj}/gi, client.cnpj || "")
+      .replace(/{cpf}/gi, client.cpf || "")
+      .replace(/{endereco}/gi, client.address || "")
+      .replace(/{partner_name}/gi, client.partner_name || "");
+  }
+
+  let subject = template.subject
+    .replace(/{nome_cliente}/gi, clientName)
+    .replace(/{nome_responsavel}/gi, responsibleName || client?.responsible_name || "")
+    .replace(/{valor_cobranca}/gi, formatCurrency(amount))
+    .replace(/{data_vencimento}/gi, formattedDueDate);
+
+  if (client) {
+    subject = subject
+      .replace(/{cnpj}/gi, client.cnpj || "")
+      .replace(/{cpf}/gi, client.cpf || "")
+      .replace(/{endereco}/gi, client.address || "")
+      .replace(/{partner_name}/gi, client.partner_name || "");
+  }
 
   return (
-    <div className="space-y-2">
-      <Label>Prévia do Email</Label>
-      <div className="mb-2">
-        <Label className="text-xs text-muted-foreground break-anywhere">Assunto: {subject}</Label>
-      </div>
-      <div className="bg-background border rounded-md p-3 sm:p-4 whitespace-pre-wrap text-sm text-left overflow-x-auto max-h-[400px] overflow-y-auto">
-        {content}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Prévia do Email</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <p className="text-sm font-medium">Assunto:</p>
+          <p className="text-sm mt-1">{subject}</p>
+        </div>
+        <Separator />
+        <div>
+          <p className="text-sm font-medium">Conteúdo:</p>
+          <div className="mt-2 whitespace-pre-line text-sm">
+            {content}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
