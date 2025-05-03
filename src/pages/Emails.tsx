@@ -24,7 +24,7 @@ export default function Emails() {
 
   // Update currentSubtype whenever the template type changes
   useEffect(() => {
-    // CRITICAL FIX: Set correct default subtype when type changes
+    // Set correct default subtype when type changes
     console.log("Template type changed to:", currentTemplateType);
     const defaultSubtype: EmailTemplateSubtype = currentTemplateType === 'clients' ? 'recurring' : 'invoice';
     console.log("Setting default subtype to:", defaultSubtype);
@@ -51,13 +51,10 @@ export default function Emails() {
     }
   };
 
-  // Update the subtype when the template type changes
+  // Handle template type change
   const handleTemplateTypeChange = (type: 'clients' | 'employees') => {
     console.log(`Changing template type from ${currentTemplateType} to ${type}`);
     setCurrentTemplateType(type);
-    // CRITICAL FIX: Reset subtype when type changes to ensure proper defaults
-    const newDefaultSubtype: EmailTemplateSubtype = type === 'clients' ? 'recurring' : 'invoice';
-    setCurrentSubtype(newDefaultSubtype);
   };
 
   return (

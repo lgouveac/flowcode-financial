@@ -28,7 +28,7 @@ export const TemplateSection = ({
     content: ''
   });
   
-  // CRITICAL FIX: Update the template type and subtype when the prop changes
+  // Fix for proper subtype management when type changes
   useEffect(() => {
     console.log(`Type prop changed to: ${type}, updating template type`);
     const defaultSubtype = type === 'employees' ? 'invoice' : 'recurring';
@@ -47,15 +47,21 @@ export const TemplateSection = ({
     handleTemplateUpdate
   } = useEmailTemplates();
 
+  // Critical fix: Filter templates correctly by both type AND subtype
   const currentTemplates = savedTemplates.filter(template => 
     template.type === type && template.subtype === newTemplate.subtype
   );
 
   const handleTypeChange = (newSubtype: string) => {
     console.log(`Changing template subtype to: ${newSubtype}`);
+    
+    // Reset form data when subtype changes to avoid confusion
     setNewTemplate(prev => ({
-      ...prev,
-      subtype: newSubtype as EmailTemplateSubtype
+      type: type,
+      subtype: newSubtype as EmailTemplateSubtype,
+      name: '',
+      subject: '',
+      content: ''
     }));
   };
 
@@ -120,13 +126,13 @@ export const TemplateSection = ({
     try {
       console.log("Saving template:", {
         ...newTemplate,
-        type: type, // CRITICAL FIX: Ensure we're using the current type
-        subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring')
+        type: type,
+        subtype: newTemplate.subtype
       });
 
       const templateToSave = {
         ...newTemplate,
-        type: type, // CRITICAL FIX: Ensure we're using the current type
+        type: type,
         subtype: newTemplate.subtype || (type === 'employees' ? 'invoice' : 'recurring') as EmailTemplateSubtype
       };
 
@@ -138,9 +144,10 @@ export const TemplateSection = ({
           description: "O template foi salvo com sucesso!"
         });
 
+        // Clear the form but maintain the current subtype
         setNewTemplate({
           type: type,
-          subtype: newTemplate.subtype, // Keep the current subtype when clearing form
+          subtype: newTemplate.subtype,
           name: '',
           subject: '',
           content: ''
@@ -156,7 +163,7 @@ export const TemplateSection = ({
     }
   };
 
-  // CRITICAL FIX: Get the current subtype from the template state
+  // Make sure we're always using the current subtype from the state
   const subtypeKey = newTemplate.subtype as EmailTemplateSubtype;
   
   console.log("TemplateSection component data:", {
@@ -166,14 +173,9 @@ export const TemplateSection = ({
     templateSubtype: newTemplate.subtype
   });
   
-  // CRITICAL FIX: Always use the correct variables for the current type and subtype
+  // Always use the correct variables for the current type and subtype
   const currentVariables = variablesList[type]?.[subtypeKey] || [];
   console.log(`${type} variables for ${subtypeKey}:`, currentVariables);
-  
-  // CRITICAL FIX: Ensure we always have variables available
-  if (currentVariables.length === 0) {
-    console.warn(`No variables found for ${type}.${subtypeKey}. This should not happen.`);
-  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
