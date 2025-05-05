@@ -1,5 +1,4 @@
-
-import { Send, FileText, RefreshCw, CalendarCheck, Plus, FileType, Tag } from "lucide-react";
+import { Send, FileText, RefreshCw, CalendarCheck, Plus, FileType, Tag, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { TemplateSection } from "@/components/emails/TemplateSection";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface CustomSubtype {
   id: string;
@@ -57,6 +57,8 @@ export default function Emails() {
   useEffect(() => {
     if (customSubtypes.length > 0) {
       localStorage.setItem('customEmailSubtypes', JSON.stringify(customSubtypes));
+    } else {
+      localStorage.removeItem('customEmailSubtypes');
     }
   }, [customSubtypes]);
   
@@ -125,6 +127,18 @@ export default function Emails() {
     setNewSubtypeName("");
   };
 
+  // Handle deleting a subtype
+  const handleDeleteSubtype = (id: string, name: string) => {
+    // Filter out the subtype to delete
+    setCustomSubtypes(prev => prev.filter(subtype => subtype.id !== id));
+    
+    // Show success toast
+    toast({
+      title: "Subtipo removido",
+      description: `Subtipo "${name}" removido com sucesso!`
+    });
+  };
+
   // Filter custom subtypes by current type
   const filteredCustomSubtypes = customSubtypes.filter(
     subtype => subtype.type === currentTemplateType
@@ -155,17 +169,29 @@ export default function Emails() {
               <TemplateCategoryButton icon={RefreshCw} label="Cobrança Recorrente" onClick={() => setCurrentSubtype('recurring')} active={currentSubtype === 'recurring'} />
               <TemplateCategoryButton icon={CalendarCheck} label="Cobrança Pontual" onClick={() => setCurrentSubtype('oneTime')} active={currentSubtype === 'oneTime'} />
               <TemplateCategoryButton icon={FileText} label="Contrato" onClick={() => setCurrentSubtype('contract')} active={currentSubtype === 'contract'} />
-              <TemplateCategoryButton icon={FileType} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
               
               {/* Render custom client subtypes */}
               {filteredCustomSubtypes.map(subtype => (
-                <TemplateCategoryButton
-                  key={subtype.id}
-                  icon={FileType}
-                  label={subtype.name}
-                  onClick={() => setCurrentSubtype('novo_subtipo')}
-                  active={currentSubtype === 'novo_subtipo'}
-                />
+                <div key={subtype.id} className="relative group">
+                  <TemplateCategoryButton
+                    icon={FileType}
+                    label={subtype.name}
+                    onClick={() => setCurrentSubtype('novo_subtipo')}
+                    active={currentSubtype === 'novo_subtipo'}
+                    className="group-hover:pr-12"
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSubtype(subtype.id, subtype.name);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               ))}
             </div>
           </TabsContent>
@@ -174,17 +200,29 @@ export default function Emails() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               <TemplateCategoryButton icon={FileText} label="Template NF" onClick={() => setCurrentSubtype('invoice')} active={currentSubtype === 'invoice'} />
               <TemplateCategoryButton icon={CalendarCheck} label="Template Horas" onClick={() => setCurrentSubtype('hours')} active={currentSubtype === 'hours'} />
-              <TemplateCategoryButton icon={FileType} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
               
               {/* Render custom employee subtypes */}
               {filteredCustomSubtypes.map(subtype => (
-                <TemplateCategoryButton
-                  key={subtype.id}
-                  icon={FileType}
-                  label={subtype.name}
-                  onClick={() => setCurrentSubtype('novo_subtipo')}
-                  active={currentSubtype === 'novo_subtipo'}
-                />
+                <div key={subtype.id} className="relative group">
+                  <TemplateCategoryButton
+                    icon={FileType}
+                    label={subtype.name}
+                    onClick={() => setCurrentSubtype('novo_subtipo')}
+                    active={currentSubtype === 'novo_subtipo'}
+                    className="group-hover:pr-12"
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSubtype(subtype.id, subtype.name);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               ))}
             </div>
           </TabsContent>

@@ -8,6 +8,7 @@ interface TemplateCategoryButtonProps {
   label: string;
   onClick: () => void;
   active?: boolean;
+  className?: string;
 }
 
 export const TemplateCategoryButton = ({
@@ -15,6 +16,7 @@ export const TemplateCategoryButton = ({
   label,
   onClick,
   active = false,
+  className,
 }: TemplateCategoryButtonProps) => {
   return (
     <Button
@@ -22,7 +24,8 @@ export const TemplateCategoryButton = ({
       className={cn(
         "flex flex-col items-center justify-center gap-1 h-20 w-full",
         "text-sm border-2",
-        active && "border-primary bg-primary/5"
+        active && "border-primary bg-primary/5",
+        className
       )}
       onClick={onClick}
     >
