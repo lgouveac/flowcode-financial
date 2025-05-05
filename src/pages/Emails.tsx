@@ -16,6 +16,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
+interface CustomSubtype {
+  id: string;
+  name: string;
+  type: 'clients' | 'employees';
+}
+
 export default function Emails() {
   const [newTemplateOpen, setNewTemplateOpen] = useState(false);
   const [showCCRecipients, setShowCCRecipients] = useState(false);
@@ -23,6 +29,7 @@ export default function Emails() {
   const [currentSubtype, setCurrentSubtype] = useState<EmailTemplateSubtype>(currentTemplateType === 'clients' ? 'recurring' : 'invoice');
   const [newSubtypeDialogOpen, setNewSubtypeDialogOpen] = useState(false);
   const [newSubtypeName, setNewSubtypeName] = useState("");
+  const [customSubtypes, setCustomSubtypes] = useState<CustomSubtype[]>([]);
   const { toast } = useToast();
 
   // Update currentSubtype whenever the template type changes
@@ -33,6 +40,25 @@ export default function Emails() {
     console.log("Setting default subtype to:", defaultSubtype);
     setCurrentSubtype(defaultSubtype);
   }, [currentTemplateType]);
+  
+  // Load custom subtypes from localStorage on component mount
+  useEffect(() => {
+    const savedSubtypes = localStorage.getItem('customEmailSubtypes');
+    if (savedSubtypes) {
+      try {
+        setCustomSubtypes(JSON.parse(savedSubtypes));
+      } catch (error) {
+        console.error("Error parsing saved subtypes:", error);
+      }
+    }
+  }, []);
+
+  // Save custom subtypes to localStorage whenever they change
+  useEffect(() => {
+    if (customSubtypes.length > 0) {
+      localStorage.setItem('customEmailSubtypes', JSON.stringify(customSubtypes));
+    }
+  }, [customSubtypes]);
   
   const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
     try {
@@ -71,6 +97,18 @@ export default function Emails() {
       return;
     }
 
+    // Create a unique ID for the new subtype
+    const newSubtypeId = `custom_${Date.now()}`;
+    
+    // Add the new subtype to our custom subtypes array
+    const newCustomSubtype: CustomSubtype = {
+      id: newSubtypeId,
+      name: newSubtypeName,
+      type: currentTemplateType
+    };
+    
+    setCustomSubtypes(prev => [...prev, newCustomSubtype]);
+    
     // Set the current subtype to 'novo_subtipo'
     setCurrentSubtype('novo_subtipo');
     
@@ -86,6 +124,11 @@ export default function Emails() {
     // Reset the name field
     setNewSubtypeName("");
   };
+
+  // Filter custom subtypes by current type
+  const filteredCustomSubtypes = customSubtypes.filter(
+    subtype => subtype.type === currentTemplateType
+  );
 
   return <div className="space-y-4 px-2 sm:px-4 md:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -113,6 +156,17 @@ export default function Emails() {
               <TemplateCategoryButton icon={CalendarCheck} label="Cobrança Pontual" onClick={() => setCurrentSubtype('oneTime')} active={currentSubtype === 'oneTime'} />
               <TemplateCategoryButton icon={FileText} label="Contrato" onClick={() => setCurrentSubtype('contract')} active={currentSubtype === 'contract'} />
               <TemplateCategoryButton icon={FileType} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
+              
+              {/* Render custom client subtypes */}
+              {filteredCustomSubtypes.map(subtype => (
+                <TemplateCategoryButton
+                  key={subtype.id}
+                  icon={FileType}
+                  label={subtype.name}
+                  onClick={() => setCurrentSubtype('novo_subtipo')}
+                  active={currentSubtype === 'novo_subtipo'}
+                />
+              ))}
             </div>
           </TabsContent>
           
@@ -121,6 +175,17 @@ export default function Emails() {
               <TemplateCategoryButton icon={FileText} label="Template NF" onClick={() => setCurrentSubtype('invoice')} active={currentSubtype === 'invoice'} />
               <TemplateCategoryButton icon={CalendarCheck} label="Template Horas" onClick={() => setCurrentSubtype('hours')} active={currentSubtype === 'hours'} />
               <TemplateCategoryButton icon={FileType} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
+              
+              {/* Render custom employee subtypes */}
+              {filteredCustomSubtypes.map(subtype => (
+                <TemplateCategoryButton
+                  key={subtype.id}
+                  icon={FileType}
+                  label={subtype.name}
+                  onClick={() => setCurrentSubtype('novo_subtipo')}
+                  active={currentSubtype === 'novo_subtipo'}
+                />
+              ))}
             </div>
           </TabsContent>
         </Tabs>
