@@ -38,6 +38,7 @@ export function SendEmailDialog({
     dueDate: format(new Date(), 'yyyy-MM-dd')
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   
   const { toast } = useToast();
   const { savedTemplates, isLoading: isLoadingTemplates } = useEmailTemplates();
@@ -217,17 +218,108 @@ export function SendEmailDialog({
     enabled: !!selectedClient && !initialBillingId && !billingData && open
   });
 
-  const handleSendEmail = () => {
-    // This will be implemented later when we add the email sending functionality
-    console.log("Sending email to:", selectedClient);
-    console.log("Using template:", selectedTemplate);
-    console.log("Email data:", emailData);
+  const handleSendEmail = async () => {
+    if (!selectedTemplate || !selectedClient) {
+      toast({
+        title: "Dados incompletos",
+        description: "Por favor, selecione um template e um cliente.",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    toast({
-      title: "Email enviado",
-      description: "O email foi enviado com sucesso!",
-    });
-    onClose();
+    try {
+      setIsSending(true);
+      
+      // Get client email
+      const selectedClientData = clients?.find(c => c.id === selectedClient);
+      
+      if (!selectedClientData?.email) {
+        toast({
+          title: "Email não encontrado",
+          description: "O cliente selecionado não possui um email cadastrado.",
+          variant: "destructive"
+        });
+        setIsSending(false);
+        return;
+      }
+      
+      // Format the due date for display
+      const dueDate = emailData.dueDate 
+        ? format(new Date(emailData.dueDate), 'dd/MM/yyyy')
+        : format(new Date(), 'dd/MM/yyyy');
+      
+      console.log("Sending email with data:", {
+        to: selectedClientData.email,
+        templateId: selectedTemplate,
+        clientName: selectedClientData.name,
+        responsibleName: selectedClientData.responsible_name || selectedClientData.partner_name || "",
+        amount: emailData.amount,
+        dueDate: dueDate,
+        description: emailData.description
+      });
+      
+      // Call the send-billing-email edge function
+      const { error } = await supabase.functions.invoke(
+        'send-billing-email',
+        {
+          body: JSON.stringify({
+            to: selectedClientData.email,
+            templateId: selectedTemplate,
+            data: {
+              recipientName: selectedClientData.name,
+              responsibleName: selectedClientData.responsible_name || selectedClientData.partner_name || "",
+              billingValue: emailData.amount,
+              dueDate: dueDate,
+              descricaoServico: emailData.description,
+              
+              // Add template variables in Portuguese format for backward compatibility
+              nome_cliente: selectedClientData.name,
+              nome_responsavel: selectedClientData.responsible_name || selectedClientData.partner_name || "",
+              valor_cobranca: emailData.amount,
+              data_vencimento: dueDate,
+              descricao_servico: emailData.description
+            }
+          })
+        }
+      );
+      
+      if (error) {
+        console.error("Error sending email:", error);
+        throw error;
+      }
+      
+      // Log email sent in notification log
+      const { error: logError } = await supabase
+        .from('email_notification_log')
+        .insert({
+          client_id: selectedClient,
+          days_before: 0,
+          due_date: emailData.dueDate,
+          payment_type: 'manual',
+          sent_at: new Date().toISOString()
+        });
+        
+      if (logError) {
+        console.warn("Could not log email notification:", logError);
+      }
+      
+      toast({
+        title: "Email enviado",
+        description: "O email foi enviado com sucesso para " + selectedClientData.email,
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast({
+        title: "Erro ao enviar email",
+        description: "Não foi possível enviar o email. Por favor, tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleEmailDataChange = (field: string, value: string | number) => {
@@ -339,11 +431,11 @@ export function SendEmailDialog({
 
               <Button 
                 className="w-full"
-                disabled={!selectedTemplate || !selectedClient}
+                disabled={!selectedTemplate || !selectedClient || isSending}
                 onClick={handleSendEmail}
               >
                 <Send className="h-4 w-4 mr-2" />
-                Enviar Email
+                {isSending ? "Enviando..." : "Enviar Email"}
               </Button>
             </div>
 
