@@ -1,3 +1,4 @@
+
 import { Send, FileText, RefreshCw, CalendarCheck, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { TemplateSection } from "@/components/emails/TemplateSection";
@@ -10,11 +11,17 @@ import { useToast } from "@/hooks/use-toast";
 import { NewTemplateDialog } from "@/components/emails/NewTemplateDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TemplateCategoryButton } from "@/components/emails/TemplateCategoryButton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 export default function Emails() {
   const [newTemplateOpen, setNewTemplateOpen] = useState(false);
   const [showCCRecipients, setShowCCRecipients] = useState(false);
   const [currentTemplateType, setCurrentTemplateType] = useState<'clients' | 'employees'>('clients');
   const [currentSubtype, setCurrentSubtype] = useState<EmailTemplateSubtype>(currentTemplateType === 'clients' ? 'recurring' : 'invoice');
+  const [newSubtypeDialogOpen, setNewSubtypeDialogOpen] = useState(false);
+  const [newSubtypeName, setNewSubtypeName] = useState("");
   const {
     toast
   } = useToast();
@@ -27,6 +34,7 @@ export default function Emails() {
     console.log("Setting default subtype to:", defaultSubtype);
     setCurrentSubtype(defaultSubtype);
   }, [currentTemplateType]);
+  
   const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
     try {
       console.log("Creating template with data:", template);
@@ -52,12 +60,45 @@ export default function Emails() {
     console.log(`Changing template type from ${currentTemplateType} to ${type}`);
     setCurrentTemplateType(type);
   };
+
+  // Handle adding a new subtype
+  const handleAddNewSubtype = () => {
+    if (!newSubtypeName.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "Por favor, insira um nome para o novo subtipo.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Set the current subtype to 'novo_subtipo'
+    setCurrentSubtype('novo_subtipo');
+    
+    // Close the dialog
+    setNewSubtypeDialogOpen(false);
+    
+    // Show success toast
+    toast({
+      title: "Subtipo adicionado",
+      description: `Novo subtipo "${newSubtypeName}" adicionado com sucesso!`
+    });
+    
+    // Reset the name field
+    setNewSubtypeName("");
+  };
+
   return <div className="space-y-4 px-2 sm:px-4 md:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
           Emails e Notificações
         </h1>
-        
+        <div className="flex flex-row gap-2">
+          <Button onClick={() => setNewSubtypeDialogOpen(true)} variant="outline" className="flex items-center">
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Subtipo
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -92,5 +133,31 @@ export default function Emails() {
       <NewTemplateDialog open={newTemplateOpen} onClose={() => setNewTemplateOpen(false)} />
 
       <EmailCCRecipientsManager open={showCCRecipients} onClose={() => setShowCCRecipients(false)} />
+
+      {/* New Subtype Dialog */}
+      <Dialog open={newSubtypeDialogOpen} onOpenChange={setNewSubtypeDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Adicionar Novo Subtipo</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Nome
+              </Label>
+              <Input
+                id="name"
+                value={newSubtypeName}
+                onChange={(e) => setNewSubtypeName(e.target.value)}
+                className="col-span-3"
+                placeholder="Ex: Onboarding, NDA, etc."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" onClick={handleAddNewSubtype}>Adicionar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 }
