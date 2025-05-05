@@ -49,7 +49,7 @@ export function ClientSelector({ clients, onSelect, initialValue = "", disabled 
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", disabled && "opacity-70 cursor-not-allowed")}
+          className={cn("w-full justify-between bg-background", disabled && "opacity-70 cursor-not-allowed")}
           onClick={() => !disabled && setOpen(!open)}
           disabled={disabled}
         >
@@ -57,8 +57,8 @@ export function ClientSelector({ clients, onSelect, initialValue = "", disabled 
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" style={{ backgroundColor: 'var(--background)', zIndex: 1000 }}>
+        <Command className="bg-background">
           <CommandInput placeholder="Buscar cliente..." />
           <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
@@ -67,6 +67,7 @@ export function ClientSelector({ clients, onSelect, initialValue = "", disabled 
                 key={client.id}
                 value={client.name}
                 onSelect={() => handleSelect(client.id)}
+                className="cursor-pointer"
               >
                 <Check
                   className={cn(

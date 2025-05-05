@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -289,11 +288,12 @@ export function SendEmailDialog({
         throw error;
       }
       
-      // Log email sent in notification log
+      // Log email sent in notification log with correct fields
       const { error: logError } = await supabase
         .from('email_notification_log')
         .insert({
           client_id: selectedClient,
+          billing_id: initialBillingId || null, // Use null if no billing ID
           days_before: 0,
           due_date: emailData.dueDate,
           payment_type: 'manual',

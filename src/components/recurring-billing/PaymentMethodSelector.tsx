@@ -18,7 +18,7 @@ export const PaymentMethodSelector = ({ value, onChange }: PaymentMethodSelector
           onChange(value);
         }}
       >
-        <SelectTrigger>
+        <SelectTrigger className="bg-background">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
