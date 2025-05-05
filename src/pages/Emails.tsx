@@ -1,4 +1,3 @@
-
 import { Send, FileText, RefreshCw, CalendarCheck, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { TemplateSection } from "@/components/emails/TemplateSection";
@@ -11,16 +10,14 @@ import { useToast } from "@/hooks/use-toast";
 import { NewTemplateDialog } from "@/components/emails/NewTemplateDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TemplateCategoryButton } from "@/components/emails/TemplateCategoryButton";
-
 export default function Emails() {
   const [newTemplateOpen, setNewTemplateOpen] = useState(false);
   const [showCCRecipients, setShowCCRecipients] = useState(false);
   const [currentTemplateType, setCurrentTemplateType] = useState<'clients' | 'employees'>('clients');
-  const [currentSubtype, setCurrentSubtype] = useState<EmailTemplateSubtype>(
-    currentTemplateType === 'clients' ? 'recurring' : 'invoice'
-  );
-  
-  const { toast } = useToast();
+  const [currentSubtype, setCurrentSubtype] = useState<EmailTemplateSubtype>(currentTemplateType === 'clients' ? 'recurring' : 'invoice');
+  const {
+    toast
+  } = useToast();
 
   // Update currentSubtype whenever the template type changes
   useEffect(() => {
@@ -30,14 +27,13 @@ export default function Emails() {
     console.log("Setting default subtype to:", defaultSubtype);
     setCurrentSubtype(defaultSubtype);
   }, [currentTemplateType]);
-
   const handleSaveTemplate = async (template: Partial<EmailTemplate>): Promise<boolean> => {
     try {
       console.log("Creating template with data:", template);
       await createTemplate(template);
       toast({
         title: "Template criado",
-        description: "O template foi criado com sucesso!",
+        description: "O template foi criado com sucesso!"
       });
       return true;
     } catch (error: any) {
@@ -45,7 +41,7 @@ export default function Emails() {
       toast({
         title: "Erro ao criar template",
         description: `Não foi possível criar o template: ${error.message || "Erro desconhecido"}`,
-        variant: "destructive",
+        variant: "destructive"
       });
       return false;
     }
@@ -56,37 +52,17 @@ export default function Emails() {
     console.log(`Changing template type from ${currentTemplateType} to ${type}`);
     setCurrentTemplateType(type);
   };
-
-  return (
-    <div className="space-y-4 px-2 sm:px-4 md:px-6">
+  return <div className="space-y-4 px-2 sm:px-4 md:px-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
           Emails e Notificações
         </h1>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowCCRecipients(true)}
-          >
-            Destinatários CC
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => setNewTemplateOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Template
-          </Button>
-          <TestEmployeeNotificationButton />
-        </div>
+        
       </div>
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row gap-4 items-start">
-          <Select 
-            value={currentTemplateType} 
-            onValueChange={(value: 'clients' | 'employees') => handleTemplateTypeChange(value)}
-          >
+          <Select value={currentTemplateType} onValueChange={(value: 'clients' | 'employees') => handleTemplateTypeChange(value)}>
             <SelectTrigger className="w-[280px]">
               <SelectValue placeholder="Selecione o tipo de template" />
             </SelectTrigger>
@@ -98,73 +74,23 @@ export default function Emails() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {currentTemplateType === 'clients' ? (
-            <>
-              <TemplateCategoryButton
-                icon={RefreshCw}
-                label="Cobrança Recorrente"
-                onClick={() => setCurrentSubtype('recurring')}
-                active={currentSubtype === 'recurring'}
-              />
-              <TemplateCategoryButton
-                icon={CalendarCheck}
-                label="Cobrança Pontual"
-                onClick={() => setCurrentSubtype('oneTime')}
-                active={currentSubtype === 'oneTime'}
-              />
-              <TemplateCategoryButton
-                icon={FileText}
-                label="Contrato"
-                onClick={() => setCurrentSubtype('contract')}
-                active={currentSubtype === 'contract'}
-              />
-              <TemplateCategoryButton
-                icon={Send}
-                label="Novo Subtipo"
-                onClick={() => setCurrentSubtype('novo_subtipo')}
-                active={currentSubtype === 'novo_subtipo'}
-              />
-            </>
-          ) : (
-            <>
-              <TemplateCategoryButton
-                icon={FileText}
-                label="Template NF"
-                onClick={() => setCurrentSubtype('invoice')}
-                active={currentSubtype === 'invoice'}
-              />
-              <TemplateCategoryButton
-                icon={CalendarCheck}
-                label="Template Horas"
-                onClick={() => setCurrentSubtype('hours')}
-                active={currentSubtype === 'hours'}
-              />
-              <TemplateCategoryButton
-                icon={Send}
-                label="Novo Subtipo"
-                onClick={() => setCurrentSubtype('novo_subtipo')}
-                active={currentSubtype === 'novo_subtipo'}
-              />
-            </>
-          )}
+          {currentTemplateType === 'clients' ? <>
+              <TemplateCategoryButton icon={RefreshCw} label="Cobrança Recorrente" onClick={() => setCurrentSubtype('recurring')} active={currentSubtype === 'recurring'} />
+              <TemplateCategoryButton icon={CalendarCheck} label="Cobrança Pontual" onClick={() => setCurrentSubtype('oneTime')} active={currentSubtype === 'oneTime'} />
+              <TemplateCategoryButton icon={FileText} label="Contrato" onClick={() => setCurrentSubtype('contract')} active={currentSubtype === 'contract'} />
+              <TemplateCategoryButton icon={Send} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
+            </> : <>
+              <TemplateCategoryButton icon={FileText} label="Template NF" onClick={() => setCurrentSubtype('invoice')} active={currentSubtype === 'invoice'} />
+              <TemplateCategoryButton icon={CalendarCheck} label="Template Horas" onClick={() => setCurrentSubtype('hours')} active={currentSubtype === 'hours'} />
+              <TemplateCategoryButton icon={Send} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
+            </>}
         </div>
 
-        <TemplateSection 
-          type={currentTemplateType}
-          subtype={currentSubtype}
-          onSaveTemplate={handleSaveTemplate} 
-        />
+        <TemplateSection type={currentTemplateType} subtype={currentSubtype} onSaveTemplate={handleSaveTemplate} />
       </div>
 
-      <NewTemplateDialog
-        open={newTemplateOpen}
-        onClose={() => setNewTemplateOpen(false)}
-      />
+      <NewTemplateDialog open={newTemplateOpen} onClose={() => setNewTemplateOpen(false)} />
 
-      <EmailCCRecipientsManager 
-        open={showCCRecipients}
-        onClose={() => setShowCCRecipients(false)}
-      />
-    </div>
-  );
+      <EmailCCRecipientsManager open={showCCRecipients} onClose={() => setShowCCRecipients(false)} />
+    </div>;
 }
