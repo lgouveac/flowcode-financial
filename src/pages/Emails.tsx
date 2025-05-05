@@ -1,5 +1,5 @@
 
-import { Send, FileText, RefreshCw, CalendarCheck, Plus } from "lucide-react";
+import { Send, FileText, RefreshCw, CalendarCheck, Plus, FileType, Tag } from "lucide-react";
 import { useState, useEffect } from "react";
 import { TemplateSection } from "@/components/emails/TemplateSection";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { TemplateCategoryButton } from "@/components/emails/TemplateCategoryButt
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default function Emails() {
   const [newTemplateOpen, setNewTemplateOpen] = useState(false);
@@ -22,9 +23,7 @@ export default function Emails() {
   const [currentSubtype, setCurrentSubtype] = useState<EmailTemplateSubtype>(currentTemplateType === 'clients' ? 'recurring' : 'invoice');
   const [newSubtypeDialogOpen, setNewSubtypeDialogOpen] = useState(false);
   const [newSubtypeName, setNewSubtypeName] = useState("");
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
 
   // Update currentSubtype whenever the template type changes
   useEffect(() => {
@@ -95,37 +94,36 @@ export default function Emails() {
         </h1>
         <div className="flex flex-row gap-2">
           <Button onClick={() => setNewSubtypeDialogOpen(true)} variant="outline" className="flex items-center">
-            <Plus className="h-4 w-4 mr-2" />
+            <Tag className="h-4 w-4 mr-2" />
             Adicionar Subtipo
           </Button>
         </div>
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-start">
-          <Select value={currentTemplateType} onValueChange={(value: 'clients' | 'employees') => handleTemplateTypeChange(value)}>
-            <SelectTrigger className="w-[280px]">
-              <SelectValue placeholder="Selecione o tipo de template" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="clients">Templates de Cliente</SelectItem>
-              <SelectItem value="employees">Templates de Funcionário</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {currentTemplateType === 'clients' ? <>
+        <Tabs defaultValue="clients" className="w-full" onValueChange={(value: 'clients' | 'employees') => handleTemplateTypeChange(value)}>
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="clients">Templates de Cliente</TabsTrigger>
+            <TabsTrigger value="employees">Templates de Funcionário</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="clients" className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
               <TemplateCategoryButton icon={RefreshCw} label="Cobrança Recorrente" onClick={() => setCurrentSubtype('recurring')} active={currentSubtype === 'recurring'} />
               <TemplateCategoryButton icon={CalendarCheck} label="Cobrança Pontual" onClick={() => setCurrentSubtype('oneTime')} active={currentSubtype === 'oneTime'} />
               <TemplateCategoryButton icon={FileText} label="Contrato" onClick={() => setCurrentSubtype('contract')} active={currentSubtype === 'contract'} />
-              <TemplateCategoryButton icon={Send} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
-            </> : <>
+              <TemplateCategoryButton icon={FileType} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="employees" className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               <TemplateCategoryButton icon={FileText} label="Template NF" onClick={() => setCurrentSubtype('invoice')} active={currentSubtype === 'invoice'} />
               <TemplateCategoryButton icon={CalendarCheck} label="Template Horas" onClick={() => setCurrentSubtype('hours')} active={currentSubtype === 'hours'} />
-              <TemplateCategoryButton icon={Send} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
-            </>}
-        </div>
+              <TemplateCategoryButton icon={FileType} label="Novo Subtipo" onClick={() => setCurrentSubtype('novo_subtipo')} active={currentSubtype === 'novo_subtipo'} />
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <TemplateSection type={currentTemplateType} subtype={currentSubtype} onSaveTemplate={handleSaveTemplate} />
       </div>
