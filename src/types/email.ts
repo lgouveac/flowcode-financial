@@ -64,24 +64,6 @@ export const variablesList: VariablesType = {
       { name: '{valor_mensal}', description: 'Valor mensal do contrato' },
       { name: '{data_inicio}', description: 'Data de início do contrato' }
     ],
-    reminder: [
-      { name: '{nome_cliente}', description: 'Nome do cliente' },
-      { name: '{nome_responsavel}', description: 'Nome do responsável' },
-      { name: '{valor_cobranca}', description: 'Valor da cobrança' },
-      { name: '{data_vencimento}', description: 'Data de vencimento' },
-      { name: '{dias_atraso}', description: 'Dias em atraso' },
-      { name: '{descricao_servico}', description: 'Descrição do serviço' },
-      { name: '{forma_pagamento}', description: 'Forma de pagamento' },
-      // Additional client variables:
-      { name: '{cnpj}', description: 'CNPJ do cliente' },
-      { name: '{cpf}', description: 'CPF do cliente' },
-      { name: '{endereco}', description: 'Endereço do cliente' },
-      { name: '{partner_name}', description: 'Nome do sócio/partner' },
-      { name: '{partner_cpf}', description: 'CPF do sócio/partner' },
-      { name: '{company_name}', description: 'Razão social/Nome da empresa' },
-      { name: '{valor_mensal}', description: 'Valor mensal do contrato' },
-      { name: '{data_inicio}', description: 'Data de início do contrato' }
-    ],
     contract: [
       { name: '{nome_cliente}', description: 'Nome do cliente' },
       { name: '{nome_responsavel}', description: 'Nome do responsável' },
