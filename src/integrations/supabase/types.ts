@@ -346,6 +346,7 @@ export type Database = {
           phone: string | null
           pix: string | null
           position: string | null
+          preferred_template: string | null
           status: string
           type: string
           updated_at: string | null
@@ -362,6 +363,7 @@ export type Database = {
           phone?: string | null
           pix?: string | null
           position?: string | null
+          preferred_template?: string | null
           status?: string
           type?: string
           updated_at?: string | null
@@ -378,6 +380,7 @@ export type Database = {
           phone?: string | null
           pix?: string | null
           position?: string | null
+          preferred_template?: string | null
           status?: string
           type?: string
           updated_at?: string | null
