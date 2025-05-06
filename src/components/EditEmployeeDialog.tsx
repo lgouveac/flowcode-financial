@@ -1,241 +1,222 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { MonthlyValuesList } from "./employees/MonthlyValuesList";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface Employee {
-  id: string;
-  name: string;
-  type: "fixed" | "freelancer";
-  status: "active" | "inactive";
-  payment_method: string;
-  last_invoice?: string;
-  cnpj?: string;
-  pix?: string;
-  address?: string;
-  position?: string;
-  phone?: string;
-  email: string;
-  preferred_template?: "invoice" | "hours" | "novo_subtipo";
-}
-
 interface EditEmployeeDialogProps {
-  employee: Employee | null;
+  employee: {
+    id: string;
+    name: string;
+    type: "fixed" | "freelancer";
+    status: "active" | "inactive";
+    payment_method: string;
+    last_invoice?: string;
+    cnpj?: string;
+    pix?: string;
+    address?: string;
+    position?: string;
+    phone?: string;
+    email: string;
+    preferred_template?: "invoice" | "hours" | "novo_subtipo";
+  } | null;
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export const EditEmployeeDialog = ({ employee, open, onClose, onSuccess }: EditEmployeeDialogProps) => {
-  const [formData, setFormData] = useState<Employee>({
-    id: "",
-    name: "",
-    email: "",
-    status: "active",
-    type: "fixed",
-    payment_method: "pix",
-    preferred_template: "invoice",
-  });
-
-  const queryClient = useQueryClient();
+export const EditEmployeeDialog = ({
+  employee,
+  open,
+  onClose,
+  onSuccess,
+}: EditEmployeeDialogProps) => {
   const { toast } = useToast();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [position, setPosition] = useState("");
+  const [pix, setPix] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [preferredTemplate, setPreferredTemplate] = useState<"invoice" | "hours" | "novo_subtipo">("invoice");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (employee) {
-      setFormData({
-        ...employee,
-        // Default preferred_template if not set
-        preferred_template: employee.preferred_template || "invoice"
-      });
+      setName(employee.name);
+      setEmail(employee.email);
+      setPhone(employee.phone || "");
+      setAddress(employee.address || "");
+      setPosition(employee.position || "");
+      setPix(employee.pix || "");
+      setCnpj(employee.cnpj || "");
+      setPaymentMethod(employee.payment_method || "");
+      setPreferredTemplate(employee.preferred_template || "invoice");
     }
   }, [employee]);
 
-  const updateEmployeeMutation = useMutation({
-    mutationFn: async (data: Partial<Employee>) => {
+  const handleSave = async () => {
+    if (!employee) return;
+
+    setIsLoading(true);
+
+    try {
       const { error } = await supabase
         .from("employees")
-        .update(data)
-        .eq("id", employee?.id);
+        .update({
+          name,
+          email,
+          phone,
+          address,
+          position,
+          pix,
+          cnpj,
+          payment_method: paymentMethod,
+          preferred_template: preferredTemplate,
+        })
+        .eq("id", employee.id);
 
-      if (error) throw error;
-      return true;
-    },
-    onSuccess: () => {
+      if (error) {
+        console.error("Error updating employee:", error);
+        throw new Error("Failed to update employee");
+      }
+
       toast({
-        title: "Sucesso",
-        description: "Funcionário atualizado com sucesso.",
+        title: "Funcionário atualizado",
+        description: "Os detalhes do funcionário foram atualizados com sucesso.",
       });
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
       onSuccess();
-    },
-    onError: (error) => {
+      onClose();
+    } catch (error: any) {
       toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o funcionário.",
+        title: "Erro ao atualizar",
+        description:
+          error.message || "Ocorreu um erro ao atualizar o funcionário.",
         variant: "destructive",
       });
-      console.error("Error updating employee:", error);
-    },
-  });
-
-  const handleSave = () => {
-    if (!formData.name || !formData.email) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    updateEmployeeMutation.mutate({
-      ...formData,
-    });
-  };
-
-  const handleChange = (field: keyof Employee, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="min-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Editar Funcionário</DialogTitle>
+          <DialogDescription>
+            Atualize os detalhes do funcionário aqui. Clique em salvar quando
+            estiver pronto.
+          </DialogDescription>
         </DialogHeader>
-
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Nome</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="type">Tipo</Label>
-              <RadioGroup
-                value={formData.type}
-                onValueChange={(value) => handleChange("type", value)}
-                className="flex flex-col space-y-1 mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="fixed" id="fixed" />
-                  <Label htmlFor="fixed">CLT / PJ Fixo</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="freelancer" id="freelancer" />
-                  <Label htmlFor="freelancer">Freelancer</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <RadioGroup
-                value={formData.status}
-                onValueChange={(value) => handleChange("status", value)}
-                className="flex flex-col space-y-1 mt-2"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="active" id="active" />
-                  <Label htmlFor="active">Ativo</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="inactive" id="inactive" />
-                  <Label htmlFor="inactive">Inativo</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div>
-              <Label htmlFor="payment_method">Método de Pagamento</Label>
-              <Input
-                id="payment_method"
-                value={formData.payment_method || ""}
-                onChange={(e) => handleChange("payment_method", e.target.value)}
-                className="mt-2"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="position">Cargo</Label>
-              <Input
-                id="position"
-                value={formData.position || ""}
-                onChange={(e) => handleChange("position", e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                value={formData.phone || ""}
-                onChange={(e) => handleChange("phone", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="address">Endereço</Label>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="text-right">
+              Nome
+            </Label>
             <Input
-              id="address"
-              value={formData.address || ""}
-              onChange={(e) => handleChange("address", e.target.value)}
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="col-span-3"
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="pix">PIX</Label>
-              <Input
-                id="pix"
-                value={formData.pix || ""}
-                onChange={(e) => handleChange("pix", e.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="cnpj">CNPJ</Label>
-              <Input
-                id="cnpj"
-                value={formData.cnpj || ""}
-                onChange={(e) => handleChange("cnpj", e.target.value)}
-              />
-            </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="email" className="text-right">
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="col-span-3"
+            />
           </div>
-
-          {/* Add template preference selector */}
-          <div>
-            <Label htmlFor="preferred_template">Modelo de Email Preferencial</Label>
-            <Select 
-              value={formData.preferred_template || "invoice"}
-              onValueChange={(value) => handleChange("preferred_template", value as "invoice" | "hours" | "novo_subtipo")}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue placeholder="Selecione um modelo" />
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="phone" className="text-right">
+              Telefone
+            </Label>
+            <Input
+              id="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="address" className="text-right">
+              Endereço
+            </Label>
+            <Input
+              id="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="position" className="text-right">
+              Cargo
+            </Label>
+            <Input
+              id="position"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="pix" className="text-right">
+              PIX
+            </Label>
+            <Input
+              id="pix"
+              value={pix}
+              onChange={(e) => setPix(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="cnpj" className="text-right">
+              CNPJ
+            </Label>
+            <Input
+              id="cnpj"
+              value={cnpj}
+              onChange={(e) => setCnpj(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="paymentMethod" className="text-right">
+              Método de Pagamento
+            </Label>
+            <Input
+              id="paymentMethod"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="preferredTemplate" className="text-right">
+              Template Preferido
+            </Label>
+            <Select onValueChange={value => setPreferredTemplate(value as "invoice" | "hours" | "novo_subtipo")}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Selecione um template" defaultValue={preferredTemplate} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="invoice">Nota Fiscal</SelectItem>
@@ -244,19 +225,10 @@ export const EditEmployeeDialog = ({ employee, open, onClose, onSuccess }: EditE
               </SelectContent>
             </Select>
           </div>
-
-          <div className="pt-4">
-            <h3 className="text-lg font-medium mb-4">Valores Mensais</h3>
-            <MonthlyValuesList employeeId={employee?.id} />
-          </div>
         </div>
-
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSave}>Salvar</Button>
-        </div>
+        <Button type="submit" onClick={handleSave} disabled={isLoading}>
+          Salvar
+        </Button>
       </DialogContent>
     </Dialog>
   );

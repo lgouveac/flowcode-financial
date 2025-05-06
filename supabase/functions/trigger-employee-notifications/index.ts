@@ -1,6 +1,3 @@
-
-// Mantenho a maior parte do código existente, modificando apenas a lógica de verificação de tempo
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
 import { 

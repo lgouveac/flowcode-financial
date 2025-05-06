@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { EditEmployeeDialog } from "./EditEmployeeDialog";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
@@ -26,6 +25,7 @@ interface Employee {
   position?: string;
   phone?: string;
   email: string;
+  preferred_template?: "invoice" | "hours" | "novo_subtipo";
 }
 
 export const EmployeeTable = () => {
