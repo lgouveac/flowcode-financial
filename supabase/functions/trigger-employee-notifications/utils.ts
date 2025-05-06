@@ -11,6 +11,9 @@ export function prepareTemplateData(employee: any, monthlyValue: any) {
   const amount = monthlyValue?.amount || 0;
   const monthDate = monthlyValue?.month ? new Date(monthlyValue.month) : new Date();
   
+  // Log the data being used
+  logMessage(`Preparing template data for ${employee.name} with monthly value: ${JSON.stringify(monthlyValue)}`, "📋");
+  
   // Ensure all employee fields are included in the template data
   return {
     nome_funcionario: employee.name || "Funcionário",
@@ -42,11 +45,13 @@ function formatMonthYear(dateStr: string): string {
 
 // Logging helpers
 export function logMessage(message: string, emoji = "ℹ️") {
-  console.log(`${emoji} ${message}`);
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] ${emoji} ${message}`);
 }
 
 export function logError(message: string, error: Error) {
-  console.error(`❌ ${message}:`, error.message);
+  const timestamp = new Date().toISOString();
+  console.error(`[${timestamp}] ❌ ${message}:`, error.message);
   if (error.stack) {
     console.error(error.stack);
   }
@@ -78,6 +83,7 @@ export async function fetchCCRecipients(supabase: any) {
       throw error;
     }
     
+    logMessage(`Found ${recipients?.length || 0} CC recipients`, "📧");
     return recipients?.map((r: any) => r.email) || [];
   } catch (error) {
     logError("Error fetching CC recipients", error as Error);

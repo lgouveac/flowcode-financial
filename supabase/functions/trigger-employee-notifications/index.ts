@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
 import { 
@@ -24,6 +25,7 @@ serve(async (req) => {
     let test = false;
     let forceDay = false;
     let ignoreTime = false;
+    let executionId = `manual-${new Date().toISOString()}`;
     
     try {
       if (req.body) {
@@ -35,6 +37,7 @@ serve(async (req) => {
           test = !!requestBody.test;
           forceDay = !!requestBody.forceDay;
           ignoreTime = !!requestBody.ignoreTime;
+          executionId = requestBody.execution_id || executionId;
         }
       }
     } catch (parseError) {
@@ -43,7 +46,7 @@ serve(async (req) => {
       requestBody = {};
     }
     
-    logMessage(`Employee notification trigger function called ${test ? "in TEST MODE" : ""} with BYPASS=${bypass}`, "🔔");
+    logMessage(`Employee notification trigger function called ${test ? "in TEST MODE" : ""} with BYPASS=${bypass}, EXECUTION_ID=${executionId}`, "🔔");
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://itlpvpdwgiwbdpqheemw.supabase.co";
@@ -82,7 +85,8 @@ serve(async (req) => {
               current: currentDay,
               configured: configuredDay
             },
-            testMode: test
+            testMode: test,
+            executionId: executionId
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -135,7 +139,8 @@ serve(async (req) => {
               current: `${currentHour}:${currentMinute}`,
               configured: configuredTime
             },
-            testMode: test
+            testMode: test,
+            executionId: executionId
           }),
           {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -148,7 +153,7 @@ serve(async (req) => {
     // Get all employees
     const { data: allEmployees, error: employeeError } = await supabase
       .from("employees")
-      .select("id, name, email, position, phone, address, pix, cnpj, payment_method, preferred_template");
+      .select("id, name, email, position, phone, address, pix, cnpj, payment_method, preferred_template, status");
     
     if (employeeError) {
       throw new Error("Failed to fetch employees: " + employeeError.message);
@@ -159,7 +164,8 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           message: "No employees found in the database", 
-          totalSent: 0
+          totalSent: 0,
+          executionId: executionId
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -195,6 +201,12 @@ serve(async (req) => {
     for (const employee of allEmployees) {
       try {
         logMessage(`Processing employee: ${employee.name}`, "📧");
+        
+        // Skip inactive employees unless in test mode
+        if (employee.status !== 'active' && !test) {
+          logMessage(`Skipping inactive employee: ${employee.name}`, "⏩");
+          continue;
+        }
         
         // Determine which template to use based on employee preference if available
         const preferredTemplate = employee.preferred_template || "invoice";
@@ -239,7 +251,13 @@ serve(async (req) => {
           throw new Error(`Error sending email: ${emailError.message}`);
         }
 
-        sentEmails.push({ employee: employee.name, email: employee.email, template: template.subtype });
+        sentEmails.push({ 
+          employee: employee.name, 
+          email: employee.email, 
+          template: template.subtype,
+          preferred_template: preferredTemplate,
+          response: emailResponse
+        });
         logMessage(`Successfully sent email to ${employee.name} (${employee.email}) using template: ${template.subtype}`, "✅");
       } catch (error: any) {
         logError(`Error processing employee ${employee.name}`, error);
@@ -255,7 +273,9 @@ serve(async (req) => {
         errors: emailErrors,
         totalSent: sentEmails.length,
         totalErrors: emailErrors.length,
-        totalEmployees: allEmployees?.length || 0
+        totalEmployees: allEmployees?.length || 0,
+        executionId: executionId,
+        timestamp: new Date().toISOString()
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -265,7 +285,11 @@ serve(async (req) => {
   } catch (error: any) {
     logError("Error in employee notification process", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message,
+        timestamp: new Date().toISOString()
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
