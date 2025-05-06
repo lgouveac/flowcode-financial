@@ -20,6 +20,8 @@ export const TestEmployeeNotificationButton = () => {
       setResult(null);
       setError(null);
       
+      console.log("Iniciando teste de notificação...");
+      
       // Call the function with proper parameters for testing
       const { data, error: functionError } = await supabase.functions.invoke("trigger-employee-notifications", {
         method: "POST",
@@ -52,7 +54,7 @@ export const TestEmployeeNotificationButton = () => {
       setError(error.message || "Erro desconhecido");
       toast({
         title: "Erro ao executar função",
-        description: "Ocorreu um erro. Verifique o console para mais detalhes.",
+        description: error.message || "Ocorreu um erro. Verifique o console para mais detalhes.",
         variant: "destructive"
       });
     } finally {
@@ -62,14 +64,20 @@ export const TestEmployeeNotificationButton = () => {
 
   return (
     <div className="space-y-4">
-      <LoadingButton 
-        variant="outline" 
-        onClick={handleTestNotification} 
-        loading={isLoading}
-        className="min-w-[180px]"
-      >
-        Testar Notificação
-      </LoadingButton>
+      <div className="flex flex-col space-y-2">
+        <LoadingButton 
+          variant="outline" 
+          onClick={handleTestNotification} 
+          loading={isLoading}
+          className="min-w-[180px] bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+        >
+          Testar Notificação
+        </LoadingButton>
+        
+        <p className="text-xs text-muted-foreground">
+          Este botão testa a função de notificação de funcionários, ignorando restrições de data e hora.
+        </p>
+      </div>
       
       {result && (
         <Alert className="bg-green-50 dark:bg-green-950/30 border-green-200">
@@ -79,6 +87,12 @@ export const TestEmployeeNotificationButton = () => {
             <AlertDescription className="text-green-700 dark:text-green-300">
               {result.message || "A notificação foi processada com sucesso"}
             </AlertDescription>
+            
+            <div className="mt-1 text-xs text-green-600 dark:text-green-400">
+              ID de execução: {result.executionId || 'N/A'} | 
+              Emails enviados: {result.totalSent || 0} | 
+              Erros: {result.totalErrors || 0}
+            </div>
             
             <div className="flex items-center mt-2">
               <Button 
@@ -93,7 +107,7 @@ export const TestEmployeeNotificationButton = () => {
             </div>
             
             {showDetails && (
-              <div className="mt-2 text-xs bg-white dark:bg-gray-950 p-2 rounded border border-green-200 dark:border-green-800 overflow-auto max-h-[200px]">
+              <div className="mt-2 text-xs bg-white dark:bg-gray-950 p-2 rounded border border-green-200 dark:border-green-800 overflow-auto max-h-[300px]">
                 <pre className="whitespace-pre-wrap break-words">
                   {JSON.stringify(result, null, 2)}
                 </pre>
@@ -125,8 +139,16 @@ export const TestEmployeeNotificationButton = () => {
             </div>
             
             {showDetails && (
-              <div className="mt-2 text-xs bg-white dark:bg-gray-950 p-2 rounded border border-red-200 dark:border-red-800 overflow-auto max-h-[200px]">
-                <p>Verifique os logs da função no painel do Supabase para mais detalhes.</p>
+              <div className="mt-2 text-xs bg-white dark:bg-gray-950 p-2 rounded border border-red-200 dark:border-red-800 overflow-auto max-h-[300px]">
+                <p>Para ver logs detalhados da função, verifique o painel do Supabase.</p>
+                <a 
+                  href="https://supabase.com/dashboard/project/itlpvpdwgiwbdpqheemw/functions/trigger-employee-notifications/logs" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                >
+                  Ver logs no Supabase
+                </a>
               </div>
             )}
           </div>

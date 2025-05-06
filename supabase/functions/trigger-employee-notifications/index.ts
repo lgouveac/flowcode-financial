@@ -31,6 +31,8 @@ serve(async (req) => {
       if (req.body) {
         // Make sure the body can be parsed as JSON
         const bodyText = await req.text();
+        logMessage(`Request body raw: ${bodyText}`, "🔍");
+        
         if (bodyText && bodyText.trim() !== "") {
           requestBody = JSON.parse(bodyText);
           bypass = !!requestBody.bypass;
@@ -38,11 +40,13 @@ serve(async (req) => {
           forceDay = !!requestBody.forceDay;
           ignoreTime = !!requestBody.ignoreTime;
           executionId = requestBody.execution_id || executionId;
+          
+          logMessage(`Request parameters: bypass=${bypass}, test=${test}, forceDay=${forceDay}, ignoreTime=${ignoreTime}, executionId=${executionId}`, "🔧");
         }
       }
     } catch (parseError) {
       // If parsing fails, just log and continue with empty object
-      console.error("Error parsing request body:", parseError);
+      logError("Error parsing request body", parseError as Error);
       requestBody = {};
     }
     
@@ -56,6 +60,7 @@ serve(async (req) => {
       throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY environment variable");
     }
 
+    logMessage(`Initializing Supabase client with URL: ${supabaseUrl}`, "🔌");
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Se não estivermos em modo de teste ou bypass, verifique se é o dia correto
@@ -74,6 +79,8 @@ serve(async (req) => {
       
       const configuredDay = globalSettings?.employee_emails_send_day || 5;
       const currentDay = new Date().getDate();
+      
+      logMessage(`Checking day: current=${currentDay}, configured=${configuredDay}`, "📅");
       
       if (currentDay !== configuredDay) {
         logMessage(`Not sending notifications: current day (${currentDay}) doesn't match configured day (${configuredDay})`, "⏱️");
@@ -122,6 +129,8 @@ serve(async (req) => {
       const currentHour = now.getUTCHours();
       const currentMinute = now.getUTCMinutes();
       
+      logMessage(`Checking time: current=${currentHour}:${currentMinute}, configured=${configHour}:${configMinute}`, "⏰");
+      
       // Verificar se estamos entre 1 minuto antes e o horário exato da notificação
       const isWithinTimeRange = (
         (currentHour === configHour && currentMinute >= configMinute - 1 && currentMinute <= configMinute) ||
@@ -151,15 +160,18 @@ serve(async (req) => {
     }
 
     // Get all employees
+    logMessage("Fetching employees from database", "👥");
     const { data: allEmployees, error: employeeError } = await supabase
       .from("employees")
       .select("id, name, email, position, phone, address, pix, cnpj, payment_method, preferred_template, status");
     
     if (employeeError) {
+      logError("Failed to fetch employees", employeeError);
       throw new Error("Failed to fetch employees: " + employeeError.message);
     }
     
     if (!allEmployees || allEmployees.length === 0) {
+      logMessage("No employees found in the database", "⚠️");
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -177,9 +189,11 @@ serve(async (req) => {
     logMessage(`Found ${allEmployees.length} employees`, "👥");
     
     // Get templates for sending emails - fetch both types
+    logMessage("Fetching email templates", "📝");
     const emailTemplates = await fetchEmailTemplate(supabase, test);
     
     if (!emailTemplates || (Array.isArray(emailTemplates) && emailTemplates.length === 0)) {
+      logError("No email templates found", new Error("Templates not found"));
       throw new Error("No email templates found");
     }
 
@@ -189,9 +203,11 @@ serve(async (req) => {
       emailTemplates.forEach(template => {
         templateMap[template.subtype] = template;
       });
+      logMessage(`Loaded ${emailTemplates.length} templates: ${Object.keys(templateMap).join(", ")}`, "📝");
     } else {
       // If single template was returned
       templateMap[emailTemplates.subtype] = emailTemplates;
+      logMessage(`Loaded single template: ${emailTemplates.subtype}`, "📝");
     }
     
     // Send emails to employees based on their preferred template when available
@@ -200,7 +216,7 @@ serve(async (req) => {
     
     for (const employee of allEmployees) {
       try {
-        logMessage(`Processing employee: ${employee.name}`, "📧");
+        logMessage(`Processing employee: ${employee.name} (${employee.email})`, "📧");
         
         // Skip inactive employees unless in test mode
         if (employee.status !== 'active' && !test) {
@@ -213,26 +229,36 @@ serve(async (req) => {
         const template = templateMap[preferredTemplate] || templateMap["invoice"] || emailTemplates[0];
 
         if (!template) {
+          logError(`No template available for preferred type: ${preferredTemplate}`, new Error("Template not found"));
           throw new Error(`No template available for preferred type: ${preferredTemplate}`);
         }
+        
+        logMessage(`Using template: ${template.subtype} for employee ${employee.name}`, "📄");
         
         // Get CC recipients
         const ccRecipients = await fetchCCRecipients(supabase);
         
         // Get employee's current monthly value
-        const { data: monthlyValues } = await supabase
+        logMessage(`Fetching monthly value for employee: ${employee.id}`, "💰");
+        const { data: monthlyValues, error: monthlyError } = await supabase
           .from("employee_monthly_values")
           .select("*")
           .eq("employee_id", employee.id)
           .order("month", { ascending: false })
           .limit(1);
         
+        if (monthlyError) {
+          logError(`Error fetching monthly values for employee ${employee.name}`, monthlyError);
+        }
+        
         const monthlyValue = monthlyValues && monthlyValues.length > 0 ? monthlyValues[0] : null;
+        logMessage(`Monthly value for ${employee.name}: ${monthlyValue ? monthlyValue.amount : 'None found'}`, "💰");
         
         // Prepare data for the template with all employee fields
         const templateData = prepareTemplateData(employee, monthlyValue);
         
         // Send email directly
+        logMessage(`Sending email to ${employee.email}`, "✉️");
         const { data: emailResponse, error: emailError } = await supabase.functions.invoke(
           'send-email',
           {
@@ -248,6 +274,7 @@ serve(async (req) => {
         );
 
         if (emailError) {
+          logError(`Error sending email to ${employee.email}`, emailError);
           throw new Error(`Error sending email: ${emailError.message}`);
         }
 
@@ -265,6 +292,8 @@ serve(async (req) => {
       }
     }
 
+    logMessage(`Completed processing ${allEmployees.length} employees. Sent: ${sentEmails.length}, Errors: ${emailErrors.length}`, "🏁");
+    
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -283,7 +312,7 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    logError("Error in employee notification process", error);
+    logError("Fatal error in employee notification process", error);
     return new Response(
       JSON.stringify({ 
         success: false, 

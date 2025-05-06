@@ -43,7 +43,7 @@ function formatMonthYear(dateStr: string): string {
   }
 }
 
-// Logging helpers
+// Logging helpers with timestamp and emoji for better visibility
 export function logMessage(message: string, emoji = "ℹ️") {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${emoji} ${message}`);
