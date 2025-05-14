@@ -48,7 +48,11 @@ export const EmailSettingsSection = ({
                 <p className="text-sm text-muted-foreground">
                   Configure endereços de email para receber cópias de todos os emails enviados.
                 </p>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={onOpenNotificationSettings}
+                >
                   Configurar CC/BCC
                 </Button>
               </div>
@@ -58,7 +62,11 @@ export const EmailSettingsSection = ({
                 <p className="text-sm text-muted-foreground">
                   Defina o endereço de email que receberá as respostas.
                 </p>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={onOpenNotificationSettings}
+                >
                   Configurar Reply-To
                 </Button>
               </div>
@@ -68,7 +76,11 @@ export const EmailSettingsSection = ({
                 <p className="text-sm text-muted-foreground">
                   Configure o nome que aparecerá como remetente dos emails.
                 </p>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={onOpenNotificationSettings}
+                >
                   Configurar Remetente
                 </Button>
               </div>
@@ -90,7 +102,11 @@ export const EmailSettingsSection = ({
                 <p className="text-sm text-muted-foreground">
                   Configure os templates padrão para diferentes tipos de email.
                 </p>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={onOpenNotificationSettings}
+                >
                   Configurar Templates
                 </Button>
               </div>
@@ -100,7 +116,11 @@ export const EmailSettingsSection = ({
                 <p className="text-sm text-muted-foreground">
                   Configure emails automáticos de agradecimento após pagamentos.
                 </p>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={onOpenNotificationSettings}
+                >
                   Configurar Agradecimentos
                 </Button>
               </div>
@@ -110,7 +130,11 @@ export const EmailSettingsSection = ({
                 <p className="text-sm text-muted-foreground">
                   Configure emails automáticos de boas-vindas para novos clientes.
                 </p>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={onOpenNotificationSettings}
+                >
                   Configurar Boas-vindas
                 </Button>
               </div>
@@ -146,7 +170,11 @@ export const EmailSettingsSection = ({
                 <p className="text-sm text-muted-foreground">
                   Configure lembretes para registro de horas trabalhadas.
                 </p>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={onOpenEmployeeSettings}
+                >
                   Configurar Lembretes
                 </Button>
               </div>
@@ -156,7 +184,11 @@ export const EmailSettingsSection = ({
                 <p className="text-sm text-muted-foreground">
                   Configure emails automáticos para novos funcionários.
                 </p>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={onOpenEmployeeSettings}
+                >
                   Configurar Onboarding
                 </Button>
               </div>
