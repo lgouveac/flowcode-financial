@@ -126,7 +126,6 @@ export const useCashFlow = (period: string = 'current') => {
       if (cashFlowError) throw cashFlowError;
 
       // 2. Now fetch payments that are marked as paid but don't have entries in cash_flow
-      // Fixed query - removing the problematic payment_id reference
       const { data: paidPaymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select(`
@@ -145,40 +144,60 @@ export const useCashFlow = (period: string = 'current') => {
       // Log raw data for debugging
       console.log('Cash flow data from database:', cashFlowData);
       console.log('Paid payments not in cash flow:', paidPaymentsData);
-
-      // For each paid payment, check if it already has a cash flow entry
+      
+      // 3. Create a set of existing payment_ids in cash_flow for quick lookup
+      const existingPaymentIds = new Set(
+        (cashFlowData || [])
+          .filter(item => item.payment_id)
+          .map(item => item.payment_id)
+      );
+      
+      console.log('Existing payment IDs in cash flow:', Array.from(existingPaymentIds));
+      
+      // 4. For each paid payment, check if it already has a cash flow entry
+      const newCashFlowEntries = [];
       for (const payment of paidPaymentsData || []) {
-        if (payment.status === 'paid' && payment.payment_date) {
-          const { data: existingEntry, error: checkError } = await supabase
-            .from('cash_flow')
-            .select('id')
-            .eq('payment_id', payment.id)
-            .maybeSingle();
-
-          if (checkError) {
-            console.error('Error checking for existing cash flow entry:', checkError);
-            continue;
-          }
-
-          if (!existingEntry) {
-            // No cash flow entry exists for this payment, create one
-            const { error: insertError } = await supabase
-              .from('cash_flow')
-              .insert({
-                type: 'income',
-                description: payment.description,
-                amount: payment.amount,
-                date: payment.payment_date,
-                category: 'payment',
-                payment_id: payment.id
-              });
-
-            if (insertError) {
-              console.error('Error creating cash flow entry for payment:', insertError);
-            } else {
-              console.log('Created cash flow entry for payment:', payment.id);
-            }
-          }
+        if (payment.status === 'paid' && payment.payment_date && !existingPaymentIds.has(payment.id)) {
+          console.log(`Creating cash flow entry for payment ${payment.id} (${payment.description})`);
+          
+          // Create a new cash flow entry object
+          const newEntry = {
+            type: 'income',
+            description: payment.description,
+            amount: payment.amount,
+            date: payment.payment_date,
+            category: 'payment',
+            payment_id: payment.id
+          };
+          
+          newCashFlowEntries.push(newEntry);
+          
+          // Also add to the existing payment IDs set to avoid duplicates
+          existingPaymentIds.add(payment.id);
+        }
+      }
+      
+      // 5. If there are new entries to add, insert them into the database
+      if (newCashFlowEntries.length > 0) {
+        console.log(`Inserting ${newCashFlowEntries.length} new cash flow entries:`, newCashFlowEntries);
+        
+        const { error: insertError } = await supabase
+          .from('cash_flow')
+          .insert(newCashFlowEntries);
+          
+        if (insertError) {
+          console.error('Error creating cash flow entries for payments:', insertError);
+          toast({
+            title: "Erro ao sincronizar pagamentos",
+            description: "Alguns pagamentos não puderam ser sincronizados com o fluxo de caixa.",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Successfully added new cash flow entries');
+          toast({
+            title: "Fluxo de caixa atualizado",
+            description: `${newCashFlowEntries.length} novos pagamentos sincronizados.`,
+          });
         }
       }
 
