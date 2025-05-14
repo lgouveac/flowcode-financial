@@ -3,22 +3,15 @@ import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Send, Copy, AlertTriangle, CheckCircle2 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Edit, Trash2, Copy } from "lucide-react";
 import { formatCurrency } from "@/utils/formatters";
 import { RecurringBilling } from "@/types/billing";
-import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmailTemplate } from "@/types/email";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RecurringBillingRowProps {
   billing: RecurringBilling;
@@ -41,66 +34,71 @@ export const RecurringBillingRowStatus = {
 
 export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates, onOpenDetails, onDuplicate }: RecurringBillingRowProps) => {
   const statusInfo = RecurringBillingRowStatus[billing.status] || RecurringBillingRowStatus.pending;
+  const { toast } = useToast();
+  const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
-    } catch (e) {
-      return "Data inválida";
-    }
-  };
-
-  const getDueDate = () => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), billing.due_day);
-  };
-
-  const handleEditClick = () => {
-    if (onOpenDetails) {
-      onOpenDetails(billing);
-    } else {
-      toast({
-        title: "Funcionalidade em desenvolvimento",
-        description: "A edição de cobranças será implementada em breve.",
-      });
-    }
-  };
-
-  const handleDeleteClick = () => {
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "A exclusão de cobranças será implementada em breve.",
-    });
-  };
-
-  const handleDuplicateClick = async () => {
-    if (onDuplicate) {
-      try {
-        await onDuplicate(billing);
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Não foi possível duplicar a cobrança.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      toast({
-        title: "Funcionalidade em desenvolvimento",
-        description: "A duplicação de cobranças será implementada em breve.",
-      });
-    }
-  };
-
   const handleViewDetails = () => {
     if (onOpenDetails) {
       onOpenDetails(billing);
     }
   };
 
+  const handleDuplicateClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onDuplicate) return;
+    
+    try {
+      setDuplicating(true);
+      await onDuplicate(billing);
+      toast({
+        title: "Cobrança duplicada",
+        description: "A cobrança foi duplicada com sucesso."
+      });
+    } catch (error) {
+      console.error("Erro ao duplicar cobrança:", error);
+      toast({
+        title: "Erro ao duplicar",
+        description: "Não foi possível duplicar a cobrança.",
+        variant: "destructive"
+      });
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  const handleDeleteClick = async () => {
+    try {
+      setDeleting(true);
+      
+      const { error } = await supabase
+        .from('recurring_billing')
+        .delete()
+        .eq('id', billing.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Cobrança recorrente excluída",
+        description: "A cobrança foi excluída com sucesso."
+      });
+      
+      onRefresh();
+    } catch (error) {
+      console.error("Erro ao excluir cobrança:", error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a cobrança.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <TableRow 
-      className="cursor-pointer hover:bg-muted/70"
+      className="hover:bg-muted/50"
       onClick={handleViewDetails}
     >
       <TableCell className="font-medium">{billing.clients?.name || "Cliente não encontrado"}</TableCell>
@@ -116,46 +114,62 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
         {billing.current_installment}/{billing.installments}
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className="h-8 w-8 p-0"
-              onClick={(e) => e.stopPropagation()} // Prevent row click from triggering
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Editar"
+            onClick={e => {
+              e.stopPropagation();
+              handleViewDetails();
+            }}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          
+          {enableDuplicate && (
+            <Button
+              variant="ghost"
+              size="icon"
+              title="Duplicar"
+              onClick={handleDuplicateClick}
+              disabled={duplicating}
             >
-              <span className="sr-only">Abrir menu</span>
-              <MoreHorizontal className="h-4 w-4" />
+              <Copy className="h-4 w-4" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}> {/* Prevent row click from triggering */}
-            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleEditClick}>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to={`/send-email?billingId=${billing.id}&clientId=${billing.client_id}`}>
-                <Send className="mr-2 h-4 w-4" />
-                Enviar Email
-              </Link>
-            </DropdownMenuItem>
-            {enableDuplicate && (
-              <DropdownMenuItem onClick={handleDuplicateClick}>
-                <Copy className="mr-2 h-4 w-4" />
-                Duplicar
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={handleDeleteClick}
-              className="text-red-600"
-            >
-              <AlertTriangle className="mr-2 h-4 w-4" />
-              Excluir
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="ghost"
+                size="icon"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                title="Excluir"
+                onClick={e => e.stopPropagation()}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-background">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir Cobrança Recorrente</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja excluir esta cobrança recorrente? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDeleteClick}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleting ? "Excluindo..." : "Excluir"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </TableCell>
     </TableRow>
   );

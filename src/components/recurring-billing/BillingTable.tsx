@@ -7,6 +7,7 @@ import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplate } from "@/types/email";
+import { EmptyState } from "../payments/EmptyState";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
@@ -66,6 +67,8 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
       if (onRefresh) {
         onRefresh();
       }
+      
+      return data;
     } catch (error) {
       console.error("Erro ao duplicar cobrança:", error);
       toast({
@@ -73,8 +76,13 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
         description: "Não foi possível duplicar a cobrança.",
         variant: "destructive"
       });
+      throw error;
     }
   };
+  
+  if (billings.length === 0) {
+    return <EmptyState />;
+  }
 
   return (
     <div className="rounded-md border">
@@ -84,7 +92,7 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
             <TableHead>Cliente</TableHead>
             <TableHead>Descrição</TableHead>
             <TableHead>Valor</TableHead>
-            <TableHead>Dia do Vencimento</TableHead>
+            <TableHead>Vencimento</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Parcela</TableHead>
             <TableHead className="text-right">Ações</TableHead>
@@ -97,7 +105,7 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
               billing={billing}
               onRefresh={onRefresh || (() => {})}
               onOpenDetails={handleOpenDetails}
-              onDuplicate={enableDuplicate ? handleDuplicate : undefined}
+              onDuplicate={handleDuplicate}
               enableDuplicate={enableDuplicate}
               templates={templates}
             />
