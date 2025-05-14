@@ -2,13 +2,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FormFields } from "./FormFields";
 import { useCashFlowForm } from "@/hooks/useCashFlowForm";
-import { PaymentSelector } from "./PaymentSelector";
-import { EmployeeSelector } from "./EmployeeSelector";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { Payment } from "@/types/payment";
-import { Employee } from "@/components/emails/types/emailTest";
-import { useEffect } from "react";
 
 interface NewCashFlowFormProps {
   open: boolean;
@@ -28,78 +23,9 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
     setAmount,
     date,
     setDate,
-    selectedPayment,
-    setSelectedPayment,
-    selectedEmployee,
-    setSelectedEmployee,
-    payments,
-    employees,
     isSubmitting,
-    isLoading,
-    handleSubmit,
-    deletePayment // Add the deletePayment function
+    handleSubmit
   } = useCashFlowForm({ onSuccess, onClose });
-  
-  // Debug logs
-  useEffect(() => {
-    console.log("NewCashFlowForm received payments:", payments);
-    console.log("Selected payment ID:", selectedPayment);
-    console.log("NewCashFlowForm received employees:", employees);
-    console.log("Selected employee ID:", selectedEmployee);
-  }, [payments, selectedPayment, employees, selectedEmployee]);
-
-  const isPaymentCategory = category === 'payment';
-  const isEmployeeCategory = category === 'employee';
-
-  // Find the selected payment object from the payments array
-  const getSelectedPaymentObject = (): Payment | null => {
-    if (!isPaymentCategory || !selectedPayment || !Array.isArray(payments)) {
-      return null;
-    }
-    return payments.find(p => p.id === selectedPayment) || null;
-  };
-  
-  // Find the selected employee object from the employees array
-  const getSelectedEmployeeObject = (): Employee | null => {
-    if (!isEmployeeCategory || !selectedEmployee || !Array.isArray(employees)) {
-      return null;
-    }
-    return employees.find(e => e.id === selectedEmployee) || null;
-  };
-  
-  const selectedPaymentObject = getSelectedPaymentObject();
-  const selectedEmployeeObject = getSelectedEmployeeObject();
-  
-  // Handle payment selection
-  const handlePaymentSelect = (payment: Payment | null) => {
-    console.log("Payment selected:", payment);
-    if (payment) {
-      setSelectedPayment(payment.id);
-      setDescription(payment.description);
-      setAmount(payment.amount.toString());
-      // Set date to payment due_date if no date is selected
-      if (!date) {
-        setDate(payment.due_date);
-      }
-    } else {
-      setSelectedPayment('');
-      setDescription('');
-      setAmount('');
-    }
-  };
-
-  // Handle employee selection
-  const handleEmployeeSelect = (employee: Employee | null) => {
-    console.log("Employee selected:", employee);
-    if (employee) {
-      setSelectedEmployee(employee.id);
-      setDescription(`Pagamento para ${employee.name}`);
-      // We don't set amount for employees as it needs to be entered manually
-    } else {
-      setSelectedEmployee('');
-      setDescription('');
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -124,35 +50,9 @@ export const NewCashFlowForm = ({ open, onClose, onSuccess }: NewCashFlowFormPro
               onDescriptionChange={setDescription}
               onAmountChange={setAmount}
               onDateChange={setDate}
-              isPaymentCategory={isPaymentCategory}
-              isEmployeeCategory={isEmployeeCategory}
             />
-            
-            {isPaymentCategory && (
-              <PaymentSelector
-                payments={payments}
-                selectedPayment={selectedPaymentObject}
-                onSelect={handlePaymentSelect}
-                onDelete={deletePayment}
-              />
-            )}
-
-            {isEmployeeCategory && (
-              <EmployeeSelector
-                employees={employees}
-                selectedEmployee={selectedEmployeeObject}
-                onSelect={handleEmployeeSelect}
-              />
-            )}
           </div>
-          <Button 
-            type="submit" 
-            disabled={
-              isSubmitting || 
-              (isPaymentCategory && !selectedPayment) ||
-              (isEmployeeCategory && !selectedEmployee)
-            }
-          >
+          <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

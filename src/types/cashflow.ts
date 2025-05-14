@@ -7,8 +7,10 @@ export interface CashFlow {
   date: string;
   category: string;
   payment_id?: string;
+  employee_id?: string;
   created_at?: string;
   updated_at?: string;
+  status?: string;
 }
 
 export type NewCashFlow = Omit<CashFlow, 'id' | 'created_at' | 'updated_at'>;
@@ -20,4 +22,3 @@ export function validateCashFlowType(type: string): 'income' | 'expense' {
   }
   return type;
 }
-

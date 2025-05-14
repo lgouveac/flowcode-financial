@@ -2,7 +2,7 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORIES } from "@/types/cashflow-categories";
+import { CASH_FLOW_CATEGORIES } from "@/types/cashflow-categories";
 
 interface FormFieldsProps {
   movementType: 'income' | 'expense';
@@ -15,8 +15,8 @@ interface FormFieldsProps {
   onDescriptionChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onDateChange: (value: string) => void;
-  isPaymentCategory: boolean;
-  isEmployeeCategory: boolean;
+  isPaymentCategory?: boolean;
+  isEmployeeCategory?: boolean;
 }
 
 export const FormFields = ({
@@ -29,20 +29,18 @@ export const FormFields = ({
   onCategoryChange,
   onDescriptionChange,
   onAmountChange,
-  onDateChange,
-  isPaymentCategory,
-  isEmployeeCategory,
+  onDateChange
 }: FormFieldsProps) => {
-  // Determine if description and amount should be disabled
-  const disableFields = isPaymentCategory || isEmployeeCategory;
+  // Get categories based on movement type
+  const categories = CASH_FLOW_CATEGORIES.filter(cat => cat.type === movementType);
 
   return (
     <>
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2.5">
-          <Label>Tipo</Label>
+        <div className="space-y-2">
+          <Label htmlFor="movement-type">Tipo</Label>
           <Select value={movementType} onValueChange={onMovementTypeChange}>
-            <SelectTrigger>
+            <SelectTrigger id="movement-type">
               <SelectValue placeholder="Selecione o tipo" />
             </SelectTrigger>
             <SelectContent>
@@ -51,14 +49,14 @@ export const FormFields = ({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2.5">
-          <Label>Categoria</Label>
+        <div className="space-y-2">
+          <Label htmlFor="category">Categoria</Label>
           <Select value={category} onValueChange={onCategoryChange}>
-            <SelectTrigger>
+            <SelectTrigger id="category">
               <SelectValue placeholder="Selecione a categoria" />
             </SelectTrigger>
             <SelectContent>
-              {CATEGORIES[movementType].map(cat => (
+              {categories.map((cat) => (
                 <SelectItem key={cat.value} value={cat.value}>
                   {cat.label}
                 </SelectItem>
@@ -67,41 +65,38 @@ export const FormFields = ({
           </Select>
         </div>
       </div>
-
+      
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2.5">
-          <Label>Data</Label>
-          <Input 
-            type="date" 
-            value={date} 
-            onChange={e => onDateChange(e.target.value)} 
-            required 
-            className="bg-background"
+        <div className="space-y-2">
+          <Label htmlFor="date">Data</Label>
+          <Input
+            id="date"
+            type="date"
+            value={date}
+            onChange={(e) => onDateChange(e.target.value)}
           />
         </div>
-        <div className="space-y-2.5">
-          <Label>Valor</Label>
-          <Input 
-            type="number" 
-            step="0.01" 
-            placeholder="0,00" 
-            value={amount} 
-            onChange={e => onAmountChange(e.target.value)}
-            required
-            disabled={disableFields}
-            className="bg-background" 
+        <div className="space-y-2">
+          <Label htmlFor="amount">Valor</Label>
+          <Input
+            id="amount"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="0,00"
+            value={amount}
+            onChange={(e) => onAmountChange(e.target.value)}
           />
         </div>
       </div>
-      <div className="space-y-2.5">
-        <Label>Descrição</Label>
-        <Input 
-          placeholder="Descrição da movimentação" 
-          value={description} 
-          onChange={e => onDescriptionChange(e.target.value)}
-          required
-          disabled={disableFields}
-          className="bg-background"
+      
+      <div className="space-y-2">
+        <Label htmlFor="description">Descrição</Label>
+        <Input
+          id="description"
+          placeholder="Descrição da movimentação"
+          value={description}
+          onChange={(e) => onDescriptionChange(e.target.value)}
         />
       </div>
     </>
