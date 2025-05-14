@@ -2,12 +2,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CashFlow, validateCashFlowType } from "@/types/cashflow";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 export const useCashFlow = (period: string = 'current') => {
   const [cashFlow, setCashFlow] = useState<CashFlow[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const getPeriodDates = (selectedPeriod: string) => {
@@ -110,7 +109,6 @@ export const useCashFlow = (period: string = 'current') => {
   };
 
   const fetchCashFlow = async () => {
-    setIsLoading(true);
     try {
       const dates = getPeriodDates(period);
       
@@ -135,11 +133,7 @@ export const useCashFlow = (period: string = 'current') => {
           description,
           amount,
           payment_date,
-          status,
-          clients (
-            name,
-            email
-          )
+          status
         `)
         .eq('status', 'paid')
         .gte('payment_date', dates.start)
@@ -166,11 +160,10 @@ export const useCashFlow = (period: string = 'current') => {
         if (payment.status === 'paid' && payment.payment_date && !existingPaymentIds.has(payment.id)) {
           console.log(`Creating cash flow entry for payment ${payment.id} (${payment.description})`);
           
-          const clientName = payment.clients?.name || 'Cliente';
           // Create a new cash flow entry object
           const newEntry = {
             type: 'income',
-            description: `${payment.description} - ${clientName}`,
+            description: payment.description,
             amount: payment.amount,
             date: payment.payment_date,
             category: 'payment',
@@ -313,8 +306,6 @@ export const useCashFlow = (period: string = 'current') => {
         description: "Não foi possível carregar os dados do fluxo de caixa.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -325,7 +316,6 @@ export const useCashFlow = (period: string = 'current') => {
   return {
     cashFlow,
     chartData,
-    isLoading,
     onNewCashFlow: fetchCashFlow,
   };
 };

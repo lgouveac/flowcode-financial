@@ -80,14 +80,12 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
     setError(null);
     
     try {
-      // Define valid statuses explicitly with the correct type - include all statuses EXCEPT "paid"
-      const validStatuses: ("pending" | "billed" | "awaiting_invoice" | "overdue" | "cancelled" | "partially_paid")[] = [
-        'pending', 'billed', 'awaiting_invoice', 'overdue', 'cancelled', 'partially_paid'
-      ];
+      // Define valid statuses explicitly with the correct type
+      const validStatuses: ("pending" | "billed" | "awaiting_invoice")[] = ['pending', 'billed', 'awaiting_invoice'];
       
       console.log('Querying payments with statuses:', validStatuses);
       
-      // Modified query to ensure we're only getting payments with valid statuses (not paid)
+      // Modified query to ensure we're only getting payments with valid statuses
       const { data, error } = await supabase
         .from('payments')
         .select(`
@@ -143,8 +141,19 @@ export const useCashFlowForm = ({ onSuccess, onClose }: { onSuccess: () => void;
         });
       }
       
-      // Set all valid payments
-      setPayments(data || []);
+      // Double check to ensure only valid statuses are included
+      const filteredPayments = data.filter(payment => 
+        payment && 
+        payment.status && 
+        validStatuses.includes(payment.status as any)
+      );
+        
+      console.log('Final filtered payments to use:', filteredPayments);
+      console.log('Number of payments after filtering:', filteredPayments.length);
+      console.log('Payments statuses in result:', filteredPayments.map(p => p.status));
+      
+      // Set the filtered payments
+      setPayments(filteredPayments);
     } catch (err) {
       console.error('Exception fetching payments:', err);
       setError('Unexpected error occurred');
