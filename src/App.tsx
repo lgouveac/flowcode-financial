@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -25,7 +26,6 @@ import PublicClientForm from "./pages/PublicClientForm";
 import PublicEmployeeForm from "./pages/PublicEmployeeForm";
 import ThankYou from "./pages/ThankYou";
 import EmployeesPage from "./pages/Employees";
-import SendEmail from "./pages/SendEmail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -70,7 +70,6 @@ const App = () => (
                   <Route path="employees" element={<EmployeesPage />} />
                   <Route path="receivables" element={<RecurringBilling />} />
                   <Route path="emails" element={<Emails />} />
-                  <Route path="send-email" element={<SendEmail />} /> {/* New route */}
                   <Route path="cashflow" element={<CashFlow showChart={true} />} />
                 </Route>
                 
