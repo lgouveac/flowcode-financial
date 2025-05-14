@@ -18,7 +18,7 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { EmailTemplate } from "@/types/email";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface RecurringBillingRowProps {
   billing: RecurringBilling;
@@ -40,7 +40,6 @@ export const RecurringBillingRowStatus = {
 };
 
 export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates, onOpenDetails, onDuplicate }: RecurringBillingRowProps) => {
-  const { toast } = useToast();
   const statusInfo = RecurringBillingRowStatus[billing.status] || RecurringBillingRowStatus.pending;
   
   const formatDate = (dateString: string) => {
@@ -57,10 +56,14 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
   };
 
   const handleEditClick = () => {
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "A edição de cobranças será implementada em breve.",
-    });
+    if (onOpenDetails) {
+      onOpenDetails(billing);
+    } else {
+      toast({
+        title: "Funcionalidade em desenvolvimento",
+        description: "A edição de cobranças será implementada em breve.",
+      });
+    }
   };
 
   const handleDeleteClick = () => {
@@ -96,7 +99,10 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
   };
 
   return (
-    <TableRow>
+    <TableRow 
+      className="cursor-pointer hover:bg-muted/70"
+      onClick={handleViewDetails}
+    >
       <TableCell className="font-medium">{billing.clients?.name || "Cliente não encontrado"}</TableCell>
       <TableCell>{billing.description}</TableCell>
       <TableCell>{formatCurrency(billing.amount)}</TableCell>
@@ -112,12 +118,16 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
       <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
+            <Button 
+              variant="ghost" 
+              className="h-8 w-8 p-0"
+              onClick={(e) => e.stopPropagation()} // Prevent row click from triggering
+            >
               <span className="sr-only">Abrir menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}> {/* Prevent row click from triggering */}
             <DropdownMenuLabel>Ações</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleEditClick}>
