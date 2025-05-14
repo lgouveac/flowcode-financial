@@ -52,9 +52,7 @@ export const RecurringBilling = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setShowSettings(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
+          
           <NewBillingDialog clients={clients} onSuccess={handleSuccess} templates={templates} />
         </div>
       </div>
