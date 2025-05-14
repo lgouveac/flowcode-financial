@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CashFlow, validateCashFlowType } from "@/types/cashflow";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export const useCashFlow = (period: string = 'current') => {
   const [cashFlow, setCashFlow] = useState<CashFlow[]>([]);
