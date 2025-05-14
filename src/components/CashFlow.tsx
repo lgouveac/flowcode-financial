@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CashFlowChart } from "./cash-flow/CashFlowChart";
 import { CashFlowTable } from "./cash-flow/CashFlowTable";
@@ -6,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { EstimatedExpensesDialog } from "./cash-flow/EstimatedExpensesDialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface CashFlowProps {
   showChart?: boolean;
@@ -13,6 +15,7 @@ interface CashFlowProps {
 }
 
 export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps) => {
+  const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
@@ -36,7 +39,7 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
   }, [selectedPeriod, selectedYear, selectedMonth]);
   
   // Use the custom period for fetching data
-  const { cashFlow, onNewCashFlow, chartData } = useCashFlow(customPeriod);
+  const { cashFlow, onNewCashFlow, chartData, isLoading } = useCashFlow(customPeriod);
 
   // Guarantee that cashFlow and chartData are always arrays, even when empty
   const safeChartData = Array.isArray(chartData) ? chartData : [];
@@ -119,6 +122,15 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
     console.log('CashFlow component summary:', summary);
   }, [customPeriod, safeCashFlow, summary]);
 
+  // Manual data refresh handler
+  const handleRefreshData = () => {
+    toast({
+      title: "Atualizando dados",
+      description: "Buscando dados atualizados do fluxo de caixa..."
+    });
+    onNewCashFlow();
+  };
+
   // Summary Cards Component
   const SummaryCards = () => (
     <div className="grid gap-3 sm:gap-4 grid-cols-1 xs:grid-cols-3">
@@ -163,17 +175,30 @@ export const CashFlow = ({ showChart = true, period = 'current' }: CashFlowProps
     <div className="space-y-4 sm:space-y-6 md:space-y-8">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Fluxo de Caixa</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => setShowEstimatedExpensesDialog(true)}
-        >
-          <Settings className="h-4 w-4 mr-2" />
-          Despesas Estimadas
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefreshData}
+          >
+            Atualizar Dados
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowEstimatedExpensesDialog(true)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Despesas Estimadas
+          </Button>
+        </div>
       </div>
       
-      {showChart ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-background/50">
+          <div className="text-muted-foreground">Carregando dados...</div>
+        </div>
+      ) : showChart ? (
         <>
           <CashFlowChart 
             chartData={safeChartData}
