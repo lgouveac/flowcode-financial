@@ -48,7 +48,10 @@ const SelectContent = React.forwardRef<
       style={{
         backgroundColor: 'var(--background)',
         color: 'var(--foreground)',
-        zIndex: 1000
+        zIndex: 1000,
+        // Make sure the dropdown is visible in dark mode
+        '--tw-bg-opacity': 1,
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
       }}
       {...props}
     >
