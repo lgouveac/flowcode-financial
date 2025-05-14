@@ -2,7 +2,7 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CASH_FLOW_CATEGORIES } from "@/types/cashflow-categories";
+import { CATEGORIES } from "@/types/cashflow-categories";
 
 interface FormFieldsProps {
   movementType: 'income' | 'expense';
@@ -32,7 +32,7 @@ export const FormFields = ({
   onDateChange
 }: FormFieldsProps) => {
   // Get categories based on movement type
-  const categories = CASH_FLOW_CATEGORIES.filter(cat => cat.type === movementType);
+  const categories = CATEGORIES[movementType] || [];
 
   return (
     <>
