@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
@@ -12,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { NewPaymentDialog } from "./payments/NewPaymentDialog";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 export const RecurringBilling = () => {
   const {
     billings,
@@ -54,10 +52,7 @@ export const RecurringBilling = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setShowSettings(true)} size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurações de Email
-          </Button>
+          
           <NewBillingDialog clients={clients} onSuccess={handleSuccess} templates={templates} />
         </div>
       </div>
@@ -118,10 +113,7 @@ export const RecurringBilling = () => {
                 </Select>
               </div>
             </div>
-            <Button variant="default" onClick={() => setShowNewPaymentDialog(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Recebimento
-            </Button>
+            
           </div>
           <PaymentTable payments={oneTimePayments} onRefresh={handleSuccess} searchTerm={paymentSearch} statusFilter={paymentStatusFilter} templates={templates} enableDuplicate={true} />
         </TabsContent>
