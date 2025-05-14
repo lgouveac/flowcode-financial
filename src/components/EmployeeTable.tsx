@@ -46,18 +46,8 @@ export const EmployeeTable = () => {
         console.error("Error fetching global settings:", globalError);
       }
 
-      const { data: emailSettings, error: emailError } = await supabase
-        .from("email_notification_settings")
-        .select("*")
-        .single();
-
-      if (emailError) {
-        console.error("Error fetching email settings:", emailError);
-      }
-
       return {
-        ...globalSettings,
-        notificationTime: emailSettings?.notification_time || "09:00"
+        ...globalSettings
       };
     },
   });
@@ -213,7 +203,7 @@ export const EmployeeTable = () => {
         <TableHeader onSettingsClick={() => setSettingsOpen(true)} />
         <div className="flex items-center gap-2">
           <ImportCSV />
-          <TestEmployeeNotificationButton /> {/* This component was causing errors */}
+          <TestEmployeeNotificationButton />
         </div>
       </div>
 
@@ -255,7 +245,6 @@ export const EmployeeTable = () => {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         currentDay={settings?.employee_emails_send_day}
-        currentTime={settings?.notificationTime?.substring(0, 5)}
       />
 
       <EditEmployeeDialog

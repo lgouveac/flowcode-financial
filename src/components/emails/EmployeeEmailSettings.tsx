@@ -17,12 +17,14 @@ interface EmployeeEmailSettingsProps {
   open: boolean;
   onClose: () => void;
   currentDay?: number;
+  currentTime?: string;
 }
 
 export const EmployeeEmailSettings = ({ 
   open, 
   onClose, 
-  currentDay = 5
+  currentDay = 5,
+  currentTime = "09:00" // Add default value for currentTime
 }: EmployeeEmailSettingsProps) => {
   const { toast } = useToast();
   const [sendDay, setSendDay] = useState(currentDay);
