@@ -15,7 +15,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
@@ -37,21 +36,23 @@ export const PaymentSelector = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Define valid statuses explicitly
-  const validStatuses: ("pending" | "billed" | "awaiting_invoice")[] = ['pending', 'billed', 'awaiting_invoice'];
+  // Define valid non-paid statuses
+  const nonPaidStatuses: ("pending" | "billed" | "awaiting_invoice" | "overdue" | "cancelled" | "partially_paid")[] = [
+    'pending', 'billed', 'awaiting_invoice', 'overdue', 'cancelled', 'partially_paid'
+  ];
   
-  // Only use payments with the correct status
+  // Only use payments with the correct status (not paid)
   const safePayments = Array.isArray(payments) 
     ? payments.filter(payment => 
         payment && 
         payment.status && 
-        validStatuses.includes(payment.status as any))
+        nonPaidStatuses.includes(payment.status as any))
     : [];
 
   // Debug logs
   useEffect(() => {
     console.log('PaymentSelector received payments:', payments);
-    console.log('Valid payment statuses:', validStatuses);
+    console.log('Valid payment statuses:', nonPaidStatuses);
     console.log('PaymentSelector filtered payments to:', safePayments);
     console.log('Number of safe payments:', safePayments.length);
     
@@ -74,7 +75,8 @@ export const PaymentSelector = ({
   // Filter payments based on search term
   const filteredPayments = safePayments.filter(payment => 
     payment.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    payment.amount.toString().includes(searchTerm)
+    payment.amount.toString().includes(searchTerm) ||
+    (payment.clients?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Handle delete confirmation
@@ -118,7 +120,7 @@ export const PaymentSelector = ({
       />
 
       {safePayments.length > 0 ? (
-        <div className="border rounded-md overflow-hidden">
+        <div className="border rounded-md overflow-hidden max-h-[400px] overflow-y-auto">
           <RadioGroup 
             value={selectedPayment?.id} 
             onValueChange={(value) => {
@@ -140,7 +142,10 @@ export const PaymentSelector = ({
                   <RadioGroupItem value={payment.id} id={payment.id} className="mr-2" />
                   <div className="flex-1">
                     <div className="font-medium">{payment.description}</div>
-                    <div className="text-sm text-muted-foreground">R$ {payment.amount.toFixed(2)}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {payment.clients?.name && <span>Cliente: {payment.clients.name} | </span>}
+                      R$ {payment.amount.toFixed(2)}
+                    </div>
                     <div className="text-xs text-muted-foreground">Status: {payment.status}</div>
                   </div>
                   {selectedPayment?.id === payment.id && (
