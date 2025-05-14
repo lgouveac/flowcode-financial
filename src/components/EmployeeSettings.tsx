@@ -22,20 +22,8 @@ export const EmployeeSettings = () => {
         throw globalError;
       }
 
-      // Fetch email settings
-      const { data: emailSettings, error: emailError } = await supabase
-        .from("employee_email_settings")
-        .select("notification_time")
-        .single();
-
-      if (emailError) {
-        console.error("Error fetching email settings:", emailError);
-        throw emailError;
-      }
-
       return {
-        sendDay: globalSettings?.employee_emails_send_day || 5,
-        notificationTime: emailSettings?.notification_time || "09:00"
+        sendDay: globalSettings?.employee_emails_send_day || 5
       };
     }
   });
@@ -46,14 +34,13 @@ export const EmployeeSettings = () => {
         <CardHeader>
           <CardTitle>Configurações de Email</CardTitle>
           <CardDescription>
-            Configure quando e como os emails serão enviados aos funcionários
+            Configure quando os emails serão enviados aos funcionários
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-2">
               <Skeleton className="h-5 w-[250px]" />
-              <Skeleton className="h-10 w-[200px]" />
               <Skeleton className="h-10 w-[200px]" />
             </div>
           ) : (
@@ -62,11 +49,11 @@ export const EmployeeSettings = () => {
                 <div>
                   <h3 className="text-sm font-medium">Configurações Atuais:</h3>
                   <p className="text-sm text-muted-foreground">
-                    Enviar no dia {settings?.sendDay} de cada mês às {settings?.notificationTime?.substring(0, 5)}
+                    Enviar no dia {settings?.sendDay} de cada mês
                   </p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <TestEmployeeNotificationButton /> {/* This component was causing errors */}
+                  <TestEmployeeNotificationButton />
                 </div>
               </div>
               
@@ -74,7 +61,6 @@ export const EmployeeSettings = () => {
                 open={false}
                 onClose={() => {}}
                 currentDay={settings?.sendDay}
-                currentTime={settings?.notificationTime?.substring(0, 5)}
               />
             </div>
           )}

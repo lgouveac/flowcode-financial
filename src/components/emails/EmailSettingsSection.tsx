@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Mail, Clock, Users } from "lucide-react";
+import { Settings, Mail, Users } from "lucide-react";
 
 interface EmailSettingsSectionProps {
   onOpenEmployeeSettings: () => void;
@@ -79,24 +79,19 @@ export const EmailSettingsSection = ({
         <TabsContent value="clients" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Notificações para Clientes</CardTitle>
+              <CardTitle>Configurações para Clientes</CardTitle>
               <CardDescription>
-                Configure as notificações automáticas para clientes.
+                Configure as opções de email para clientes.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <h3 className="font-medium">Lembretes de Pagamento</h3>
+                <h3 className="font-medium">Templates Padrão</h3>
                 <p className="text-sm text-muted-foreground">
-                  Configure os intervalos e horários para envio de lembretes de pagamento.
+                  Configure os templates padrão para diferentes tipos de email.
                 </p>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  onClick={onOpenNotificationSettings}
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Configurar Lembretes
+                <Button size="sm" variant="outline">
+                  Configurar Templates
                 </Button>
               </div>
               
@@ -126,24 +121,23 @@ export const EmailSettingsSection = ({
         <TabsContent value="employees" className="space-y-4 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Notificações para Funcionários</CardTitle>
+              <CardTitle>Configurações para Funcionários</CardTitle>
               <CardDescription>
-                Configure as notificações automáticas para funcionários.
+                Configure as opções de email para funcionários.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <h3 className="font-medium">Solicitação de Nota Fiscal</h3>
+                <h3 className="font-medium">Templates Padrão</h3>
                 <p className="text-sm text-muted-foreground">
-                  Configure o dia do mês e horário para envio automático de solicitações de NF.
+                  Configure os templates padrão para emails de funcionários.
                 </p>
                 <Button 
                   size="sm" 
                   variant="outline"
                   onClick={onOpenEmployeeSettings}
                 >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Configurar Solicitações
+                  Configurar Templates
                 </Button>
               </div>
               

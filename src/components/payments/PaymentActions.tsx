@@ -1,14 +1,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mail, Pencil, Trash2, Copy } from "lucide-react";
+import { Pencil, Trash2, Copy } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
 import type { Payment } from "@/types/payment";
 import type { EmailTemplate } from "@/types/email";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { SendEmailDialog } from "@/components/emails/SendEmailDialog";
 
 interface PaymentActionsProps {
   payment: Payment;
@@ -27,7 +26,6 @@ export const PaymentActions = ({
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   const handleDelete = async () => {
     try {
@@ -107,15 +105,6 @@ export const PaymentActions = ({
         <Pencil className="h-4 w-4" />
       </Button>
       
-      <Button
-        variant="ghost"
-        size="icon"
-        title="Enviar email"
-        onClick={() => setShowEmailDialog(true)}
-      >
-        <Mail className="h-4 w-4" />
-      </Button>
-      
       {enableDuplicate && (
         <Button
           variant="ghost"
@@ -165,15 +154,6 @@ export const PaymentActions = ({
           onUpdate={onPaymentUpdated}
           payment={payment}
           templates={templates}
-        />
-      )}
-
-      {showEmailDialog && (
-        <SendEmailDialog
-          open={showEmailDialog}
-          onClose={() => setShowEmailDialog(false)}
-          initialClientId={payment.client_id}
-          initialTemplateId={payment.email_template}
         />
       )}
     </div>
