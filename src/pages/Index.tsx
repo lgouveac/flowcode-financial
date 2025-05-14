@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { MoonIcon, SunIcon, LogOutIcon, MenuIcon, ChevronDownIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
@@ -25,7 +24,6 @@ const Index = () => {
     { path: "/clients", label: "Clientes" },
     { path: "/employees", label: "Funcionários" },
     { path: "/receivables", label: "Recebimentos" },
-    { path: "/emails", label: "E-mails" },
     { path: "/cashflow", label: "Fluxo de Caixa" },
   ];
 

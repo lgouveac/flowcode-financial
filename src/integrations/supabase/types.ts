@@ -297,29 +297,29 @@ export type Database = {
       }
       employee_monthly_values: {
         Row: {
-          amount: number
           created_at: string | null
+          due_data: number
+          due_date: string
           employee_id: string
           id: string
-          month: string
           notes: string | null
           updated_at: string | null
         }
         Insert: {
-          amount: number
           created_at?: string | null
+          due_data: number
+          due_date: string
           employee_id: string
           id?: string
-          month: string
           notes?: string | null
           updated_at?: string | null
         }
         Update: {
-          amount?: number
           created_at?: string | null
+          due_data?: number
+          due_date?: string
           employee_id?: string
           id?: string
-          month?: string
           notes?: string | null
           updated_at?: string | null
         }
