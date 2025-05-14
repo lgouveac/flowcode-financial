@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown } from "lucide-react"
@@ -49,8 +48,6 @@ const SelectContent = React.forwardRef<
         backgroundColor: 'var(--background)',
         color: 'var(--foreground)',
         zIndex: 1000,
-        // Make sure the dropdown is visible in dark mode
-        '--tw-bg-opacity': 1,
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
       }}
       {...props}
