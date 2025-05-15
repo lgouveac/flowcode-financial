@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -182,11 +181,11 @@ export const useMetrics = (period: string = 'current') => {
 
         if (previousClientsError) throw previousClientsError;
 
-        // Buscar faturamento esperado (pagamentos pendentes) - FILTER BY SELECTED PERIOD
+        // Buscar faturamento esperado (pagamentos pendentes + overdue) - FILTER BY SELECTED PERIOD
         const { data: expectedPayments, error: expectedPaymentsError } = await supabase
           .from('payments')
           .select('amount, paid_amount, status')
-          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid'])
+          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid', 'overdue'])
           .gte('due_date', dates.start)
           .lt('due_date', dates.end);
 
@@ -217,11 +216,11 @@ export const useMetrics = (period: string = 'current') => {
           return dueDate >= startDate && dueDate < endDate;
         }) || [];
 
-        // Buscar faturamento esperado do período anterior (pagamentos pontuais)
+        // Buscar faturamento esperado do período anterior (pagamentos pontuais + overdue)
         const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
           .from('payments')
           .select('amount, paid_amount, status')
-          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid'])
+          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid', 'overdue'])
           .gte('due_date', dates.compareStart)
           .lt('due_date', dates.compareEnd);
 
@@ -277,7 +276,7 @@ export const useMetrics = (period: string = 'current') => {
           ?.filter(item => item.type === 'expense')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
-        // Calcular faturamento esperado atual (only count payments within the selected period)
+        // Calcular faturamento esperado atual (including overdue payments within the period)
         // Correctly handle partially paid payments by subtracting paid_amount from amount
         const currentExpectedPaymentsTotal = expectedPayments
           ?.reduce((sum, item) => {
@@ -329,7 +328,7 @@ export const useMetrics = (period: string = 'current') => {
         const currentNetProfit = currentRevenue - currentExpenses;
         const previousNetProfit = previousRevenue - previousExpenses;
 
-        console.log('Expected revenue calculation:', {
+        console.log('Expected revenue calculation (including overdue):', {
           payments: expectedPayments,
           paymentTotal: currentExpectedPaymentsTotal,
           recurringTotal: currentExpectedRecurringTotal,

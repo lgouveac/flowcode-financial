@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,8 +28,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  AreaChart,
-  Area
 } from 'recharts';
 
 interface TopClient {
@@ -153,7 +150,7 @@ export const Overview = () => {
       const { data: futurePaymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select('*')
-        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid'])
+        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid', 'overdue'])
         .gte('due_date', new Date().toISOString());
       
       if (paymentsError) throw paymentsError;
@@ -303,7 +300,7 @@ export const Overview = () => {
     }
   };
   
-  // Function to fetch pending payments - updated to fetch both recurring and one-time payments
+  // Function to fetch pending payments - updated to fetch both recurring and overdue payments
   const fetchPendingPayments = async () => {
     setLoadingPayments(true);
     
@@ -311,7 +308,7 @@ export const Overview = () => {
       // Get date range based on selected period
       const dates = getPeriodDates(period);
       
-      // Fetch one-time payments first
+      // Fetch one-time payments first (now including overdue)
       const { data: oneTimePayments, error: oneTimeError } = await supabase
         .from('payments')
         .select(`
@@ -322,7 +319,7 @@ export const Overview = () => {
             partner_name
           )
         `)
-        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid'])
+        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid', 'overdue'])
         .gte('due_date', dates.start)
         .lte('due_date', dates.end)
         .order('due_date', { ascending: true });
@@ -367,7 +364,6 @@ export const Overview = () => {
           return isStarted && isNotEnded;
         })
         .map(billing => {
-          // Convert the recurring billing to a payment object
           const dueDay = billing.due_day;
           const dueDate = new Date(currentYear, currentMonth - 1, dueDay);
           
@@ -399,7 +395,7 @@ export const Overview = () => {
       setPendingPayments(allPendingPayments);
       
       // Log data to help with debugging
-      console.log('All pending payments:', allPendingPayments);
+      console.log('All pending payments (including overdue):', allPendingPayments);
     } catch (error) {
       console.error("Error fetching pending payments:", error);
     } finally {
@@ -433,7 +429,6 @@ export const Overview = () => {
   const totalExpectedRevenue = (metrics.totalRevenue || 0) + (metrics.expectedRevenue || 0);
   
   // Calculate percentage change for total expected revenue
-  // This could be calculated against the previous period's total expected revenue if available
   const totalExpectedRevenueChange = metrics.revenueChange || "0%";
 
   // Main stats
@@ -459,19 +454,19 @@ export const Overview = () => {
     description: "Últimos 30 dias",
   }];
 
-  // Estimates section with new Total Expected Revenue card
+  // Estimates section with updated descriptions to indicate overdue inclusion
   const estimateStats = [{
     title: "Faturamento Esperado",
     value: formatCurrency(metrics.expectedRevenue || 0),
     change: metrics.expectedRevenueChange || "0%",
-    description: "Recebimentos pendentes",
+    description: "Recebimentos pendentes e atrasados",
     onClick: handleExpectedRevenueClick,
     icon: <FileText className="h-4 w-4 text-muted-foreground" />,
   }, {
     title: "Faturamento Total Esperado",
     value: formatCurrency(totalExpectedRevenue),
     change: totalExpectedRevenueChange,
-    description: "Receita atual + pendente",
+    description: "Receita atual + pendente/atrasada",
     icon: <FileText className="h-4 w-4 text-muted-foreground" />,
   }, {
     title: "Despesa Estimada",
