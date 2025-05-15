@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { RecurringBilling } from "@/types/billing";
 import { EmailTemplate } from "@/types/email";
 import { formatCurrency } from "@/utils/formatters";
-import { format } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ export const PaymentDetailsDialog = ({
   const [startDate, setStartDate] = useState(billing.start_date);
   const [endDate, setEndDate] = useState(billing.end_date || '');
   const [paymentDate, setPaymentDate] = useState<string | null>(billing.payment_date || null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Reset form when billing changes or dialog opens
   useEffect(() => {
@@ -63,6 +64,7 @@ export const PaymentDetailsDialog = ({
       setEndDate(billing.end_date || '');
       setPaymentDate(billing.payment_date || null);
       setIsEditing(false);
+      setIsUpdating(false);
     }
   }, [billing, open]);
 
@@ -75,15 +77,102 @@ export const PaymentDetailsDialog = ({
     }
   };
 
+  const calculateNewDueDate = (paymentDueDate: string, oldDueDay: number, newDueDay: number) => {
+    try {
+      // Parse the payment due date
+      const dueDate = parseISO(paymentDueDate);
+      if (!isValid(dueDate)) return paymentDueDate;
+
+      // Get the first day of the month for the payment due date
+      const firstDayOfMonth = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1);
+      
+      // Add the new due day (subtract 1 because days start from 0 in Date object)
+      const newDueDate = new Date(firstDayOfMonth);
+      newDueDate.setDate(newDueDay);
+      
+      // If the new due day is invalid (e.g., February 31), it wraps to the next month
+      // In that case, we need to set it to the last day of the current month
+      if (newDueDate.getMonth() !== firstDayOfMonth.getMonth()) {
+        // Set to last day of the original month
+        newDueDate.setDate(0); // Setting to day 0 of next month = last day of current month
+      }
+
+      return format(newDueDate, 'yyyy-MM-dd');
+    } catch (error) {
+      console.error("Error calculating new due date:", error);
+      return paymentDueDate;
+    }
+  };
+
+  const updateAssociatedPayments = async (
+    clientId: string, 
+    billingDescription: string, 
+    oldDueDay: number, 
+    newDueDay: number
+  ) => {
+    try {
+      // Fetch all associated payments that are not yet paid or cancelled
+      const { data: payments, error: fetchError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('client_id', clientId)
+        .like('description', `${billingDescription}%`)
+        .in('status', ['pending', 'billed', 'awaiting_invoice', 'overdue', 'partially_paid'])
+        .gte('due_date', new Date().toISOString().split('T')[0]); // Only future payments
+
+      if (fetchError) throw fetchError;
+      if (!payments || payments.length === 0) return;
+
+      console.log(`Updating ${payments.length} associated payments`);
+
+      // Update each payment's due date
+      for (const payment of payments) {
+        const newDueDate = calculateNewDueDate(payment.due_date, oldDueDay, newDueDay);
+        
+        const { error: updateError } = await supabase
+          .from('payments')
+          .update({ 
+            due_date: newDueDate,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', payment.id);
+
+        if (updateError) {
+          console.error("Error updating payment:", updateError);
+        }
+      }
+
+      toast({
+        title: "Pagamentos atualizados",
+        description: `Atualizados ${payments.length} pagamentos associados.`
+      });
+
+    } catch (error) {
+      console.error("Error updating associated payments:", error);
+      toast({
+        title: "Erro ao atualizar pagamentos",
+        description: "Não foi possível atualizar os pagamentos associados.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSaveChanges = async () => {
     try {
+      setIsUpdating(true);
+      
+      const oldDueDay = billing.due_day;
+      const newDueDay = parseInt(dueDay);
+      const dueDayChanged = oldDueDay !== newDueDay;
+      
+      // Update the recurring billing record
       const { error } = await supabase
         .from('recurring_billing')
         .update({
           status,
           description,
           amount: parseFloat(amount),
-          due_day: parseInt(dueDay),
+          due_day: newDueDay,
           installments: parseInt(installments),
           current_installment: parseInt(currentInstallment),
           payment_method: paymentMethod,
@@ -94,6 +183,16 @@ export const PaymentDetailsDialog = ({
         .eq('id', billing.id);
 
       if (error) throw error;
+
+      // If due day changed, update associated payments
+      if (dueDayChanged) {
+        await updateAssociatedPayments(
+          billing.client_id,
+          description,
+          oldDueDay,
+          newDueDay
+        );
+      }
 
       toast({
         title: "Cobrança atualizada",
@@ -109,6 +208,8 @@ export const PaymentDetailsDialog = ({
         description: "Não foi possível atualizar os detalhes da cobrança.",
         variant: "destructive"
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -312,12 +413,17 @@ export const PaymentDetailsDialog = ({
             size="sm" 
             onClick={toggleEditing}
             variant={isEditing ? "default" : "secondary"}
+            disabled={isUpdating}
           >
             {isEditing ? (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Salvar
-              </>
+              isUpdating ? (
+                "Salvando..."
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar
+                </>
+              )
             ) : (
               <>
                 <Edit className="h-4 w-4 mr-2" />
