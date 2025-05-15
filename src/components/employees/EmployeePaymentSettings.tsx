@@ -12,6 +12,8 @@ import { CalendarIcon, EditIcon, SaveIcon } from "lucide-react";
 import { Employee } from "@/types/employee";
 import { cn } from "@/lib/utils";
 import { EmployeeMonthlyValue } from "@/types/employee";
+import { formatDate } from "@/utils/formatters";
+import { formatCurrency } from "@/components/payments/utils/formatUtils";
 
 export function EmployeePaymentSettings() {
   const { toast } = useToast();
@@ -21,6 +23,7 @@ export function EmployeePaymentSettings() {
   const [paymentDay, setPaymentDay] = useState<string>("");
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [templateType, setTemplateType] = useState<"invoice" | "hours" | "novo_subtipo">("invoice");
+  const [monthlyValues, setMonthlyValues] = useState<Record<string, EmployeeMonthlyValue>>({});
 
   // Fetch active employees
   useEffect(() => {
@@ -35,7 +38,18 @@ export function EmployeePaymentSettings() {
 
         if (error) throw error;
 
-        setEmployees(data || []);
+        // Ensure proper typing by mapping the data
+        const typedData = data?.map(emp => ({
+          ...emp,
+          type: emp.type as "fixed" | "freelancer",
+          status: emp.status as "active" | "inactive",
+          preferred_template: emp.preferred_template as "invoice" | "hours" | "novo_subtipo" || "invoice"
+        }));
+
+        setEmployees(typedData || []);
+        
+        // Fetch monthly values for all employees
+        await fetchAllMonthlyValues(typedData || []);
       } catch (error: any) {
         console.error("Error fetching employees:", error);
         toast({
@@ -51,14 +65,52 @@ export function EmployeePaymentSettings() {
     fetchEmployees();
   }, [toast]);
 
+  // Fetch monthly values for all employees
+  const fetchAllMonthlyValues = async (employeesList: Employee[]) => {
+    try {
+      const valuesByEmployee: Record<string, EmployeeMonthlyValue> = {};
+      
+      for (const employee of employeesList) {
+        // Get the latest monthly value for each employee
+        const { data, error } = await supabase
+          .from("employee_monthly_values")
+          .select("*")
+          .eq("employee_id", employee.id)
+          .order("due_date", { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          valuesByEmployee[employee.id] = data[0] as EmployeeMonthlyValue;
+        }
+      }
+      
+      setMonthlyValues(valuesByEmployee);
+    } catch (error: any) {
+      console.error("Error fetching monthly values:", error);
+    }
+  };
+
   // Start editing an employee's payment settings
   const handleEdit = (employee: Employee) => {
     setEditingEmployee(employee.id);
-    // Get the current day of month
-    const today = new Date();
-    const dayOfMonth = today.getDate().toString().padStart(2, '0');
-    setPaymentDay(dayOfMonth);
-    setPaymentAmount(employee.id ? "0" : ""); // Default to 0
+    
+    // Set current values if available
+    const currentMonthlyValue = monthlyValues[employee.id];
+    if (currentMonthlyValue) {
+      // Extract day from due_date (YYYY-MM-DD) to display in the input field
+      const dueDate = new Date(currentMonthlyValue.due_date);
+      setPaymentDay(formatDate(dueDate, "yyyy-MM-dd"));
+      setPaymentAmount(currentMonthlyValue.due_data.toString());
+    } else {
+      // Get the current day of month
+      const today = new Date();
+      const formattedDate = formatDate(today, "yyyy-MM-dd");
+      setPaymentDay(formattedDate);
+      setPaymentAmount("0");
+    }
+    
     setTemplateType(employee.preferred_template || "invoice");
   };
 
@@ -73,18 +125,17 @@ export function EmployeePaymentSettings() {
 
       if (templateError) throw templateError;
 
-      // Format the date as YYYY-MM-DD for the current month
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = (today.getMonth() + 1).toString().padStart(2, '0');
-      const formattedDate = `${year}-${month}-${paymentDay.padStart(2, '0')}`;
+      // Parse the date from input
+      const selectedDate = new Date(paymentDay);
+      const formattedDate = formatDate(selectedDate, "yyyy-MM-dd");
 
-      // Check if a monthly value already exists for this month
+      // Check if a monthly value already exists for this employee
       const { data: existingValues, error: checkError } = await supabase
         .from("employee_monthly_values")
         .select("*")
         .eq("employee_id", employee.id)
-        .like("due_date", `${year}-${month}-%`);
+        .order("due_date", { ascending: false })
+        .limit(1);
 
       if (checkError) throw checkError;
 
@@ -118,7 +169,7 @@ export function EmployeePaymentSettings() {
         description: `As configurações de pagamento para ${employee.name} foram atualizadas com sucesso.`,
       });
 
-      // Refresh employees list
+      // Refresh employees and monthly values
       const { data, error } = await supabase
         .from("employees")
         .select("*")
@@ -126,7 +177,19 @@ export function EmployeePaymentSettings() {
         .order("name");
 
       if (error) throw error;
-      setEmployees(data || []);
+      
+      // Ensure proper typing
+      const typedData = data?.map(emp => ({
+        ...emp,
+        type: emp.type as "fixed" | "freelancer",
+        status: emp.status as "active" | "inactive",
+        preferred_template: emp.preferred_template as "invoice" | "hours" | "novo_subtipo" || "invoice"
+      }));
+      
+      setEmployees(typedData || []);
+      
+      // Refresh monthly values
+      await fetchAllMonthlyValues(typedData || []);
 
       // Reset editing state
       setEditingEmployee(null);
@@ -197,12 +260,10 @@ export function EmployeePaymentSettings() {
                       <div className="flex items-center space-x-2">
                         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                         <Input
-                          type="number"
-                          min="1"
-                          max="31"
+                          type="date"
                           value={paymentDay}
                           onChange={(e) => setPaymentDay(e.target.value)}
-                          className="w-20"
+                          className="w-40"
                         />
                       </div>
                     </TableCell>
@@ -243,10 +304,10 @@ export function EmployeePaymentSettings() {
                 ) : (
                   <>
                     <TableCell>
-                      {renderEmployeePaymentDay(employee)}
+                      {renderEmployeePaymentDay(employee, monthlyValues[employee.id])}
                     </TableCell>
                     <TableCell>
-                      {renderEmployeePaymentAmount(employee)}
+                      {renderEmployeePaymentAmount(monthlyValues[employee.id])}
                     </TableCell>
                     <TableCell>
                       {renderTemplateType(employee.preferred_template)}
@@ -274,13 +335,21 @@ export function EmployeePaymentSettings() {
 }
 
 // Helper function to render payment day from monthly values
-function renderEmployeePaymentDay(employee: Employee) {
-  return <span className="text-muted-foreground">A definir</span>;
+function renderEmployeePaymentDay(employee: Employee, monthlyValue?: EmployeeMonthlyValue) {
+  if (!monthlyValue) return <span className="text-muted-foreground">A definir</span>;
+  
+  try {
+    const date = new Date(monthlyValue.due_date);
+    return formatDate(date, "dd/MM/yyyy");
+  } catch (e) {
+    return <span className="text-muted-foreground">Data inválida</span>;
+  }
 }
 
 // Helper function to render payment amount from monthly values
-function renderEmployeePaymentAmount(employee: Employee) {
-  return <span className="text-muted-foreground">A definir</span>;
+function renderEmployeePaymentAmount(monthlyValue?: EmployeeMonthlyValue) {
+  if (!monthlyValue) return <span className="text-muted-foreground">A definir</span>;
+  return formatCurrency(monthlyValue.due_data);
 }
 
 // Helper function to render template type
