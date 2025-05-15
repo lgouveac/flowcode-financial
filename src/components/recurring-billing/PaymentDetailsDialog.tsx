@@ -8,7 +8,7 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RecurringBilling } from "@/types/billing";
 import { EmailTemplate } from "@/types/email";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Payment } from "@/types/payment";
 import { PaymentTable } from "../payments/PaymentTable";
@@ -85,7 +85,23 @@ export const PaymentDetailsDialog = ({
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'yyyy-MM-dd');
+    if (!dateString) return "";
+    
+    try {
+      // Parse a string date to a Date object
+      const date = parseISO(dateString);
+      
+      // Check if the date is valid before formatting
+      if (!isValid(date)) {
+        console.error("Invalid date:", dateString);
+        return "";
+      }
+      
+      return format(date, 'yyyy-MM-dd');
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "";
+    }
   };
 
   const handleSave = async () => {

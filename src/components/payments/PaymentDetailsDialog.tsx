@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Payment } from "@/types/payment";
 import type { EmailTemplate } from "@/types/email";
 import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
@@ -45,7 +45,23 @@ export const PaymentDetailsDialog = ({
   }, [open, payment]);
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'yyyy-MM-dd');
+    if (!dateString) return "";
+    
+    try {
+      // Parse a string date to a Date object
+      const date = parseISO(dateString);
+      
+      // Check if the date is valid before formatting
+      if (!isValid(date)) {
+        console.error("Invalid date:", dateString);
+        return "";
+      }
+      
+      return format(date, 'yyyy-MM-dd');
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "";
+    }
   };
 
   const handleSave = async () => {
