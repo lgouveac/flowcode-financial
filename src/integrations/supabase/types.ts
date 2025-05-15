@@ -125,119 +125,6 @@ export type Database = {
         }
         Relationships: []
       }
-      email_cc_recipients: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          email: string
-          id: string
-          is_active: boolean
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          email: string
-          id?: string
-          is_active?: boolean
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          email?: string
-          id?: string
-          is_active?: boolean
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      email_notification_intervals: {
-        Row: {
-          created_at: string | null
-          days_before: number
-          id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          days_before: number
-          id?: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          days_before?: number
-          id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      email_notification_log: {
-        Row: {
-          billing_id: string
-          client_id: string
-          created_at: string
-          days_before: number
-          due_date: string
-          id: string
-          payment_id: string | null
-          payment_type: string | null
-          sent_at: string
-        }
-        Insert: {
-          billing_id: string
-          client_id: string
-          created_at?: string
-          days_before: number
-          due_date: string
-          id?: string
-          payment_id?: string | null
-          payment_type?: string | null
-          sent_at?: string
-        }
-        Update: {
-          billing_id?: string
-          client_id?: string
-          created_at?: string
-          days_before?: number
-          due_date?: string
-          id?: string
-          payment_id?: string | null
-          payment_type?: string | null
-          sent_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "email_notification_log_payment_id_fkey"
-            columns: ["payment_id"]
-            isOneToOne: false
-            referencedRelation: "payments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      email_notification_settings: {
-        Row: {
-          created_at: string | null
-          id: string
-          notification_time: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          notification_time?: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          notification_time?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       email_templates: {
         Row: {
           content: string
@@ -271,27 +158,6 @@ export type Database = {
           subtype?: string
           type?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      employee_email_settings: {
-        Row: {
-          created_at: string | null
-          id: string
-          notification_time: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          notification_time?: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          notification_time?: string
-          updated_at?: string | null
         }
         Relationships: []
       }
@@ -419,27 +285,6 @@ export type Database = {
           is_recurring?: boolean
           name?: string
           start_date?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      global_settings: {
-        Row: {
-          created_at: string | null
-          employee_emails_send_day: number
-          id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          employee_emails_send_day: number
-          id?: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          employee_emails_send_day?: number
-          id?: string
           updated_at?: string | null
         }
         Relationships: []

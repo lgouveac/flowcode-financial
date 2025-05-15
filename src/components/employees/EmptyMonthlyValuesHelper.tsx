@@ -12,7 +12,7 @@ interface EmployeeRecord {
   name: string;
   email: string;
   status: string;
-  monthly_values?: { id: string; month: string; amount: number }[];
+  monthly_values?: { id: string; due_date: string; due_data: number }[];
 }
 
 export const EmptyMonthlyValuesHelper = () => {
@@ -46,9 +46,9 @@ export const EmptyMonthlyValuesHelper = () => {
       for (const employee of activeEmployees || []) {
         const { data: monthlyValues, error: valuesError } = await supabase
           .from("employee_monthly_values")
-          .select("id, month, amount")
+          .select("id, due_date, due_data")
           .eq("employee_id", employee.id)
-          .eq("month", currentMonth);
+          .eq("due_date", currentMonth);
           
         if (valuesError) throw valuesError;
         
@@ -91,8 +91,8 @@ export const EmptyMonthlyValuesHelper = () => {
         .from("employee_monthly_values")
         .insert({
           employee_id: employeeId,
-          month: currentMonth,
-          amount: 1000, // Default example value
+          due_date: currentMonth,
+          due_data: 1000, // Default example value
           notes: "Valor automático para teste"
         })
         .select();
@@ -188,7 +188,7 @@ export const EmptyMonthlyValuesHelper = () => {
                         Valor cadastrado: {new Intl.NumberFormat('pt-BR', { 
                           style: 'currency', 
                           currency: 'BRL' 
-                        }).format(employee.monthly_values[0].amount)}
+                        }).format(employee.monthly_values[0].due_data)}
                       </div>
                     ) : (
                       <span className="text-red-500">Sem valor para o mês atual</span>

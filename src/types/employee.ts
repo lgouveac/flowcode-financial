@@ -2,8 +2,8 @@
 export interface EmployeeMonthlyValue {
   id: string;
   employee_id: string;
-  month: string;
-  amount: number;
+  due_date: string; // The database uses due_date instead of month
+  due_data: number; // The database uses due_data instead of amount
   notes?: string;
   created_at?: string;
   updated_at?: string;

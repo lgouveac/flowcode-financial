@@ -15,7 +15,7 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
         .from("employee_monthly_values")
         .select("*")
         .eq("employee_id", employeeId)
-        .order("month", { ascending: false });
+        .order("due_date", { ascending: false });
 
       if (error) {
         console.error("Error fetching monthly values:", error);
@@ -27,7 +27,7 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
         throw error;
       }
 
-      return data;
+      return data as EmployeeMonthlyValue[];
     },
   });
 
@@ -37,8 +37,8 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
         .from("employee_monthly_values")
         .insert({
           employee_id: employeeId,
-          month: monthlyValue.month,
-          amount: monthlyValue.amount,
+          due_date: monthlyValue.due_date,
+          due_data: monthlyValue.due_data,
           notes: monthlyValue.notes,
         })
         .select()
@@ -50,7 +50,7 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
 
       toast({
         title: "Valor mensal adicionado",
-        description: `Valor de R$ ${monthlyValue.amount} adicionado para ${new Date(monthlyValue.month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
+        description: `Valor de R$ ${monthlyValue.due_data} adicionado para ${new Date(monthlyValue.due_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
       });
 
       return data;
@@ -70,7 +70,7 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
       const { error } = await supabase
         .from("employee_monthly_values")
         .update({
-          amount: monthlyValue.amount,
+          due_data: monthlyValue.due_data,
           notes: monthlyValue.notes,
         })
         .eq("id", monthlyValue.id);
@@ -81,7 +81,7 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
 
       toast({
         title: "Valor mensal atualizado",
-        description: `Valor atualizado para ${new Date(monthlyValue.month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
+        description: `Valor atualizado para ${new Date(monthlyValue.due_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
       });
     } catch (error: any) {
       console.error("Error updating monthly value:", error);

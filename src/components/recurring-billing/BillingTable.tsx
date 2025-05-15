@@ -34,7 +34,7 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
     }
   };
 
-  const handleDuplicate = async (billing: RecurringBilling) => {
+  const handleDuplicate = async (billing: RecurringBilling): Promise<void> => {
     try {
       // Create a new billing object without id and creation dates
       const newBilling = {
@@ -67,8 +67,6 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
       if (onRefresh) {
         onRefresh();
       }
-      
-      return data;
     } catch (error) {
       console.error("Erro ao duplicar cobrança:", error);
       toast({

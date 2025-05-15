@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -7,9 +8,11 @@ import { NewMonthlyValueDialog } from "./NewMonthlyValueDialog";
 import { useState } from "react";
 import { EditMonthlyValueDialog } from "./EditMonthlyValueDialog";
 import { EmployeeMonthlyValue } from "@/types/employee";
+
 interface MonthlyValuesListProps {
   employeeId: string;
 }
+
 export const MonthlyValuesList = ({
   employeeId
 }: MonthlyValuesListProps) => {
@@ -19,6 +22,7 @@ export const MonthlyValuesList = ({
   } = useEmployeeMonthlyValues(employeeId);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
   const [editingValue, setEditingValue] = useState<EmployeeMonthlyValue | null>(null);
+
   if (isLoading) {
     return <Card>
         <CardHeader>
@@ -31,6 +35,7 @@ export const MonthlyValuesList = ({
         </CardContent>
       </Card>;
   }
+
   return <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -54,16 +59,16 @@ export const MonthlyValuesList = ({
               <TableBody>
                 {monthlyValues.map(value => <TableRow key={value.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEditingValue(value)}>
                     <TableCell>
-                      {new Date(value.month).toLocaleDateString('pt-BR', {
-                  month: 'long',
-                  year: 'numeric'
-                })}
+                      {new Date(value.due_date).toLocaleDateString('pt-BR', {
+                        month: 'long',
+                        year: 'numeric'
+                      })}
                     </TableCell>
                     <TableCell>
                       {new Intl.NumberFormat('pt-BR', {
-                  style: 'currency',
-                  currency: 'BRL'
-                }).format(value.amount)}
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(value.due_data)}
                     </TableCell>
                     <TableCell>{value.notes || '-'}</TableCell>
                   </TableRow>)}
