@@ -1,211 +1,142 @@
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { RecurringBilling } from "@/types/billing";
 import { EmailTemplate } from "@/types/email";
-import { formatCurrency } from "@/utils/formatters";
-import { format, parseISO, isValid } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Payment } from "@/types/payment";
+import { PaymentTable } from "../payments/PaymentTable";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Edit, Copy, Mail, Save } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { SendInvoiceDialog } from "./SendInvoiceDialog";
-
-// Define PaymentStatus type locally
-type PaymentStatus = 'pending' | 'billed' | 'awaiting_invoice' | 'paid' | 'overdue' | 'cancelled' | 'partially_paid';
 
 interface PaymentDetailsDialogProps {
-  billing: RecurringBilling;
   open: boolean;
   onClose: () => void;
   onUpdate: () => void;
+  billing: RecurringBilling;
   templates?: EmailTemplate[];
 }
 
-export const PaymentDetailsDialog = ({ 
-  billing, 
-  open, 
-  onClose, 
-  onUpdate, 
-  templates = [] 
+export const PaymentDetailsDialog = ({
+  open,
+  onClose,
+  onUpdate,
+  billing,
+  templates = [],
 }: PaymentDetailsDialogProps) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [openSendInvoice, setOpenSendInvoice] = useState(false);
-
-  // Form fields
-  const [status, setStatus] = useState<PaymentStatus>(billing.status as PaymentStatus);
   const [description, setDescription] = useState(billing.description);
   const [amount, setAmount] = useState(billing.amount.toString());
   const [dueDay, setDueDay] = useState(billing.due_day.toString());
-  const [installments, setInstallments] = useState(billing.installments.toString());
-  const [currentInstallment, setCurrentInstallment] = useState(billing.current_installment.toString());
   const [paymentMethod, setPaymentMethod] = useState(billing.payment_method);
-  const [startDate, setStartDate] = useState(billing.start_date);
-  const [endDate, setEndDate] = useState(billing.end_date || '');
-  const [paymentDate, setPaymentDate] = useState<string | null>(billing.payment_date || null);
+  const [status, setStatus] = useState(billing.status);
+  const [emailTemplate, setEmailTemplate] = useState(billing.email_template || "none");
+  const [relatedPayments, setRelatedPayments] = useState<Payment[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [startDate, setStartDate] = useState(billing.start_date);
+  const [endDate, setEndDate] = useState(billing.end_date || "");
+  const [isLoadingPayments, setIsLoadingPayments] = useState(false);
 
-  // Reset form when billing changes or dialog opens
   useEffect(() => {
     if (open) {
-      setStatus(billing.status as PaymentStatus);
       setDescription(billing.description);
       setAmount(billing.amount.toString());
       setDueDay(billing.due_day.toString());
-      setInstallments(billing.installments.toString());
-      setCurrentInstallment(billing.current_installment.toString());
       setPaymentMethod(billing.payment_method);
+      setStatus(billing.status);
+      setEmailTemplate(billing.email_template || "none");
       setStartDate(billing.start_date);
-      setEndDate(billing.end_date || '');
-      setPaymentDate(billing.payment_date || null);
-      setIsEditing(false);
-      setIsUpdating(false);
+      setEndDate(billing.end_date || "");
+      fetchRelatedPayments();
     }
-  }, [billing, open]);
+  }, [open, billing]);
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
+  const fetchRelatedPayments = async () => {
+    setIsLoadingPayments(true);
     try {
-      return format(new Date(dateString), 'yyyy-MM-dd', { locale: ptBR });
-    } catch (e) {
-      return '';
-    }
-  };
-
-  const calculateNewDueDate = (paymentDueDate: string, oldDueDay: number, newDueDay: number) => {
-    try {
-      // Parse the payment due date
-      const dueDate = parseISO(paymentDueDate);
-      if (!isValid(dueDate)) return paymentDueDate;
-
-      // Get the first day of the month for the payment due date
-      const firstDayOfMonth = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1);
+      // Buscar todos os pagamentos relacionados a esta cobrança recorrente
+      // com base no client_id e descrição similar (sem a parte da parcela)
+      const baseDescription = billing.description;
       
-      // Add the new due day (subtract 1 because days start from 0 in Date object)
-      const newDueDate = new Date(firstDayOfMonth);
-      newDueDate.setDate(newDueDay);
-      
-      // If the new due day is invalid (e.g., February 31), it wraps to the next month
-      // In that case, we need to set it to the last day of the current month
-      if (newDueDate.getMonth() !== firstDayOfMonth.getMonth()) {
-        // Set to last day of the original month
-        newDueDate.setDate(0); // Setting to day 0 of next month = last day of current month
-      }
-
-      return format(newDueDate, 'yyyy-MM-dd');
-    } catch (error) {
-      console.error("Error calculating new due date:", error);
-      return paymentDueDate;
-    }
-  };
-
-  const updateAssociatedPayments = async (
-    clientId: string, 
-    billingDescription: string, 
-    oldDueDay: number, 
-    newDueDay: number
-  ) => {
-    try {
-      // Fetch all associated payments that are not yet paid or cancelled
-      const { data: payments, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('payments')
-        .select('*')
-        .eq('client_id', clientId)
-        .like('description', `${billingDescription}%`)
-        .in('status', ['pending', 'billed', 'awaiting_invoice', 'overdue', 'partially_paid'])
-        .gte('due_date', new Date().toISOString().split('T')[0]); // Only future payments
+        .select('*, clients(*)')
+        .eq('client_id', billing.client_id)
+        .like('description', `${baseDescription}%`)
+        .order('due_date', { ascending: true });
 
-      if (fetchError) throw fetchError;
-      if (!payments || payments.length === 0) return;
-
-      console.log(`Updating ${payments.length} associated payments`);
-
-      // Update each payment's due date
-      for (const payment of payments) {
-        const newDueDate = calculateNewDueDate(payment.due_date, oldDueDay, newDueDay);
-        
-        const { error: updateError } = await supabase
-          .from('payments')
-          .update({ 
-            due_date: newDueDate,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', payment.id);
-
-        if (updateError) {
-          console.error("Error updating payment:", updateError);
-        }
-      }
-
-      toast({
-        title: "Pagamentos atualizados",
-        description: `Atualizados ${payments.length} pagamentos associados.`
-      });
-
+      if (error) throw error;
+      
+      setRelatedPayments(data || []);
     } catch (error) {
-      console.error("Error updating associated payments:", error);
+      console.error("Erro ao buscar pagamentos relacionados:", error);
       toast({
-        title: "Erro ao atualizar pagamentos",
-        description: "Não foi possível atualizar os pagamentos associados.",
+        title: "Erro",
+        description: "Não foi possível carregar os pagamentos relacionados.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoadingPayments(false);
     }
   };
 
-  const handleSaveChanges = async () => {
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'yyyy-MM-dd');
+  };
+
+  const handleSave = async () => {
+    setIsUpdating(true);
+    
     try {
-      setIsUpdating(true);
-      
-      const oldDueDay = billing.due_day;
       const newDueDay = parseInt(dueDay);
-      const dueDayChanged = oldDueDay !== newDueDay;
+      if (isNaN(newDueDay) || newDueDay < 1 || newDueDay > 31) {
+        throw new Error("Dia de vencimento inválido");
+      }
       
-      // Update the recurring billing record
+      const updateData = {
+        description,
+        amount: parseFloat(amount),
+        due_day: newDueDay,
+        payment_method: paymentMethod,
+        status,
+        email_template: emailTemplate === "none" ? null : emailTemplate,
+        start_date: startDate,
+        end_date: endDate || null
+      };
+      
+      // Verifica se o dia de vencimento foi alterado
+      const dueDayChanged = newDueDay !== billing.due_day;
+      
+      // Atualiza a cobrança recorrente
       const { error } = await supabase
         .from('recurring_billing')
-        .update({
-          status,
-          description,
-          amount: parseFloat(amount),
-          due_day: newDueDay,
-          installments: parseInt(installments),
-          current_installment: parseInt(currentInstallment),
-          payment_method: paymentMethod,
-          start_date: startDate,
-          end_date: endDate || null,
-          payment_date: paymentDate
-        })
+        .update(updateData)
         .eq('id', billing.id);
 
       if (error) throw error;
 
-      // If due day changed, update associated payments
-      if (dueDayChanged) {
-        await updateAssociatedPayments(
-          billing.client_id,
-          description,
-          oldDueDay,
-          newDueDay
-        );
-      }
-
       toast({
         title: "Cobrança atualizada",
-        description: "Os detalhes da cobrança foram atualizados com sucesso."
+        description: "As alterações foram salvas com sucesso."
       });
-      
+
+      // Se o dia de vencimento foi alterado, vamos atualizar as datas de vencimento de todos os pagamentos futuros
+      if (dueDayChanged) {
+        // Atualiza as datas de vencimento dos pagamentos futuros
+        await updateFuturePaymentDueDates(newDueDay);
+      }
+
       onUpdate();
-      setIsEditing(false);
+      fetchRelatedPayments(); // Recarrega os pagamentos para mostrar as alterações
     } catch (error) {
       console.error("Erro ao atualizar cobrança:", error);
       toast({
         title: "Erro ao atualizar",
-        description: "Não foi possível atualizar os detalhes da cobrança.",
+        description: "Não foi possível salvar as alterações.",
         variant: "destructive"
       });
     } finally {
@@ -213,96 +144,129 @@ export const PaymentDetailsDialog = ({
     }
   };
 
-  const toggleEditing = () => {
-    if (isEditing) {
-      handleSaveChanges();
-    } else {
-      setIsEditing(true);
+  const updateFuturePaymentDueDates = async (newDueDay: number) => {
+    try {
+      // Filtra apenas pagamentos futuros que não foram pagos ou cancelados
+      const futurePayments = relatedPayments.filter(payment => 
+        new Date(payment.due_date) >= new Date() && 
+        ['pending', 'overdue', 'billed', 'awaiting_invoice', 'partially_paid'].includes(payment.status)
+      );
+      
+      if (futurePayments.length === 0) return;
+      
+      let updatedCount = 0;
+      
+      // Atualiza cada pagamento futuro
+      for (const payment of futurePayments) {
+        const currentDueDate = new Date(payment.due_date);
+        
+        // Pega o primeiro dia do mês da data de vencimento atual
+        let newDueDate = new Date(currentDueDate.getFullYear(), currentDueDate.getMonth(), 1);
+        
+        // Adiciona o novo dia de vencimento
+        newDueDate.setDate(newDueDay);
+        
+        // Se o novo dia for maior que o último dia do mês, ajusta para o último dia
+        const nextMonth = new Date(currentDueDate.getFullYear(), currentDueDate.getMonth() + 1, 0);
+        if (newDueDay > nextMonth.getDate()) {
+          newDueDate = nextMonth;
+        }
+        
+        // Atualiza a data de vencimento do pagamento
+        const { error } = await supabase
+          .from('payments')
+          .update({ due_date: newDueDate.toISOString().split('T')[0] })
+          .eq('id', payment.id);
+          
+        if (error) {
+          console.error("Erro ao atualizar pagamento:", error);
+        } else {
+          updatedCount++;
+        }
+      }
+      
+      if (updatedCount > 0) {
+        toast({
+          title: "Datas atualizadas",
+          description: `${updatedCount} pagamentos futuros foram atualizados com o novo dia de vencimento.`
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar datas de vencimento:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar todas as datas de vencimento.",
+        variant: "destructive"
+      });
     }
   };
 
-  const handleCopyDetails = () => {
-    const details = `
-      Cliente: ${billing.clients?.name}
-      Descrição: ${description}
-      Valor: ${formatCurrency(parseFloat(amount))}
-      Vencimento: Dia ${dueDay}
-      Status: ${status}
-    `;
-
-    navigator.clipboard.writeText(details);
-    toast({
-      title: "Detalhes copiados",
-      description: "Os detalhes da cobrança foram copiados para a área de transferência."
-    });
-  };
-
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-border">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Detalhes do Pagamento</DialogTitle>
+          <DialogTitle>Detalhes do Recebimento Recorrente</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Client and Description fields */}
-            <div>
-              <Label htmlFor="client">Cliente</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Informações da Cobrança</h3>
+            
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Descrição</label>
               <Input
-                id="client"
-                defaultValue={billing.clients?.name}
-                className="bg-muted text-foreground"
-                disabled={true} // Client can't be changed
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Descrição</Label>
-              <Input
-                id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-muted text-foreground"
-                disabled={!isEditing}
               />
             </div>
-          </div>
-
-          {/* Amount, Due Day, and Payment Method fields */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="amount">Valor</Label>
+            
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Valor</label>
               <Input
-                id="amount"
                 type="number"
+                step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="bg-muted text-foreground"
-                disabled={!isEditing}
               />
             </div>
-            <div>
-              <Label htmlFor="due_day">Dia do Vencimento</Label>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Dia de Vencimento</label>
               <Input
-                id="due_day"
                 type="number"
-                value={dueDay}
                 min="1"
                 max="31"
+                value={dueDay}
                 onChange={(e) => setDueDay(e.target.value)}
-                className="bg-muted text-foreground"
-                disabled={!isEditing}
               />
             </div>
-            <div>
-              <Label htmlFor="payment_method">Método de Pagamento</Label>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Data de Início</label>
+              <Input
+                type="date"
+                value={formatDate(startDate)}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Data de Término (opcional)</label>
+              <Input
+                type="date"
+                value={endDate ? formatDate(endDate) : ""}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Método de Pagamento</label>
               <Select 
                 value={paymentMethod} 
-                onValueChange={(value: any) => setPaymentMethod(value)}
-                disabled={!isEditing}
+                onValueChange={(value: "pix" | "boleto" | "credit_card") => setPaymentMethod(value)}
               >
-                <SelectTrigger className="bg-muted text-foreground">
-                  <SelectValue placeholder="Selecione o método de pagamento" />
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pix">PIX</SelectItem>
@@ -311,135 +275,92 @@ export const PaymentDetailsDialog = ({
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          {/* Status, Start Date, and End Date fields */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="status">Status</Label>
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Status</label>
               <Select 
                 value={status} 
-                onValueChange={(value: PaymentStatus) => setStatus(value)}
-                disabled={!isEditing}
+                onValueChange={(value: "pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid") => setStatus(value)}
               >
-                <SelectTrigger className="bg-muted text-foreground">
-                  <SelectValue placeholder="Selecione o status" />
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="billed">Cobrado</SelectItem>
-                  <SelectItem value="awaiting_invoice">Aguardando Nota Fiscal</SelectItem>
                   <SelectItem value="paid">Pago</SelectItem>
                   <SelectItem value="overdue">Atrasado</SelectItem>
                   <SelectItem value="cancelled">Cancelado</SelectItem>
+                  <SelectItem value="billed">Faturado</SelectItem>
+                  <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
                   <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="start_date">Data de Início</Label>
-              <Input
-                id="start_date"
-                type="date"
-                value={formatDate(startDate)}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-muted text-foreground"
-                disabled={!isEditing}
-              />
-            </div>
-            <div>
-              <Label htmlFor="end_date">Data de Término</Label>
-              <Input
-                id="end_date"
-                type="date"
-                value={formatDate(endDate)}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-muted text-foreground"
-                disabled={!isEditing}
-              />
-            </div>
-          </div>
 
-          {/* Installments fields */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="installments">Parcelas</Label>
-              <Input
-                id="installments"
-                type="number"
-                value={installments}
-                onChange={(e) => setInstallments(e.target.value)}
-                className="bg-muted text-foreground"
-                disabled={!isEditing}
-              />
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Template de Email</label>
+              <Select 
+                value={emailTemplate} 
+                onValueChange={(value: string) => setEmailTemplate(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {templates.map((template) => (
+                    <SelectItem 
+                      key={template.id} 
+                      value={template.id}
+                    >
+                      {template.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div>
-              <Label htmlFor="current_installment">Parcela Atual</Label>
-              <Input
-                id="current_installment"
-                type="number"
-                value={currentInstallment}
-                onChange={(e) => setCurrentInstallment(e.target.value)}
-                className="bg-muted text-foreground"
-                disabled={!isEditing}
-              />
-            </div>
-            <div>
-              <Label htmlFor="payment_date">Data de Pagamento</Label>
-              <Input
-                id="payment_date"
-                type="date"
-                value={paymentDate ? formatDate(paymentDate) : ''}
-                onChange={(e) => setPaymentDate(e.target.value || null)}
-                className="bg-muted text-foreground"
-                disabled={!isEditing}
-              />
-            </div>
-          </div>
-        </div>
 
-        <div className="flex justify-between">
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopyDetails}>
-              <Copy className="h-4 w-4 mr-2" />
-              Copiar Detalhes
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setOpenSendInvoice(true)}>
-              <Mail className="h-4 w-4 mr-2" />
-              Enviar Cobrança
-            </Button>
+            <div className="flex justify-end gap-4 mt-6">
+              <Button variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSave}
+                disabled={isUpdating}
+              >
+                {isUpdating ? "Salvando..." : "Salvar Alterações"}
+              </Button>
+            </div>
           </div>
-          <Button 
-            size="sm" 
-            onClick={toggleEditing}
-            variant={isEditing ? "default" : "secondary"}
-            disabled={isUpdating}
-          >
-            {isEditing ? (
-              isUpdating ? (
-                "Salvando..."
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar
-                </>
-              )
+          
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Parcelas</h3>
+              <Badge variant="outline" className="px-2 py-1">
+                {billing.current_installment}/{billing.installments}
+              </Badge>
+            </div>
+            
+            {isLoadingPayments ? (
+              <div className="flex justify-center items-center h-64">
+                <p>Carregando parcelas...</p>
+              </div>
+            ) : relatedPayments.length > 0 ? (
+              <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-y-auto">
+                <PaymentTable 
+                  payments={relatedPayments}
+                  onRefresh={fetchRelatedPayments}
+                  templates={templates}
+                />
+              </div>
             ) : (
-              <>
-                <Edit className="h-4 w-4 mr-2" />
-                Editar
-              </>
+              <div className="flex justify-center items-center h-64 border rounded-lg">
+                <p className="text-muted-foreground">Nenhuma parcela encontrada</p>
+              </div>
             )}
-          </Button>
+          </div>
         </div>
       </DialogContent>
-
-      <SendInvoiceDialog
-        open={openSendInvoice}
-        onClose={() => setOpenSendInvoice(false)}
-        billing={billing}
-        templates={templates}
-      />
     </Dialog>
   );
 };
