@@ -23,7 +23,7 @@ interface ClientSelectorProps {
   disabled?: boolean;
 }
 
-export function ClientSelector({ clients, onSelect, initialValue = "", disabled = false }: ClientSelectorProps) {
+export function ClientSelector({ clients = [], onSelect, initialValue = "", disabled = false }: ClientSelectorProps) {
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
 
@@ -40,7 +40,7 @@ export function ClientSelector({ clients, onSelect, initialValue = "", disabled 
     setOpen(false);
   };
 
-  const selectedClient = clients.find(c => c.id === selectedClientId);
+  const selectedClient = clients?.find(c => c.id === selectedClientId);
 
   return (
     <Popover open={open && !disabled} onOpenChange={disabled ? undefined : setOpen}>
@@ -57,12 +57,12 @@ export function ClientSelector({ clients, onSelect, initialValue = "", disabled 
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" style={{ backgroundColor: 'var(--background)', zIndex: 1000 }}>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" style={{ backgroundColor: 'white', zIndex: 1000 }}>
         <Command className="bg-background">
           <CommandInput placeholder="Buscar cliente..." />
           <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
-            {clients.map((client) => (
+            {Array.isArray(clients) && clients.map((client) => (
               <CommandItem
                 key={client.id}
                 value={client.name}

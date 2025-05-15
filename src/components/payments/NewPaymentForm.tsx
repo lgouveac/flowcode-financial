@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -8,6 +7,7 @@ import type { EmailTemplate } from "@/types/email";
 import type { NewPayment } from "@/types/payment";
 import { EmailPreview } from "../recurring-billing/EmailPreview";
 import { supabase } from "@/integrations/supabase/client";
+import { ClientSelector } from "../recurring-billing/ClientSelector";
 
 interface NewPaymentFormProps {
   clients: Array<{ id: string; name: string; partner_name?: string; responsible_name?: string }>;
@@ -90,21 +90,11 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="client">Cliente</Label>
-          <Select
-            value={formData.client_id}
-            onValueChange={(value) => handleClientSelect(value)}
-          >
-            <SelectTrigger id="client">
-              <SelectValue placeholder="Selecione um cliente" />
-            </SelectTrigger>
-            <SelectContent>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.name} {client.partner_name ? `(${client.partner_name})` : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ClientSelector
+            clients={clients || []}
+            onSelect={handleClientSelect}
+            initialValue={formData.client_id}
+          />
         </div>
         
         <div className="grid gap-2">
