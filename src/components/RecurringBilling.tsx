@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
@@ -11,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { NewPaymentDialog } from "./payments/NewPaymentDialog";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "./ui/use-toast";
+
 export const RecurringBilling = () => {
   const {
     billings,
@@ -27,9 +30,14 @@ export const RecurringBilling = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [billingSearch, setBillingSearch] = useState("");
   const [billingStatusFilter, setBillingStatusFilter] = useState("all");
+  
   const handleSuccess = () => {
     fetchBillings();
     fetchPayments();
+    toast({
+      title: "Sucesso",
+      description: "Operação realizada com sucesso",
+    });
   };
 
   // Updated to properly use the clients property which is now defined in the type
@@ -48,11 +56,11 @@ export const RecurringBilling = () => {
   const oneTimePayments = useMemo(() => {
     return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
   }, [payments]);
+  
   return <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
         <div className="flex items-center gap-2">
-          
           <NewBillingDialog clients={clients} onSuccess={handleSuccess} templates={templates} />
         </div>
       </div>
@@ -113,7 +121,13 @@ export const RecurringBilling = () => {
                 </Select>
               </div>
             </div>
-            
+            <Button 
+              onClick={() => setShowNewPaymentDialog(true)}
+              className="whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4 mr-2" /> 
+              Novo Recebimento
+            </Button>
           </div>
           <PaymentTable payments={oneTimePayments} onRefresh={handleSuccess} searchTerm={paymentSearch} statusFilter={paymentStatusFilter} templates={templates} enableDuplicate={true} />
         </TabsContent>

@@ -40,7 +40,8 @@ export function ClientSelector({ clients = [], onSelect, initialValue = "", disa
     setOpen(false);
   };
 
-  const selectedClient = clients?.find(c => c.id === selectedClientId);
+  // Make sure clients is an array and find the selected client
+  const selectedClient = Array.isArray(clients) ? clients.find(c => c.id === selectedClientId) : undefined;
 
   return (
     <Popover open={open && !disabled} onOpenChange={disabled ? undefined : setOpen}>
@@ -62,22 +63,28 @@ export function ClientSelector({ clients = [], onSelect, initialValue = "", disa
           <CommandInput placeholder="Buscar cliente..." />
           <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
-            {Array.isArray(clients) && clients.map((client) => (
-              <CommandItem
-                key={client.id}
-                value={client.name}
-                onSelect={() => handleSelect(client.id)}
-                className="cursor-pointer"
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    selectedClientId === client.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {client.name}
+            {Array.isArray(clients) && clients.length > 0 ? (
+              clients.map((client) => (
+                <CommandItem
+                  key={client.id}
+                  value={client.name}
+                  onSelect={() => handleSelect(client.id)}
+                  className="cursor-pointer"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedClientId === client.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {client.name}
+                </CommandItem>
+              ))
+            ) : (
+              <CommandItem disabled value="">
+                Nenhum cliente disponível
               </CommandItem>
-            ))}
+            )}
           </CommandGroup>
         </Command>
       </PopoverContent>
