@@ -1,8 +1,9 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { useEmployeeMonthlyValues } from "@/hooks/useEmployeeMonthlyValues";
 
@@ -29,8 +30,8 @@ export const NewMonthlyValueDialog = ({ open, onClose, employeeId }: NewMonthlyV
       
       await addMonthlyValue({
         employee_id: employeeId,
-        month: formattedMonth, // Use the formatted date
-        amount: Number(amount),
+        due_date: formattedMonth, // Use the correct field name
+        due_data: Number(amount), // Use the correct field name
         notes,
       });
 

@@ -15,7 +15,7 @@ interface EditMonthlyValueDialogProps {
 }
 
 export const EditMonthlyValueDialog = ({ monthlyValue, open, onClose }: EditMonthlyValueDialogProps) => {
-  const [amount, setAmount] = useState(String(monthlyValue.amount));
+  const [amount, setAmount] = useState(String(monthlyValue.due_data));
   const [notes, setNotes] = useState(monthlyValue.notes || "");
   const { updateMonthlyValue } = useEmployeeMonthlyValues(monthlyValue.employee_id);
 
@@ -24,7 +24,7 @@ export const EditMonthlyValueDialog = ({ monthlyValue, open, onClose }: EditMont
 
     await updateMonthlyValue({
       ...monthlyValue,
-      amount: Number(amount),
+      due_data: Number(amount),
       notes,
     });
 
@@ -41,7 +41,7 @@ export const EditMonthlyValueDialog = ({ monthlyValue, open, onClose }: EditMont
           <div>
             <Label>Mês de Referência</Label>
             <p className="text-muted-foreground mt-2">
-              {new Date(monthlyValue.month).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              {new Date(monthlyValue.due_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             </p>
           </div>
 

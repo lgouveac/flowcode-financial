@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { EmployeeTable } from "@/components/EmployeeTable";
 import { EmployeeSettings } from "@/components/EmployeeSettings";
@@ -6,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 import { EmployeeRegistrationDialog } from "@/components/employees/EmployeeRegistrationDialog";
 import { ShareEmployeeFormButton } from "@/components/employees/ShareEmployeeFormButton";
+import { EmployeePaymentSettings } from "@/components/employees/EmployeePaymentSettings";
+
 export default function EmployeesPage() {
   const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
   return <div className="space-y-6">
@@ -20,9 +23,17 @@ export default function EmployeesPage() {
         </div>
       </div>
       <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list">Listagem</TabsTrigger>
+          <TabsTrigger value="payment-settings">Pagamentos</TabsTrigger>
+          <TabsTrigger value="settings">Configurações</TabsTrigger>
+        </TabsList>
         
         <TabsContent value="list" className="mt-0">
           <EmployeeTable />
+        </TabsContent>
+        <TabsContent value="payment-settings" className="mt-0">
+          <EmployeePaymentSettings />
         </TabsContent>
         <TabsContent value="settings" className="mt-0">
           <EmployeeSettings />

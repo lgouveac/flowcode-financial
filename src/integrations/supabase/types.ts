@@ -76,6 +76,7 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"] | null
           phone: string | null
           responsible_name: string | null
+          send_email: boolean | null
           status: Database["public"]["Enums"]["client_status"] | null
           total_billing: number | null
           type: Database["public"]["Enums"]["client_type"]
@@ -97,6 +98,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           phone?: string | null
           responsible_name?: string | null
+          send_email?: boolean | null
           status?: Database["public"]["Enums"]["client_status"] | null
           total_billing?: number | null
           type: Database["public"]["Enums"]["client_type"]
@@ -118,6 +120,7 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"] | null
           phone?: string | null
           responsible_name?: string | null
+          send_email?: boolean | null
           status?: Database["public"]["Enums"]["client_status"] | null
           total_billing?: number | null
           type?: Database["public"]["Enums"]["client_type"]
