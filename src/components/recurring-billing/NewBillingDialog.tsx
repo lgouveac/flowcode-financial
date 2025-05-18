@@ -201,17 +201,17 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
 
         {isRecurring ? (
           <NewRecurringBillingForm
-            clients={clients}
+            clients={clients || []}
             onSubmit={handleNewRecurring}
             onClose={() => setOpen(false)}
-            templates={templates}
+            templates={templates || []}
           />
         ) : (
           <NewPaymentForm
-            clients={clients}
+            clients={clients || []}
             onSubmit={handleNewPayment}
             onClose={() => setOpen(false)}
-            templates={templates}
+            templates={templates || []}
           />
         )}
       </DialogContent>

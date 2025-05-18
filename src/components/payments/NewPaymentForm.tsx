@@ -133,7 +133,8 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
   };
 
   const selectedClient = clients.find(client => client.id === formData.client_id);
-  const filteredTemplates = templates.filter(template => 
+  const safeTemplates = Array.isArray(templates) ? templates : [];
+  const filteredTemplates = safeTemplates.filter(template => 
     template.type === 'clients' && template.subtype === 'oneTime'
   );
 
@@ -247,7 +248,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
         {formData.email_template && selectedClient && (
           <EmailPreview
             selectedTemplate={formData.email_template}
-            templates={templates}
+            templates={safeTemplates}
             clientName={selectedClient.name}
             responsibleName={responsibleName || selectedClient.partner_name}
             amount={formData.amount}

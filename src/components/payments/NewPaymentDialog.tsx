@@ -103,10 +103,10 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients, templates 
           <DialogTitle>Novo Recebimento</DialogTitle>
         </DialogHeader>
         <NewPaymentForm
-          clients={clients}
+          clients={clients || []}
           onSubmit={handleSubmit}
           onClose={onClose}
-          templates={templates}
+          templates={templates || []}
         />
       </DialogContent>
     </Dialog>

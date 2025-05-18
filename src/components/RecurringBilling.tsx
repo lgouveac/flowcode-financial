@@ -42,9 +42,11 @@ export const RecurringBilling = () => {
 
   // Updated to properly use the clients property which is now defined in the type
   const filteredBillings = useMemo(() => {
+    if (!billings || !Array.isArray(billings)) return [];
+    
     return billings.filter(billing => {
       const client = billing.clients?.name || "";
-      const description = billing.description.toLowerCase();
+      const description = (billing.description || "").toLowerCase();
       const search = billingSearch.toLowerCase();
       const matchesSearch = client.toLowerCase().includes(search) || description.includes(search);
       const matchesStatus = billingStatusFilter === "all" || billing.status === billingStatusFilter;
@@ -54,14 +56,19 @@ export const RecurringBilling = () => {
 
   // Only show one-time payments in the "Pontuais" tab
   const oneTimePayments = useMemo(() => {
+    if (!payments || !Array.isArray(payments)) return [];
+    
     return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
   }, [payments]);
+  
+  const safeClients = Array.isArray(clients) ? clients : [];
+  const safeTemplates = Array.isArray(templates) ? templates : [];
   
   return <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
         <div className="flex items-center gap-2">
-          <NewBillingDialog clients={clients} onSuccess={handleSuccess} templates={templates} />
+          <NewBillingDialog clients={safeClients} onSuccess={handleSuccess} templates={safeTemplates} />
         </div>
       </div>
 
@@ -95,7 +102,7 @@ export const RecurringBilling = () => {
               </div>
             </div>
           </div>
-          <BillingTable billings={filteredBillings} onRefresh={handleSuccess} enableDuplicate templates={templates} />
+          <BillingTable billings={filteredBillings} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
         </TabsContent>
 
         <TabsContent value="onetime" className="border rounded-lg">
@@ -129,12 +136,12 @@ export const RecurringBilling = () => {
               Novo Recebimento
             </Button>
           </div>
-          <PaymentTable payments={oneTimePayments} onRefresh={handleSuccess} searchTerm={paymentSearch} statusFilter={paymentStatusFilter} templates={templates} enableDuplicate={true} />
+          <PaymentTable payments={oneTimePayments} onRefresh={handleSuccess} searchTerm={paymentSearch} statusFilter={paymentStatusFilter} templates={safeTemplates} enableDuplicate={true} />
         </TabsContent>
       </Tabs>
 
       <NotificationSettings open={showSettings} onClose={() => setShowSettings(false)} />
 
-      <NewPaymentDialog open={showNewPaymentDialog} onClose={() => setShowNewPaymentDialog(false)} onSuccess={handleSuccess} clients={clients} templates={templates} />
+      <NewPaymentDialog open={showNewPaymentDialog} onClose={() => setShowNewPaymentDialog(false)} onSuccess={handleSuccess} clients={safeClients} templates={safeTemplates} />
     </div>;
 };

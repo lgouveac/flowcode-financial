@@ -106,14 +106,15 @@ export const NewRecurringBillingForm = ({
   };
 
   const selectedClient = clients.find(client => client.id === formData.client_id);
-  const filteredTemplates = templates.filter(template => 
+  const safeTemplates = Array.isArray(templates) ? templates : [];
+  const filteredTemplates = safeTemplates.filter(template => 
     template.type === 'clients' && template.subtype === 'recurring'
   );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <ClientSelector 
-        clients={clients}
+        clients={clients || []}
         onSelect={handleClientSelect}
       />
       
@@ -180,12 +181,12 @@ export const NewRecurringBillingForm = ({
         onChange={(value) => updateFormData({ payment_method: value })}
       />
 
-      {formData.email_template && !disableNotifications && (
+      {formData.email_template && !disableNotifications && selectedClient && (
         <EmailPreview
           selectedTemplate={formData.email_template}
-          templates={templates}
-          clientName={selectedClient?.name}
-          responsibleName={responsibleName || selectedClient?.partner_name}
+          templates={safeTemplates}
+          clientName={selectedClient?.name || ""}
+          responsibleName={responsibleName || selectedClient?.partner_name || ""}
           amount={formData.amount}
           dueDay={formData.due_day}
           description={formData.description}
