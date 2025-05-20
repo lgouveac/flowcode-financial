@@ -1,6 +1,6 @@
 
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -23,19 +23,27 @@ interface ClientSelectorProps {
   disabled?: boolean;
 }
 
-export function ClientSelector({ clients = [], onSelect, initialValue = "", disabled = false }: ClientSelectorProps) {
+export function ClientSelector({ 
+  clients = [], 
+  onSelect, 
+  initialValue = "", 
+  disabled = false 
+}: ClientSelectorProps) {
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
+  
+  // Garantir que clients sempre seja um array
   const safeClients = Array.isArray(clients) ? clients : [];
 
-  // Update selectedClientId when initialValue changes
+  // Atualizar selectedClientId quando initialValue mudar
   useEffect(() => {
     if (initialValue) {
       setSelectedClientId(initialValue);
     }
   }, [initialValue]);
 
-  const handleSelect = (clientId: string) => {
+  // Criar função handleSelect com useCallback para evitar recriações desnecessárias
+  const handleSelect = useCallback((clientId: string) => {
     try {
       setSelectedClientId(clientId);
       onSelect(clientId);
@@ -43,9 +51,9 @@ export function ClientSelector({ clients = [], onSelect, initialValue = "", disa
     } catch (error) {
       console.error("Error in ClientSelector handleSelect:", error);
     }
-  };
+  }, [onSelect]);
 
-  // Find the selected client
+  // Encontrar o cliente selecionado
   const selectedClient = safeClients.find(c => c.id === selectedClientId);
 
   return (
@@ -64,7 +72,12 @@ export function ClientSelector({ clients = [], onSelect, initialValue = "", disa
         </Button>
       </PopoverTrigger>
       {open && !disabled && (
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" style={{ backgroundColor: 'white', zIndex: 1000 }}>
+        <PopoverContent 
+          className="w-[--radix-popover-trigger-width] p-0" 
+          align="start"
+          sideOffset={5}
+          style={{ backgroundColor: 'white', zIndex: 1000 }}
+        >
           <Command className="bg-background">
             <CommandInput placeholder="Buscar cliente..." />
             <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
@@ -87,7 +100,7 @@ export function ClientSelector({ clients = [], onSelect, initialValue = "", disa
                   </CommandItem>
                 ))
               ) : (
-                <CommandItem disabled value="">
+                <CommandItem disabled>
                   Nenhum cliente disponível
                 </CommandItem>
               )}

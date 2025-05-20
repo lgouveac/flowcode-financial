@@ -19,6 +19,10 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Garantir que clients e templates sejam arrays
+  const safeClients = Array.isArray(clients) ? clients : [];
+  const safeTemplates = Array.isArray(templates) ? templates : [];
+
   const handleSubmit = async (payment: NewPayment & { email_template?: string }) => {
     console.log("Submitting payment:", payment);
     setIsSubmitting(true);
@@ -91,10 +95,6 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
       setIsSubmitting(false);
     }
   };
-
-  // Ensure clients and templates are arrays to prevent errors
-  const safeClients = Array.isArray(clients) ? clients : [];
-  const safeTemplates = Array.isArray(templates) ? templates : [];
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
