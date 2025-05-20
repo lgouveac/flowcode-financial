@@ -22,7 +22,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
   const [isRecurring, setIsRecurring] = useState(true);
   const { toast } = useToast();
   
-  // Ensure clients and templates are always arrays
+  // Ensure clients and templates are always arrays to prevent errors
   const safeClients = Array.isArray(clients) ? clients : [];
   const safeTemplates = Array.isArray(templates) ? templates : [];
 

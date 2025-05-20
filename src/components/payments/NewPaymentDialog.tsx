@@ -92,6 +92,10 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
     }
   };
 
+  // Ensure clients and templates are arrays to prevent errors
+  const safeClients = Array.isArray(clients) ? clients : [];
+  const safeTemplates = Array.isArray(templates) ? templates : [];
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       if (!isSubmitting && !isOpen) {
@@ -103,10 +107,10 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
           <DialogTitle>Novo Recebimento</DialogTitle>
         </DialogHeader>
         <NewPaymentForm
-          clients={Array.isArray(clients) ? clients : []}
+          clients={safeClients}
           onSubmit={handleSubmit}
           onClose={onClose}
-          templates={Array.isArray(templates) ? templates : []}
+          templates={safeTemplates}
         />
       </DialogContent>
     </Dialog>

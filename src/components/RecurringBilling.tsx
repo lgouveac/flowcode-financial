@@ -61,6 +61,7 @@ export const RecurringBilling = () => {
     return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
   }, [payments]);
   
+  // Make sure clients and templates are always arrays before passing to components
   const safeClients = Array.isArray(clients) ? clients : [];
   const safeTemplates = Array.isArray(templates) ? templates : [];
   

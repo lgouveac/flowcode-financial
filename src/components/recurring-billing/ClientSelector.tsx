@@ -63,36 +63,38 @@ export function ClientSelector({ clients = [], onSelect, initialValue = "", disa
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" style={{ backgroundColor: 'white', zIndex: 1000 }}>
-        <Command className="bg-background">
-          <CommandInput placeholder="Buscar cliente..." />
-          <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
-          <CommandGroup className="max-h-64 overflow-auto">
-            {safeClients.length > 0 ? (
-              safeClients.map((client) => (
-                <CommandItem
-                  key={client.id}
-                  value={client.name}
-                  onSelect={() => handleSelect(client.id)}
-                  className="cursor-pointer"
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedClientId === client.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {client.name}
+      {open && !disabled && (
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" style={{ backgroundColor: 'white', zIndex: 1000 }}>
+          <Command className="bg-background">
+            <CommandInput placeholder="Buscar cliente..." />
+            <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
+            <CommandGroup className="max-h-64 overflow-auto">
+              {safeClients.length > 0 ? (
+                safeClients.map((client) => (
+                  <CommandItem
+                    key={client.id}
+                    value={client.name}
+                    onSelect={() => handleSelect(client.id)}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedClientId === client.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {client.name}
+                  </CommandItem>
+                ))
+              ) : (
+                <CommandItem disabled value="">
+                  Nenhum cliente disponível
                 </CommandItem>
-              ))
-            ) : (
-              <CommandItem disabled value="">
-                Nenhum cliente disponível
-              </CommandItem>
-            )}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
+              )}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      )}
     </Popover>
   );
 }
