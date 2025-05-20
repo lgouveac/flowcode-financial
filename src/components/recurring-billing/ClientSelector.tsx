@@ -76,13 +76,12 @@ export function ClientSelector({
           className="w-[--radix-popover-trigger-width] p-0" 
           align="start"
           sideOffset={5}
-          style={{ backgroundColor: 'white', zIndex: 1000 }}
         >
-          <Command className="bg-background">
+          <Command>
             <CommandInput placeholder="Buscar cliente..." />
             <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
             <CommandGroup className="max-h-64 overflow-auto">
-              {safeClients.length > 0 ? (
+              {safeClients && safeClients.length > 0 ? (
                 safeClients.map((client) => (
                   <CommandItem
                     key={client.id}
