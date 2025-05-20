@@ -26,6 +26,7 @@ interface ClientSelectorProps {
 export function ClientSelector({ clients = [], onSelect, initialValue = "", disabled = false }: ClientSelectorProps) {
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
+  const safeClients = Array.isArray(clients) ? clients : [];
 
   // Update selectedClientId when initialValue changes
   useEffect(() => {
@@ -35,13 +36,17 @@ export function ClientSelector({ clients = [], onSelect, initialValue = "", disa
   }, [initialValue]);
 
   const handleSelect = (clientId: string) => {
-    setSelectedClientId(clientId);
-    onSelect(clientId);
-    setOpen(false);
+    try {
+      setSelectedClientId(clientId);
+      onSelect(clientId);
+      setOpen(false);
+    } catch (error) {
+      console.error("Error in ClientSelector handleSelect:", error);
+    }
   };
 
-  // Make sure clients is an array and find the selected client
-  const selectedClient = Array.isArray(clients) ? clients.find(c => c.id === selectedClientId) : undefined;
+  // Find the selected client
+  const selectedClient = safeClients.find(c => c.id === selectedClientId);
 
   return (
     <Popover open={open && !disabled} onOpenChange={disabled ? undefined : setOpen}>
@@ -63,8 +68,8 @@ export function ClientSelector({ clients = [], onSelect, initialValue = "", disa
           <CommandInput placeholder="Buscar cliente..." />
           <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
-            {Array.isArray(clients) && clients.length > 0 ? (
-              clients.map((client) => (
+            {safeClients.length > 0 ? (
+              safeClients.map((client) => (
                 <CommandItem
                   key={client.id}
                   value={client.name}

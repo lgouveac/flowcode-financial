@@ -17,10 +17,14 @@ interface NewBillingDialogProps {
   templates?: EmailTemplate[];
 }
 
-export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBillingDialogProps) => {
+export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: NewBillingDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isRecurring, setIsRecurring] = useState(true);
   const { toast } = useToast();
+  
+  // Ensure clients and templates are always arrays
+  const safeClients = Array.isArray(clients) ? clients : [];
+  const safeTemplates = Array.isArray(templates) ? templates : [];
 
   const handleSuccess = () => {
     setOpen(false);
@@ -40,7 +44,7 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
       
       // First, update the client's responsible_name if provided
       if (responsible_name && billingData.client_id) {
-        const client = clients.find(c => c.id === billingData.client_id);
+        const client = safeClients.find(c => c.id === billingData.client_id);
         if (client && responsible_name !== client.responsible_name) {
           console.log("Updating client responsible name:", responsible_name);
           const { error: updateError } = await supabase
@@ -102,7 +106,7 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
     try {
       // First, update the client's responsible_name if needed
       if (payment.client_id) {
-        const client = clients.find(c => c.id === payment.client_id);
+        const client = safeClients.find(c => c.id === payment.client_id);
         if (client && payment.responsible_name !== (client.responsible_name || client.partner_name)) {
           const { error: updateError } = await supabase
             .from('clients')
@@ -201,17 +205,17 @@ export const NewBillingDialog = ({ clients, onSuccess, templates = [] }: NewBill
 
         {isRecurring ? (
           <NewRecurringBillingForm
-            clients={clients || []}
+            clients={safeClients}
             onSubmit={handleNewRecurring}
             onClose={() => setOpen(false)}
-            templates={templates || []}
+            templates={safeTemplates}
           />
         ) : (
           <NewPaymentForm
-            clients={clients || []}
+            clients={safeClients}
             onSubmit={handleNewPayment}
             onClose={() => setOpen(false)}
-            templates={templates || []}
+            templates={safeTemplates}
           />
         )}
       </DialogContent>

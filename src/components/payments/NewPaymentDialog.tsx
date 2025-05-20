@@ -15,7 +15,7 @@ interface NewPaymentDialogProps {
   templates?: EmailTemplate[];
 }
 
-export const NewPaymentDialog = ({ open, onClose, onSuccess, clients, templates = [] }: NewPaymentDialogProps) => {
+export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templates = [] }: NewPaymentDialogProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -103,10 +103,10 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients, templates 
           <DialogTitle>Novo Recebimento</DialogTitle>
         </DialogHeader>
         <NewPaymentForm
-          clients={clients || []}
+          clients={Array.isArray(clients) ? clients : []}
           onSubmit={handleSubmit}
           onClose={onClose}
-          templates={templates || []}
+          templates={Array.isArray(templates) ? templates : []}
         />
       </DialogContent>
     </Dialog>

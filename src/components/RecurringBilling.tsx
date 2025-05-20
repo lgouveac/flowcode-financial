@@ -142,6 +142,12 @@ export const RecurringBilling = () => {
 
       <NotificationSettings open={showSettings} onClose={() => setShowSettings(false)} />
 
-      <NewPaymentDialog open={showNewPaymentDialog} onClose={() => setShowNewPaymentDialog(false)} onSuccess={handleSuccess} clients={safeClients} templates={safeTemplates} />
+      <NewPaymentDialog 
+        open={showNewPaymentDialog} 
+        onClose={() => setShowNewPaymentDialog(false)} 
+        onSuccess={handleSuccess} 
+        clients={safeClients} 
+        templates={safeTemplates} 
+      />
     </div>;
 };
