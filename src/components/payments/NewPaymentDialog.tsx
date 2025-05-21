@@ -19,7 +19,7 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Garantir que clients e templates sejam arrays
+  // Ensure clients and templates are always arrays
   const safeClients = Array.isArray(clients) ? clients : [];
   const safeTemplates = Array.isArray(templates) ? templates : [];
 

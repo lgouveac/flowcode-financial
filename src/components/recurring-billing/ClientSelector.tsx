@@ -32,17 +32,17 @@ export function ClientSelector({
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
   
-  // Garantir que clients sempre seja um array
+  // Ensure clients is always a valid array
   const safeClients = Array.isArray(clients) ? clients : [];
 
-  // Atualizar selectedClientId quando initialValue mudar
+  // Update selectedClientId when initialValue changes
   useEffect(() => {
     if (initialValue) {
       setSelectedClientId(initialValue);
     }
   }, [initialValue]);
 
-  // Criar função handleSelect com useCallback para evitar recriações desnecessárias
+  // Create handleSelect with useCallback to avoid unnecessary recreations
   const handleSelect = useCallback((clientId: string) => {
     try {
       setSelectedClientId(clientId);
@@ -53,11 +53,17 @@ export function ClientSelector({
     }
   }, [onSelect]);
 
-  // Encontrar o cliente selecionado
+  // Find the selected client
   const selectedClient = safeClients.find(c => c.id === selectedClientId);
 
+  // Function to safely close the popover
+  const handleOpenChange = useCallback((isOpen: boolean) => {
+    if (disabled) return;
+    setOpen(isOpen);
+  }, [disabled]);
+
   return (
-    <Popover open={open && !disabled} onOpenChange={disabled ? undefined : setOpen}>
+    <Popover open={open && !disabled} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -77,34 +83,37 @@ export function ClientSelector({
           align="start"
           sideOffset={5}
         >
-          <Command>
-            <CommandInput placeholder="Buscar cliente..." />
-            <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
-            <CommandGroup className="max-h-64 overflow-auto">
-              {safeClients && safeClients.length > 0 ? (
-                safeClients.map((client) => (
-                  <CommandItem
-                    key={client.id}
-                    value={client.name}
-                    onSelect={() => handleSelect(client.id)}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedClientId === client.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {client.name}
+          {/* We wrap the Command in a div to ensure it has a parent */}
+          <div className="bg-popover rounded-md overflow-hidden">
+            <Command>
+              <CommandInput placeholder="Buscar cliente..." />
+              <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
+              <CommandGroup className="max-h-64 overflow-auto">
+                {safeClients && safeClients.length > 0 ? (
+                  safeClients.map((client) => (
+                    <CommandItem
+                      key={client.id}
+                      value={client.name}
+                      onSelect={() => handleSelect(client.id)}
+                      className="cursor-pointer"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedClientId === client.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {client.name}
+                    </CommandItem>
+                  ))
+                ) : (
+                  <CommandItem disabled>
+                    Nenhum cliente disponível
                   </CommandItem>
-                ))
-              ) : (
-                <CommandItem disabled>
-                  Nenhum cliente disponível
-                </CommandItem>
-              )}
-            </CommandGroup>
-          </Command>
+                )}
+              </CommandGroup>
+            </Command>
+          </div>
         </PopoverContent>
       )}
     </Popover>
