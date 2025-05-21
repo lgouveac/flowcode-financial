@@ -15,26 +15,39 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface Client {
+  id: string;
+  name: string;
+}
 
 interface ClientSelectorProps {
-  clients: { id: string; name: string }[];
+  clients: Client[];
   onSelect: (clientId: string) => void;
   initialValue?: string;
   disabled?: boolean;
+  loading?: boolean;
 }
 
 export function ClientSelector({ 
-  clients = [], 
+  clients, 
   onSelect, 
   initialValue = "", 
-  disabled = false 
+  disabled = false,
+  loading = false
 }: ClientSelectorProps) {
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
   
-  // Ensure clients is always a valid array with valid items
-  const safeClients = Array.isArray(clients) 
-    ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) 
+  // Ensure clients is always a valid array - defensive programming
+  const safeClients: Client[] = Array.isArray(clients) 
+    ? clients.filter(client => 
+        client && 
+        typeof client === 'object' && 
+        typeof client.id === 'string' && 
+        typeof client.name === 'string'
+      )
     : [];
 
   // Update selectedClientId when initialValue changes
@@ -44,14 +57,24 @@ export function ClientSelector({
     }
   }, [initialValue]);
 
-  // Find the selected client
+  // Find the selected client safely
   const selectedClient = safeClients.find(c => c.id === selectedClientId);
 
+  // Handle selection with callback
   const handleSelect = useCallback((clientId: string) => {
     setSelectedClientId(clientId);
     onSelect(clientId);
     setOpen(false);
   }, [onSelect]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>

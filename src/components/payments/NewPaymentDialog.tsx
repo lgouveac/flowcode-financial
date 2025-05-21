@@ -5,27 +5,69 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { NewPayment } from "@/types/payment";
 import type { EmailTemplate } from "@/types/email";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface Client {
+  id: string;
+  name: string;
+  partner_name?: string;
+  responsible_name?: string;
+}
 
 interface NewPaymentDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  clients: Array<{ id: string; name: string; partner_name?: string }>;
+  clients: Client[];
   templates?: EmailTemplate[];
 }
 
-export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templates = [] }: NewPaymentDialogProps) => {
+export const NewPaymentDialog = ({ 
+  open, 
+  onClose, 
+  onSuccess, 
+  clients = [], 
+  templates = [] 
+}: NewPaymentDialogProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [safeClients, setSafeClients] = useState<Client[]>([]);
+  const [safeTemplates, setSafeTemplates] = useState<EmailTemplate[]>([]);
 
-  // Ensure clients and templates are always valid arrays with valid items
-  const safeClients = Array.isArray(clients) 
-    ? clients.filter(client => client && typeof client === 'object' && client.id && client.name)
-    : [];
-  const safeTemplates = Array.isArray(templates) 
-    ? templates.filter(template => template && typeof template === 'object' && template.id)
-    : [];
+  // Process data safely when props change
+  useEffect(() => {
+    setIsLoading(true);
+    
+    // Process clients safely
+    const validClients = Array.isArray(clients) 
+      ? clients.filter(client => 
+          client && 
+          typeof client === 'object' && 
+          client.id && 
+          client.name
+        )
+      : [];
+    
+    // Process templates safely
+    const validTemplates = Array.isArray(templates) 
+      ? templates.filter(template => 
+          template && 
+          typeof template === 'object' && 
+          template.id && 
+          template.name && 
+          template.subject && 
+          template.content
+        )
+      : [];
+      
+    setSafeClients(validClients);
+    setSafeTemplates(validTemplates);
+    
+    // Short timeout to ensure UI updates
+    setTimeout(() => setIsLoading(false), 250);
+  }, [clients, templates, open]);
 
   const handleSubmit = async (payment: NewPayment & { email_template?: string; responsible_name?: string }) => {
     if (!payment || typeof payment !== 'object') {
@@ -138,12 +180,23 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
         <DialogHeader>
           <DialogTitle>Novo Recebimento</DialogTitle>
         </DialogHeader>
-        <NewPaymentForm
-          clients={safeClients}
-          onSubmit={handleSubmit}
-          onClose={onClose}
-          templates={safeTemplates}
-        />
+        
+        {isLoading ? (
+          <div className="space-y-4 py-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : (
+          <NewPaymentForm
+            clients={safeClients}
+            onSubmit={handleSubmit}
+            onClose={onClose}
+            templates={safeTemplates}
+            isSubmitting={isSubmitting}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -10,14 +10,28 @@ import { EmailPreview } from "../recurring-billing/EmailPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { ClientSelector } from "../recurring-billing/ClientSelector";
 
+interface Client {
+  id: string;
+  name: string;
+  partner_name?: string;
+  responsible_name?: string;
+}
+
 interface NewPaymentFormProps {
-  clients: Array<{ id: string; name: string; partner_name?: string; responsible_name?: string }>;
+  clients: Client[];
   onSubmit: (payment: NewPayment & { email_template?: string; responsible_name?: string }) => void;
   onClose: () => void;
   templates?: EmailTemplate[];
+  isSubmitting?: boolean;
 }
 
-export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: NewPaymentFormProps) => {
+export const NewPaymentForm = ({ 
+  clients, 
+  onSubmit, 
+  onClose, 
+  templates = [],
+  isSubmitting = false
+}: NewPaymentFormProps) => {
   const [formData, setFormData] = useState<NewPayment & { email_template?: string }>({
     client_id: '',
     description: '',
@@ -31,7 +45,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // Ensure clients is always a valid array
-  const safeClients = Array.isArray(clients) ? clients : [];
+  const safeClients = Array.isArray(clients) ? clients.filter(c => c && typeof c === 'object' && c.id && c.name) : [];
 
   // When client selection changes, update responsible name
   useEffect(() => {
@@ -137,7 +151,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
 
   // Add safety check for selectedClient
   const selectedClient = safeClients.find(client => client && client.id === formData.client_id);
-  const safeTemplates = Array.isArray(templates) ? templates : [];
+  const safeTemplates = Array.isArray(templates) ? templates.filter(t => t && typeof t === 'object' && t.id) : [];
   const filteredTemplates = safeTemplates.filter(template => 
     template && template.type === 'clients' && template.subtype === 'oneTime'
   );
@@ -157,6 +171,8 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             clients={safeClients}
             onSelect={handleClientSelect}
             initialValue={formData.client_id}
+            loading={loading}
+            disabled={isSubmitting}
           />
         </div>
         
@@ -167,7 +183,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             value={responsibleName}
             onChange={(e) => setResponsibleName(e.target.value)}
             placeholder="Nome do responsável"
-            disabled={loading}
+            disabled={loading || isSubmitting}
           />
         </div>
 
@@ -176,6 +192,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
           <Select 
             value={formData.email_template}
             onValueChange={(value) => setFormData({ ...formData, email_template: value })}
+            disabled={isSubmitting}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o template" />
@@ -205,6 +222,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -218,6 +236,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -229,6 +248,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             value={formData.due_date}
             onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -239,6 +259,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             onValueChange={(value: 'pix' | 'boleto' | 'credit_card') =>
               setFormData({ ...formData, payment_method: value })
             }
+            disabled={isSubmitting}
           >
             <SelectTrigger id="payment_method">
               <SelectValue />
@@ -266,11 +287,11 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
       </div>
 
       <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
           Cancelar
         </Button>
-        <Button type="submit">
-          Salvar
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Salvando..." : "Salvar"}
         </Button>
       </div>
     </form>

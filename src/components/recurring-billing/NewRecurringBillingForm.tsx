@@ -14,36 +14,53 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+interface Client {
+  id: string;
+  name: string;
+  partner_name?: string;
+  responsible_name?: string;
+}
+
 interface NewRecurringBillingFormProps {
   onSubmit: (billing: RecurringBilling & { email_template?: string; responsible_name?: string; disable_notifications?: boolean }) => void;
   onClose: () => void;
-  clients: Array<{ id: string; name: string, partner_name?: string; responsible_name?: string }>;
+  clients: Client[];
   templates?: EmailTemplate[];
+  isSubmitting?: boolean;
 }
 
 export const NewRecurringBillingForm = ({ 
   onSubmit, 
   onClose, 
   clients, 
-  templates = [] 
+  templates = [],
+  isSubmitting = false
 }: NewRecurringBillingFormProps) => {
   const { formData, updateFormData, validateForm } = useRecurringBillingForm();
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [responsibleName, setResponsibleName] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [disableNotifications, setDisableNotifications] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Ensure we always have valid clients array
+  const safeClients = Array.isArray(clients) 
+    ? clients.filter(client => 
+        client && typeof client === 'object' && client.id && client.name
+      ) 
+    : [];
 
   // When client selection changes, try to get or update responsible name
   useEffect(() => {
     if (selectedClientId) {
-      const client = clients.find(c => c.id === selectedClientId);
+      const client = safeClients.find(c => c.id === selectedClientId);
       if (client) {
         setResponsibleName(client.responsible_name || client.partner_name || "");
       } else {
         setResponsibleName("");
       }
     }
-  }, [selectedClientId, clients]);
+  }, [selectedClientId, safeClients]);
 
   const handleClientSelect = async (clientId: string) => {
     setSelectedClientId(clientId);
@@ -77,22 +94,11 @@ export const NewRecurringBillingForm = ({
     e.preventDefault();
     console.log("Submitting recurring billing form with data:", formData);
     
-    if (!validateForm()) return;
+    setValidationError(null);
     
-    // Update responsible name in client if it changed
-    if (responsibleName && selectedClientId) {
-      const client = clients.find(c => c.id === selectedClientId);
-      if (client && client.responsible_name !== responsibleName) {
-        // Try to update the client's responsible name
-        const { error } = await supabase
-          .from('clients')
-          .update({ responsible_name: responsibleName })
-          .eq('id', selectedClientId);
-          
-        if (error) {
-          console.error('Failed to update client responsible name:', error);
-        }
-      }
+    if (!validateForm()) {
+      setValidationError("Por favor, preencha todos os campos obrigatórios");
+      return;
     }
     
     // Send both formData, responsible_name and disable_notifications flag
@@ -101,21 +107,35 @@ export const NewRecurringBillingForm = ({
       responsible_name: responsibleName,
       disable_notifications: disableNotifications
     });
-    
-    onClose();
   };
 
-  const selectedClient = clients.find(client => client.id === formData.client_id);
-  const safeTemplates = Array.isArray(templates) ? templates : [];
+  // Ensure selectedClient is valid
+  const selectedClient = safeClients.find(client => client && client.id === formData.client_id);
+  
+  // Ensure templates are valid
+  const safeTemplates = Array.isArray(templates) 
+    ? templates.filter(template => 
+        template && typeof template === 'object' && template.id && template.type && template.subtype
+      ) 
+    : [];
+    
   const filteredTemplates = safeTemplates.filter(template => 
     template.type === 'clients' && template.subtype === 'recurring'
   );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {validationError && (
+        <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
+          {validationError}
+        </div>
+      )}
+      
       <ClientSelector 
-        clients={clients || []}
+        clients={safeClients || []}
         onSelect={handleClientSelect}
+        loading={loading}
+        disabled={isSubmitting}
       />
       
       <div className="space-y-2">
@@ -125,7 +145,7 @@ export const NewRecurringBillingForm = ({
           value={responsibleName}
           onChange={(e) => setResponsibleName(e.target.value)}
           placeholder="Nome do responsável"
-          disabled={loading}
+          disabled={loading || isSubmitting}
         />
       </div>
 
@@ -134,6 +154,7 @@ export const NewRecurringBillingForm = ({
           id="disable_notifications"
           checked={disableNotifications}
           onCheckedChange={(checked) => setDisableNotifications(checked as boolean)}
+          disabled={isSubmitting}
         />
         <Label htmlFor="disable_notifications">
           Desativar notificações automáticas
@@ -145,7 +166,7 @@ export const NewRecurringBillingForm = ({
         <Select 
           onValueChange={(value) => updateFormData({ email_template: value })}
           value={formData.email_template}
-          disabled={disableNotifications}
+          disabled={disableNotifications || isSubmitting}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecione o template" />
@@ -174,11 +195,13 @@ export const NewRecurringBillingForm = ({
         startDate={formData.start_date || ''}
         endDate={formData.end_date || ''}
         onUpdate={(field, value) => updateFormData({ [field]: value })}
+        disabled={isSubmitting}
       />
 
       <PaymentMethodSelector
         value={formData.payment_method}
         onChange={(value) => updateFormData({ payment_method: value })}
+        disabled={isSubmitting}
       />
 
       {formData.email_template && !disableNotifications && selectedClient && (
@@ -196,11 +219,19 @@ export const NewRecurringBillingForm = ({
       )}
 
       <div className="flex justify-end space-x-2 pt-4">
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
           Cancelar
         </Button>
-        <Button type="submit">
-          Salvar
+        <Button 
+          type="submit"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Salvando..." : "Salvar"}
         </Button>
       </div>
     </form>

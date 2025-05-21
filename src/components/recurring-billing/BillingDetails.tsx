@@ -3,19 +3,17 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
 interface BillingDetailsProps {
-  billingData?: any;
-  description?: string;
-  amount?: number | '';
-  installments?: number | '';
-  dueDay?: number | '';
-  startDate?: string;
-  endDate?: string;
-  onUpdate?: (field: string, value: string | number) => void;
-  darkMode?: boolean;
+  description: string;
+  amount: string | number;
+  installments: string | number;
+  dueDay: string | number;
+  startDate: string;
+  endDate: string;
+  onUpdate: (field: string, value: string | number) => void;
+  disabled?: boolean;
 }
 
-export const BillingDetails = ({
-  billingData,
+export function BillingDetails({
   description,
   amount,
   installments,
@@ -23,147 +21,88 @@ export const BillingDetails = ({
   startDate,
   endDate,
   onUpdate,
-  darkMode = false
-}: BillingDetailsProps) => {
-  // If billingData is provided, use that, otherwise use individual props
-  const data = billingData || {
-    description,
-    amount,
-    installments,
-    due_day: dueDay,
-    start_date: startDate,
-    end_date: endDate,
-  };
-  
-  // Function to handle updates if onUpdate is provided
-  const handleUpdate = (field: string, value: string | number) => {
-    if (onUpdate) {
-      console.log(`${field} changed:`, value);
-      onUpdate(field, value);
-    }
-  };
-
-  // Read-only mode if no onUpdate provided
-  const isReadOnly = !onUpdate;
-
-  // Create a consistent styling for all fields based on darkMode
-  const fieldStyle = darkMode 
-    ? 'bg-background/30 border-border/50 text-foreground' 
-    : 'bg-gray-50';
-
+  disabled = false
+}: BillingDetailsProps) {
   return (
-    <>
-      <div className="space-y-2">
-        <Label>Descrição</Label>
-        {isReadOnly ? (
-          <p className={`p-2 border rounded-md ${fieldStyle}`}>
-            {data.description}
-          </p>
-        ) : (
-          <Input
-            value={data.description || ''}
-            onChange={(e) => handleUpdate('description', e.target.value)}
-            required
-            className={fieldStyle}
-          />
-        )}
+    <div className="space-y-4">
+      <div className="grid gap-2">
+        <Label htmlFor="description">Descrição</Label>
+        <Input 
+          id="description"
+          value={description}
+          onChange={(e) => onUpdate('description', e.target.value)}
+          placeholder="Descrição do recebimento"
+          disabled={disabled}
+          required
+        />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Valor</Label>
-          {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${fieldStyle}`}>
-              {typeof data.amount === 'number' 
-                ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.amount) 
-                : data.amount || ''}
-            </p>
-          ) : (
-            <Input
-              type="number"
-              step="0.01"
-              value={data.amount || ''}
-              onChange={(e) => handleUpdate('amount', parseFloat(e.target.value))}
-              required
-              className={fieldStyle}
-            />
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label>Parcelas</Label>
-          {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${fieldStyle}`}>
-              {data.installments || data.installments === 0 ? data.installments : '-'}
-            </p>
-          ) : (
-            <Input
-              type="number"
-              min="1"
-              value={data.installments || ''}
-              onChange={(e) => handleUpdate('installments', parseInt(e.target.value))}
-              required
-              className={fieldStyle}
-            />
-          )}
-        </div>
+      <div className="grid gap-2">
+        <Label htmlFor="amount">Valor (R$)</Label>
+        <Input 
+          id="amount"
+          type="number"
+          min="0"
+          step="0.01"
+          value={amount}
+          onChange={(e) => onUpdate('amount', parseFloat(e.target.value))}
+          placeholder="0,00"
+          disabled={disabled}
+          required
+        />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Dia do Vencimento</Label>
-          {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${fieldStyle}`}>
-              {data.due_day || '-'}
-            </p>
-          ) : (
-            <Input
-              type="number"
-              min="1"
-              max="31"
-              value={data.due_day || ''}
-              onChange={(e) => handleUpdate('due_day', parseInt(e.target.value))}
-              required
-              className={fieldStyle}
-            />
-          )}
-        </div>
+      <div className="grid gap-2">
+        <Label htmlFor="installments">Parcelas</Label>
+        <Input 
+          id="installments"
+          type="number"
+          min="1"
+          value={installments}
+          onChange={(e) => onUpdate('installments', parseInt(e.target.value))}
+          placeholder="1"
+          disabled={disabled}
+          required
+        />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Data de Início</Label>
-          {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${fieldStyle}`}>
-              {data.start_date || '-'}
-            </p>
-          ) : (
-            <Input
-              type="date"
-              value={data.start_date || ''}
-              onChange={(e) => handleUpdate('start_date', e.target.value)}
-              required
-              className={fieldStyle}
-            />
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <Label>Data Final (opcional)</Label>
-          {isReadOnly ? (
-            <p className={`p-2 border rounded-md ${fieldStyle}`}>
-              {data.end_date || '-'}
-            </p>
-          ) : (
-            <Input
-              type="date"
-              value={data.end_date || ''}
-              onChange={(e) => handleUpdate('end_date', e.target.value)}
-              className={fieldStyle}
-            />
-          )}
-        </div>
+      <div className="grid gap-2">
+        <Label htmlFor="due_day">Dia de vencimento</Label>
+        <Input 
+          id="due_day"
+          type="number"
+          min="1"
+          max="31"
+          value={dueDay}
+          onChange={(e) => onUpdate('due_day', parseInt(e.target.value))}
+          placeholder="1"
+          disabled={disabled}
+          required
+        />
       </div>
-    </>
+
+      <div className="grid gap-2">
+        <Label htmlFor="start_date">Data de início</Label>
+        <Input 
+          id="start_date"
+          type="date"
+          value={startDate}
+          onChange={(e) => onUpdate('start_date', e.target.value)}
+          disabled={disabled}
+          required
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="end_date">Data de término (opcional)</Label>
+        <Input 
+          id="end_date"
+          type="date"
+          value={endDate}
+          onChange={(e) => onUpdate('end_date', e.target.value)}
+          disabled={disabled}
+        />
+      </div>
+    </div>
   );
-};
+}

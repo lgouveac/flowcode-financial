@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -10,9 +10,17 @@ import type { NewPayment } from "@/types/payment";
 import { NewRecurringBillingForm } from "./NewRecurringBillingForm";
 import { NewPaymentForm } from "../payments/NewPaymentForm";
 import { EmailTemplate } from "@/types/email";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface Client {
+  id: string;
+  name: string;
+  partner_name?: string;
+  responsible_name?: string;
+}
 
 interface NewBillingDialogProps {
-  clients: Array<{ id: string; name: string; partner_name?: string; responsible_name?: string }>;
+  clients: Client[];
   onSuccess: () => void;
   templates?: EmailTemplate[];
 }
@@ -21,15 +29,45 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
   const [open, setOpen] = useState(false);
   const [isRecurring, setIsRecurring] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [safeClients, setSafeClients] = useState<Client[]>([]);
+  const [safeTemplates, setSafeTemplates] = useState<EmailTemplate[]>([]);
   const { toast } = useToast();
   
-  // Ensure clients and templates are always valid arrays
-  const safeClients = Array.isArray(clients) 
-    ? clients.filter(client => client && typeof client === 'object' && client.id && client.name)
-    : [];
-  const safeTemplates = Array.isArray(templates) 
-    ? templates.filter(template => template && typeof template === 'object' && template.id) 
-    : [];
+  // Process data safely when props change or dialog opens
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+      
+      // Process clients safely
+      const validClients = Array.isArray(clients) 
+        ? clients.filter(client => 
+            client && 
+            typeof client === 'object' && 
+            client.id && 
+            client.name
+          )
+        : [];
+      
+      // Process templates safely
+      const validTemplates = Array.isArray(templates) 
+        ? templates.filter(template => 
+            template && 
+            typeof template === 'object' && 
+            template.id && 
+            template.name && 
+            template.subject && 
+            template.content
+          )
+        : [];
+        
+      setSafeClients(validClients);
+      setSafeTemplates(validTemplates);
+      
+      // Short timeout to ensure UI updates
+      setTimeout(() => setIsLoading(false), 250);
+    }
+  }, [clients, templates, open]);
 
   const handleSuccess = () => {
     setOpen(false);
@@ -238,12 +276,20 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
           </div>
         </DialogHeader>
 
-        {isRecurring ? (
+        {isLoading ? (
+          <div className="space-y-4 py-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : isRecurring ? (
           <NewRecurringBillingForm
             clients={safeClients}
             onSubmit={handleNewRecurring}
             onClose={() => setOpen(false)}
             templates={safeTemplates}
+            isSubmitting={isSubmitting}
           />
         ) : (
           <NewPaymentForm
@@ -251,6 +297,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
             onSubmit={handleNewPayment}
             onClose={() => setOpen(false)}
             templates={safeTemplates}
+            isSubmitting={isSubmitting}
           />
         )}
       </DialogContent>
