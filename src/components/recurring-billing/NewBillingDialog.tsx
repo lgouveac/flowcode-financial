@@ -205,7 +205,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
 
         {isRecurring ? (
           <NewRecurringBillingForm
-            clients={safeClients}
+            clients={safeClients} 
             onSubmit={handleNewRecurring}
             onClose={() => setOpen(false)}
             templates={safeTemplates}

@@ -83,13 +83,12 @@ export function ClientSelector({
           align="start"
           sideOffset={5}
         >
-          {/* We wrap the Command in a div to ensure it has a parent */}
           <div className="bg-popover rounded-md overflow-hidden">
             <Command>
               <CommandInput placeholder="Buscar cliente..." />
               <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
               <CommandGroup className="max-h-64 overflow-auto">
-                {safeClients && safeClients.length > 0 ? (
+                {Array.isArray(safeClients) && safeClients.length > 0 ? (
                   safeClients.map((client) => (
                     <CommandItem
                       key={client.id}
