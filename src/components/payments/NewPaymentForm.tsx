@@ -30,17 +30,20 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  // Ensure clients is always a valid array
+  const safeClients = Array.isArray(clients) ? clients : [];
+
   // When client selection changes, update responsible name
   useEffect(() => {
     if (formData.client_id) {
-      const client = clients.find(c => c.id === formData.client_id);
+      const client = safeClients.find(c => c.id === formData.client_id);
       if (client) {
         setResponsibleName(client.responsible_name || client.partner_name || "");
       } else {
         setResponsibleName("");
       }
     }
-  }, [formData.client_id, clients]);
+  }, [formData.client_id, safeClients]);
 
   const handleClientSelect = async (clientId: string) => {
     setFormData({ ...formData, client_id: clientId });
@@ -132,7 +135,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
     }
   };
 
-  const selectedClient = clients.find(client => client.id === formData.client_id);
+  const selectedClient = safeClients.find(client => client.id === formData.client_id);
   const safeTemplates = Array.isArray(templates) ? templates : [];
   const filteredTemplates = safeTemplates.filter(template => 
     template.type === 'clients' && template.subtype === 'oneTime'
@@ -150,7 +153,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
         <div className="grid gap-2">
           <Label htmlFor="client">Cliente</Label>
           <ClientSelector
-            clients={clients || []}
+            clients={safeClients}
             onSelect={handleClientSelect}
             initialValue={formData.client_id}
           />
@@ -269,4 +272,4 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
       </div>
     </form>
   );
-};
+}

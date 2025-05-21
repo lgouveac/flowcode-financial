@@ -111,7 +111,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
     
     try {
       // First, update the client's responsible_name if needed
-      if (payment.client_id) {
+      if (payment.client_id && payment.responsible_name) {
         const client = safeClients.find(c => c.id === payment.client_id);
         if (client && payment.responsible_name !== (client.responsible_name || client.partner_name)) {
           const { error: updateError } = await supabase
@@ -188,7 +188,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
 
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
-      if (!isSubmitting && (open !== newOpen)) {
+      if (!isSubmitting) {
         setOpen(newOpen);
       }
     }}>
@@ -234,4 +234,4 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
       </DialogContent>
     </Dialog>
   );
-};
+}
