@@ -19,11 +19,24 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Ensure clients and templates are always arrays
-  const safeClients = Array.isArray(clients) ? clients : [];
-  const safeTemplates = Array.isArray(templates) ? templates : [];
+  // Ensure clients and templates are always valid arrays with valid items
+  const safeClients = Array.isArray(clients) 
+    ? clients.filter(client => client && typeof client === 'object' && client.id && client.name)
+    : [];
+  const safeTemplates = Array.isArray(templates) 
+    ? templates.filter(template => template && typeof template === 'object' && template.id)
+    : [];
 
   const handleSubmit = async (payment: NewPayment & { email_template?: string; responsible_name?: string }) => {
+    if (!payment || typeof payment !== 'object') {
+      toast({
+        title: "Erro",
+        description: "Dados de pagamento inválidos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log("Submitting payment:", payment);
     setIsSubmitting(true);
     

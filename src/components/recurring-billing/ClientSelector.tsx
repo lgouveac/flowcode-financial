@@ -32,8 +32,10 @@ export function ClientSelector({
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
   
-  // Ensure clients is always a valid array
-  const safeClients = Array.isArray(clients) ? clients : [];
+  // Ensure clients is always a valid array with valid items
+  const safeClients = Array.isArray(clients) 
+    ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) 
+    : [];
 
   // Update selectedClientId when initialValue changes
   useEffect(() => {
@@ -42,8 +44,8 @@ export function ClientSelector({
     }
   }, [initialValue]);
 
-  // Find the selected client - add safety check
-  const selectedClient = safeClients.find(c => c && c.id === selectedClientId);
+  // Find the selected client
+  const selectedClient = safeClients.find(c => c.id === selectedClientId);
 
   const handleSelect = useCallback((clientId: string) => {
     setSelectedClientId(clientId);
@@ -73,22 +75,20 @@ export function ClientSelector({
               <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
               <CommandGroup className="max-h-64 overflow-auto">
                 {safeClients.map((client) => (
-                  client && (
-                    <CommandItem
-                      key={client.id}
-                      value={client.name}
-                      onSelect={() => handleSelect(client.id)}
-                      className="cursor-pointer"
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedClientId === client.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {client.name}
-                    </CommandItem>
-                  )
+                  <CommandItem
+                    key={client.id}
+                    value={client.name}
+                    onSelect={() => handleSelect(client.id)}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedClientId === client.id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {client.name}
+                  </CommandItem>
                 ))}
               </CommandGroup>
             </Command>

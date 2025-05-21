@@ -23,9 +23,13 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
-  // Ensure clients and templates are always arrays to prevent errors
-  const safeClients = Array.isArray(clients) ? clients : [];
-  const safeTemplates = Array.isArray(templates) ? templates : [];
+  // Ensure clients and templates are always valid arrays
+  const safeClients = Array.isArray(clients) 
+    ? clients.filter(client => client && typeof client === 'object' && client.id && client.name)
+    : [];
+  const safeTemplates = Array.isArray(templates) 
+    ? templates.filter(template => template && typeof template === 'object' && template.id) 
+    : [];
 
   const handleSuccess = () => {
     setOpen(false);
@@ -37,6 +41,15 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
     responsible_name?: string;
     disable_notifications?: boolean;
   }) => {
+    if (!billingData || typeof billingData !== 'object') {
+      toast({
+        title: "Erro",
+        description: "Dados de recebimento inválidos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log("Creating new recurring billing:", billingData);
     setIsSubmitting(true);
 
@@ -106,6 +119,15 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
   };
 
   const handleNewPayment = async (payment: NewPayment & { responsible_name?: string }) => {
+    if (!payment || typeof payment !== 'object') {
+      toast({
+        title: "Erro",
+        description: "Dados de pagamento inválidos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log("Creating new payment:", payment);
     setIsSubmitting(true);
     
