@@ -3,16 +3,15 @@ import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
 import { PaymentTable } from "./payments/PaymentTable";
-import { NewBillingDialog } from "./recurring-billing/NewBillingDialog";
 import { NotificationSettings } from "./emails/NotificationSettings";
-import { Search, Settings, SlidersHorizontal, Plus } from "lucide-react";
-import { Button } from "./ui/button";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { useBillingData } from "@/hooks/useBillingData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { NewPaymentDialog } from "./payments/NewPaymentDialog";
 import { Input } from "./ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "./ui/use-toast";
+import { Button } from "./ui/button";
+import { SimplePaymentDialog } from "./recurring-billing/SimplePaymentDialog";
 
 export const RecurringBilling = () => {
   const {
@@ -24,7 +23,7 @@ export const RecurringBilling = () => {
     fetchPayments
   } = useBillingData();
   const [showSettings, setShowSettings] = useState(false);
-  const [showNewPaymentDialog, setShowNewPaymentDialog] = useState(false);
+  const [showSimplePaymentDialog, setShowSimplePaymentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("recurring");
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
@@ -69,7 +68,9 @@ export const RecurringBilling = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
         <div className="flex items-center gap-2">
-          <NewBillingDialog clients={safeClients} onSuccess={handleSuccess} templates={safeTemplates} />
+          <Button onClick={() => setShowSimplePaymentDialog(true)}>
+            Novo Recebimento
+          </Button>
         </div>
       </div>
 
@@ -129,13 +130,6 @@ export const RecurringBilling = () => {
                 </Select>
               </div>
             </div>
-            <Button 
-              onClick={() => setShowNewPaymentDialog(true)}
-              className="whitespace-nowrap"
-            >
-              <Plus className="h-4 w-4 mr-2" /> 
-              Novo Recebimento
-            </Button>
           </div>
           <PaymentTable payments={oneTimePayments} onRefresh={handleSuccess} searchTerm={paymentSearch} statusFilter={paymentStatusFilter} templates={safeTemplates} enableDuplicate={true} />
         </TabsContent>
@@ -143,12 +137,11 @@ export const RecurringBilling = () => {
 
       <NotificationSettings open={showSettings} onClose={() => setShowSettings(false)} />
 
-      <NewPaymentDialog 
-        open={showNewPaymentDialog} 
-        onClose={() => setShowNewPaymentDialog(false)} 
-        onSuccess={handleSuccess} 
-        clients={safeClients} 
-        templates={safeTemplates} 
+      <SimplePaymentDialog
+        open={showSimplePaymentDialog}
+        onClose={() => setShowSimplePaymentDialog(false)}
+        onSuccess={handleSuccess}
+        clients={safeClients}
       />
     </div>;
 };

@@ -1,6 +1,6 @@
 
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -60,12 +60,12 @@ export function ClientSelector({
   // Find the selected client safely
   const selectedClient = safeClients.find(c => c.id === selectedClientId);
 
-  // Handle selection with callback
-  const handleSelect = useCallback((clientId: string) => {
+  // Handle selection
+  const handleSelect = (clientId: string) => {
     setSelectedClientId(clientId);
     onSelect(clientId);
     setOpen(false);
-  }, [onSelect]);
+  };
 
   // Show loading state
   if (loading) {
