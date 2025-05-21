@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { RecurringBilling } from "@/types/billing";
-import type { Payment, NewPayment } from "@/types/payment";
+import type { NewPayment } from "@/types/payment";
 import { NewRecurringBillingForm } from "./NewRecurringBillingForm";
 import { NewPaymentForm } from "../payments/NewPaymentForm";
 import { EmailTemplate } from "@/types/email";
@@ -20,6 +20,7 @@ interface NewBillingDialogProps {
 export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: NewBillingDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isRecurring, setIsRecurring] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   
   // Ensure clients and templates are always arrays to prevent errors
@@ -37,6 +38,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
     disable_notifications?: boolean;
   }) => {
     console.log("Creating new recurring billing:", billingData);
+    setIsSubmitting(true);
 
     try {
       // Extract responsible_name and disable_notifications to update client and billing
@@ -81,6 +83,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
           description: "Não foi possível criar o recebimento recorrente.",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
 
@@ -97,11 +100,14 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
         description: "Ocorreu um erro inesperado ao criar o recebimento recorrente.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleNewPayment = async (payment: NewPayment & { responsible_name?: string }) => {
     console.log("Creating new payment:", payment);
+    setIsSubmitting(true);
     
     try {
       // First, update the client's responsible_name if needed
@@ -158,6 +164,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
           description: "Não foi possível criar o recebimento: " + error.message,
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
 
@@ -174,11 +181,17 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
         description: "Ocorreu um erro inesperado ao criar o recebimento.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      if (!isSubmitting && (open !== newOpen)) {
+        setOpen(newOpen);
+      }
+    }}>
       <DialogTrigger asChild>
         <Button><PlusIcon className="h-4 w-4 mr-2" /> Novo Recebimento</Button>
       </DialogTrigger>
@@ -205,7 +218,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
 
         {isRecurring ? (
           <NewRecurringBillingForm
-            clients={safeClients} 
+            clients={safeClients}
             onSubmit={handleNewRecurring}
             onClose={() => setOpen(false)}
             templates={safeTemplates}

@@ -32,7 +32,7 @@ export function ClientSelector({
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
   
-  // Ensure clients is always a valid array
+  // Make sure clients is always a valid array
   const safeClients = Array.isArray(clients) ? clients : [];
 
   // Update selectedClientId when initialValue changes
@@ -42,7 +42,7 @@ export function ClientSelector({
     }
   }, [initialValue]);
 
-  // Create handleSelect with useCallback to avoid unnecessary recreations
+  // Create handleSelect with useCallback for better performance
   const handleSelect = useCallback((clientId: string) => {
     try {
       setSelectedClientId(clientId);

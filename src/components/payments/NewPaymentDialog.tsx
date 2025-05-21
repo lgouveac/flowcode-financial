@@ -23,7 +23,7 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
   const safeClients = Array.isArray(clients) ? clients : [];
   const safeTemplates = Array.isArray(templates) ? templates : [];
 
-  const handleSubmit = async (payment: NewPayment & { email_template?: string }) => {
+  const handleSubmit = async (payment: NewPayment & { email_template?: string; responsible_name?: string }) => {
     console.log("Submitting payment:", payment);
     setIsSubmitting(true);
     
@@ -52,7 +52,26 @@ export const NewPaymentDialog = ({ open, onClose, onSuccess, clients = [], templ
         }
       }
       
-      // Create a single payment object, not an array
+      // Update responsible_name for the client if provided
+      if (payment.responsible_name && payment.client_id) {
+        const client = safeClients.find(c => c.id === payment.client_id);
+        if (client && payment.responsible_name !== client.partner_name) {
+          try {
+            const { error: updateError } = await supabase
+              .from('clients')
+              .update({ responsible_name: payment.responsible_name })
+              .eq('id', payment.client_id);
+              
+            if (updateError) {
+              console.error('Error updating client responsible_name:', updateError);
+            }
+          } catch (err) {
+            console.error('Error updating client responsible_name:', err);
+          }
+        }
+      }
+      
+      // Create payment record
       const { error } = await supabase
         .from('payments')
         .insert({
