@@ -234,4 +234,4 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
       </DialogContent>
     </Dialog>
   );
-}
+};

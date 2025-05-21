@@ -135,10 +135,11 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
     }
   };
 
-  const selectedClient = safeClients.find(client => client.id === formData.client_id);
+  // Add safety check for selectedClient
+  const selectedClient = safeClients.find(client => client && client.id === formData.client_id);
   const safeTemplates = Array.isArray(templates) ? templates : [];
   const filteredTemplates = safeTemplates.filter(template => 
-    template.type === 'clients' && template.subtype === 'oneTime'
+    template && template.type === 'clients' && template.subtype === 'oneTime'
   );
 
   return (
@@ -182,9 +183,11 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             <SelectContent>
               {filteredTemplates.length > 0 ? (
                 filteredTemplates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name}
-                  </SelectItem>
+                  template && (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                    </SelectItem>
+                  )
                 ))
               ) : (
                 <div className="p-4 text-center text-muted-foreground">
@@ -253,7 +256,7 @@ export const NewPaymentForm = ({ clients, onSubmit, onClose, templates = [] }: N
             selectedTemplate={formData.email_template}
             templates={safeTemplates}
             clientName={selectedClient.name}
-            responsibleName={responsibleName || selectedClient.partner_name}
+            responsibleName={responsibleName || selectedClient.partner_name || ""}
             amount={formData.amount}
             dueDate={formData.due_date}
             description={formData.description}
