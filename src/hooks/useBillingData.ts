@@ -51,31 +51,39 @@ export const useBillingData = () => {
     console.log("Fetching billings...");
     setIsLoading(true);
     
-    const { data, error } = await supabase
-      .from('recurring_billing')
-      .select('*');
+    try {
+      const { data, error } = await supabase
+        .from('recurring_billing')
+        .select('*');
 
-    if (error) {
-      console.error('Error fetching billings:', error);
+      if (error) {
+        console.error('Error fetching billings:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os recebimentos recorrentes.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch and merge client data
+      if (data && data.length > 0) {
+        const billingsWithClients = await fetchBillingWithClients(data);
+        console.log("Billings fetched:", billingsWithClients);
+        setBillings(billingsWithClients || []);
+      } else {
+        setBillings([]);
+      }
+    } catch (err) {
+      console.error("Error in fetchBillings:", err);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar os recebimentos recorrentes.",
+        description: "Ocorreu um erro ao carregar os recebimentos recorrentes.",
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    // Fetch and merge client data
-    if (data && data.length > 0) {
-      const billingsWithClients = await fetchBillingWithClients(data);
-      console.log("Billings fetched:", billingsWithClients);
-      setBillings(billingsWithClients || []);
-    } else {
-      setBillings([]);
-    }
-    
-    setIsLoading(false);
   };
 
   const fetchPaymentsWithClients = async (paymentData: any[]) => {
@@ -116,57 +124,82 @@ export const useBillingData = () => {
     console.log("Fetching payments...");
     setIsLoading(true);
     
-    const { data, error } = await supabase
-      .from('payments')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching payments:', error);
+      if (error) {
+        console.error('Error fetching payments:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os recebimentos pontuais.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch and merge client data
+      if (data && data.length > 0) {
+        const paymentsWithClients = await fetchPaymentsWithClients(data);
+        console.log("Payments fetched:", paymentsWithClients);
+        setPayments(paymentsWithClients || []);
+      } else {
+        setPayments([]);
+      }
+    } catch (err) {
+      console.error("Error in fetchPayments:", err);
       toast({
         title: "Erro",
-        description: "Não foi possível carregar os recebimentos pontuais.",
+        description: "Ocorreu um erro ao carregar os recebimentos pontuais.",
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    // Fetch and merge client data
-    if (data && data.length > 0) {
-      const paymentsWithClients = await fetchPaymentsWithClients(data);
-      console.log("Payments fetched:", paymentsWithClients);
-      setPayments(paymentsWithClients || []);
-    } else {
-      setPayments([]);
-    }
-    
-    setIsLoading(false);
   };
 
   const fetchClients = async () => {
     setIsLoading(true);
     
-    const { data, error } = await supabase
-      .from('clients')
-      .select('id, name');
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, name');
 
-    if (error) {
-      console.error('Error fetching clients:', error);
+      if (error) {
+        console.error('Error fetching clients:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os clientes.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validar e filtrar os clientes
+      const validClients = Array.isArray(data) 
+        ? data.filter(client => 
+            client && 
+            typeof client === 'object' && 
+            client.id && 
+            typeof client.name === 'string'
+          )
+        : [];
+      
+      console.log("Clients fetched:", validClients);
+      setClients(validClients);
+    } catch (err) {
+      console.error("Error in fetchClients:", err);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao carregar os clientes.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    const validClients = (data || []).filter(client => 
-      client && 
-      typeof client === 'object' && 
-      client.id && 
-      typeof client.name === 'string'
-    );
-    
-    console.log("Clients fetched:", validClients);
-    setClients(validClients);
-    setIsLoading(false);
   };
 
   const validateTemplateType = (type: string): type is 'clients' | 'employees' => {
@@ -223,10 +256,15 @@ export const useBillingData = () => {
   };
 
   useEffect(() => {
-    fetchBillings();
-    fetchPayments();
-    fetchClients();
-    fetchTemplates();
+    console.log("Fetching data in useBillingData...");
+    Promise.all([
+      fetchBillings(),
+      fetchPayments(),
+      fetchClients(),
+      fetchTemplates()
+    ]).catch(err => {
+      console.error("Error loading data:", err);
+    });
 
     // Subscribe to changes in both tables
     const billingChannel = supabase

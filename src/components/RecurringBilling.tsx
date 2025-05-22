@@ -41,7 +41,7 @@ export const RecurringBilling = () => {
     });
   };
 
-  // Updated to properly use the clients property which is now defined in the type
+  // Filtragem de cobranças recorrentes
   const filteredBillings = useMemo(() => {
     if (!billings || !Array.isArray(billings)) return [];
     
@@ -55,15 +55,17 @@ export const RecurringBilling = () => {
     });
   }, [billings, billingSearch, billingStatusFilter]);
 
-  // Only show one-time payments in the "Pontuais" tab
+  // Filtragem de pagamentos pontuais
   const oneTimePayments = useMemo(() => {
     if (!payments || !Array.isArray(payments)) return [];
     
     return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
   }, [payments]);
   
-  // Make sure clients and templates are always arrays
-  const safeClients = Array.isArray(clients) ? clients : [];
+  // Garante que clients e templates são sempre arrays
+  const safeClients = Array.isArray(clients) ? clients.filter(client => 
+    client && typeof client === 'object' && client.id && client.name
+  ) : [];
   const safeTemplates = Array.isArray(templates) ? templates : [];
   
   if (isLoading) {
@@ -81,7 +83,8 @@ export const RecurringBilling = () => {
     );
   }
   
-  return <div className="space-y-8 p-6">
+  return (
+    <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
         <div className="flex items-center gap-2">
@@ -160,5 +163,6 @@ export const RecurringBilling = () => {
         onSuccess={handleSuccess}
         clients={safeClients}
       />
-    </div>;
+    </div>
+  );
 };

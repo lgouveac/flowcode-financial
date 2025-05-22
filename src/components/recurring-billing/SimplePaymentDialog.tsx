@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,6 @@ export function SimplePaymentDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentType, setPaymentType] = useState<'recurring' | 'onetime'>('onetime');
   const [isLoading, setIsLoading] = useState(true);
-  const [safeClients, setSafeClients] = useState<Client[]>([]);
   
   // Form data
   const [clientId, setClientId] = useState("");
@@ -43,27 +41,19 @@ export function SimplePaymentDialog({
   const [installments, setInstallments] = useState("1");
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   
-  // Process clients safely when props change or dialog opens
+  // Verificar se clients é undefined ou não é um array
+  const safeClients = Array.isArray(clients) 
+    ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) 
+    : [];
+  
+  // Carregar e processar os dados quando o diálogo é aberto
   useEffect(() => {
     if (open) {
       setIsLoading(true);
-      
-      // Process clients safely
-      const validClients = Array.isArray(clients) 
-        ? clients.filter(client => 
-            client && 
-            typeof client === 'object' && 
-            client.id && 
-            client.name
-          )
-        : [];
-        
-      setSafeClients(validClients);
-      
-      // Short timeout to ensure UI updates
+      // Curto timeout para garantir que a UI atualize
       setTimeout(() => setIsLoading(false), 250);
     }
-  }, [clients, open]);
+  }, [open]);
 
   const resetForm = () => {
     setClientId("");

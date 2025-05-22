@@ -31,7 +31,7 @@ interface ClientSelectorProps {
 }
 
 export function ClientSelector({ 
-  clients = [], 
+  clients, 
   onSelect, 
   initialValue = "", 
   disabled = false,
@@ -40,8 +40,10 @@ export function ClientSelector({
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
   
-  // Always ensure clients is a valid array
-  const safeClients = Array.isArray(clients) ? clients.filter(Boolean) : [];
+  // Garantir que clients é sempre um array válido
+  const safeClients = Array.isArray(clients) ? clients.filter(client => 
+    client && typeof client === 'object' && client.id && client.name
+  ) : [];
   
   useEffect(() => {
     if (initialValue) {
@@ -81,12 +83,12 @@ export function ClientSelector({
       </PopoverTrigger>
       {!disabled && (
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-          {safeClients.length > 0 ? (
-            <Command>
-              <CommandInput placeholder="Buscar cliente..." />
-              <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
-              <CommandGroup className="max-h-64 overflow-auto">
-                {safeClients.map((client) => (
+          <Command>
+            <CommandInput placeholder="Buscar cliente..." />
+            <CommandEmpty>Nenhum cliente encontrado</CommandEmpty>
+            <CommandGroup className="max-h-64 overflow-auto">
+              {safeClients.length > 0 ? (
+                safeClients.map((client) => (
                   <CommandItem
                     key={client.id}
                     value={client.name}
@@ -101,14 +103,14 @@ export function ClientSelector({
                     />
                     {client.name}
                   </CommandItem>
-                ))}
-              </CommandGroup>
-            </Command>
-          ) : (
-            <div className="p-4 text-center text-muted-foreground">
-              Nenhum cliente disponível
-            </div>
-          )}
+                ))
+              ) : (
+                <div className="p-2 text-center text-sm text-muted-foreground">
+                  Nenhum cliente disponível
+                </div>
+              )}
+            </CommandGroup>
+          </Command>
         </PopoverContent>
       )}
     </Popover>
