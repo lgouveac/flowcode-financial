@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "./ui/use-toast";
 import { Button } from "./ui/button";
 import { SimplePaymentDialog } from "./recurring-billing/SimplePaymentDialog";
+import { Skeleton } from "./ui/skeleton";
 
 export const RecurringBilling = () => {
   const {
@@ -19,6 +20,7 @@ export const RecurringBilling = () => {
     payments,
     clients,
     templates,
+    isLoading,
     fetchBillings,
     fetchPayments
   } = useBillingData();
@@ -60,9 +62,24 @@ export const RecurringBilling = () => {
     return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
   }, [payments]);
   
-  // Make sure clients and templates are always arrays before passing to components
+  // Make sure clients and templates are always arrays
   const safeClients = Array.isArray(clients) ? clients : [];
   const safeTemplates = Array.isArray(templates) ? templates : [];
+  
+  if (isLoading) {
+    return (
+      <div className="space-y-8 p-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-semibold">Recebimentos</h1>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
   
   return <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">

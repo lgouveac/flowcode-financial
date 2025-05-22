@@ -9,6 +9,7 @@ import { ClientRow } from "./client/ClientRow";
 import { EditClientDialog } from "./EditClientDialog";
 import { ImportCSV } from "./import/ImportCSV";
 import { ShareFormButton } from "./client/ShareFormButton";
+import { SimplePaymentDialog } from "./recurring-billing/SimplePaymentDialog";
 import type { Client, NewClient } from "@/types/client";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,6 +35,7 @@ export const ClientTable = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   const fetchClients = async () => {
     const { data, error } = await supabase
@@ -207,6 +209,13 @@ export const ClientTable = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const handlePaymentSuccess = () => {
+    toast({
+      title: "Sucesso",
+      description: "Recebimento criado com sucesso.",
+    });
+  };
+
   return (
     <div className="space-y-4 p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -231,6 +240,9 @@ export const ClientTable = () => {
               />
             </DialogContent>
           </Dialog>
+          <Button onClick={() => setShowPaymentDialog(true)}>
+            Novo Recebimento
+          </Button>
         </div>
       </div>
 
@@ -290,6 +302,14 @@ export const ClientTable = () => {
         open={showEditDialog}
         onClose={() => setShowEditDialog(false)}
         onSuccess={fetchClients}
+      />
+      
+      {/* Dialog for creating a new payment */}
+      <SimplePaymentDialog
+        open={showPaymentDialog}
+        onClose={() => setShowPaymentDialog(false)}
+        onSuccess={handlePaymentSuccess}
+        clients={clients}
       />
       
       {/* Diálogo de confirmação para excluir cliente */}

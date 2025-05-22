@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { PaymentMethodSelector } from "./PaymentMethodSelector";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Client {
   id: string;
@@ -26,11 +27,13 @@ export function SimplePaymentDialog({
   open, 
   onClose, 
   onSuccess, 
-  clients 
+  clients = [] 
 }: SimplePaymentDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentType, setPaymentType] = useState<'recurring' | 'onetime'>('onetime');
+  const [isLoading, setIsLoading] = useState(true);
+  const [safeClients, setSafeClients] = useState<Client[]>([]);
   
   // Form data
   const [clientId, setClientId] = useState("");
@@ -40,6 +43,28 @@ export function SimplePaymentDialog({
   const [installments, setInstallments] = useState("1");
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   
+  // Process clients safely when props change or dialog opens
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+      
+      // Process clients safely
+      const validClients = Array.isArray(clients) 
+        ? clients.filter(client => 
+            client && 
+            typeof client === 'object' && 
+            client.id && 
+            client.name
+          )
+        : [];
+        
+      setSafeClients(validClients);
+      
+      // Short timeout to ensure UI updates
+      setTimeout(() => setIsLoading(false), 250);
+    }
+  }, [clients, open]);
+
   const resetForm = () => {
     setClientId("");
     setDescription("");
@@ -161,105 +186,113 @@ export function SimplePaymentDialog({
           <DialogTitle>Novo Recebimento</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'recurring' | 'onetime')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="onetime">Pontual</TabsTrigger>
-              <TabsTrigger value="recurring">Recorrente</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        {isLoading ? (
+          <div className="space-y-4 pt-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <Tabs value={paymentType} onValueChange={(value) => setPaymentType(value as 'recurring' | 'onetime')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="onetime">Pontual</TabsTrigger>
+                <TabsTrigger value="recurring">Recorrente</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-          <div className="space-y-4 mt-4">
-            <div>
-              <Label>Cliente</Label>
-              <ClientSelector
-                clients={clients || []}
-                onSelect={setClientId}
-                disabled={isSubmitting}
-              />
-            </div>
+            <div className="space-y-4 mt-4">
+              <div>
+                <Label>Cliente</Label>
+                <ClientSelector
+                  clients={safeClients}
+                  onSelect={setClientId}
+                  disabled={isSubmitting}
+                />
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Input
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descrição do recebimento"
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="amount">Valor (R$)</Label>
-              <Input
-                id="amount"
-                type="number"
-                min="0.01"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0,00"
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-
-            {paymentType === 'recurring' && (
               <div className="grid gap-2">
-                <Label htmlFor="installments">Parcelas</Label>
+                <Label htmlFor="description">Descrição</Label>
                 <Input
-                  id="installments"
-                  type="number"
-                  min="1"
-                  value={installments}
-                  onChange={(e) => setInstallments(e.target.value)}
-                  placeholder="1"
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Descrição do recebimento"
                   disabled={isSubmitting}
                   required
                 />
               </div>
-            )}
 
-            <div className="grid gap-2">
-              <Label htmlFor="due_date">
-                {paymentType === 'recurring' ? 'Data de início' : 'Data de vencimento'}
-              </Label>
-              <Input
-                id="due_date"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+              <div className="grid gap-2">
+                <Label htmlFor="amount">Valor (R$)</Label>
+                <Input
+                  id="amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0,00"
+                  disabled={isSubmitting}
+                  required
+                />
+              </div>
+
+              {paymentType === 'recurring' && (
+                <div className="grid gap-2">
+                  <Label htmlFor="installments">Parcelas</Label>
+                  <Input
+                    id="installments"
+                    type="number"
+                    min="1"
+                    value={installments}
+                    onChange={(e) => setInstallments(e.target.value)}
+                    placeholder="1"
+                    disabled={isSubmitting}
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="grid gap-2">
+                <Label htmlFor="due_date">
+                  {paymentType === 'recurring' ? 'Data de início' : 'Data de vencimento'}
+                </Label>
+                <Input
+                  id="due_date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  disabled={isSubmitting}
+                  required
+                />
+              </div>
+
+              <PaymentMethodSelector
+                value={paymentMethod}
+                onChange={setPaymentMethod}
                 disabled={isSubmitting}
-                required
               />
             </div>
 
-            <PaymentMethodSelector
-              value={paymentMethod}
-              onChange={setPaymentMethod}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              type="submit"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Salvando..." : "Salvar"}
-            </Button>
-          </div>
-        </form>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

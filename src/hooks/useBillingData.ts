@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -11,11 +10,16 @@ export const useBillingData = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchBillingWithClients = async (billingData: any[]) => {
+    if (!billingData || billingData.length === 0) return [];
+    
     // Extract client IDs from billing data
-    const clientIds = [...new Set(billingData.map(item => item.client_id))];
+    const clientIds = [...new Set(billingData.map(item => item.client_id))].filter(Boolean);
+    
+    if (clientIds.length === 0) return billingData;
     
     // Fetch all relevant clients in a single query
     const { data: clientsData, error: clientsError } = await supabase
@@ -30,19 +34,23 @@ export const useBillingData = () => {
     
     // Create a map of client data by ID for quick lookup
     const clientsMap = (clientsData || []).reduce((acc, client) => {
-      acc[client.id] = client;
+      if (client && client.id) {
+        acc[client.id] = client;
+      }
       return acc;
     }, {} as Record<string, any>);
     
     // Merge client data into billing objects
     return billingData.map(billing => ({
       ...billing,
-      clients: clientsMap[billing.client_id] || null
+      clients: billing.client_id && clientsMap[billing.client_id] ? clientsMap[billing.client_id] : null
     }));
   };
 
   const fetchBillings = async () => {
     console.log("Fetching billings...");
+    setIsLoading(true);
+    
     const { data, error } = await supabase
       .from('recurring_billing')
       .select('*');
@@ -54,6 +62,7 @@ export const useBillingData = () => {
         description: "Não foi possível carregar os recebimentos recorrentes.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
@@ -65,11 +74,17 @@ export const useBillingData = () => {
     } else {
       setBillings([]);
     }
+    
+    setIsLoading(false);
   };
 
   const fetchPaymentsWithClients = async (paymentData: any[]) => {
+    if (!paymentData || paymentData.length === 0) return [];
+    
     // Extract client IDs from payment data
-    const clientIds = [...new Set(paymentData.map(item => item.client_id))];
+    const clientIds = [...new Set(paymentData.map(item => item.client_id))].filter(Boolean);
+    
+    if (clientIds.length === 0) return paymentData;
     
     // Fetch all relevant clients in a single query
     const { data: clientsData, error: clientsError } = await supabase
@@ -84,19 +99,23 @@ export const useBillingData = () => {
     
     // Create a map of client data by ID for quick lookup
     const clientsMap = (clientsData || []).reduce((acc, client) => {
-      acc[client.id] = client;
+      if (client && client.id) {
+        acc[client.id] = client;
+      }
       return acc;
     }, {} as Record<string, any>);
     
     // Merge client data into payment objects
     return paymentData.map(payment => ({
       ...payment,
-      clients: clientsMap[payment.client_id] || null
+      clients: payment.client_id && clientsMap[payment.client_id] ? clientsMap[payment.client_id] : null
     }));
   };
 
   const fetchPayments = async () => {
     console.log("Fetching payments...");
+    setIsLoading(true);
+    
     const { data, error } = await supabase
       .from('payments')
       .select('*')
@@ -109,6 +128,7 @@ export const useBillingData = () => {
         description: "Não foi possível carregar os recebimentos pontuais.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
@@ -120,19 +140,33 @@ export const useBillingData = () => {
     } else {
       setPayments([]);
     }
+    
+    setIsLoading(false);
   };
 
   const fetchClients = async () => {
+    setIsLoading(true);
+    
     const { data, error } = await supabase
       .from('clients')
       .select('id, name');
 
     if (error) {
       console.error('Error fetching clients:', error);
+      setIsLoading(false);
       return;
     }
 
-    setClients(data || []);
+    const validClients = (data || []).filter(client => 
+      client && 
+      typeof client === 'object' && 
+      client.id && 
+      typeof client.name === 'string'
+    );
+    
+    console.log("Clients fetched:", validClients);
+    setClients(validClients);
+    setIsLoading(false);
   };
 
   const validateTemplateType = (type: string): type is 'clients' | 'employees' => {
@@ -244,6 +278,7 @@ export const useBillingData = () => {
     payments,
     clients,
     templates,
+    isLoading,
     fetchBillings,
     fetchPayments
   };

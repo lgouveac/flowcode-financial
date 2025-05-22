@@ -31,7 +31,7 @@ interface ClientSelectorProps {
 }
 
 export function ClientSelector({ 
-  clients, 
+  clients = [], 
   onSelect, 
   initialValue = "", 
   disabled = false,
@@ -40,34 +40,23 @@ export function ClientSelector({
   const [open, setOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
   
-  // Ensure clients is always a valid array - defensive programming
-  const safeClients: Client[] = Array.isArray(clients) 
-    ? clients.filter(client => 
-        client && 
-        typeof client === 'object' && 
-        typeof client.id === 'string' && 
-        typeof client.name === 'string'
-      )
-    : [];
-
-  // Update selectedClientId when initialValue changes
+  // Always ensure clients is a valid array
+  const safeClients = Array.isArray(clients) ? clients.filter(Boolean) : [];
+  
   useEffect(() => {
     if (initialValue) {
       setSelectedClientId(initialValue);
     }
   }, [initialValue]);
 
-  // Find the selected client safely
   const selectedClient = safeClients.find(c => c.id === selectedClientId);
 
-  // Handle selection
   const handleSelect = (clientId: string) => {
     setSelectedClientId(clientId);
     onSelect(clientId);
     setOpen(false);
   };
 
-  // Show loading state
   if (loading) {
     return (
       <div className="space-y-2">
