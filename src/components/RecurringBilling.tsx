@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
@@ -55,7 +54,7 @@ export const RecurringBilling = () => {
     });
   }, [billings, billingSearch, billingStatusFilter]);
 
-  // Filtragem de pagamentos pontuais
+  // Filtragem de pagamentos pontuais - garantindo que são apenas pagamentos não relacionados a cobranças recorrentes
   const oneTimePayments = useMemo(() => {
     if (!payments || !Array.isArray(payments)) return [];
     

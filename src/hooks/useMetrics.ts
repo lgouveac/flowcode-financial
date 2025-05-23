@@ -191,31 +191,6 @@ export const useMetrics = (period: string = 'current') => {
 
         if (expectedPaymentsError) throw expectedPaymentsError;
 
-        // Buscar faturamento esperado (recorrentes) - FILTER BY SELECTED PERIOD
-        const { data: expectedRecurring, error: expectedRecurringError } = await supabase
-          .from('recurring_billing')
-          .select('amount, due_day, status')
-          .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid']);
-
-        if (expectedRecurringError) throw expectedRecurringError;
-
-        // Filter recurring payments based on due_day falling within the selected period
-        const filteredRecurring = expectedRecurring?.filter(item => {
-          if (!item.due_day) return false;
-          
-          // Create a date object using the due_day and check if it falls within the period
-          const startDate = new Date(dates.start);
-          const endDate = new Date(dates.end);
-          const currentYear = startDate.getFullYear();
-          const currentMonth = startDate.getMonth();
-          
-          // Create a date from the due_day in the current month
-          const dueDate = new Date(currentYear, currentMonth, item.due_day);
-          
-          // Check if the due date falls within our period
-          return dueDate >= startDate && dueDate < endDate;
-        }) || [];
-
         // Buscar faturamento esperado do período anterior (pagamentos pontuais + overdue)
         const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
           .from('payments')
@@ -287,14 +262,9 @@ export const useMetrics = (period: string = 'current') => {
             return sum + Number(item.amount);
           }, 0) || 0;
         
-        const currentExpectedRecurringTotal = filteredRecurring
-          ?.reduce((sum, item) => {
-            // For now, we don't have partially paid handling for recurring payments
-            // But we can add it in the future if needed
-            return sum + Number(item.amount);
-          }, 0) || 0;
-        
-        const currentExpectedRevenue = currentExpectedPaymentsTotal + currentExpectedRecurringTotal;
+        // IMPORTANTE: Removida a inclusão de recorrentes no cálculo do faturamento esperado
+        // Utilizamos diretamente apenas currentExpectedPaymentsTotal
+        const currentExpectedRevenue = currentExpectedPaymentsTotal;
 
         // Calcular faturamento esperado anterior (with partially paid handling)
         const previousExpectedPaymentsTotal = previousExpectedPayments
@@ -306,32 +276,15 @@ export const useMetrics = (period: string = 'current') => {
             return sum + Number(item.amount);
           }, 0) || 0;
 
-        // Filter previous recurring payments the same way
-        const previousFilteredRecurring = expectedRecurring?.filter(item => {
-          if (!item.due_day) return false;
-          
-          const startDate = new Date(dates.compareStart);
-          const endDate = new Date(dates.compareEnd);
-          const year = startDate.getFullYear();
-          const month = startDate.getMonth();
-          
-          const dueDate = new Date(year, month, item.due_day);
-          
-          return dueDate >= startDate && dueDate < endDate;
-        }) || [];
-        
-        const previousExpectedRecurringTotal = previousFilteredRecurring
-          ?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
-          
-        const previousExpectedRevenue = previousExpectedPaymentsTotal + previousExpectedRecurringTotal;
+        // IMPORTANTE: Removida a inclusão de recorrentes no cálculo do faturamento esperado anterior também
+        const previousExpectedRevenue = previousExpectedPaymentsTotal;
 
         const currentNetProfit = currentRevenue - currentExpenses;
         const previousNetProfit = previousRevenue - previousExpenses;
 
-        console.log('Expected revenue calculation (including overdue):', {
+        console.log('Expected revenue calculation (excluding recurring):', {
           payments: expectedPayments,
           paymentTotal: currentExpectedPaymentsTotal,
-          recurringTotal: currentExpectedRecurringTotal,
           total: currentExpectedRevenue
         });
 

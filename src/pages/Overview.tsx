@@ -454,19 +454,19 @@ export const Overview = () => {
     description: "Últimos 30 dias",
   }];
 
-  // Estimates section with updated descriptions to indicate overdue inclusion
+  // Estimates section with updated descriptions to indicate exclusion of recurring billing
   const estimateStats = [{
     title: "Faturamento Esperado",
     value: formatCurrency(metrics.expectedRevenue || 0),
     change: metrics.expectedRevenueChange || "0%",
-    description: "Recebimentos pendentes e atrasados",
+    description: "Recebimentos pontuais pendentes e atrasados",
     onClick: handleExpectedRevenueClick,
     icon: <FileText className="h-4 w-4 text-muted-foreground" />,
   }, {
     title: "Faturamento Total Esperado",
     value: formatCurrency(totalExpectedRevenue),
     change: totalExpectedRevenueChange,
-    description: "Receita atual + pendente/atrasada",
+    description: "Receita atual + pagamentos pontuais",
     icon: <FileText className="h-4 w-4 text-muted-foreground" />,
   }, {
     title: "Despesa Estimada",
