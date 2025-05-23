@@ -26,13 +26,20 @@ export const PaymentTable = ({
   const filteredPayments = useMemo(() => {
     return payments.filter(payment => {
       const clientName = payment.clients?.name || '';
+      const description = payment.description?.toLowerCase() || '';
+      const searchLower = searchTerm.toLowerCase();
+      
+      // Search filtering
       const matchesSearch = 
-        searchTerm.toLowerCase() === '' || 
-        clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        payment.description.toLowerCase().includes(searchTerm.toLowerCase());
+        searchTerm === '' || 
+        clientName.toLowerCase().includes(searchLower) ||
+        description.includes(searchLower);
+      
+      // Status filtering
       const matchesStatus = 
         statusFilter === 'all' || 
         payment.status === statusFilter;
+        
       return matchesSearch && matchesStatus;
     });
   }, [payments, searchTerm, statusFilter]);

@@ -24,15 +24,18 @@ export const PaymentRow = ({
   enableDuplicate = false,
   templates = []
 }: PaymentRowProps) => {
+  // Format due date safely
+  const formattedDueDate = payment.due_date 
+    ? format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: ptBR })
+    : 'Data não definida';
+    
   return (
     <TableRow className="hover:bg-muted/50">
-      <TableCell>{payment.clients?.name}</TableCell>
-      <TableCell>{payment.description}</TableCell>
+      <TableCell>{payment.clients?.name || 'Cliente não encontrado'}</TableCell>
+      <TableCell>{payment.description || 'Sem descrição'}</TableCell>
       <TableCell>{formatCurrency(payment.amount)}</TableCell>
-      <TableCell>
-        {format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: ptBR })}
-      </TableCell>
-      <TableCell>{payment.payment_method.toUpperCase()}</TableCell>
+      <TableCell>{formattedDueDate}</TableCell>
+      <TableCell>{(payment.payment_method || '').toUpperCase()}</TableCell>
       <TableCell>
         <PaymentStatusBadge status={payment.status} />
       </TableCell>

@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
@@ -54,11 +55,17 @@ export const RecurringBilling = () => {
     });
   }, [billings, billingSearch, billingStatusFilter]);
 
-  // Filtragem de pagamentos pontuais - garantindo que são apenas pagamentos não relacionados a cobranças recorrentes
+  // Filtragem de pagamentos pontuais - garantindo que são APENAS pagamentos NÃO relacionados a cobranças recorrentes
   const oneTimePayments = useMemo(() => {
     if (!payments || !Array.isArray(payments)) return [];
     
-    return payments.filter(payment => payment.installment_number === null || payment.installment_number === undefined);
+    // Só incluir pagamentos que são realmente pontuais (não são parcelas de recorrentes)
+    return payments.filter(payment => {
+      // Verificamos que o pagamento não tem número de parcela (installment_number)
+      // e não possui o prefixo "recurring-" no ID (que é usado para pagamentos de cobranças recorrentes)
+      return (payment.installment_number === null || payment.installment_number === undefined) && 
+             (typeof payment.id === 'string' && !payment.id.startsWith('recurring-'));
+    });
   }, [payments]);
   
   // Garante que clients e templates são sempre arrays
