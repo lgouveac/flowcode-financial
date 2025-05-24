@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -181,23 +182,26 @@ export const useMetrics = (period: string = 'current') => {
 
         if (previousClientsError) throw previousClientsError;
 
-        // Buscar faturamento esperado (pagamentos pendentes + overdue) - FILTER BY SELECTED PERIOD
+        // Buscar APENAS pagamentos pontuais pendentes/overdue do mês atual da tabela payments
+        // Excluindo qualquer coisa relacionada a recurring billing
         const { data: expectedPayments, error: expectedPaymentsError } = await supabase
           .from('payments')
-          .select('amount, paid_amount, status')
+          .select('amount, paid_amount, status, installment_number, id')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid', 'overdue'])
           .gte('due_date', dates.start)
-          .lt('due_date', dates.end);
+          .lt('due_date', dates.end)
+          .is('installment_number', null); // Only one-time payments, not installments from recurring billing
 
         if (expectedPaymentsError) throw expectedPaymentsError;
 
         // Buscar faturamento esperado do período anterior (pagamentos pontuais + overdue)
         const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
           .from('payments')
-          .select('amount, paid_amount, status')
+          .select('amount, paid_amount, status, installment_number, id')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid', 'overdue'])
           .gte('due_date', dates.compareStart)
-          .lt('due_date', dates.compareEnd);
+          .lt('due_date', dates.compareEnd)
+          .is('installment_number', null); // Only one-time payments
 
         if (prevExpectedPaymentsError) throw prevExpectedPaymentsError;
 
@@ -251,40 +255,40 @@ export const useMetrics = (period: string = 'current') => {
           ?.filter(item => item.type === 'expense')
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
-        // Calcular faturamento esperado atual (including overdue payments within the period)
-        // Correctly handle partially paid payments by subtracting paid_amount from amount
-        const currentExpectedPaymentsTotal = expectedPayments
-          ?.reduce((sum, item) => {
+        // Calcular faturamento esperado atual - APENAS pagamentos pontuais da tabela payments
+        // Filtrar também por ID para excluir qualquer pagamento com prefixo "recurring-"
+        const filteredExpectedPayments = expectedPayments?.filter(payment => 
+          typeof payment.id === 'string' && !payment.id.startsWith('recurring-')
+        ) || [];
+
+        const currentExpectedRevenue = filteredExpectedPayments
+          .reduce((sum, item) => {
             // For partially paid payments, only count the remaining amount
             if (item.status === 'partially_paid' && item.paid_amount) {
               return sum + (Number(item.amount) - Number(item.paid_amount));
             }
             return sum + Number(item.amount);
-          }, 0) || 0;
-        
-        // IMPORTANTE: Removida a inclusão de recorrentes no cálculo do faturamento esperado
-        // Utilizamos diretamente apenas currentExpectedPaymentsTotal
-        const currentExpectedRevenue = currentExpectedPaymentsTotal;
+          }, 0);
 
-        // Calcular faturamento esperado anterior (with partially paid handling)
-        const previousExpectedPaymentsTotal = previousExpectedPayments
-          ?.reduce((sum, item) => {
+        // Calcular faturamento esperado anterior
+        const filteredPreviousExpectedPayments = previousExpectedPayments?.filter(payment => 
+          typeof payment.id === 'string' && !payment.id.startsWith('recurring-')
+        ) || [];
+
+        const previousExpectedRevenue = filteredPreviousExpectedPayments
+          .reduce((sum, item) => {
             // For partially paid payments, only count the remaining amount
             if (item.status === 'partially_paid' && item.paid_amount) {
               return sum + (Number(item.amount) - Number(item.paid_amount));
             }
             return sum + Number(item.amount);
-          }, 0) || 0;
-
-        // IMPORTANTE: Removida a inclusão de recorrentes no cálculo do faturamento esperado anterior também
-        const previousExpectedRevenue = previousExpectedPaymentsTotal;
+          }, 0);
 
         const currentNetProfit = currentRevenue - currentExpenses;
         const previousNetProfit = previousRevenue - previousExpenses;
 
-        console.log('Expected revenue calculation (excluding recurring):', {
-          payments: expectedPayments,
-          paymentTotal: currentExpectedPaymentsTotal,
+        console.log('Expected revenue calculation (ONLY one-time payments from payments table):', {
+          filteredPayments: filteredExpectedPayments,
           total: currentExpectedRevenue
         });
 
