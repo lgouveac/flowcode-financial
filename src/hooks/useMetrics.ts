@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -183,25 +182,23 @@ export const useMetrics = (period: string = 'current') => {
         if (previousClientsError) throw previousClientsError;
 
         // Buscar APENAS pagamentos pontuais pendentes/overdue do mês atual da tabela payments
-        // Excluindo qualquer coisa relacionada a recurring billing
+        // Excluindo APENAS pagamentos com ID que começa com "recurring-"
         const { data: expectedPayments, error: expectedPaymentsError } = await supabase
           .from('payments')
           .select('amount, paid_amount, status, installment_number, id')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid', 'overdue'])
           .gte('due_date', dates.start)
-          .lt('due_date', dates.end)
-          .is('installment_number', null); // Only one-time payments, not installments from recurring billing
+          .lt('due_date', dates.end);
 
         if (expectedPaymentsError) throw expectedPaymentsError;
 
-        // Buscar faturamento esperado do período anterior (pagamentos pontuais + overdue)
+        // Buscar faturamento esperado do período anterior
         const { data: previousExpectedPayments, error: prevExpectedPaymentsError } = await supabase
           .from('payments')
           .select('amount, paid_amount, status, installment_number, id')
           .in('status', ['pending', 'billed', 'awaiting_invoice', 'partially_paid', 'overdue'])
           .gte('due_date', dates.compareStart)
-          .lt('due_date', dates.compareEnd)
-          .is('installment_number', null); // Only one-time payments
+          .lt('due_date', dates.compareEnd);
 
         if (prevExpectedPaymentsError) throw prevExpectedPaymentsError;
 
@@ -256,7 +253,7 @@ export const useMetrics = (period: string = 'current') => {
           .reduce((sum, item) => sum + Number(item.amount), 0) || 0;
 
         // Calcular faturamento esperado atual - APENAS pagamentos pontuais da tabela payments
-        // Filtrar também por ID para excluir qualquer pagamento com prefixo "recurring-"
+        // Filtrar APENAS por ID para excluir qualquer pagamento com prefixo "recurring-"
         const filteredExpectedPayments = expectedPayments?.filter(payment => 
           typeof payment.id === 'string' && !payment.id.startsWith('recurring-')
         ) || [];
