@@ -300,7 +300,7 @@ export const Overview = () => {
     }
   };
   
-  // Function to fetch pending payments - updated to fetch both recurring and overdue payments
+  // Function to fetch pending payments - updated to apply same filtering as useMetrics
   const fetchPendingPayments = async () => {
     setLoadingPayments(true);
     
@@ -328,74 +328,20 @@ export const Overview = () => {
         throw oneTimeError;
       }
       
-      // Now fetch recurring billing payments for the selected period
-      const { data: recurringBillings, error: recurringError } = await supabase
-        .from('recurring_billing')
-        .select(`
-          *,
-          clients (
-            name,
-            email,
-            partner_name
-          )
-        `)
-        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid']);
-        
-      if (recurringError) {
-        throw recurringError;
-      }
-      
-      // Process recurring billings to find those that should have payments in this period
-      const now = new Date();
-      const currentMonth = now.getMonth() + 1;
-      const currentYear = now.getFullYear();
-      
-      // Convert recurring billings to payment objects for the current period
-      const recurringPayments = (recurringBillings || [])
-        .filter(billing => {
-          // Filter only recurring billings that should have a payment in the current period
-          const billingStartDate = new Date(billing.start_date);
-          const billingEndDate = billing.end_date ? new Date(billing.end_date) : null;
-          
-          // Check if the billing is active for the current period
-          const isStarted = billingStartDate <= now;
-          const isNotEnded = !billingEndDate || billingEndDate >= now;
-          
-          return isStarted && isNotEnded;
-        })
-        .map(billing => {
-          const dueDay = billing.due_day;
-          const dueDate = new Date(currentYear, currentMonth - 1, dueDay);
-          
-          // Format the due date to ISO string
-          const dueDateFormatted = dueDate.toISOString().split('T')[0];
-          
-          return {
-            id: `recurring-${billing.id}`,
-            client_id: billing.client_id,
-            description: `${billing.description} (Recorrente)`,
-            amount: billing.amount,
-            due_date: dueDateFormatted,
-            payment_method: billing.payment_method,
-            status: billing.status,
-            clients: billing.clients,
-            created_at: billing.created_at,
-            updated_at: billing.updated_at
-          } as Payment;
-        });
-      
-      // Combine both payment types
-      const allPendingPayments = [...(oneTimePayments || []), ...recurringPayments];
+      // Filter out payments with "recurring-" prefixed IDs to match useMetrics logic
+      const filteredOneTimePayments = (oneTimePayments || []).filter(payment => 
+        typeof payment.id === 'string' && !payment.id.startsWith('recurring-')
+      );
       
       // Sort by due date
-      allPendingPayments.sort((a, b) => {
+      filteredOneTimePayments.sort((a, b) => {
         return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
       });
       
-      setPendingPayments(allPendingPayments);
+      setPendingPayments(filteredOneTimePayments);
       
       // Log data to help with debugging
-      console.log('All pending payments (including overdue):', allPendingPayments);
+      console.log('Filtered pending payments (excluding recurring- prefixed IDs):', filteredOneTimePayments);
     } catch (error) {
       console.error("Error fetching pending payments:", error);
     } finally {
