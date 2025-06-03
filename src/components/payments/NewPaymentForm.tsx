@@ -37,6 +37,7 @@ export const NewPaymentForm = ({
     description: '',
     amount: 0,
     due_date: '',
+    payment_date: '',
     payment_method: 'pix',
     status: 'pending'
   });
@@ -106,6 +107,12 @@ export const NewPaymentForm = ({
       setValidationError("Por favor, selecione uma data de vencimento");
       return false;
     }
+
+    // Validar payment_date se status for 'paid'
+    if (formData.status === 'paid' && !formData.payment_date) {
+      setValidationError("Data de pagamento é obrigatória quando status é 'Pago'");
+      return false;
+    }
     
     setValidationError(null);
     return true;
@@ -118,7 +125,7 @@ export const NewPaymentForm = ({
     }
     
     try {
-      // Format date if needed to ensure ISO format
+      // Format dates if needed to ensure ISO format
       let formattedData = { ...formData };
       
       if (formData.due_date && typeof formData.due_date === 'string') {
@@ -131,8 +138,25 @@ export const NewPaymentForm = ({
               formattedData.due_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
           } catch (error) {
-            console.error('Error formatting date:', error);
-            setValidationError("Formato de data inválido");
+            console.error('Error formatting due_date:', error);
+            setValidationError("Formato de data de vencimento inválido");
+            return;
+          }
+        }
+      }
+
+      if (formData.payment_date && typeof formData.payment_date === 'string') {
+        // Make sure the payment_date is in ISO format YYYY-MM-DD
+        if (!formData.payment_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          try {
+            const dateParts = formData.payment_date.split('/');
+            if (dateParts.length === 3) {
+              const [day, month, year] = dateParts;
+              formattedData.payment_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+          } catch (error) {
+            console.error('Error formatting payment_date:', error);
+            setValidationError("Formato de data de pagamento inválido");
             return;
           }
         }
@@ -270,6 +294,48 @@ export const NewPaymentForm = ({
               <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={formData.status}
+            onValueChange={(value: 'pending' | 'billed' | 'awaiting_invoice' | 'paid' | 'overdue' | 'cancelled' | 'partially_paid') =>
+              setFormData({ ...formData, status: value })
+            }
+            disabled={isSubmitting}
+          >
+            <SelectTrigger id="status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pendente</SelectItem>
+              <SelectItem value="billed">Faturado</SelectItem>
+              <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
+              <SelectItem value="paid">Pago</SelectItem>
+              <SelectItem value="overdue">Atrasado</SelectItem>
+              <SelectItem value="cancelled">Cancelado</SelectItem>
+              <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="payment_date">
+            Data de Pagamento
+            {formData.status === 'paid' && <span className="text-red-500 ml-1">*</span>}
+          </Label>
+          <Input
+            id="payment_date"
+            type="date"
+            value={formData.payment_date || ""}
+            onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+            required={formData.status === 'paid'}
+            disabled={isSubmitting}
+          />
+          {formData.status === 'paid' && !formData.payment_date && (
+            <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
+          )}
         </div>
 
         {formData.email_template && selectedClient && (

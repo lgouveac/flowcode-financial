@@ -34,6 +34,7 @@ export const PaymentDetailsDialog = ({
   const [dueDay, setDueDay] = useState(billing.due_day.toString());
   const [paymentMethod, setPaymentMethod] = useState(billing.payment_method);
   const [status, setStatus] = useState(billing.status);
+  const [paymentDate, setPaymentDate] = useState(billing.payment_date || "");
   const [emailTemplate, setEmailTemplate] = useState(billing.email_template || "none");
   const [relatedPayments, setRelatedPayments] = useState<Payment[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -48,6 +49,7 @@ export const PaymentDetailsDialog = ({
       setDueDay(billing.due_day.toString());
       setPaymentMethod(billing.payment_method);
       setStatus(billing.status);
+      setPaymentDate(billing.payment_date || "");
       setEmailTemplate(billing.email_template || "none");
       setStartDate(billing.start_date);
       setEndDate(billing.end_date || "");
@@ -112,6 +114,11 @@ export const PaymentDetailsDialog = ({
       if (isNaN(newDueDay) || newDueDay < 1 || newDueDay > 31) {
         throw new Error("Dia de vencimento inválido");
       }
+
+      // Validar payment_date se status for 'paid'
+      if (status === 'paid' && !paymentDate) {
+        throw new Error("Data de pagamento é obrigatória quando status é 'Pago'");
+      }
       
       const updateData = {
         description,
@@ -119,6 +126,7 @@ export const PaymentDetailsDialog = ({
         due_day: newDueDay,
         payment_method: paymentMethod,
         status,
+        payment_date: paymentDate || null,
         email_template: emailTemplate === "none" ? null : emailTemplate,
         start_date: startDate,
         end_date: endDate || null
@@ -152,7 +160,7 @@ export const PaymentDetailsDialog = ({
       console.error("Erro ao atualizar cobrança:", error);
       toast({
         title: "Erro ao atualizar",
-        description: "Não foi possível salvar as alterações.",
+        description: error instanceof Error ? error.message : "Não foi possível salvar as alterações.",
         variant: "destructive"
       });
     } finally {
@@ -311,6 +319,22 @@ export const PaymentDetailsDialog = ({
                   <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">
+                Data de Pagamento
+                {status === 'paid' && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              <Input
+                type="date"
+                value={paymentDate ? formatDate(paymentDate) : ""}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                required={status === 'paid'}
+              />
+              {status === 'paid' && !paymentDate && (
+                <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
+              )}
             </div>
 
             <div className="grid gap-2">

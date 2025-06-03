@@ -128,6 +128,62 @@ export type Database = {
         }
         Relationships: []
       }
+      Contratos: {
+        Row: {
+          Cliente: string | null
+          contract_id: string | null
+          created_at: string
+          "Data de Assinatura": string | null
+          data_de_assinatura: string | null
+          Escopo: string | null
+          id: number
+          ip: string | null
+          link_contrato: string | null
+          obs: string | null
+          Parcelas: number | null
+          Valor: number | null
+          "Valor das Parcelas": string | null
+        }
+        Insert: {
+          Cliente?: string | null
+          contract_id?: string | null
+          created_at?: string
+          "Data de Assinatura"?: string | null
+          data_de_assinatura?: string | null
+          Escopo?: string | null
+          id?: number
+          ip?: string | null
+          link_contrato?: string | null
+          obs?: string | null
+          Parcelas?: number | null
+          Valor?: number | null
+          "Valor das Parcelas"?: string | null
+        }
+        Update: {
+          Cliente?: string | null
+          contract_id?: string | null
+          created_at?: string
+          "Data de Assinatura"?: string | null
+          data_de_assinatura?: string | null
+          Escopo?: string | null
+          id?: number
+          ip?: string | null
+          link_contrato?: string | null
+          obs?: string | null
+          Parcelas?: number | null
+          Valor?: number | null
+          "Valor das Parcelas"?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Contratos_Cliente_fkey"
+            columns: ["Cliente"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           content: string

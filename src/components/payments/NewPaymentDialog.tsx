@@ -83,7 +83,7 @@ export const NewPaymentDialog = ({
     setIsSubmitting(true);
     
     try {
-      // Format date if needed
+      // Format dates if needed
       let paymentData = { ...payment };
       
       if (payment.due_date && typeof payment.due_date === 'string') {
@@ -95,10 +95,31 @@ export const NewPaymentDialog = ({
               paymentData.due_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
           } catch (error) {
-            console.error('Error formatting date:', error);
+            console.error('Error formatting due_date:', error);
             toast({
               title: "Erro no formato da data",
               description: "Por favor, verifique o formato da data de vencimento",
+              variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      }
+
+      if (payment.payment_date && typeof payment.payment_date === 'string') {
+        if (!payment.payment_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          try {
+            const dateParts = payment.payment_date.split('/');
+            if (dateParts.length === 3) {
+              const [day, month, year] = dateParts;
+              paymentData.payment_date = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+          } catch (error) {
+            console.error('Error formatting payment_date:', error);
+            toast({
+              title: "Erro no formato da data",
+              description: "Por favor, verifique o formato da data de pagamento",
               variant: "destructive",
             });
             setIsSubmitting(false);
@@ -134,6 +155,7 @@ export const NewPaymentDialog = ({
           description: paymentData.description,
           amount: paymentData.amount,
           due_date: paymentData.due_date,
+          payment_date: paymentData.payment_date || null,
           payment_method: paymentData.payment_method,
           status: paymentData.status,
           email_template: paymentData.email_template,
