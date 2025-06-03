@@ -28,6 +28,7 @@ export const PaymentDetailsDialog = ({
   const [description, setDescription] = useState(payment.description);
   const [amount, setAmount] = useState(payment.amount.toString());
   const [dueDate, setDueDate] = useState(payment.due_date);
+  const [paymentDate, setPaymentDate] = useState(payment.payment_date || "");
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "boleto" | "credit_card">(payment.payment_method);
   const [status, setStatus] = useState<"pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid">(payment.status);
   const [emailTemplate, setEmailTemplate] = useState<string>(payment.email_template || "none");
@@ -38,6 +39,7 @@ export const PaymentDetailsDialog = ({
       setDescription(payment.description);
       setAmount(payment.amount.toString());
       setDueDate(payment.due_date);
+      setPaymentDate(payment.payment_date || "");
       setPaymentMethod(payment.payment_method);
       setStatus(payment.status);
       setEmailTemplate(payment.email_template || "none");
@@ -66,12 +68,23 @@ export const PaymentDetailsDialog = ({
 
   const handleSave = async () => {
     try {
+      // Validar payment_date se status for 'paid'
+      if (status === 'paid' && !paymentDate) {
+        toast({
+          title: "Erro de validação",
+          description: "Data de pagamento é obrigatória quando status é 'Pago'.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('payments')
         .update({
           description,
           amount: parseFloat(amount),
           due_date: dueDate,
+          payment_date: paymentDate || null,
           payment_method: paymentMethod,
           status,
           email_template: emailTemplate === "none" ? null : emailTemplate
@@ -132,6 +145,22 @@ export const PaymentDetailsDialog = ({
               onChange={(e) => setDueDate(e.target.value)}
               className="bg-[#151820] border-[#2a2f3d] text-white"
             />
+          </div>
+
+          <div className="grid gap-2">
+            <label className="text-sm text-gray-300">
+              Data de Pagamento
+              {status === 'paid' && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <Input
+              type="date"
+              value={paymentDate ? formatDate(paymentDate) : ""}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              className="bg-[#151820] border-[#2a2f3d] text-white"
+            />
+            {status === 'paid' && !paymentDate && (
+              <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
+            )}
           </div>
 
           <div className="grid gap-2">
