@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -41,6 +40,7 @@ export const PaymentDetailsDialog = ({
   const [startDate, setStartDate] = useState(billing.start_date);
   const [endDate, setEndDate] = useState(billing.end_date || "");
   const [isLoadingPayments, setIsLoadingPayments] = useState(false);
+  const [currentInstallment, setCurrentInstallment] = useState(billing.current_installment.toString());
 
   useEffect(() => {
     if (open) {
@@ -53,6 +53,7 @@ export const PaymentDetailsDialog = ({
       setEmailTemplate(billing.email_template || "none");
       setStartDate(billing.start_date);
       setEndDate(billing.end_date || "");
+      setCurrentInstallment(billing.current_installment.toString());
       fetchRelatedPayments();
     }
   }, [open, billing]);
@@ -115,6 +116,11 @@ export const PaymentDetailsDialog = ({
         throw new Error("Dia de vencimento inválido");
       }
 
+      const newCurrentInstallment = parseInt(currentInstallment);
+      if (isNaN(newCurrentInstallment) || newCurrentInstallment < 1 || newCurrentInstallment > billing.installments) {
+        throw new Error(`Parcela atual deve estar entre 1 e ${billing.installments}`);
+      }
+
       // Validar payment_date se status for 'paid'
       if (status === 'paid' && !paymentDate) {
         throw new Error("Data de pagamento é obrigatória quando status é 'Pago'");
@@ -129,7 +135,8 @@ export const PaymentDetailsDialog = ({
         payment_date: paymentDate || null,
         email_template: emailTemplate === "none" ? null : emailTemplate,
         start_date: startDate,
-        end_date: endDate || null
+        end_date: endDate || null,
+        current_installment: newCurrentInstallment
       };
       
       // Verifica se o dia de vencimento foi alterado
@@ -266,6 +273,17 @@ export const PaymentDetailsDialog = ({
             </div>
 
             <div className="grid gap-2">
+              <label className="text-sm font-medium">Parcela Atual</label>
+              <Input
+                type="number"
+                min="1"
+                max={billing.installments}
+                value={currentInstallment}
+                onChange={(e) => setCurrentInstallment(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2">
               <label className="text-sm font-medium">Data de Início</label>
               <Input
                 type="date"
@@ -377,7 +395,7 @@ export const PaymentDetailsDialog = ({
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Parcelas</h3>
               <Badge variant="outline" className="px-2 py-1">
-                {billing.current_installment}/{billing.installments}
+                {parseInt(currentInstallment)}/{billing.installments}
               </Badge>
             </div>
             
