@@ -121,8 +121,13 @@ export const PaymentDetailsDialog = ({
         throw new Error("Número de parcelas a adicionar deve ser maior que 0");
       }
 
-      const currentTotal = parseInt(installments);
-      const newTotal = currentTotal + additionalCount;
+      // Usar o número real de pagamentos existentes como base
+      const currentPaymentCount = relatedPayments.length;
+      const newTotalInstallments = currentPaymentCount + additionalCount;
+      
+      console.log("Pagamentos existentes:", currentPaymentCount);
+      console.log("Adicionando:", additionalCount);
+      console.log("Novo total:", newTotalInstallments);
       
       // Encontrar a última data de vencimento dos pagamentos existentes
       const lastPayment = relatedPayments
@@ -141,43 +146,77 @@ export const PaymentDetailsDialog = ({
         }
       }
 
+      // Extrair a descrição base (sem numeração de parcela)
+      const baseDescription = description.replace(/\s*\(\d+\/\d+\)$/, '');
+
       // Criar as novas parcelas
       const newPayments = [];
       for (let i = 1; i <= additionalCount; i++) {
-        const installmentNumber = currentTotal + i;
+        const installmentNumber = currentPaymentCount + i;
         
         newPayments.push({
           client_id: billing.client_id,
-          description: `${description} (${installmentNumber}/${newTotal})`,
+          description: `${baseDescription} (${installmentNumber}/${newTotalInstallments})`,
           amount: parseFloat(amount),
           due_date: nextDueDate.toISOString().split('T')[0],
           payment_method: paymentMethod,
           status: 'pending' as const,
           installment_number: installmentNumber,
-          total_installments: newTotal
+          total_installments: newTotalInstallments
         });
         
         // Próximo mês
         nextDueDate.setMonth(nextDueDate.getMonth() + 1);
       }
 
-      // Inserir os novos pagamentos
+      // Inserir os novos pagamentos no banco
       const { error: paymentsError } = await supabase
         .from('payments')
         .insert(newPayments);
 
       if (paymentsError) throw paymentsError;
 
-      // Atualizar o total de parcelas no billing
-      setInstallments(newTotal.toString());
+      // Atualizar o total de parcelas no billing imediatamente no banco
+      const { error: billingError } = await supabase
+        .from('recurring_billing')
+        .update({ 
+          installments: newTotalInstallments,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', billing.id);
+
+      if (billingError) throw billingError;
+
+      // Atualizar também as descrições dos pagamentos existentes para refletir o novo total
+      const updatePromises = relatedPayments.map((payment, index) => {
+        const installmentNumber = index + 1;
+        const newDescription = `${baseDescription} (${installmentNumber}/${newTotalInstallments})`;
+        
+        return supabase
+          .from('payments')
+          .update({ 
+            description: newDescription,
+            total_installments: newTotalInstallments
+          })
+          .eq('id', payment.id);
+      });
+
+      await Promise.all(updatePromises);
+      
+      // Atualizar o estado local
+      setInstallments(newTotalInstallments.toString());
       
       toast({
         title: "Parcelas adicionadas",
-        description: `${additionalCount} parcelas foram adicionadas com sucesso.`
+        description: `${additionalCount} parcelas foram adicionadas com sucesso. Total agora: ${newTotalInstallments}`
       });
 
       // Recarregar os pagamentos para mostrar as novas parcelas
       await fetchRelatedPayments();
+      
+      // Chamar onUpdate para atualizar a lista principal
+      onUpdate();
+      
       setAdditionalInstallments("1");
       
     } catch (error) {
