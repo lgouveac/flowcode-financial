@@ -12,6 +12,7 @@ import { ptBR } from "date-fns/locale";
 import { Payment } from "@/types/payment";
 import { PaymentTable } from "../payments/PaymentTable";
 import { Badge } from "@/components/ui/badge";
+import { Plus } from "lucide-react";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
@@ -41,6 +42,9 @@ export const PaymentDetailsDialog = ({
   const [endDate, setEndDate] = useState(billing.end_date || "");
   const [isLoadingPayments, setIsLoadingPayments] = useState(false);
   const [currentInstallment, setCurrentInstallment] = useState(billing.current_installment.toString());
+  const [installments, setInstallments] = useState(billing.installments.toString());
+  const [additionalInstallments, setAdditionalInstallments] = useState("1");
+  const [isAddingInstallments, setIsAddingInstallments] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -54,6 +58,7 @@ export const PaymentDetailsDialog = ({
       setStartDate(billing.start_date);
       setEndDate(billing.end_date || "");
       setCurrentInstallment(billing.current_installment.toString());
+      setInstallments(billing.installments.toString());
       fetchRelatedPayments();
     }
   }, [open, billing]);
@@ -107,6 +112,86 @@ export const PaymentDetailsDialog = ({
     }
   };
 
+  const addInstallments = async () => {
+    setIsAddingInstallments(true);
+    
+    try {
+      const additionalCount = parseInt(additionalInstallments);
+      if (isNaN(additionalCount) || additionalCount < 1) {
+        throw new Error("Número de parcelas a adicionar deve ser maior que 0");
+      }
+
+      const currentTotal = parseInt(installments);
+      const newTotal = currentTotal + additionalCount;
+      
+      // Encontrar a última data de vencimento dos pagamentos existentes
+      const lastPayment = relatedPayments
+        .sort((a, b) => new Date(b.due_date).getTime() - new Date(a.due_date).getTime())[0];
+      
+      let nextDueDate: Date;
+      if (lastPayment) {
+        nextDueDate = new Date(lastPayment.due_date);
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+      } else {
+        // Fallback: usar a data de início e o dia de vencimento
+        const baseDate = new Date(startDate);
+        nextDueDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), parseInt(dueDay));
+        if (nextDueDate < baseDate) {
+          nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+        }
+      }
+
+      // Criar as novas parcelas
+      const newPayments = [];
+      for (let i = 1; i <= additionalCount; i++) {
+        const installmentNumber = currentTotal + i;
+        
+        newPayments.push({
+          client_id: billing.client_id,
+          description: `${description} (${installmentNumber}/${newTotal})`,
+          amount: parseFloat(amount),
+          due_date: nextDueDate.toISOString().split('T')[0],
+          payment_method: paymentMethod,
+          status: 'pending' as const,
+          installment_number: installmentNumber,
+          total_installments: newTotal
+        });
+        
+        // Próximo mês
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+      }
+
+      // Inserir os novos pagamentos
+      const { error: paymentsError } = await supabase
+        .from('payments')
+        .insert(newPayments);
+
+      if (paymentsError) throw paymentsError;
+
+      // Atualizar o total de parcelas no billing
+      setInstallments(newTotal.toString());
+      
+      toast({
+        title: "Parcelas adicionadas",
+        description: `${additionalCount} parcelas foram adicionadas com sucesso.`
+      });
+
+      // Recarregar os pagamentos para mostrar as novas parcelas
+      await fetchRelatedPayments();
+      setAdditionalInstallments("1");
+      
+    } catch (error) {
+      console.error("Erro ao adicionar parcelas:", error);
+      toast({
+        title: "Erro ao adicionar parcelas",
+        description: error instanceof Error ? error.message : "Não foi possível adicionar as parcelas.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAddingInstallments(false);
+    }
+  };
+
   const handleSave = async () => {
     setIsUpdating(true);
     
@@ -117,8 +202,14 @@ export const PaymentDetailsDialog = ({
       }
 
       const newCurrentInstallment = parseInt(currentInstallment);
-      if (isNaN(newCurrentInstallment) || newCurrentInstallment < 1 || newCurrentInstallment > billing.installments) {
-        throw new Error(`Parcela atual deve estar entre 1 e ${billing.installments}`);
+      const newInstallments = parseInt(installments);
+      
+      if (isNaN(newCurrentInstallment) || newCurrentInstallment < 1) {
+        throw new Error("Parcela atual deve ser maior que 0");
+      }
+
+      if (isNaN(newInstallments) || newInstallments < 1) {
+        throw new Error("Total de parcelas deve ser maior que 0");
       }
 
       // Validar payment_date se status for 'paid'
@@ -136,7 +227,8 @@ export const PaymentDetailsDialog = ({
         email_template: emailTemplate === "none" ? null : emailTemplate,
         start_date: startDate,
         end_date: endDate || null,
-        current_installment: newCurrentInstallment
+        current_installment: newCurrentInstallment,
+        installments: newInstallments
       };
       
       // Verifica se o dia de vencimento foi alterado
@@ -273,11 +365,20 @@ export const PaymentDetailsDialog = ({
             </div>
 
             <div className="grid gap-2">
+              <label className="text-sm font-medium">Total de Parcelas</label>
+              <Input
+                type="number"
+                min="1"
+                value={installments}
+                onChange={(e) => setInstallments(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2">
               <label className="text-sm font-medium">Parcela Atual</label>
               <Input
                 type="number"
                 min="1"
-                max={billing.installments}
                 value={currentInstallment}
                 onChange={(e) => setCurrentInstallment(e.target.value)}
               />
@@ -378,6 +479,30 @@ export const PaymentDetailsDialog = ({
               </Select>
             </div>
 
+            <div className="border-t pt-4">
+              <h4 className="text-md font-medium mb-3">Adicionar Parcelas</h4>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="text-sm font-medium">Qtd. de Parcelas</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={additionalInstallments}
+                    onChange={(e) => setAdditionalInstallments(e.target.value)}
+                    placeholder="Número de parcelas"
+                  />
+                </div>
+                <Button 
+                  onClick={addInstallments}
+                  disabled={isAddingInstallments}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  {isAddingInstallments ? "Adicionando..." : "Adicionar"}
+                </Button>
+              </div>
+            </div>
+
             <div className="flex justify-end gap-4 mt-6">
               <Button variant="outline" onClick={onClose}>
                 Cancelar
@@ -395,7 +520,7 @@ export const PaymentDetailsDialog = ({
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Parcelas</h3>
               <Badge variant="outline" className="px-2 py-1">
-                {parseInt(currentInstallment)}/{billing.installments}
+                {parseInt(currentInstallment)}/{parseInt(installments)}
               </Badge>
             </div>
             
