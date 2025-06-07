@@ -63,20 +63,13 @@ export function ClientSelector({
       onValueChange={handleSelect}
       disabled={disabled}
     >
-      <SelectTrigger className="w-full bg-background">
+      <SelectTrigger className="w-full">
         <SelectValue placeholder="Selecione o cliente" />
       </SelectTrigger>
-      <SelectContent 
-        className="bg-background max-h-[300px]"
-        style={{
-          backgroundColor: 'var(--background)',
-          zIndex: 1000,
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-        }}
-      >
+      <SelectContent className="max-h-[300px]">
         {safeClients.length > 0 ? (
           safeClients.map((client) => (
-            <SelectItem key={client.id} value={client.id} className="hover:bg-accent">
+            <SelectItem key={client.id} value={client.id}>
               {client.name}
             </SelectItem>
           ))
