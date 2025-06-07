@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -22,82 +22,83 @@ export function EmployeePaymentSettings() {
   const [templateType, setTemplateType] = useState<"invoice" | "hours" | "novo_subtipo">("invoice");
   const [monthlyValues, setMonthlyValues] = useState<Record<string, EmployeeMonthlyValue>>({});
 
-  // Fetch active employees and their monthly values
-  useEffect(() => {
-    async function fetchEmployeesAndValues() {
-      setLoading(true);
-      try {
-        console.log("Fetching active employees...");
+  // Memoize the fetch function to prevent infinite re-renders
+  const fetchEmployeesAndValues = useCallback(async () => {
+    setLoading(true);
+    try {
+      console.log("Fetching active employees...");
+      
+      // Fetch active employees
+      const { data: employeeData, error: employeeError } = await supabase
+        .from("employees")
+        .select("*")
+        .eq("status", "active")
+        .order("name");
+
+      if (employeeError) throw employeeError;
+
+      // Ensure proper typing by mapping the data
+      const typedEmployees = employeeData?.map(emp => ({
+        ...emp,
+        type: emp.type as "fixed" | "freelancer",
+        status: emp.status as "active" | "inactive",
+        preferred_template: emp.preferred_template as "invoice" | "hours" | "novo_subtipo" || "invoice"
+      })) || [];
+
+      console.log(`Found ${typedEmployees.length} active employees`);
+      setEmployees(typedEmployees);
+      
+      // Fetch monthly values for all employees in a single optimized query
+      if (typedEmployees.length > 0) {
+        console.log("Fetching monthly values for all employees...");
         
-        // Fetch active employees
-        const { data: employeeData, error: employeeError } = await supabase
-          .from("employees")
+        const employeeIds = typedEmployees.map(emp => emp.id);
+        
+        const { data: allMonthlyValues, error: valuesError } = await supabase
+          .from("employee_monthly_values")
           .select("*")
-          .eq("status", "active")
-          .order("name");
+          .in("employee_id", employeeIds)
+          .order("due_date", { ascending: false });
 
-        if (employeeError) throw employeeError;
-
-        // Ensure proper typing by mapping the data
-        const typedEmployees = employeeData?.map(emp => ({
-          ...emp,
-          type: emp.type as "fixed" | "freelancer",
-          status: emp.status as "active" | "inactive",
-          preferred_template: emp.preferred_template as "invoice" | "hours" | "novo_subtipo" || "invoice"
-        })) || [];
-
-        console.log(`Found ${typedEmployees.length} active employees`);
-        setEmployees(typedEmployees);
-        
-        // Fetch monthly values for all employees in a single optimized query
-        if (typedEmployees.length > 0) {
-          console.log("Fetching monthly values for all employees...");
-          
-          const employeeIds = typedEmployees.map(emp => emp.id);
-          
-          const { data: allMonthlyValues, error: valuesError } = await supabase
-            .from("employee_monthly_values")
-            .select("*")
-            .in("employee_id", employeeIds)
-            .order("due_date", { ascending: false });
-
-          if (valuesError) {
-            console.error("Error fetching monthly values:", valuesError);
-            throw valuesError;
-          }
-
-          // Group monthly values by employee_id and get the latest one for each
-          const valuesByEmployee: Record<string, EmployeeMonthlyValue> = {};
-          
-          if (allMonthlyValues) {
-            console.log(`Found ${allMonthlyValues.length} total monthly values`);
-            
-            // Group by employee_id and keep only the latest (first due to desc order)
-            allMonthlyValues.forEach(value => {
-              if (!valuesByEmployee[value.employee_id]) {
-                valuesByEmployee[value.employee_id] = value as EmployeeMonthlyValue;
-              }
-            });
-            
-            console.log(`Processed monthly values for ${Object.keys(valuesByEmployee).length} employees`);
-          }
-          
-          setMonthlyValues(valuesByEmployee);
+        if (valuesError) {
+          console.error("Error fetching monthly values:", valuesError);
+          throw valuesError;
         }
-      } catch (error: any) {
-        console.error("Error fetching employees and values:", error);
-        toast({
-          title: "Erro ao carregar dados",
-          description: error.message || "Não foi possível carregar os funcionários e valores.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
 
+        // Group monthly values by employee_id and get the latest one for each
+        const valuesByEmployee: Record<string, EmployeeMonthlyValue> = {};
+        
+        if (allMonthlyValues) {
+          console.log(`Found ${allMonthlyValues.length} total monthly values`);
+          
+          // Group by employee_id and keep only the latest (first due to desc order)
+          allMonthlyValues.forEach(value => {
+            if (!valuesByEmployee[value.employee_id]) {
+              valuesByEmployee[value.employee_id] = value as EmployeeMonthlyValue;
+            }
+          });
+          
+          console.log(`Processed monthly values for ${Object.keys(valuesByEmployee).length} employees`);
+        }
+        
+        setMonthlyValues(valuesByEmployee);
+      }
+    } catch (error: any) {
+      console.error("Error fetching employees and values:", error);
+      toast({
+        title: "Erro ao carregar dados",
+        description: error.message || "Não foi possível carregar os funcionários e valores.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Remove toast from dependencies to prevent infinite loop
+
+  // Fetch data only once when component mounts
+  useEffect(() => {
     fetchEmployeesAndValues();
-  }, [toast]);
+  }, [fetchEmployeesAndValues]);
 
   // Start editing an employee's payment settings
   const handleEdit = (employee: Employee) => {
