@@ -138,20 +138,14 @@ export const Overview = () => {
       // Projection data for 12 months
       const projections: FutureProjection[] = [];
       
-      // First get all recurring billing to project revenue
-      const { data: recurringData, error: recurringError } = await supabase
-        .from('recurring_billing')
-        .select('*')
-        .in('status', ['pending', 'awaiting_invoice', 'billed']);
-        
-      if (recurringError) throw recurringError;
-      
-      // Get future payments already scheduled (one-time or installments)
-      const { data: futurePaymentsData, error: paymentsError } = await supabase
+      // Get all existing payments (both one-time and installments) for the next 12 months
+      const endDate = new Date(currentYear, currentMonth + 12, 0);
+      const { data: allPaymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select('*')
-        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid', 'overdue'])
-        .gte('due_date', new Date().toISOString());
+        .gte('due_date', new Date().toISOString().split('T')[0])
+        .lte('due_date', endDate.toISOString().split('T')[0])
+        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid', 'overdue']);
       
       if (paymentsError) throw paymentsError;
       
@@ -162,26 +156,15 @@ export const Overview = () => {
       
       if (expensesError) throw expensesError;
       
-      // Calculate monthly totals for the next 12 months
+      // Calculate monthly totals for the next 12 months based on existing payments
       for (let i = 0; i < 12; i++) {
         const monthDate = new Date(currentYear, currentMonth + i, 1);
         const monthName = monthDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
         const year = monthDate.getFullYear();
         const month = monthDate.getMonth() + 1;
         
-        // Start of month and end of month
-        const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
-        const lastDayOfMonth = new Date(year, month, 0).getDate();
-        const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${lastDayOfMonth}`;
-        
-        // Calculate revenue from recurring billing for this month
-        const recurringRevenue = (recurringData || []).reduce((sum, billing) => {
-          // Check if the billing is active for this month
-          return sum + Number(billing.amount);
-        }, 0);
-        
-        // Calculate revenue from scheduled one-time payments for this month
-        const scheduledRevenue = (futurePaymentsData || []).reduce((sum, payment) => {
+        // Calculate revenue from existing payments scheduled for this month
+        const monthlyRevenue = (allPaymentsData || []).reduce((sum, payment) => {
           const dueDate = new Date(payment.due_date);
           const paymentYear = dueDate.getFullYear();
           const paymentMonth = dueDate.getMonth() + 1;
@@ -201,13 +184,12 @@ export const Overview = () => {
           return sum + Number(expense.amount);
         }, 0);
         
-        // Total revenue and profit
-        const totalRevenue = recurringRevenue + scheduledRevenue;
-        const profit = totalRevenue - monthlyExpenses;
+        // Calculate profit
+        const profit = monthlyRevenue - monthlyExpenses;
         
         projections.push({
           month: monthName,
-          revenue: parseFloat(totalRevenue.toFixed(2)),
+          revenue: parseFloat(monthlyRevenue.toFixed(2)),
           expenses: parseFloat(monthlyExpenses.toFixed(2)),
           profit: parseFloat(profit.toFixed(2))
         });
