@@ -11,6 +11,8 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
   const { data: monthlyValues = [], isLoading } = useQuery({
     queryKey: ["employee-monthly-values", employeeId],
     queryFn: async () => {
+      console.log(`Fetching monthly values for employee: ${employeeId}`);
+      
       const { data, error } = await supabase
         .from("employee_monthly_values")
         .select("*")
@@ -27,12 +29,16 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
         throw error;
       }
 
+      console.log(`Found ${data?.length || 0} monthly values for employee ${employeeId}`);
       return data as EmployeeMonthlyValue[];
     },
+    enabled: !!employeeId,
   });
 
   const addMonthlyValue = async (monthlyValue: Omit<EmployeeMonthlyValue, "id" | "created_at" | "updated_at">) => {
     try {
+      console.log("Adding monthly value:", monthlyValue);
+      
       const { data, error } = await supabase
         .from("employee_monthly_values")
         .insert({
@@ -67,6 +73,8 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
 
   const updateMonthlyValue = async (monthlyValue: EmployeeMonthlyValue) => {
     try {
+      console.log("Updating monthly value:", monthlyValue);
+      
       const { error } = await supabase
         .from("employee_monthly_values")
         .update({

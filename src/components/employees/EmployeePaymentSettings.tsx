@@ -1,16 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarIcon, EditIcon, SaveIcon } from "lucide-react";
 import { Employee } from "@/types/employee";
-import { cn } from "@/lib/utils";
 import { EmployeeMonthlyValue } from "@/types/employee";
 import { formatDate } from "@/utils/formatters";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
@@ -25,36 +22,73 @@ export function EmployeePaymentSettings() {
   const [templateType, setTemplateType] = useState<"invoice" | "hours" | "novo_subtipo">("invoice");
   const [monthlyValues, setMonthlyValues] = useState<Record<string, EmployeeMonthlyValue>>({});
 
-  // Fetch active employees
+  // Fetch active employees and their monthly values
   useEffect(() => {
-    async function fetchEmployees() {
+    async function fetchEmployeesAndValues() {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        console.log("Fetching active employees...");
+        
+        // Fetch active employees
+        const { data: employeeData, error: employeeError } = await supabase
           .from("employees")
           .select("*")
           .eq("status", "active")
           .order("name");
 
-        if (error) throw error;
+        if (employeeError) throw employeeError;
 
         // Ensure proper typing by mapping the data
-        const typedData = data?.map(emp => ({
+        const typedEmployees = employeeData?.map(emp => ({
           ...emp,
           type: emp.type as "fixed" | "freelancer",
           status: emp.status as "active" | "inactive",
           preferred_template: emp.preferred_template as "invoice" | "hours" | "novo_subtipo" || "invoice"
-        }));
+        })) || [];
 
-        setEmployees(typedData || []);
+        console.log(`Found ${typedEmployees.length} active employees`);
+        setEmployees(typedEmployees);
         
-        // Fetch monthly values for all employees
-        await fetchAllMonthlyValues(typedData || []);
+        // Fetch monthly values for all employees in a single optimized query
+        if (typedEmployees.length > 0) {
+          console.log("Fetching monthly values for all employees...");
+          
+          const employeeIds = typedEmployees.map(emp => emp.id);
+          
+          const { data: allMonthlyValues, error: valuesError } = await supabase
+            .from("employee_monthly_values")
+            .select("*")
+            .in("employee_id", employeeIds)
+            .order("due_date", { ascending: false });
+
+          if (valuesError) {
+            console.error("Error fetching monthly values:", valuesError);
+            throw valuesError;
+          }
+
+          // Group monthly values by employee_id and get the latest one for each
+          const valuesByEmployee: Record<string, EmployeeMonthlyValue> = {};
+          
+          if (allMonthlyValues) {
+            console.log(`Found ${allMonthlyValues.length} total monthly values`);
+            
+            // Group by employee_id and keep only the latest (first due to desc order)
+            allMonthlyValues.forEach(value => {
+              if (!valuesByEmployee[value.employee_id]) {
+                valuesByEmployee[value.employee_id] = value as EmployeeMonthlyValue;
+              }
+            });
+            
+            console.log(`Processed monthly values for ${Object.keys(valuesByEmployee).length} employees`);
+          }
+          
+          setMonthlyValues(valuesByEmployee);
+        }
       } catch (error: any) {
-        console.error("Error fetching employees:", error);
+        console.error("Error fetching employees and values:", error);
         toast({
-          title: "Erro ao carregar funcionários",
-          description: error.message || "Não foi possível carregar os funcionários.",
+          title: "Erro ao carregar dados",
+          description: error.message || "Não foi possível carregar os funcionários e valores.",
           variant: "destructive",
         });
       } finally {
@@ -62,49 +96,23 @@ export function EmployeePaymentSettings() {
       }
     }
 
-    fetchEmployees();
+    fetchEmployeesAndValues();
   }, [toast]);
-
-  // Fetch monthly values for all employees
-  const fetchAllMonthlyValues = async (employeesList: Employee[]) => {
-    try {
-      const valuesByEmployee: Record<string, EmployeeMonthlyValue> = {};
-      
-      for (const employee of employeesList) {
-        // Get the latest monthly value for each employee
-        const { data, error } = await supabase
-          .from("employee_monthly_values")
-          .select("*")
-          .eq("employee_id", employee.id)
-          .order("due_date", { ascending: false })
-          .limit(1);
-
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          valuesByEmployee[employee.id] = data[0] as EmployeeMonthlyValue;
-        }
-      }
-      
-      setMonthlyValues(valuesByEmployee);
-    } catch (error: any) {
-      console.error("Error fetching monthly values:", error);
-    }
-  };
 
   // Start editing an employee's payment settings
   const handleEdit = (employee: Employee) => {
+    console.log(`Starting edit for employee: ${employee.name} (${employee.id})`);
     setEditingEmployee(employee.id);
     
     // Set current values if available
     const currentMonthlyValue = monthlyValues[employee.id];
     if (currentMonthlyValue) {
-      // Extract day from due_date (YYYY-MM-DD) to display in the input field
-      const dueDate = new Date(currentMonthlyValue.due_date);
-      setPaymentDay(formatDate(dueDate, "yyyy-MM-dd"));
+      console.log(`Found existing monthly value for ${employee.name}:`, currentMonthlyValue);
+      setPaymentDay(currentMonthlyValue.due_date);
       setPaymentAmount(currentMonthlyValue.due_data.toString());
     } else {
-      // Get the current day of month
+      console.log(`No existing monthly value found for ${employee.name}, using defaults`);
+      // Get the current date as default
       const today = new Date();
       const formattedDate = formatDate(today, "yyyy-MM-dd");
       setPaymentDay(formattedDate);
@@ -117,6 +125,8 @@ export function EmployeePaymentSettings() {
   // Save the payment settings
   const handleSave = async (employee: Employee) => {
     try {
+      console.log(`Saving payment settings for employee: ${employee.name}`);
+      
       // Update employee preferred template
       const { error: templateError } = await supabase
         .from("employees")
@@ -125,38 +135,29 @@ export function EmployeePaymentSettings() {
 
       if (templateError) throw templateError;
 
-      // Parse the date from input
-      const selectedDate = new Date(paymentDay);
-      const formattedDate = formatDate(selectedDate, "yyyy-MM-dd");
-
       // Check if a monthly value already exists for this employee
-      const { data: existingValues, error: checkError } = await supabase
-        .from("employee_monthly_values")
-        .select("*")
-        .eq("employee_id", employee.id)
-        .order("due_date", { ascending: false })
-        .limit(1);
+      const existingValue = monthlyValues[employee.id];
 
-      if (checkError) throw checkError;
-
-      if (existingValues && existingValues.length > 0) {
+      if (existingValue) {
+        console.log(`Updating existing monthly value for ${employee.name}`);
         // Update existing monthly value
         const { error: updateError } = await supabase
           .from("employee_monthly_values")
           .update({ 
-            due_date: formattedDate,
+            due_date: paymentDay,
             due_data: parseFloat(paymentAmount) 
           })
-          .eq("id", existingValues[0].id);
+          .eq("id", existingValue.id);
 
         if (updateError) throw updateError;
       } else {
+        console.log(`Creating new monthly value for ${employee.name}`);
         // Create new monthly value
         const { error: insertError } = await supabase
           .from("employee_monthly_values")
           .insert({
             employee_id: employee.id,
-            due_date: formattedDate,
+            due_date: paymentDay,
             due_data: parseFloat(paymentAmount),
             notes: "Valor configurado na página de pagamentos"
           });
@@ -169,27 +170,27 @@ export function EmployeePaymentSettings() {
         description: `As configurações de pagamento para ${employee.name} foram atualizadas com sucesso.`,
       });
 
-      // Refresh employees and monthly values
-      const { data, error } = await supabase
-        .from("employees")
-        .select("*")
-        .eq("status", "active")
-        .order("name");
-
-      if (error) throw error;
+      // Refresh data
+      const updatedEmployees = employees.map(emp => 
+        emp.id === employee.id 
+          ? { ...emp, preferred_template: templateType }
+          : emp
+      );
+      setEmployees(updatedEmployees);
       
-      // Ensure proper typing
-      const typedData = data?.map(emp => ({
-        ...emp,
-        type: emp.type as "fixed" | "freelancer",
-        status: emp.status as "active" | "inactive",
-        preferred_template: emp.preferred_template as "invoice" | "hours" | "novo_subtipo" || "invoice"
-      }));
-      
-      setEmployees(typedData || []);
-      
-      // Refresh monthly values
-      await fetchAllMonthlyValues(typedData || []);
+      // Update monthly values state
+      const updatedMonthlyValues = {
+        ...monthlyValues,
+        [employee.id]: {
+          ...existingValue,
+          employee_id: employee.id,
+          due_date: paymentDay,
+          due_data: parseFloat(paymentAmount),
+          id: existingValue?.id || 'temp-id',
+          notes: existingValue?.notes || "Valor configurado na página de pagamentos"
+        }
+      };
+      setMonthlyValues(updatedMonthlyValues);
 
       // Reset editing state
       setEditingEmployee(null);
