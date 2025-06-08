@@ -24,7 +24,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     installments: "",
     start_date: "",
     end_date: "",
-    status: "active" as const,
+    status: "active" as "active" | "completed" | "cancelled" | "suspended",
     link_contrato: "",
     obs: "",
   });

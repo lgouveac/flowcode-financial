@@ -27,7 +27,7 @@ export function NewContractDialog({ open, onClose }: NewContractDialogProps) {
     installments: "1",
     start_date: "",
     end_date: "",
-    status: "active" as const,
+    status: "active" as "active" | "completed" | "cancelled" | "suspended",
     link_contrato: "",
     obs: "",
   });
