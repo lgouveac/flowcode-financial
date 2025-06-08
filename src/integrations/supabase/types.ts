@@ -130,54 +130,76 @@ export type Database = {
       }
       Contratos: {
         Row: {
-          Cliente: string | null
+          client_id: string | null
           contract_id: string | null
           created_at: string
-          "Data de Assinatura": string | null
           data_de_assinatura: string | null
-          Escopo: string | null
+          end_date: string | null
           id: number
+          installment_value: number | null
+          installment_value_text: string | null
+          installments: number | null
           ip: string | null
           link_contrato: string | null
           obs: string | null
-          Parcelas: number | null
-          Valor: number | null
-          "Valor das Parcelas": string | null
+          scope: string | null
+          signing_date_legacy: string | null
+          start_date: string | null
+          status: string | null
+          total_value: number | null
+          updated_at: string | null
         }
         Insert: {
-          Cliente?: string | null
+          client_id?: string | null
           contract_id?: string | null
           created_at?: string
-          "Data de Assinatura"?: string | null
           data_de_assinatura?: string | null
-          Escopo?: string | null
+          end_date?: string | null
           id?: number
+          installment_value?: number | null
+          installment_value_text?: string | null
+          installments?: number | null
           ip?: string | null
           link_contrato?: string | null
           obs?: string | null
-          Parcelas?: number | null
-          Valor?: number | null
-          "Valor das Parcelas"?: string | null
+          scope?: string | null
+          signing_date_legacy?: string | null
+          start_date?: string | null
+          status?: string | null
+          total_value?: number | null
+          updated_at?: string | null
         }
         Update: {
-          Cliente?: string | null
+          client_id?: string | null
           contract_id?: string | null
           created_at?: string
-          "Data de Assinatura"?: string | null
           data_de_assinatura?: string | null
-          Escopo?: string | null
+          end_date?: string | null
           id?: number
+          installment_value?: number | null
+          installment_value_text?: string | null
+          installments?: number | null
           ip?: string | null
           link_contrato?: string | null
           obs?: string | null
-          Parcelas?: number | null
-          Valor?: number | null
-          "Valor das Parcelas"?: string | null
+          scope?: string | null
+          signing_date_legacy?: string | null
+          start_date?: string | null
+          status?: string | null
+          total_value?: number | null
+          updated_at?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "Contratos_Cliente_fkey"
-            columns: ["Cliente"]
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_contratos_client"
+            columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
