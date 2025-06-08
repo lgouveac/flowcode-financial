@@ -1,273 +1,128 @@
+
+import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { MoonIcon, SunIcon, LogOutIcon, MenuIcon, ChevronDownIcon } from "lucide-react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-import { useTheme } from "@/components/ThemeProvider";
-import { useAuth } from "@/components/auth/AuthContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useState, useEffect } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import {
+  LayoutDashboard,
+  Users,
+  UserCheck,
+  Receipt,
+  FileText,
+  Mail,
+  TrendingUp,
+  LogOut,
+  Menu,
+  X
+} from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
-const Index = () => {
-  const { toast } = useToast();
+const navigation = [
+  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Clientes", href: "/clients", icon: Users },
+  { name: "Funcionários", href: "/employees", icon: UserCheck },
+  { name: "Recebimentos", href: "/receivables", icon: Receipt },
+  { name: "Contratos", href: "/contracts", icon: FileText },
+  { name: "Emails", href: "/emails", icon: Mail },
+  { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp },
+];
+
+export default function Index() {
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
-  const { user, signOut, profile } = useAuth();
-  const isMobile = useIsMobile();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showFullNav, setShowFullNav] = useState(false);
-
-  const navigation = [
-    { path: "/", label: "Visão Geral" },
-    { path: "/clients", label: "Clientes" },
-    { path: "/employees", label: "Funcionários" },
-    { path: "/receivables", label: "Recebimentos" },
-    { path: "/cashflow", label: "Fluxo de Caixa" },
-  ];
-
-  const isActive = (path: string) => {
-    if (path === "/" && location.pathname === "/") return true;
-    if (path !== "/" && location.pathname.startsWith(path)) return true;
-    return false;
-  };
-
-  // Close mobile menu when route changes
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location]);
-
-  // Get user initials for avatar
-  const getInitials = () => {
-    if (!profile?.full_name) return 'U';
-    
-    return profile.full_name
-      .split(' ')
-      .map((n: string) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
+  const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
-    await signOut();
-    toast({
-      title: "Logout realizado",
-      description: "Você foi desconectado com sucesso.",
-    });
+    await supabase.auth.signOut();
+    navigate("/auth/login");
   };
 
-  // Mobile navigation component
-  const MobileNav = () => (
-    <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-      <SheetTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="md:hidden"
-          aria-label="Menu"
-        >
-          <MenuIcon className="h-5 w-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-[85vw] max-w-xs p-0">
-        <div className="flex flex-col h-full">
-          <div className="p-4 border-b">
-            <img 
-              src="/lovable-uploads/86bceaf8-2d8e-4f71-812c-f3e40ccf2e67.png" 
-              alt="FlowCode Logo" 
-              className="h-8 mb-4" 
-            />
-            {profile && (
-              <div className="flex items-center gap-3 py-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{profile?.full_name || 'Usuário'}</span>
-                  <span className="text-xs text-muted-foreground truncate max-w-[150px]">{user?.email}</span>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex-1 overflow-auto py-2">
-            <nav className="space-y-1 px-2">
-              {navigation.map(({ path, label }) => (
-                <NavLink
-                  key={path}
-                  to={path}
-                  end={path === "/"}
-                  className={({ isActive }) => `flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-foreground/70 hover:bg-secondary hover:text-foreground'
-                  }`}
-                >
-                  {label}
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-          
-          <div className="border-t p-4">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start" 
-              onClick={handleLogout}
-            >
-              <LogOutIcon className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
-            
-            <div className="flex items-center justify-between mt-4">
-              <span className="text-sm">Tema</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              >
-                {theme === "light" ? (
-                  <MoonIcon className="h-4 w-4" />
-                ) : (
-                  <SunIcon className="h-4 w-4" />
-                )}
-                <span className="sr-only">Alternar tema</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
-
-  // Compact navigation for small screens
-  const CompactNav = () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9">
-          <span className="text-sm font-medium mr-1">{
-            navigation.find(item => isActive(item.path))?.label || "Menu"
-          }</span>
-          <ChevronDownIcon className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-56">
-        <DropdownMenuLabel>Navegação</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {navigation.map(({ path, label }) => (
-          <DropdownMenuItem key={path} asChild>
-            <NavLink
-              to={path}
-              end={path === "/"}
-              className={({ isActive }) => `w-full ${
-                isActive ? 'font-medium text-primary' : ''
-              }`}
-            >
-              {label}
-            </NavLink>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-secondary border-b border-white/10 sticky top-0 z-50 backdrop-blur-xl">
-        <div className="max-w-[1400px] mx-auto px-4 flex justify-between items-center h-14 sm:h-16">
-          <div className="flex items-center md:w-auto w-full">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-4">
-                <img 
-                  src="/lovable-uploads/86bceaf8-2d8e-4f71-812c-f3e40ccf2e67.png" 
-                  alt="FlowCode Logo" 
-                  className="h-7 sm:h-8 md:h-10" 
-                />
-                
-                <MobileNav />
-                
-                {/* Show compact dropdown on small screens */}
-                <div className="hidden sm:block md:hidden">
-                  <CompactNav />
-                </div>
-              </div>
-              
-              {/* Full navigation for medium screens and above */}
-              <nav className="hidden md:flex -mb-px space-x-1 lg:space-x-8">
-                {navigation.map(({ path, label }) => (
-                  <NavLink
-                    key={path}
-                    to={path}
-                    end={path === "/"}
-                    className={({ isActive }) => `flex items-center px-1 py-4 text-sm font-medium border-b-2 transition-colors hover:text-foreground ${
-                      isActive
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:border-primary/30'
-                    }`}
-                  >
-                    {label}
-                  </NavLink>
-                ))}
-              </nav>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="flex items-center justify-between h-16 px-6 border-b">
+          <h1 className="text-xl font-semibold text-gray-900">Sistema</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        </div>
+        
+        <nav className="mt-6 px-3">
+          <div className="space-y-1">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    isActive
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <item.icon
+                    className={cn(
+                      "mr-3 h-5 w-5",
+                      isActive ? "text-blue-500" : "text-gray-500"
+                    )}
+                  />
+                  {item.name}
+                </Link>
+              );
+            })}
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="mt-8 pt-6 border-t border-gray-200">
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8 hover:bg-muted"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              className="w-full justify-start text-gray-700 hover:bg-gray-100"
+              onClick={handleLogout}
             >
-              {theme === "light" ? (
-                <MoonIcon className="h-4 w-4" />
-              ) : (
-                <SunIcon className="h-4 w-4" />
-              )}
-              <span className="sr-only">Alternar tema</span>
+              <LogOut className="mr-3 h-5 w-5 text-gray-500" />
+              Sair
             </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="h-8 rounded-full p-0 hover:bg-muted"
-                >
-                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs sm:text-sm">
-                      {getInitials()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem disabled className="flex flex-col items-start">
-                  <span className="font-medium">{profile?.full_name || 'Usuário'}</span>
-                  <span className="text-xs text-muted-foreground">{user?.email}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                  <LogOutIcon className="mr-2 h-4 w-4" />
-                  Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
-        </div>
-      </header>
+        </nav>
+      </div>
 
-      <main className="flex-1 max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8 animate-fade-in">
-        <Outlet />
-      </main>
+      {/* Main content */}
+      <div className="lg:pl-64">
+        <div className="flex items-center justify-between h-16 px-6 bg-white border-b lg:px-8">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </div>
+        
+        <main className="p-6 lg:p-8">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
-};
-
-export default Index;
+}

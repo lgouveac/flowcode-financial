@@ -15,6 +15,7 @@ import { EmployeeTable } from "@/components/EmployeeTable";
 import { RecurringBilling } from "@/components/RecurringBilling";
 import { CashFlow } from "@/components/CashFlow";
 import Emails from "./pages/Emails";
+import Contracts from "./pages/Contracts";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -69,6 +70,7 @@ const App = () => (
                   <Route path="clients" element={<ClientTable />} />
                   <Route path="employees" element={<EmployeesPage />} />
                   <Route path="receivables" element={<RecurringBilling />} />
+                  <Route path="contracts" element={<Contracts />} />
                   <Route path="emails" element={<Emails />} />
                   <Route path="cashflow" element={<CashFlow showChart={true} />} />
                 </Route>
