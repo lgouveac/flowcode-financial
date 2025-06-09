@@ -39,22 +39,22 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="flex items-center justify-between h-16 px-6 border-b">
-          <h1 className="text-xl font-semibold text-gray-900">Sistema</h1>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-border">
+          <h1 className="text-xl font-semibold text-card-foreground">Sistema</h1>
           <Button
             variant="ghost"
             size="sm"
@@ -76,15 +76,15 @@ export default function Index() {
                   className={cn(
                     "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
                     isActive
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   )}
                   onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon
                     className={cn(
                       "mr-3 h-5 w-5",
-                      isActive ? "text-blue-500" : "text-gray-500"
+                      isActive ? "text-primary-foreground" : "text-muted-foreground"
                     )}
                   />
                   {item.name}
@@ -93,13 +93,13 @@ export default function Index() {
             })}
           </div>
           
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-8 pt-6 border-t border-border">
             <Button
               variant="ghost"
-              className="w-full justify-start text-gray-700 hover:bg-gray-100"
+              className="w-full justify-start text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               onClick={handleLogout}
             >
-              <LogOut className="mr-3 h-5 w-5 text-gray-500" />
+              <LogOut className="mr-3 h-5 w-5 text-muted-foreground" />
               Sair
             </Button>
           </div>
@@ -108,7 +108,7 @@ export default function Index() {
 
       {/* Main content */}
       <div className="lg:pl-64">
-        <div className="flex items-center justify-between h-16 px-6 bg-white border-b lg:px-8">
+        <div className="flex items-center justify-between h-16 px-6 bg-card border-b border-border lg:px-8">
           <Button
             variant="ghost"
             size="sm"
