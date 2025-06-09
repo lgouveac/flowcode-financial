@@ -12,11 +12,18 @@ import {
   TrendingUp,
   LogOut,
   Menu,
-  X
+  X,
+  User
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -92,22 +99,12 @@ export default function Index() {
               );
             })}
           </div>
-          
-          <div className="mt-8 pt-6 border-t border-border">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-3 h-5 w-5 text-muted-foreground" />
-              Sair
-            </Button>
-          </div>
         </nav>
       </div>
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar */}
         <div className="flex items-center justify-between h-16 px-4 bg-card border-b border-border lg:px-6">
           <Button
             variant="ghost"
@@ -117,6 +114,32 @@ export default function Index() {
           >
             <Menu className="h-6 w-6" />
           </Button>
+          
+          {/* Desktop sidebar toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden lg:flex"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+
+          {/* User menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                <User className="h-5 w-5" />
+                <span className="hidden sm:block">Usuário</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         <main className="flex-1 p-4 lg:p-6">

@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +35,14 @@ export const useContracts = () => {
       }
 
       console.log(`Found ${data?.length || 0} contracts:`, data);
-      return data as (Contract & { clients: { name: string; email: string; type: string } })[];
+      
+      // Transform the data to match the expected type
+      return data.map(contract => ({
+        ...contract,
+        clients: Array.isArray(contract.clients) && contract.clients.length > 0 
+          ? contract.clients[0] 
+          : null
+      })) as (Contract & { clients: { name: string; email: string; type: string } | null })[];
     },
   });
 
