@@ -39,7 +39,7 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex w-full">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
@@ -50,10 +50,10 @@ export default function Index() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:relative lg:flex lg:flex-col",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-border">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-border lg:justify-center">
           <h1 className="text-xl font-semibold text-card-foreground">Sistema</h1>
           <Button
             variant="ghost"
@@ -65,7 +65,7 @@ export default function Index() {
           </Button>
         </div>
         
-        <nav className="mt-6 px-3">
+        <nav className="flex-1 mt-6 px-3 overflow-y-auto">
           <div className="space-y-1">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
@@ -107,8 +107,8 @@ export default function Index() {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
-        <div className="flex items-center justify-between h-16 px-6 bg-card border-b border-border lg:px-8">
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex items-center justify-between h-16 px-4 bg-card border-b border-border lg:px-6">
           <Button
             variant="ghost"
             size="sm"
@@ -119,7 +119,7 @@ export default function Index() {
           </Button>
         </div>
         
-        <main className="p-6 lg:p-8">
+        <main className="flex-1 p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

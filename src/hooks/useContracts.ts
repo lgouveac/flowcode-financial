@@ -17,7 +17,7 @@ export const useContracts = () => {
         .from("Contratos")
         .select(`
           *,
-          clients (
+          clients!Contratos_client_id_fkey (
             name,
             email,
             type
@@ -35,7 +35,7 @@ export const useContracts = () => {
         throw error;
       }
 
-      console.log(`Found ${data?.length || 0} contracts`);
+      console.log(`Found ${data?.length || 0} contracts:`, data);
       return data as (Contract & { clients: { name: string; email: string; type: string } })[];
     },
   });
