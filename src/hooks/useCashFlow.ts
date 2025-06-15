@@ -14,21 +14,17 @@ export const useCashFlow = (period: string = 'current') => {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    // Log the selected period for debugging
     console.log('Selected period:', selectedPeriod);
 
-    // Handle custom period formats like "2025-3" (year-month)
     if (selectedPeriod.includes('-')) {
       const parts = selectedPeriod.split('-');
       
-      // Year-month format (e.g., "2025-3")
       if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
         const year = Number(parts[0]);
         const month = Number(parts[1]);
         const nextMonth = month === 12 ? 1 : month + 1;
         const nextMonthYear = month === 12 ? year + 1 : year;
         
-        // For debugging, log the calculated range
         console.log(`Date range for ${year}-${month}: from ${year}-${String(month).padStart(2, '0')}-01 to ${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`);
         
         return {
@@ -37,7 +33,6 @@ export const useCashFlow = (period: string = 'current') => {
         };
       }
       
-      // Handle quarter format (e.g., "quarter-2025")
       if (parts[0] === 'quarter') {
         const year = Number(parts[1]);
         const currentQuarter = Math.floor((currentMonth - 1) / 3) + 1;
@@ -53,7 +48,6 @@ export const useCashFlow = (period: string = 'current') => {
         };
       }
       
-      // Handle year format (e.g., "year-2025")
       if (parts[0] === 'year') {
         const year = Number(parts[1]);
         return {
@@ -99,7 +93,6 @@ export const useCashFlow = (period: string = 'current') => {
           end: new Date().toISOString().split('T')[0],
         };
       default:
-        // If the period doesn't match any known format, use current month as a safe default
         console.log(`Unknown period format "${selectedPeriod}", defaulting to current month`);
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
@@ -108,15 +101,81 @@ export const useCashFlow = (period: string = 'current') => {
     }
   };
 
+  const syncPaidPaymentsWithCashFlow = async () => {
+    try {
+      console.log('Checking for paid payments that might not have cash flow entries...');
+      
+      // Buscar pagamentos pagos que não têm entrada no cash_flow
+      const { data: paidPayments, error: paymentsError } = await supabase
+        .from('payments')
+        .select(`
+          *,
+          clients!inner(name)
+        `)
+        .eq('status', 'paid')
+        .not('payment_date', 'is', null);
+
+      if (paymentsError) {
+        console.error('Error fetching paid payments:', paymentsError);
+        return;
+      }
+
+      console.log('Found paid payments:', paidPayments?.length || 0);
+
+      if (!paidPayments || paidPayments.length === 0) {
+        return;
+      }
+
+      // Verificar quais pagamentos não têm entrada no cash flow
+      for (const payment of paidPayments) {
+        const { data: existingCashFlow, error: cashFlowError } = await supabase
+          .from('cash_flow')
+          .select('id')
+          .eq('payment_id', payment.id)
+          .maybeSingle();
+
+        if (cashFlowError) {
+          console.error('Error checking cash flow for payment:', payment.id, cashFlowError);
+          continue;
+        }
+
+        if (!existingCashFlow) {
+          console.log('Creating missing cash flow entry for payment:', payment.id, payment.description);
+          
+          // Criar entrada no cash flow
+          const { error: insertError } = await supabase
+            .from('cash_flow')
+            .insert({
+              type: 'income',
+              description: payment.description,
+              amount: payment.amount,
+              date: payment.payment_date,
+              category: 'payment',
+              payment_id: payment.id,
+              status: 'pending'
+            });
+
+          if (insertError) {
+            console.error('Error creating cash flow entry:', insertError);
+          } else {
+            console.log('Successfully created cash flow entry for payment:', payment.id);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in syncPaidPaymentsWithCashFlow:', error);
+    }
+  };
+
   const fetchCashFlow = async () => {
     try {
+      // Primeiro sincronizar pagamentos pagos
+      await syncPaidPaymentsWithCashFlow();
+
       const dates = getPeriodDates(period);
       
-      // Log the date range and period for debugging
       console.log('Fetching cash flow for:', { period, dates });
       
-      // Fetch cash flow data only - removed the automatic payment sync logic
-      // The database trigger handles inserting payments into cash_flow when they are marked as paid
       const { data: cashFlowData, error: cashFlowError } = await supabase
         .from('cash_flow')
         .select('*')
@@ -126,32 +185,23 @@ export const useCashFlow = (period: string = 'current') => {
 
       if (cashFlowError) throw cashFlowError;
 
-      // Log raw data for debugging
       console.log('Cash flow data from database:', cashFlowData);
 
-      // Transform the data for accurate number handling
       const transformedData: CashFlow[] = (cashFlowData || []).map(item => {
-        // Handle amount with care to ensure it's a proper number
         let amount: number;
         
-        // First ensure that the item.amount exists
         if (item.amount === null || item.amount === undefined) {
-          // Default to 0 if amount is null or undefined
           amount = 0;
         } else if (typeof item.amount === 'string') {
-          // If it's a string, replace comma with dot and parse
           const amountStr = String(item.amount).replace(',', '.');
           amount = parseFloat(amountStr);
         } else if (typeof item.amount === 'number') {
-          // If it's already a number, use it directly
           amount = item.amount;
         } else {
-          // For any other type, default to 0
           console.warn('Unexpected amount type:', typeof item.amount, item.amount);
           amount = 0;
         }
         
-        // Ensure we have at most 2 decimal places to avoid floating point errors
         amount = parseFloat(amount.toFixed(2));
         
         return {
@@ -168,7 +218,6 @@ export const useCashFlow = (period: string = 'current') => {
         };
       });
 
-      // Extra validation step to ensure all amounts are valid numbers
       const validatedData = transformedData.map(item => ({
         ...item,
         amount: isNaN(item.amount) ? 0 : parseFloat(item.amount.toFixed(2))
@@ -200,15 +249,12 @@ export const useCashFlow = (period: string = 'current') => {
         chartDataMap.set(date, currentData);
       });
 
-      // Convert Map to Array and sort by date
       const newChartData = Array.from(chartDataMap.values());
       
-      // Sort by date (DD/MM/YYYY format needs special handling)
       newChartData.sort((a, b) => {
         const [dayA, monthA, yearA] = a.name.split('/').map(Number);
         const [dayB, monthB, yearB] = b.name.split('/').map(Number);
         
-        // Compare year first, then month, then day
         if (yearA !== yearB) return yearA - yearB;
         if (monthA !== monthB) return monthA - monthB;
         return dayA - dayB;

@@ -50,15 +50,11 @@ export const PaymentDetailsDialog = ({
     if (!dateString) return "";
     
     try {
-      // Parse a string date to a Date object
       const date = parseISO(dateString);
-      
-      // Check if the date is valid before formatting
       if (!isValid(date)) {
         console.error("Invalid date:", dateString);
         return "";
       }
-      
       return format(date, 'yyyy-MM-dd');
     } catch (error) {
       console.error("Error formatting date:", error);
@@ -78,6 +74,17 @@ export const PaymentDetailsDialog = ({
         return;
       }
 
+      console.log('Updating payment with data:', {
+        id: payment.id,
+        description,
+        amount: parseFloat(amount),
+        due_date: dueDate,
+        payment_date: paymentDate || null,
+        payment_method: paymentMethod,
+        status,
+        email_template: emailTemplate === "none" ? null : emailTemplate
+      });
+
       const { error } = await supabase
         .from('payments')
         .update({
@@ -91,7 +98,29 @@ export const PaymentDetailsDialog = ({
         })
         .eq('id', payment.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating payment:', error);
+        throw error;
+      }
+
+      console.log('Payment updated successfully');
+
+      // Log para verificar se o trigger foi executado
+      if (status === 'paid' && payment.status !== 'paid') {
+        console.log('Payment marked as paid, checking cash flow entry...');
+        
+        // Verificar se a entrada do cash flow foi criada
+        const { data: cashFlowEntries, error: cashFlowError } = await supabase
+          .from('cash_flow')
+          .select('*')
+          .eq('payment_id', payment.id);
+
+        if (cashFlowError) {
+          console.error('Error checking cash flow entries:', cashFlowError);
+        } else {
+          console.log('Cash flow entries for this payment:', cashFlowEntries);
+        }
+      }
 
       toast({
         title: "Pagamento atualizado",
