@@ -16,6 +16,7 @@ import { RecurringBilling } from "@/components/RecurringBilling";
 import { CashFlow } from "@/components/CashFlow";
 import Emails from "./pages/Emails";
 import Contracts from "./pages/Contracts";
+import EstimatedExpenses from "./pages/EstimatedExpenses";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -73,6 +74,7 @@ const App = () => (
                   <Route path="contracts" element={<Contracts />} />
                   <Route path="emails" element={<Emails />} />
                   <Route path="cashflow" element={<CashFlow showChart={true} />} />
+                  <Route path="estimated-expenses" element={<EstimatedExpenses />} />
                 </Route>
                 
                 {/* Catch all other routes */}

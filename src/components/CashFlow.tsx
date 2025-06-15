@@ -1,15 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { CashFlowChart } from "./cash-flow/CashFlowChart";
 import { CashFlowTable } from "./cash-flow/CashFlowTable";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
-import { EstimatedExpensesDialog } from "./cash-flow/EstimatedExpensesDialog";
+
 interface CashFlowProps {
   showChart?: boolean;
   period?: string;
 }
+
 export const CashFlow = ({
   showChart = true,
   period = 'current'
@@ -17,7 +17,6 @@ export const CashFlow = ({
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
-  const [showEstimatedExpensesDialog, setShowEstimatedExpensesDialog] = useState(false);
 
   // Use the selectedValues to create a custom period filter
   const [customPeriod, setCustomPeriod] = useState(period);
@@ -159,15 +158,8 @@ export const CashFlow = ({
         </CardContent>
       </Card>
     </div>;
+
   return <div className="space-y-4 sm:space-y-6 md:space-y-8">
-      <div className="flex justify-between items-center">
-        
-        <Button variant="outline" size="sm" onClick={() => setShowEstimatedExpensesDialog(true)}>
-          <Settings className="h-4 w-4 mr-2" />
-          Despesas Estimadas
-        </Button>
-      </div>
-      
       {showChart ? <>
           <CashFlowChart chartData={safeChartData} period={selectedPeriod} setPeriod={setSelectedPeriod} year={selectedYear} setYear={setSelectedYear} month={selectedMonth} setMonth={setSelectedMonth} />
           
@@ -187,8 +179,5 @@ export const CashFlow = ({
             <CashFlowTable cashFlow={safeCashFlow} onNewCashFlow={onNewCashFlow} />
           </div>
         </>}
-      
-      {/* Estimated Expenses Dialog */}
-      <EstimatedExpensesDialog open={showEstimatedExpensesDialog} onClose={() => setShowEstimatedExpensesDialog(false)} onSuccess={onNewCashFlow} />
     </div>;
 };

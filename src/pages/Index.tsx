@@ -15,7 +15,8 @@ import {
   X,
   User,
   Moon,
-  Sun
+  Sun,
+  Calculator
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,7 @@ const navigation = [
   { name: "Recebimentos", href: "/receivables", icon: Receipt },
   { name: "Contratos", href: "/contracts", icon: FileText },
   { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp },
+  { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator },
 ];
 
 export default function Index() {
