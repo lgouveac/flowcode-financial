@@ -69,12 +69,13 @@ export default function Index() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        "lg:relative lg:flex lg:flex-col",
-        !sidebarOpen && "lg:hidden"
+        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out lg:relative lg:flex lg:flex-col",
+        // Mobile behavior
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        // Desktop behavior - always visible on large screens
+        "lg:w-64"
       )}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-border lg:justify-center">
+        <div className="flex items-center justify-between h-16 px-6 border-b border-border">
           <FlowcodeLogo />
           <Button
             variant="ghost"
@@ -123,6 +124,7 @@ export default function Index() {
           <Button
             variant="ghost"
             size="sm"
+            className="lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
