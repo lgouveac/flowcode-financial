@@ -69,8 +69,10 @@ export default function Index() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:relative lg:flex lg:flex-col",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full",
+        "lg:relative lg:flex lg:flex-col",
+        !sidebarOpen && "lg:hidden"
       )}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-border lg:justify-center">
           <FlowcodeLogo />
@@ -121,20 +123,9 @@ export default function Index() {
           <Button
             variant="ghost"
             size="sm"
-            className="lg:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
-          </Button>
-          
-          {/* Desktop sidebar toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden lg:flex"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            <Menu className="h-5 w-5" />
           </Button>
 
           <div className="flex items-center space-x-4">
