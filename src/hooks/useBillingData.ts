@@ -255,15 +255,72 @@ export const useBillingData = () => {
     setTemplates(validTemplates);
   };
 
+  // Function to clean up duplicate cash flow entries
+  const cleanupDuplicateCashFlowEntries = async () => {
+    try {
+      // Find and remove duplicate cash flow entries based on payment_id
+      const { data: duplicates, error: fetchError } = await supabase
+        .from('cash_flow')
+        .select('id, payment_id')
+        .not('payment_id', 'is', null);
+
+      if (fetchError) {
+        console.error('Error fetching cash flow entries:', fetchError);
+        return;
+      }
+
+      // Group by payment_id and keep only the first entry for each payment
+      const paymentGroups = new Map();
+      duplicates?.forEach(entry => {
+        if (!paymentGroups.has(entry.payment_id)) {
+          paymentGroups.set(entry.payment_id, []);
+        }
+        paymentGroups.get(entry.payment_id).push(entry);
+      });
+
+      // Delete duplicates (keep the first one, delete the rest)
+      const idsToDelete: string[] = [];
+      paymentGroups.forEach(entries => {
+        if (entries.length > 1) {
+          // Keep the first entry, mark the rest for deletion
+          for (let i = 1; i < entries.length; i++) {
+            idsToDelete.push(entries[i].id);
+          }
+        }
+      });
+
+      if (idsToDelete.length > 0) {
+        console.log(`Removing ${idsToDelete.length} duplicate cash flow entries`);
+        const { error: deleteError } = await supabase
+          .from('cash_flow')
+          .delete()
+          .in('id', idsToDelete);
+
+        if (deleteError) {
+          console.error('Error deleting duplicate entries:', deleteError);
+        } else {
+          console.log('Successfully removed duplicate cash flow entries');
+        }
+      }
+    } catch (err) {
+      console.error('Error cleaning up duplicates:', err);
+    }
+  };
+
   useEffect(() => {
     console.log("Fetching data in useBillingData...");
-    Promise.all([
-      fetchBillings(),
-      fetchPayments(),
-      fetchClients(),
-      fetchTemplates()
-    ]).catch(err => {
-      console.error("Error loading data:", err);
+    
+    // Clean up duplicates first
+    cleanupDuplicateCashFlowEntries().then(() => {
+      // Then fetch all data
+      Promise.all([
+        fetchBillings(),
+        fetchPayments(),
+        fetchClients(),
+        fetchTemplates()
+      ]).catch(err => {
+        console.error("Error loading data:", err);
+      });
     });
 
     // Subscribe to changes in both tables

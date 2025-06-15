@@ -115,7 +115,8 @@ export const useCashFlow = (period: string = 'current') => {
       // Log the date range and period for debugging
       console.log('Fetching cash flow for:', { period, dates });
       
-      // 1. First, fetch regular cash flow entries
+      // Fetch cash flow data only - removed the automatic payment sync logic
+      // The database trigger handles inserting payments into cash_flow when they are marked as paid
       const { data: cashFlowData, error: cashFlowError } = await supabase
         .from('cash_flow')
         .select('*')
@@ -125,94 +126,11 @@ export const useCashFlow = (period: string = 'current') => {
 
       if (cashFlowError) throw cashFlowError;
 
-      // 2. Now fetch payments that are marked as paid but don't have entries in cash_flow
-      const { data: paidPaymentsData, error: paymentsError } = await supabase
-        .from('payments')
-        .select(`
-          id,
-          description,
-          amount,
-          payment_date,
-          status
-        `)
-        .eq('status', 'paid')
-        .gte('payment_date', dates.start)
-        .lt('payment_date', dates.end);
-
-      if (paymentsError) throw paymentsError;
-
       // Log raw data for debugging
       console.log('Cash flow data from database:', cashFlowData);
-      console.log('Paid payments not in cash flow:', paidPaymentsData);
-      
-      // 3. Create a set of existing payment_ids in cash_flow for quick lookup
-      const existingPaymentIds = new Set(
-        (cashFlowData || [])
-          .filter(item => item.payment_id)
-          .map(item => item.payment_id)
-      );
-      
-      console.log('Existing payment IDs in cash flow:', Array.from(existingPaymentIds));
-      
-      // 4. For each paid payment, check if it already has a cash flow entry
-      const newCashFlowEntries = [];
-      for (const payment of paidPaymentsData || []) {
-        if (payment.status === 'paid' && payment.payment_date && !existingPaymentIds.has(payment.id)) {
-          console.log(`Creating cash flow entry for payment ${payment.id} (${payment.description})`);
-          
-          // Create a new cash flow entry object
-          const newEntry = {
-            type: 'income',
-            description: payment.description,
-            amount: payment.amount,
-            date: payment.payment_date,
-            category: 'payment',
-            payment_id: payment.id
-          };
-          
-          newCashFlowEntries.push(newEntry);
-          
-          // Also add to the existing payment IDs set to avoid duplicates
-          existingPaymentIds.add(payment.id);
-        }
-      }
-      
-      // 5. If there are new entries to add, insert them into the database
-      if (newCashFlowEntries.length > 0) {
-        console.log(`Inserting ${newCashFlowEntries.length} new cash flow entries:`, newCashFlowEntries);
-        
-        const { error: insertError } = await supabase
-          .from('cash_flow')
-          .insert(newCashFlowEntries);
-          
-        if (insertError) {
-          console.error('Error creating cash flow entries for payments:', insertError);
-          toast({
-            title: "Erro ao sincronizar pagamentos",
-            description: "Alguns pagamentos não puderam ser sincronizados com o fluxo de caixa.",
-            variant: "destructive",
-          });
-        } else {
-          console.log('Successfully added new cash flow entries');
-          toast({
-            title: "Fluxo de caixa atualizado",
-            description: `${newCashFlowEntries.length} novos pagamentos sincronizados.`,
-          });
-        }
-      }
-
-      // Fetch cash flow data again to include newly created entries
-      const { data: updatedCashFlowData, error: updateFetchError } = await supabase
-        .from('cash_flow')
-        .select('*')
-        .gte('date', dates.start)
-        .lt('date', dates.end)
-        .order('date', { ascending: true });
-
-      if (updateFetchError) throw updateFetchError;
 
       // Transform the data for accurate number handling
-      const transformedData: CashFlow[] = (updatedCashFlowData || []).map(item => {
+      const transformedData: CashFlow[] = (cashFlowData || []).map(item => {
         // Handle amount with care to ensure it's a proper number
         let amount: number;
         
