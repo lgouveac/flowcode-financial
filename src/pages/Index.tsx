@@ -57,6 +57,10 @@ export default function Index() {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Mobile sidebar backdrop */}
@@ -70,23 +74,22 @@ export default function Index() {
       {/* Sidebar */}
       <div className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out lg:relative lg:flex lg:flex-col",
-        // Mobile behavior
-        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-        // Desktop behavior - always visible on large screens
-        "lg:w-64"
+        // Mobile and Desktop behavior
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
+        {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-border">
           <FlowcodeLogo />
           <Button
             variant="ghost"
             size="sm"
-            className="lg:hidden"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-6 w-6" />
           </Button>
         </div>
         
+        {/* Navigation */}
         <nav className="flex-1 mt-6 px-3 overflow-y-auto">
           <div className="space-y-1">
             {navigation.map((item) => {
@@ -115,23 +118,12 @@ export default function Index() {
             })}
           </div>
         </nav>
-      </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <div className="flex items-center justify-between h-16 px-4 bg-card border-b border-border lg:px-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
-
-          <div className="flex items-center space-x-4">
-            {/* Theme toggle */}
+        {/* Sidebar Footer - Theme toggle and User menu */}
+        <div className="border-t border-border p-4 space-y-4">
+          {/* Theme toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Tema</span>
             <div className="flex items-center space-x-2">
               <Sun className="h-4 w-4" />
               <Switch
@@ -140,23 +132,48 @@ export default function Index() {
               />
               <Moon className="h-4 w-4" />
             </div>
-
-            {/* User menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                  <User className="h-5 w-5" />
-                  <span className="hidden sm:block">{user?.email || 'Usuário'}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
+
+          {/* User menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="w-full justify-start p-2">
+                <User className="h-5 w-5 mr-3" />
+                <span className="truncate">{user?.email || 'Usuário'}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile menu button */}
+        <div className="lg:hidden p-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+        </div>
+
+        {/* Desktop menu button */}
+        <div className="hidden lg:block p-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
         </div>
         
         <main className="flex-1 p-4 lg:p-6">
