@@ -32,13 +32,7 @@ export const PaymentDetailsDialog = ({
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "boleto" | "credit_card">(payment.payment_method);
   const [status, setStatus] = useState<"pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid">(payment.status);
   const [emailTemplate, setEmailTemplate] = useState<string>(payment.email_template || "none");
-  const [isModalOpen, setIsModalOpen] = useState(open);
-  const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    setIsModalOpen(open);
-  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -52,30 +46,19 @@ export const PaymentDetailsDialog = ({
     }
   }, [open, payment]);
 
-  const handleModalOpenChange = (newOpen: boolean) => {
-    // Only allow closing if not in the middle of an update
-    if (!newOpen && !isUpdating) {
-      setIsModalOpen(false);
-      onClose();
-    }
-  };
-
-  const handleManualClose = () => {
-    if (!isUpdating) {
-      setIsModalOpen(false);
-      onClose();
-    }
-  };
-
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     
     try {
+      // Parse a string date to a Date object
       const date = parseISO(dateString);
+      
+      // Check if the date is valid before formatting
       if (!isValid(date)) {
         console.error("Invalid date:", dateString);
         return "";
       }
+      
       return format(date, 'yyyy-MM-dd');
     } catch (error) {
       console.error("Error formatting date:", error);
@@ -84,8 +67,8 @@ export const PaymentDetailsDialog = ({
   };
 
   const handleSave = async () => {
-    setIsUpdating(true);
     try {
+      // Validar payment_date se status for 'paid'
       if (status === 'paid' && !paymentDate) {
         toast({
           title: "Erro de validação",
@@ -116,7 +99,7 @@ export const PaymentDetailsDialog = ({
       });
 
       onUpdate();
-      // Don't close modal automatically after save
+      onClose();
     } catch (error) {
       console.error("Error updating payment:", error);
       toast({
@@ -124,13 +107,11 @@ export const PaymentDetailsDialog = ({
         description: "Não foi possível salvar as alterações.",
         variant: "destructive"
       });
-    } finally {
-      setIsUpdating(false);
     }
   };
 
   return (
-    <Dialog open={isModalOpen} onOpenChange={handleModalOpenChange}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md bg-[#0a0c10] border-[#1e2030] text-white">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-white">Editar Pagamento</DialogTitle>
@@ -248,18 +229,16 @@ export const PaymentDetailsDialog = ({
         <div className="flex justify-end gap-4">
           <Button 
             variant="outline" 
-            onClick={handleManualClose}
-            disabled={isUpdating}
+            onClick={onClose}
             className="bg-transparent border-[#2a2f3d] text-gray-300 hover:bg-[#2a2f3d] hover:text-white"
           >
             Cancelar
           </Button>
           <Button 
             onClick={handleSave}
-            disabled={isUpdating}
             className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white"
           >
-            {isUpdating ? "Salvando..." : "Salvar Alterações"}
+            Salvar Alterações
           </Button>
         </div>
       </DialogContent>
