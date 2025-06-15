@@ -1,3 +1,4 @@
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,9 +40,7 @@ export const useContracts = () => {
       // Transform the data to match the expected type
       return data.map(contract => ({
         ...contract,
-        clients: Array.isArray(contract.clients) && contract.clients.length > 0 
-          ? contract.clients[0] 
-          : null
+        clients: contract.clients || null
       })) as (Contract & { clients: { name: string; email: string; type: string } | null })[];
     },
   });
@@ -49,6 +48,19 @@ export const useContracts = () => {
   const addContract = async (contract: Omit<Contract, "id" | "created_at" | "updated_at">) => {
     try {
       console.log("Adding contract:", contract);
+      
+      // Validate that client_id exists if provided
+      if (contract.client_id) {
+        const { data: clientExists, error: clientError } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("id", contract.client_id)
+          .single();
+
+        if (clientError || !clientExists) {
+          throw new Error("Cliente selecionado não existe");
+        }
+      }
       
       // Calculate installment value if not provided
       const installmentValue = contract.installment_value || 
@@ -87,6 +99,19 @@ export const useContracts = () => {
   const updateContract = async (id: number, updates: Partial<Contract>) => {
     try {
       console.log("Updating contract:", id, updates);
+      
+      // Validate that client_id exists if being updated
+      if (updates.client_id) {
+        const { data: clientExists, error: clientError } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("id", updates.client_id)
+          .single();
+
+        if (clientError || !clientExists) {
+          throw new Error("Cliente selecionado não existe");
+        }
+      }
       
       // Recalculate installment value if total_value or installments changed
       if (updates.total_value || updates.installments) {

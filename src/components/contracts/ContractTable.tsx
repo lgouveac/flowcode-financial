@@ -101,7 +101,7 @@ export function ContractTable() {
                   {contracts.map((contract) => (
                     <TableRow key={contract.id}>
                       <TableCell className="font-medium">
-                        {contract.clients?.name || "Cliente não encontrado"}
+                        {contract.clients?.name || "Cliente não vinculado"}
                       </TableCell>
                       <TableCell>{contract.scope || "-"}</TableCell>
                       <TableCell>
