@@ -13,7 +13,6 @@ import { Payment } from "@/types/payment";
 import { PaymentTable } from "../payments/PaymentTable";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
-
 interface PaymentDetailsDialogProps {
   open: boolean;
   onClose: () => void;
@@ -21,13 +20,12 @@ interface PaymentDetailsDialogProps {
   billing: RecurringBilling;
   templates?: EmailTemplate[];
 }
-
 export const PaymentDetailsDialog = ({
   open,
   onClose,
   onUpdate,
   billing,
-  templates = [],
+  templates = []
 }: PaymentDetailsDialogProps) => {
   const [description, setDescription] = useState(billing.description);
   const [amount, setAmount] = useState(billing.amount.toString());
@@ -45,7 +43,6 @@ export const PaymentDetailsDialog = ({
   const [installments, setInstallments] = useState(billing.installments.toString());
   const [additionalInstallments, setAdditionalInstallments] = useState("1");
   const [isAddingInstallments, setIsAddingInstallments] = useState(false);
-
   useEffect(() => {
     if (open) {
       setDescription(billing.description);
@@ -62,23 +59,19 @@ export const PaymentDetailsDialog = ({
       fetchRelatedPayments();
     }
   }, [open, billing]);
-
   const fetchRelatedPayments = async () => {
     setIsLoadingPayments(true);
     try {
       // Buscar todos os pagamentos relacionados a esta cobrança recorrente
       // com base no client_id e descrição similar (sem a parte da parcela)
       const baseDescription = billing.description;
-      
-      const { data, error } = await supabase
-        .from('payments')
-        .select('*, clients(*)')
-        .eq('client_id', billing.client_id)
-        .like('description', `${baseDescription}%`)
-        .order('due_date', { ascending: true });
-
+      const {
+        data,
+        error
+      } = await supabase.from('payments').select('*, clients(*)').eq('client_id', billing.client_id).like('description', `${baseDescription}%`).order('due_date', {
+        ascending: true
+      });
       if (error) throw error;
-      
       setRelatedPayments(data || []);
     } catch (error) {
       console.error("Erro ao buscar pagamentos relacionados:", error);
@@ -91,30 +84,25 @@ export const PaymentDetailsDialog = ({
       setIsLoadingPayments(false);
     }
   };
-
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
-    
     try {
       // Parse a string date to a Date object
       const date = parseISO(dateString);
-      
+
       // Check if the date is valid before formatting
       if (!isValid(date)) {
         console.error("Invalid date:", dateString);
         return "";
       }
-      
       return format(date, 'yyyy-MM-dd');
     } catch (error) {
       console.error("Error formatting date:", error);
       return "";
     }
   };
-
   const addInstallments = async () => {
     setIsAddingInstallments(true);
-    
     try {
       const additionalCount = parseInt(additionalInstallments);
       if (isNaN(additionalCount) || additionalCount < 1) {
@@ -124,15 +112,12 @@ export const PaymentDetailsDialog = ({
       // Usar o número real de pagamentos existentes como base
       const currentPaymentCount = relatedPayments.length;
       const newTotalInstallments = currentPaymentCount + additionalCount;
-      
       console.log("Pagamentos existentes:", currentPaymentCount);
       console.log("Adicionando:", additionalCount);
       console.log("Novo total:", newTotalInstallments);
-      
+
       // Encontrar a última data de vencimento dos pagamentos existentes
-      const lastPayment = relatedPayments
-        .sort((a, b) => new Date(b.due_date).getTime() - new Date(a.due_date).getTime())[0];
-      
+      const lastPayment = relatedPayments.sort((a, b) => new Date(b.due_date).getTime() - new Date(a.due_date).getTime())[0];
       let nextDueDate: Date;
       if (lastPayment) {
         nextDueDate = new Date(lastPayment.due_date);
@@ -153,7 +138,6 @@ export const PaymentDetailsDialog = ({
       const newPayments = [];
       for (let i = 1; i <= additionalCount; i++) {
         const installmentNumber = currentPaymentCount + i;
-        
         newPayments.push({
           client_id: billing.client_id,
           description: `${baseDescription} (${installmentNumber}/${newTotalInstallments})`,
@@ -164,48 +148,39 @@ export const PaymentDetailsDialog = ({
           installment_number: installmentNumber,
           total_installments: newTotalInstallments
         });
-        
+
         // Próximo mês
         nextDueDate.setMonth(nextDueDate.getMonth() + 1);
       }
 
       // Inserir os novos pagamentos no banco
-      const { error: paymentsError } = await supabase
-        .from('payments')
-        .insert(newPayments);
-
+      const {
+        error: paymentsError
+      } = await supabase.from('payments').insert(newPayments);
       if (paymentsError) throw paymentsError;
 
       // Atualizar o total de parcelas no billing imediatamente no banco
-      const { error: billingError } = await supabase
-        .from('recurring_billing')
-        .update({ 
-          installments: newTotalInstallments,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', billing.id);
-
+      const {
+        error: billingError
+      } = await supabase.from('recurring_billing').update({
+        installments: newTotalInstallments,
+        updated_at: new Date().toISOString()
+      }).eq('id', billing.id);
       if (billingError) throw billingError;
 
       // Atualizar também as descrições dos pagamentos existentes para refletir o novo total
       const updatePromises = relatedPayments.map((payment, index) => {
         const installmentNumber = index + 1;
         const newDescription = `${baseDescription} (${installmentNumber}/${newTotalInstallments})`;
-        
-        return supabase
-          .from('payments')
-          .update({ 
-            description: newDescription,
-            total_installments: newTotalInstallments
-          })
-          .eq('id', payment.id);
+        return supabase.from('payments').update({
+          description: newDescription,
+          total_installments: newTotalInstallments
+        }).eq('id', payment.id);
       });
-
       await Promise.all(updatePromises);
-      
+
       // Atualizar o estado local
       setInstallments(newTotalInstallments.toString());
-      
       toast({
         title: "Parcelas adicionadas",
         description: `${additionalCount} parcelas foram adicionadas com sucesso. Total agora: ${newTotalInstallments}`
@@ -213,12 +188,10 @@ export const PaymentDetailsDialog = ({
 
       // Recarregar os pagamentos para mostrar as novas parcelas
       await fetchRelatedPayments();
-      
+
       // Chamar onUpdate para atualizar a lista principal
       onUpdate();
-      
       setAdditionalInstallments("1");
-      
     } catch (error) {
       console.error("Erro ao adicionar parcelas:", error);
       toast({
@@ -230,23 +203,18 @@ export const PaymentDetailsDialog = ({
       setIsAddingInstallments(false);
     }
   };
-
   const handleSave = async () => {
     setIsUpdating(true);
-    
     try {
       const newDueDay = parseInt(dueDay);
       if (isNaN(newDueDay) || newDueDay < 1 || newDueDay > 31) {
         throw new Error("Dia de vencimento inválido");
       }
-
       const newCurrentInstallment = parseInt(currentInstallment);
       const newInstallments = parseInt(installments);
-      
       if (isNaN(newCurrentInstallment) || newCurrentInstallment < 1) {
         throw new Error("Parcela atual deve ser maior que 0");
       }
-
       if (isNaN(newInstallments) || newInstallments < 1) {
         throw new Error("Total de parcelas deve ser maior que 0");
       }
@@ -255,7 +223,6 @@ export const PaymentDetailsDialog = ({
       if (status === 'paid' && !paymentDate) {
         throw new Error("Data de pagamento é obrigatória quando status é 'Pago'");
       }
-      
       const updateData = {
         description,
         amount: parseFloat(amount),
@@ -269,18 +236,15 @@ export const PaymentDetailsDialog = ({
         current_installment: newCurrentInstallment,
         installments: newInstallments
       };
-      
+
       // Verifica se o dia de vencimento foi alterado
       const dueDayChanged = newDueDay !== billing.due_day;
-      
+
       // Atualiza a cobrança recorrente
-      const { error } = await supabase
-        .from('recurring_billing')
-        .update(updateData)
-        .eq('id', billing.id);
-
+      const {
+        error
+      } = await supabase.from('recurring_billing').update(updateData).eq('id', billing.id);
       if (error) throw error;
-
       toast({
         title: "Cobrança atualizada",
         description: "As alterações foram salvas com sucesso."
@@ -291,7 +255,6 @@ export const PaymentDetailsDialog = ({
         // Atualiza as datas de vencimento dos pagamentos futuros
         await updateFuturePaymentDueDates(newDueDay);
       }
-
       onUpdate();
       fetchRelatedPayments(); // Recarrega os pagamentos para mostrar as alterações
     } catch (error) {
@@ -305,48 +268,41 @@ export const PaymentDetailsDialog = ({
       setIsUpdating(false);
     }
   };
-
   const updateFuturePaymentDueDates = async (newDueDay: number) => {
     try {
       // Filtra apenas pagamentos futuros que não foram pagos ou cancelados
-      const futurePayments = relatedPayments.filter(payment => 
-        new Date(payment.due_date) >= new Date() && 
-        ['pending', 'overdue', 'billed', 'awaiting_invoice', 'partially_paid'].includes(payment.status)
-      );
-      
+      const futurePayments = relatedPayments.filter(payment => new Date(payment.due_date) >= new Date() && ['pending', 'overdue', 'billed', 'awaiting_invoice', 'partially_paid'].includes(payment.status));
       if (futurePayments.length === 0) return;
-      
       let updatedCount = 0;
-      
+
       // Atualiza cada pagamento futuro
       for (const payment of futurePayments) {
         const currentDueDate = new Date(payment.due_date);
-        
+
         // Pega o primeiro dia do mês da data de vencimento atual
         let newDueDate = new Date(currentDueDate.getFullYear(), currentDueDate.getMonth(), 1);
-        
+
         // Adiciona o novo dia de vencimento
         newDueDate.setDate(newDueDay);
-        
+
         // Se o novo dia for maior que o último dia do mês, ajusta para o último dia
         const nextMonth = new Date(currentDueDate.getFullYear(), currentDueDate.getMonth() + 1, 0);
         if (newDueDay > nextMonth.getDate()) {
           newDueDate = nextMonth;
         }
-        
+
         // Atualiza a data de vencimento do pagamento
-        const { error } = await supabase
-          .from('payments')
-          .update({ due_date: newDueDate.toISOString().split('T')[0] })
-          .eq('id', payment.id);
-          
+        const {
+          error
+        } = await supabase.from('payments').update({
+          due_date: newDueDate.toISOString().split('T')[0]
+        }).eq('id', payment.id);
         if (error) {
           console.error("Erro ao atualizar pagamento:", error);
         } else {
           updatedCount++;
         }
       }
-      
       if (updatedCount > 0) {
         toast({
           title: "Datas atualizadas",
@@ -362,9 +318,7 @@ export const PaymentDetailsDialog = ({
       });
     }
   };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
+  return <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Detalhes do Recebimento Recorrente</DialogTitle>
@@ -376,77 +330,42 @@ export const PaymentDetailsDialog = ({
             
             <div className="grid gap-2">
               <label className="text-sm font-medium">Descrição</label>
-              <Input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
+              <Input value={description} onChange={e => setDescription(e.target.value)} />
             </div>
             
             <div className="grid gap-2">
               <label className="text-sm font-medium">Valor</label>
-              <Input
-                type="number"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
+              <Input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Dia de Vencimento</label>
-              <Input
-                type="number"
-                min="1"
-                max="31"
-                value={dueDay}
-                onChange={(e) => setDueDay(e.target.value)}
-              />
+              <Input type="number" min="1" max="31" value={dueDay} onChange={e => setDueDay(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Total de Parcelas</label>
-              <Input
-                type="number"
-                min="1"
-                value={installments}
-                onChange={(e) => setInstallments(e.target.value)}
-              />
+              <Input type="number" min="1" value={installments} onChange={e => setInstallments(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Parcela Atual</label>
-              <Input
-                type="number"
-                min="1"
-                value={currentInstallment}
-                onChange={(e) => setCurrentInstallment(e.target.value)}
-              />
+              <Input type="number" min="1" value={currentInstallment} onChange={e => setCurrentInstallment(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Data de Início</label>
-              <Input
-                type="date"
-                value={formatDate(startDate)}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
+              <Input type="date" value={formatDate(startDate)} onChange={e => setStartDate(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Data de Término (opcional)</label>
-              <Input
-                type="date"
-                value={endDate ? formatDate(endDate) : ""}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
+              <Input type="date" value={endDate ? formatDate(endDate) : ""} onChange={e => setEndDate(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Método de Pagamento</label>
-              <Select 
-                value={paymentMethod} 
-                onValueChange={(value: "pix" | "boleto" | "credit_card") => setPaymentMethod(value)}
-              >
+              <Select value={paymentMethod} onValueChange={(value: "pix" | "boleto" | "credit_card") => setPaymentMethod(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -460,10 +379,7 @@ export const PaymentDetailsDialog = ({
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Status</label>
-              <Select 
-                value={status} 
-                onValueChange={(value: "pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid") => setStatus(value)}
-              >
+              <Select value={status} onValueChange={(value: "pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid") => setStatus(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -479,41 +395,19 @@ export const PaymentDetailsDialog = ({
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">
-                Data de Pagamento
-                {status === 'paid' && <span className="text-red-500 ml-1">*</span>}
-              </label>
-              <Input
-                type="date"
-                value={paymentDate ? formatDate(paymentDate) : ""}
-                onChange={(e) => setPaymentDate(e.target.value)}
-                required={status === 'paid'}
-              />
-              {status === 'paid' && !paymentDate && (
-                <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
-              )}
-            </div>
+            
 
             <div className="grid gap-2">
               <label className="text-sm font-medium">Template de Email</label>
-              <Select 
-                value={emailTemplate} 
-                onValueChange={(value: string) => setEmailTemplate(value)}
-              >
+              <Select value={emailTemplate} onValueChange={(value: string) => setEmailTemplate(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um template" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nenhum</SelectItem>
-                  {templates.map((template) => (
-                    <SelectItem 
-                      key={template.id} 
-                      value={template.id}
-                    >
+                  {templates.map(template => <SelectItem key={template.id} value={template.id}>
                       {template.name}
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -523,19 +417,9 @@ export const PaymentDetailsDialog = ({
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
                   <label className="text-sm font-medium">Qtd. de Parcelas</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={additionalInstallments}
-                    onChange={(e) => setAdditionalInstallments(e.target.value)}
-                    placeholder="Número de parcelas"
-                  />
+                  <Input type="number" min="1" value={additionalInstallments} onChange={e => setAdditionalInstallments(e.target.value)} placeholder="Número de parcelas" />
                 </div>
-                <Button 
-                  onClick={addInstallments}
-                  disabled={isAddingInstallments}
-                  className="flex items-center gap-2"
-                >
+                <Button onClick={addInstallments} disabled={isAddingInstallments} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
                   {isAddingInstallments ? "Adicionando..." : "Adicionar"}
                 </Button>
@@ -546,10 +430,7 @@ export const PaymentDetailsDialog = ({
               <Button variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleSave}
-                disabled={isUpdating}
-              >
+              <Button onClick={handleSave} disabled={isUpdating}>
                 {isUpdating ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
@@ -563,26 +444,15 @@ export const PaymentDetailsDialog = ({
               </Badge>
             </div>
             
-            {isLoadingPayments ? (
-              <div className="flex justify-center items-center h-64">
+            {isLoadingPayments ? <div className="flex justify-center items-center h-64">
                 <p>Carregando parcelas...</p>
-              </div>
-            ) : relatedPayments.length > 0 ? (
-              <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-y-auto">
-                <PaymentTable 
-                  payments={relatedPayments}
-                  onRefresh={fetchRelatedPayments}
-                  templates={templates}
-                />
-              </div>
-            ) : (
-              <div className="flex justify-center items-center h-64 border rounded-lg">
+              </div> : relatedPayments.length > 0 ? <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-y-auto">
+                <PaymentTable payments={relatedPayments} onRefresh={fetchRelatedPayments} templates={templates} />
+              </div> : <div className="flex justify-center items-center h-64 border rounded-lg">
                 <p className="text-muted-foreground">Nenhuma parcela encontrada</p>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 };
