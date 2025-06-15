@@ -74,19 +74,11 @@ export default function Index() {
       {/* Sidebar */}
       <div className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out lg:relative lg:flex lg:flex-col",
-        // Mobile and Desktop behavior
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-border">
+        <div className="flex items-center justify-center h-16 px-6 border-b border-border">
           <FlowcodeLogo />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-6 w-6" />
-          </Button>
         </div>
         
         {/* Navigation */}
@@ -153,30 +145,27 @@ export default function Index() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile menu button */}
-        <div className="lg:hidden p-4">
+      <div className={cn(
+        "flex-1 flex flex-col min-w-0 transition-all duration-300",
+        sidebarOpen ? "lg:ml-0" : "lg:ml-0"
+      )}>
+        {/* Toggle button - fixed position */}
+        <div className="absolute top-4 left-4 z-30">
           <Button
             variant="ghost"
             size="sm"
             onClick={toggleSidebar}
+            className="bg-background/90 backdrop-blur-sm border shadow-sm"
           >
-            <Menu className="h-6 w-6" />
-          </Button>
-        </div>
-
-        {/* Desktop menu button */}
-        <div className="hidden lg:block p-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-          >
-            <Menu className="h-6 w-6" />
+            {sidebarOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </Button>
         </div>
         
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="flex-1 p-4 lg:p-6 pt-16">
           <Outlet />
         </main>
       </div>
