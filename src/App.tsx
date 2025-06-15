@@ -9,7 +9,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/auth/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
-import Overview from "./pages/Overview";
+import { Overview } from "./pages/Overview";
 import Employees from "./pages/Employees";
 import Contracts from "./pages/Contracts";
 import ThankYou from "./pages/ThankYou";
