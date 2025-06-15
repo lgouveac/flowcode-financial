@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BillingTable } from "./recurring-billing/BillingTable";
@@ -13,7 +12,6 @@ import { toast } from "./ui/use-toast";
 import { Button } from "./ui/button";
 import { SimplePaymentDialog } from "./recurring-billing/SimplePaymentDialog";
 import { Skeleton } from "./ui/skeleton";
-
 export const RecurringBilling = () => {
   const {
     billings,
@@ -31,20 +29,18 @@ export const RecurringBilling = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
   const [billingSearch, setBillingSearch] = useState("");
   const [billingStatusFilter, setBillingStatusFilter] = useState("all");
-  
   const handleSuccess = () => {
     fetchBillings();
     fetchPayments();
     toast({
       title: "Sucesso",
-      description: "Operação realizada com sucesso",
+      description: "Operação realizada com sucesso"
     });
   };
 
   // Filtragem de cobranças recorrentes
   const filteredBillings = useMemo(() => {
     if (!billings || !Array.isArray(billings)) return [];
-    
     return billings.filter(billing => {
       const client = billing.clients?.name || "";
       const description = (billing.description || "").toLowerCase();
@@ -58,25 +54,20 @@ export const RecurringBilling = () => {
   // Filtragem de pagamentos pontuais - garantindo que são APENAS pagamentos NÃO relacionados a cobranças recorrentes
   const oneTimePayments = useMemo(() => {
     if (!payments || !Array.isArray(payments)) return [];
-    
+
     // Só incluir pagamentos que são realmente pontuais (não são parcelas de recorrentes)
     return payments.filter(payment => {
       // Verificamos que o pagamento não tem número de parcela (installment_number)
       // e não possui o prefixo "recurring-" no ID (que é usado para pagamentos de cobranças recorrentes)
-      return (payment.installment_number === null || payment.installment_number === undefined) && 
-             (typeof payment.id === 'string' && !payment.id.startsWith('recurring-'));
+      return (payment.installment_number === null || payment.installment_number === undefined) && typeof payment.id === 'string' && !payment.id.startsWith('recurring-');
     });
   }, [payments]);
-  
+
   // Garante que clients e templates são sempre arrays
-  const safeClients = Array.isArray(clients) ? clients.filter(client => 
-    client && typeof client === 'object' && client.id && client.name
-  ) : [];
+  const safeClients = Array.isArray(clients) ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) : [];
   const safeTemplates = Array.isArray(templates) ? templates : [];
-  
   if (isLoading) {
-    return (
-      <div className="space-y-8 p-6">
+    return <div className="space-y-8 p-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-semibold">Recebimentos</h1>
           <Skeleton className="h-10 w-32" />
@@ -85,12 +76,9 @@ export const RecurringBilling = () => {
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>
-      </div>
-    );
+      </div>;
   }
-  
-  return (
-    <div className="space-y-8 p-6">
+  return <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Recebimentos</h1>
         <div className="flex items-center gap-2">
@@ -106,7 +94,7 @@ export const RecurringBilling = () => {
           <TabsTrigger value="onetime">Pontuais</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="recurring" className="border rounded-lg">
+        <TabsContent value="recurring" className="border border-0 ">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4 pt-4 px-4">
             <div className="flex flex-1 flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
@@ -163,12 +151,6 @@ export const RecurringBilling = () => {
 
       <NotificationSettings open={showSettings} onClose={() => setShowSettings(false)} />
 
-      <SimplePaymentDialog
-        open={showSimplePaymentDialog}
-        onClose={() => setShowSimplePaymentDialog(false)}
-        onSuccess={handleSuccess}
-        clients={safeClients}
-      />
-    </div>
-  );
+      <SimplePaymentDialog open={showSimplePaymentDialog} onClose={() => setShowSimplePaymentDialog(false)} onSuccess={handleSuccess} clients={safeClients} />
+    </div>;
 };
