@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
 import { FlowcodeLogo } from "@/components/ui/logo";
+import { useAuth } from "@/components/auth/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +43,7 @@ export default function Index() {
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -149,7 +151,7 @@ export default function Index() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                   <User className="h-5 w-5" />
-                  <span className="hidden sm:block">Usuário</span>
+                  <span className="hidden sm:block">{user?.email || 'Usuário'}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
