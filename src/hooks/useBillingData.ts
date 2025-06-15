@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import type { RecurringBilling } from "@/types/billing";
@@ -16,12 +17,10 @@ export const useBillingData = () => {
   const fetchBillingWithClients = async (billingData: any[]) => {
     if (!billingData || billingData.length === 0) return [];
     
-    // Extract client IDs from billing data
     const clientIds = [...new Set(billingData.map(item => item.client_id))].filter(Boolean);
     
     if (clientIds.length === 0) return billingData;
     
-    // Fetch all relevant clients in a single query
     const { data: clientsData, error: clientsError } = await supabase
       .from('clients')
       .select('*')
@@ -32,7 +31,6 @@ export const useBillingData = () => {
       return billingData;
     }
     
-    // Create a map of client data by ID for quick lookup
     const clientsMap = (clientsData || []).reduce((acc, client) => {
       if (client && client.id) {
         acc[client.id] = client;
@@ -40,16 +38,14 @@ export const useBillingData = () => {
       return acc;
     }, {} as Record<string, any>);
     
-    // Merge client data into billing objects
     return billingData.map(billing => ({
       ...billing,
       clients: billing.client_id && clientsMap[billing.client_id] ? clientsMap[billing.client_id] : null
     }));
   };
 
-  const fetchBillings = async () => {
+  const fetchBillings = useCallback(async () => {
     console.log("Fetching billings...");
-    setIsLoading(true);
     
     try {
       const { data, error } = await supabase
@@ -66,7 +62,6 @@ export const useBillingData = () => {
         return;
       }
 
-      // Fetch and merge client data
       if (data && data.length > 0) {
         const billingsWithClients = await fetchBillingWithClients(data);
         console.log("Billings fetched:", billingsWithClients);
@@ -81,20 +76,16 @@ export const useBillingData = () => {
         description: "Ocorreu um erro ao carregar os recebimentos recorrentes.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   const fetchPaymentsWithClients = async (paymentData: any[]) => {
     if (!paymentData || paymentData.length === 0) return [];
     
-    // Extract client IDs from payment data
     const clientIds = [...new Set(paymentData.map(item => item.client_id))].filter(Boolean);
     
     if (clientIds.length === 0) return paymentData;
     
-    // Fetch all relevant clients in a single query
     const { data: clientsData, error: clientsError } = await supabase
       .from('clients')
       .select('*')
@@ -105,7 +96,6 @@ export const useBillingData = () => {
       return paymentData;
     }
     
-    // Create a map of client data by ID for quick lookup
     const clientsMap = (clientsData || []).reduce((acc, client) => {
       if (client && client.id) {
         acc[client.id] = client;
@@ -113,16 +103,14 @@ export const useBillingData = () => {
       return acc;
     }, {} as Record<string, any>);
     
-    // Merge client data into payment objects
     return paymentData.map(payment => ({
       ...payment,
       clients: payment.client_id && clientsMap[payment.client_id] ? clientsMap[payment.client_id] : null
     }));
   };
 
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     console.log("Fetching payments...");
-    setIsLoading(true);
     
     try {
       const { data, error } = await supabase
@@ -140,7 +128,6 @@ export const useBillingData = () => {
         return;
       }
 
-      // Fetch and merge client data
       if (data && data.length > 0) {
         const paymentsWithClients = await fetchPaymentsWithClients(data);
         console.log("Payments fetched:", paymentsWithClients);
@@ -155,14 +142,10 @@ export const useBillingData = () => {
         description: "Ocorreu um erro ao carregar os recebimentos pontuais.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [toast]);
 
-  const fetchClients = async () => {
-    setIsLoading(true);
-    
+  const fetchClients = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('clients')
@@ -178,7 +161,6 @@ export const useBillingData = () => {
         return;
       }
 
-      // Validar e filtrar os clientes
       const validClients = Array.isArray(data) 
         ? data.filter(client => 
             client && 
@@ -197,10 +179,8 @@ export const useBillingData = () => {
         description: "Ocorreu um erro ao carregar os clientes.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   const validateTemplateType = (type: string): type is 'clients' | 'employees' => {
     return type === 'clients' || type === 'employees';
@@ -210,7 +190,7 @@ export const useBillingData = () => {
     return ['recurring', 'oneTime', 'invoice', 'hours'].includes(subtype);
   };
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     const { data, error } = await supabase
       .from('email_templates')
       .select('*');
@@ -253,17 +233,35 @@ export const useBillingData = () => {
 
     console.log("Templates fetched and validated:", validTemplates);
     setTemplates(validTemplates);
-  };
+  }, []);
+
+  // Debounced refresh function to prevent multiple rapid calls
+  const debouncedRefresh = useCallback(() => {
+    const timeout = setTimeout(() => {
+      Promise.all([
+        fetchBillings(),
+        fetchPayments()
+      ]).catch(err => {
+        console.error("Error refreshing data:", err);
+      });
+    }, 100); // 100ms debounce
+    
+    return () => clearTimeout(timeout);
+  }, [fetchBillings, fetchPayments]);
 
   useEffect(() => {
-    console.log("Fetching data in useBillingData...");
+    console.log("Initial data fetch in useBillingData...");
+    setIsLoading(true);
+    
     Promise.all([
       fetchBillings(),
       fetchPayments(),
       fetchClients(),
       fetchTemplates()
     ]).catch(err => {
-      console.error("Error loading data:", err);
+      console.error("Error loading initial data:", err);
+    }).finally(() => {
+      setIsLoading(false);
     });
 
     // Subscribe to changes in both tables
@@ -274,8 +272,7 @@ export const useBillingData = () => {
         { event: '*', schema: 'public', table: 'recurring_billing' },
         () => {
           console.log('Recurring billing changes detected, refreshing data...');
-          fetchBillings();
-          fetchPayments();
+          debouncedRefresh();
         }
       )
       .subscribe();
@@ -309,7 +306,7 @@ export const useBillingData = () => {
       supabase.removeChannel(paymentsChannel);
       supabase.removeChannel(templatesChannel);
     };
-  }, []);
+  }, [fetchBillings, fetchPayments, fetchClients, fetchTemplates, debouncedRefresh]);
 
   return {
     billings,

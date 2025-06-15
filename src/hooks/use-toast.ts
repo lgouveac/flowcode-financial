@@ -10,7 +10,7 @@ type ToasterToast = ToastProps & {
 }
 
 const TOAST_LIMIT = 5
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 4000 // Reduced from 1000000 to 4 seconds
 
 type ToastState = {
   toasts: ToasterToast[]
@@ -56,6 +56,27 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
+// Debounce mechanism to prevent duplicate toasts
+const recentToasts = new Map<string, number>()
+const DEBOUNCE_TIME = 1000 // 1 second
+
+const getToastKey = (title: string, description: string) => {
+  return `${title || ''}|${description || ''}`
+}
+
+const isDuplicateToast = (title: string, description: string) => {
+  const key = getToastKey(title, description)
+  const now = Date.now()
+  const lastTime = recentToasts.get(key)
+  
+  if (lastTime && (now - lastTime) < DEBOUNCE_TIME) {
+    return true
+  }
+  
+  recentToasts.set(key, now)
+  return false
+}
+
 const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case actionTypes.ADD_TOAST:
@@ -75,8 +96,6 @@ const reducer = (state: State, action: Action): State => {
     case actionTypes.DISMISS_TOAST: {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -157,6 +176,14 @@ function useToast() {
   return {
     ...state,
     toast: (props: Toast) => {
+      const title = typeof props.title === 'string' ? props.title : ''
+      const description = typeof props.description === 'string' ? props.description : ''
+      
+      // Check for duplicate toasts
+      if (isDuplicateToast(title, description)) {
+        return { id: '', dismiss: () => {}, update: () => {} }
+      }
+
       const id = genId()
 
       const update = (props: ToasterToast) =>
@@ -189,6 +216,14 @@ function useToast() {
 }
 
 function toast(props: Toast) {
+  const title = typeof props.title === 'string' ? props.title : ''
+  const description = typeof props.description === 'string' ? props.description : ''
+  
+  // Check for duplicate toasts
+  if (isDuplicateToast(title, description)) {
+    return { id: '', dismiss: () => {}, update: () => {} }
+  }
+
   const id = genId()
 
   const update = (props: ToasterToast) =>

@@ -29,6 +29,11 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
   const handleCloseDetails = () => {
     setShowPaymentDetails(false);
     setSelectedBilling(null);
+    // Removed automatic onRefresh call to prevent unnecessary refreshes
+  };
+
+  const handleUpdateFromModal = () => {
+    // Only refresh when there's an actual update from the modal
     if (onRefresh) {
       onRefresh();
     }
@@ -36,7 +41,6 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
 
   const handleDuplicate = async (billing: RecurringBilling): Promise<void> => {
     try {
-      // Create a new billing object without id and creation dates
       const newBilling = {
         client_id: billing.client_id,
         description: `${billing.description} (Cópia)`,
@@ -116,7 +120,7 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
           billing={selectedBilling}
           open={showPaymentDetails}
           onClose={handleCloseDetails}
-          onUpdate={onRefresh || (() => {})}
+          onUpdate={handleUpdateFromModal}
           templates={templates}
         />
       )}
