@@ -1,6 +1,7 @@
 
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -8,16 +9,19 @@ import {
   UserCheck,
   Receipt,
   FileText,
-  Mail,
   TrendingUp,
   LogOut,
   Menu,
   X,
-  User
+  User,
+  Moon,
+  Sun
 } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "@/components/ThemeProvider";
+import { FlowcodeLogo } from "@/components/ui/logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,18 +35,22 @@ const navigation = [
   { name: "Funcionários", href: "/employees", icon: UserCheck },
   { name: "Recebimentos", href: "/receivables", icon: Receipt },
   { name: "Contratos", href: "/contracts", icon: FileText },
-  { name: "Emails", href: "/emails", icon: Mail },
   { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp },
 ];
 
 export default function Index() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth/login");
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -61,7 +69,7 @@ export default function Index() {
         sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-border lg:justify-center">
-          <h1 className="text-xl font-semibold text-card-foreground">Sistema</h1>
+          <FlowcodeLogo />
           <Button
             variant="ghost"
             size="sm"
@@ -125,21 +133,33 @@ export default function Index() {
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* User menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                <User className="h-5 w-5" />
-                <span className="hidden sm:block">Usuário</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center space-x-4">
+            {/* Theme toggle */}
+            <div className="flex items-center space-x-2">
+              <Sun className="h-4 w-4" />
+              <Switch
+                checked={theme === "dark"}
+                onCheckedChange={toggleTheme}
+              />
+              <Moon className="h-4 w-4" />
+            </div>
+
+            {/* User menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                  <User className="h-5 w-5" />
+                  <span className="hidden sm:block">Usuário</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
         
         <main className="flex-1 p-4 lg:p-6">
