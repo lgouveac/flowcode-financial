@@ -377,23 +377,7 @@ export const PaymentDetailsDialog = ({
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select value={status} onValueChange={(value: "pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid") => setStatus(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="paid">Pago</SelectItem>
-                  <SelectItem value="overdue">Atrasado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                  <SelectItem value="billed">Faturado</SelectItem>
-                  <SelectItem value="awaiting_invoice">Aguardando Fatura</SelectItem>
-                  <SelectItem value="partially_paid">Parcialmente Pago</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            
 
             
 
