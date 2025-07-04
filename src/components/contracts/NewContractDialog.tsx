@@ -14,9 +14,10 @@ import { useContracts } from "@/hooks/useContracts";
 interface NewContractDialogProps {
   open: boolean;
   onClose: () => void;
+  onContractCreated?: (contract: any) => void;
 }
 
-export function NewContractDialog({ open, onClose }: NewContractDialogProps) {
+export function NewContractDialog({ open, onClose, onContractCreated }: NewContractDialogProps) {
   const { addContract } = useContracts();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -54,18 +55,30 @@ export function NewContractDialog({ open, onClose }: NewContractDialogProps) {
 
     setLoading(true);
     try {
-      await addContract({
+      const totalValue = parseFloat(formData.total_value);
+      const installments = parseInt(formData.installments);
+      const installmentValue = totalValue / installments;
+
+      const contractData = {
         client_id: formData.client_id,
         contract_id: formData.contract_id || undefined,
         scope: formData.scope,
-        total_value: parseFloat(formData.total_value),
-        installments: parseInt(formData.installments),
+        total_value: totalValue,
+        installments: installments,
+        installment_value: installmentValue,
         start_date: formData.start_date || undefined,
         end_date: formData.end_date || undefined,
         status: formData.status,
         link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
-      });
+      };
+
+      const createdContract = await addContract(contractData);
+      
+      // Chama o callback para executar o webhook
+      if (onContractCreated && createdContract) {
+        onContractCreated(createdContract);
+      }
       
       setFormData({
         client_id: "",
@@ -85,6 +98,13 @@ export function NewContractDialog({ open, onClose }: NewContractDialogProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calcula automaticamente o valor da parcela quando o valor total ou número de parcelas muda
+  const calculateInstallmentValue = () => {
+    const total = parseFloat(formData.total_value) || 0;
+    const installments = parseInt(formData.installments) || 1;
+    return total / installments;
   };
 
   return (
@@ -127,7 +147,7 @@ export function NewContractDialog({ open, onClose }: NewContractDialogProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="total_value">Valor Total *</Label>
               <Input
@@ -143,13 +163,26 @@ export function NewContractDialog({ open, onClose }: NewContractDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="installments">Número de Parcelas</Label>
+              <Label htmlFor="installments">Número de Parcelas *</Label>
               <Input
                 id="installments"
                 type="number"
                 min="1"
+                required
                 value={formData.installments}
                 onChange={(e) => setFormData({ ...formData, installments: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="installment_value">Valor da Parcela</Label>
+              <Input
+                id="installment_value"
+                type="number"
+                step="0.01"
+                value={calculateInstallmentValue().toFixed(2)}
+                disabled
+                className="bg-gray-100"
               />
             </div>
           </div>

@@ -52,10 +52,15 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
     setLoading(true);
     try {
+      const totalValue = parseFloat(formData.total_value);
+      const installments = parseInt(formData.installments) || 1;
+      const installmentValue = totalValue / installments;
+
       await updateContract(contract.id, {
         scope: formData.scope,
-        total_value: parseFloat(formData.total_value),
-        installments: parseInt(formData.installments) || 1,
+        total_value: totalValue,
+        installments: installments,
+        installment_value: installmentValue,
         start_date: formData.start_date || undefined,
         end_date: formData.end_date || undefined,
         status: formData.status,
@@ -69,6 +74,13 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     } finally {
       setLoading(false);
     }
+  };
+
+  // Calcula automaticamente o valor da parcela quando o valor total ou número de parcelas muda
+  const calculateInstallmentValue = () => {
+    const total = parseFloat(formData.total_value) || 0;
+    const installments = parseInt(formData.installments) || 1;
+    return total / installments;
   };
 
   return (
@@ -90,7 +102,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="total_value">Valor Total *</Label>
               <Input
@@ -113,6 +125,18 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
                 min="1"
                 value={formData.installments}
                 onChange={(e) => setFormData({ ...formData, installments: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="installment_value">Valor da Parcela</Label>
+              <Input
+                id="installment_value"
+                type="number"
+                step="0.01"
+                value={calculateInstallmentValue().toFixed(2)}
+                disabled
+                className="bg-gray-100"
               />
             </div>
           </div>

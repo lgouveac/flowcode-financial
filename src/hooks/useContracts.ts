@@ -62,16 +62,9 @@ export const useContracts = () => {
         }
       }
       
-      // Calculate installment value if not provided
-      const installmentValue = contract.installment_value || 
-        (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
-      
       const { data, error } = await supabase
         .from("Contratos")
-        .insert({
-          ...contract,
-          installment_value: installmentValue,
-        })
+        .insert(contract)
         .select()
         .single();
 
@@ -110,16 +103,6 @@ export const useContracts = () => {
 
         if (clientError || !clientExists) {
           throw new Error("Cliente selecionado não existe");
-        }
-      }
-      
-      // Recalculate installment value if total_value or installments changed
-      if (updates.total_value || updates.installments) {
-        const contract = contracts.find(c => c.id === id);
-        if (contract) {
-          const totalValue = updates.total_value ?? contract.total_value ?? 0;
-          const installments = updates.installments ?? contract.installments ?? 1;
-          updates.installment_value = totalValue / installments;
         }
       }
       

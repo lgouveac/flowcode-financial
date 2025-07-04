@@ -11,6 +11,7 @@ import { formatDate } from "@/utils/formatters";
 import { Contract } from "@/types/contract";
 import { NewContractDialog } from "./NewContractDialog";
 import { EditContractDialog } from "./EditContractDialog";
+import { useToast } from "@/hooks/use-toast";
 
 const getStatusColor = (status?: string) => {
   switch (status) {
@@ -46,10 +47,44 @@ export function ContractTable() {
   const { contracts, isLoading, deleteContract } = useContracts();
   const [newContractOpen, setNewContractOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const { toast } = useToast();
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este contrato?")) {
       await deleteContract(id);
+    }
+  };
+
+  const handleCreateContract = async (contractData: Contract) => {
+    try {
+      // Chama o webhook do n8n
+      const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/44fbe481-ddef-4c19-ba63-59cc1c1e7413", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contract: contractData,
+          timestamp: new Date().toISOString(),
+          action: "create_contract"
+        }),
+      });
+
+      if (webhookResponse.ok) {
+        toast({
+          title: "Webhook enviado",
+          description: "O webhook foi chamado com sucesso para o novo contrato.",
+        });
+      } else {
+        console.warn("Webhook não foi enviado com sucesso, mas o contrato foi criado");
+      }
+    } catch (error) {
+      console.error("Erro ao chamar webhook:", error);
+      toast({
+        title: "Aviso",
+        description: "Contrato criado, mas houve problema ao chamar o webhook.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -92,6 +127,7 @@ export function ContractTable() {
                     <TableHead>Escopo</TableHead>
                     <TableHead>Valor Total</TableHead>
                     <TableHead>Parcelas</TableHead>
+                    <TableHead>Valor da Parcela</TableHead>
                     <TableHead>Data de Início</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="w-[100px]">Ações</TableHead>
@@ -107,7 +143,10 @@ export function ContractTable() {
                       <TableCell>
                         {contract.total_value ? formatCurrency(contract.total_value) : "-"}
                       </TableCell>
-                      <TableCell>{contract.installments || "-"}</TableCell>
+                      <TableCell>{contract.installments || "1"}</TableCell>
+                      <TableCell>
+                        {contract.installment_value ? formatCurrency(contract.installment_value) : "-"}
+                      </TableCell>
                       <TableCell>
                         {contract.start_date ? formatDate(new Date(contract.start_date), "dd/MM/yyyy") : "-"}
                       </TableCell>
@@ -145,7 +184,8 @@ export function ContractTable() {
 
       <NewContractDialog 
         open={newContractOpen} 
-        onClose={() => setNewContractOpen(false)} 
+        onClose={() => setNewContractOpen(false)}
+        onContractCreated={handleCreateContract}
       />
       
       {editingContract && (
