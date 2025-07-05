@@ -6,17 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, Trash2 } from "lucide-react";
-
-interface NotificationInterval {
-  id: string;
-  days_before: number;
-}
-
-interface NotificationSettings {
-  id: string;
-  notification_time: string;
-}
 
 interface NotificationSettingsDialogProps {
   open: boolean;
@@ -25,45 +14,27 @@ interface NotificationSettingsDialogProps {
 
 export const NotificationSettings = ({ open, onClose }: NotificationSettingsDialogProps) => {
   const { toast } = useToast();
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
-  const [intervals, setIntervals] = useState<NotificationInterval[]>([]);
-  const [newInterval, setNewInterval] = useState<string>("");
-  const [timeValue, setTimeValue] = useState<string>("");
+  const [timeValue, setTimeValue] = useState<string>("09:00");
 
   useEffect(() => {
     if (open) {
       fetchSettings();
-      fetchIntervals();
     }
   }, [open]);
 
-  useEffect(() => {
-    if (settings?.notification_time) {
-      setTimeValue(settings.notification_time.slice(0, 5));
-    }
-  }, [settings]);
-
   const fetchSettings = async () => {
     try {
-      let { data: existingSettings, error: countError } = await supabase
-        .from('email_notification_settings')
-        .select('*');
+      const { data: settings, error } = await supabase
+        .from('employee_email_settings')
+        .select('*')
+        .single();
 
-      if (countError) throw countError;
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
 
-      // Se não houver configurações, cria uma nova
-      if (!existingSettings || existingSettings.length === 0) {
-        const { data: newSettings, error: insertError } = await supabase
-          .from('email_notification_settings')
-          .insert({ notification_time: '09:00' })
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-        setSettings(newSettings);
-      } else {
-        // Usa a primeira configuração encontrada
-        setSettings(existingSettings[0]);
+      if (settings?.notification_time) {
+        setTimeValue(settings.notification_time.slice(0, 5));
       }
     } catch (error) {
       console.error('Error fetching notification settings:', error);
@@ -75,46 +46,33 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
     }
   };
 
-  const fetchIntervals = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('email_notification_intervals')
-        .select('*')
-        .order('days_before', { ascending: false });
-
-      if (error) throw error;
-      setIntervals(data || []);
-    } catch (error) {
-      console.error('Error fetching notification intervals:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os intervalos de notificação.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleTimeChange = async (time: string) => {
     setTimeValue(time);
     
-    if (!settings?.id) {
-      toast({
-        title: "Erro",
-        description: "Configurações não encontradas.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      const { error } = await supabase
-        .from('email_notification_settings')
-        .update({ notification_time: time })
-        .eq('id', settings.id);
+      // First try to update existing settings
+      const { data: existingSettings } = await supabase
+        .from('employee_email_settings')
+        .select('id')
+        .single();
 
-      if (error) throw error;
+      if (existingSettings) {
+        // Update existing
+        const { error } = await supabase
+          .from('employee_email_settings')
+          .update({ notification_time: time })
+          .eq('id', existingSettings.id);
 
-      setSettings(prev => prev ? { ...prev, notification_time: time } : null);
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('employee_email_settings')
+          .insert({ notification_time: time });
+
+        if (error) throw error;
+      }
+
       toast({
         title: "Sucesso",
         description: "Horário de notificação atualizado com sucesso.",
@@ -124,66 +82,6 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o horário de notificação.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAddInterval = async () => {
-    const days = parseInt(newInterval);
-    if (isNaN(days) || days <= 0) {
-      toast({
-        title: "Erro",
-        description: "Por favor, insira um número válido de dias.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('email_notification_intervals')
-        .insert({ days_before: days })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setIntervals(prev => [...prev, data]);
-      setNewInterval("");
-      toast({
-        title: "Sucesso",
-        description: "Intervalo de notificação adicionado com sucesso.",
-      });
-    } catch (error) {
-      console.error('Error adding notification interval:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível adicionar o intervalo de notificação.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteInterval = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('email_notification_intervals')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setIntervals(prev => prev.filter(interval => interval.id !== id));
-      toast({
-        title: "Sucesso",
-        description: "Intervalo de notificação removido com sucesso.",
-      });
-    } catch (error) {
-      console.error('Error deleting notification interval:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível remover o intervalo de notificação.",
         variant: "destructive",
       });
     }
@@ -207,39 +105,10 @@ export const NotificationSettings = ({ open, onClose }: NotificationSettingsDial
           </div>
 
           <div className="space-y-4">
-            <Label>Intervalos de Notificação</Label>
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                min="1"
-                placeholder="Dias antes"
-                value={newInterval}
-                onChange={(e) => setNewInterval(e.target.value)}
-              />
-              <Button onClick={handleAddInterval} size="icon" className="text-white">
-                <Plus className="h-4 w-4 text-white" />
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {intervals.map((interval) => (
-                <div key={interval.id} className="flex items-center justify-between p-2 border rounded">
-                  <span>{interval.days_before} dias antes</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteInterval(interval.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-white" />
-                  </Button>
-                </div>
-              ))}
-              {intervals.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center">
-                  Nenhum intervalo configurado
-                </p>
-              )}
-            </div>
+            <Label>Configurações de Email</Label>
+            <p className="text-sm text-muted-foreground">
+              As notificações são enviadas automaticamente no horário configurado acima.
+            </p>
           </div>
         </div>
       </DialogContent>
