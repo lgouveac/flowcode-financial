@@ -154,7 +154,6 @@ export const useContracts = () => {
         description: error.message || "Não foi possível remover o contrato.",
         variant: "destructive",
       });
-      throw error;
     }
   };
 
