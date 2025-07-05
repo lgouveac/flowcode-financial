@@ -213,6 +213,30 @@ export type Database = {
           },
         ]
       }
+      email_cc_recipients: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           content: string
@@ -246,6 +270,27 @@ export type Database = {
           subtype?: string
           type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      employee_email_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          notification_time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notification_time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notification_time?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -373,6 +418,27 @@ export type Database = {
           is_recurring?: boolean
           name?: string
           start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      global_settings: {
+        Row: {
+          created_at: string | null
+          employee_emails_send_day: number | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          employee_emails_send_day?: number | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          employee_emails_send_day?: number | null
+          id?: string
           updated_at?: string | null
         }
         Relationships: []
