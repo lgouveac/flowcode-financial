@@ -128,18 +128,19 @@ export const useCashFlow = (period: string = 'current') => {
 
       // Verificar quais pagamentos não têm entrada no cash flow
       for (const payment of paidPayments) {
+        // Check if cash flow entry already exists for this payment
         const { data: existingCashFlow, error: cashFlowError } = await supabase
           .from('cash_flow')
           .select('id')
-          .eq('payment_id', payment.id)
-          .maybeSingle();
+          .eq('payment_id', payment.id);
 
         if (cashFlowError) {
           console.error('Error checking cash flow for payment:', payment.id, cashFlowError);
           continue;
         }
 
-        if (!existingCashFlow) {
+        // Only create if no cash flow entry exists
+        if (!existingCashFlow || existingCashFlow.length === 0) {
           console.log('Creating missing cash flow entry for payment:', payment.id, payment.description);
           
           // Criar entrada no cash flow
@@ -160,6 +161,8 @@ export const useCashFlow = (period: string = 'current') => {
           } else {
             console.log('Successfully created cash flow entry for payment:', payment.id);
           }
+        } else {
+          console.log('Cash flow entry already exists for payment:', payment.id, 'Found:', existingCashFlow.length, 'entries');
         }
       }
     } catch (error) {
