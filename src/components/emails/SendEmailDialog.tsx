@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -88,72 +89,6 @@ export function SendEmailDialog({
     return format(dueDate, 'yyyy-MM-dd');
   };
 
-  // Set initial values when dialog opens or data changes
-  useEffect(() => {
-    if (!open) return; // Don't do anything if dialog is closed
-    
-    setIsLoading(true);
-    
-    // Reset loading after a small delay if it's still loading
-    const timer = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-      }
-    }, 3000); // 3 second timeout as a safety measure
-    
-    try {
-      // If we have billing data, immediately set the client and email data
-      if (billingData) {
-        console.log("Setting data from billing:", billingData);
-        
-        setSelectedClient(billingData.client_id);
-        
-        // Format due date properly from the due_day
-        const formattedDueDate = calculateDueDate(billingData.due_day);
-        
-        setEmailData({
-          description: billingData.description || "Serviços de consultoria",
-          amount: billingData.amount || 0,
-          dueDate: formattedDueDate
-        });
-        
-        // Find an appropriate template
-        if (billingData.email_template) {
-          // Check if the template exists in our savedTemplates
-          const templateExists = savedTemplates.some(t => t.id === billingData.email_template);
-          if (templateExists) {
-            setSelectedTemplate(billingData.email_template);
-          } else {
-            // Find a default recurring template if the template doesn't exist
-            findDefaultTemplate();
-          }
-        } else {
-          // Find a default recurring template
-          findDefaultTemplate();
-        }
-        
-        setIsLoading(false);
-      } 
-      // If no billing data but initialClientId is provided
-      else if (initialClientId) {
-        setSelectedClient(initialClientId);
-        setIsLoading(false);
-      } else {
-        setIsLoading(false);
-      }
-      
-      // Set initial template if provided
-      if (initialTemplateId) {
-        setSelectedTemplate(initialTemplateId);
-      }
-    } catch (err) {
-      console.error("Error setting initial values:", err);
-      setIsLoading(false);
-    }
-    
-    return () => clearTimeout(timer);
-  }, [open, billingData, initialClientId, initialTemplateId, savedTemplates]);
-
   // Helper function to find a default template
   const findDefaultTemplate = () => {
     if (!savedTemplates || savedTemplates.length === 0) return;
@@ -169,19 +104,6 @@ export function SendEmailDialog({
       // If no default template, use the first available
       setSelectedTemplate(savedTemplates[0].id);
     }
-  };
-
-  // Calculate due date from due_day
-  const calculateDueDate = (dueDay: number) => {
-    const today = new Date();
-    const dueDate = new Date(today.getFullYear(), today.getMonth(), dueDay);
-    
-    // If the due date has passed this month, use next month
-    if (dueDate < today) {
-      dueDate.setMonth(dueDate.getMonth() + 1);
-    }
-    
-    return format(dueDate, 'yyyy-MM-dd');
   };
 
   // Set initial values when dialog opens or data changes
