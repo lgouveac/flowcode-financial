@@ -73,8 +73,10 @@ export default function Index() {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out lg:relative lg:flex lg:flex-col",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        "fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg border-r transform transition-transform duration-300 ease-in-out",
+        // On mobile: slide in/out based on sidebarOpen state
+        "lg:relative lg:transform-none lg:transition-none",
+        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         {/* Sidebar Header */}
         <div className="flex items-center justify-center h-16 px-6 border-b border-border">
@@ -145,17 +147,14 @@ export default function Index() {
       </div>
 
       {/* Main content */}
-      <div className={cn(
-        "flex-1 flex flex-col min-w-0 transition-all duration-300",
-        sidebarOpen ? "lg:ml-0" : "lg:ml-0"
-      )}>
-        {/* Toggle button - fixed position */}
-        <div className="absolute top-4 left-4 z-30">
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header with toggle button */}
+        <div className="flex items-center justify-between p-4 border-b lg:hidden">
           <Button
             variant="ghost"
             size="sm"
             onClick={toggleSidebar}
-            className="bg-background/90 backdrop-blur-sm border shadow-sm"
+            className="lg:hidden"
           >
             {sidebarOpen ? (
               <X className="h-6 w-6" />
@@ -165,7 +164,7 @@ export default function Index() {
           </Button>
         </div>
         
-        <main className="flex-1 p-4 lg:p-6 pt-16">
+        <main className="flex-1 p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

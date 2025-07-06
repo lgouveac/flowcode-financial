@@ -237,6 +237,57 @@ export type Database = {
         }
         Relationships: []
       }
+      email_notification_log: {
+        Row: {
+          billing_id: string | null
+          client_id: string | null
+          created_at: string | null
+          days_before: number | null
+          due_date: string | null
+          id: string
+          payment_type: string | null
+          sent_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          days_before?: number | null
+          due_date?: string | null
+          id?: string
+          payment_type?: string | null
+          sent_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          days_before?: number | null
+          due_date?: string | null
+          id?: string
+          payment_type?: string | null
+          sent_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_notification_log_billing_id_fkey"
+            columns: ["billing_id"]
+            isOneToOne: false
+            referencedRelation: "recurring_billing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_notification_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           content: string
@@ -443,6 +494,33 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_reminder_settings: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          days_interval: number | null
+          id: string
+          notification_time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          days_interval?: number | null
+          id?: string
+          notification_time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          days_interval?: number | null
+          id?: string
+          notification_time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -614,6 +692,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_payment_reminder_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       insert_template_if_not_exists: {
         Args: {
           p_type: string
@@ -635,6 +717,14 @@ export type Database = {
       trigger_notifications: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      update_payment_reminder_settings: {
+        Args: {
+          p_notification_time: string
+          p_days_interval: number
+          p_active: boolean
+        }
+        Returns: undefined
       }
     }
     Enums: {

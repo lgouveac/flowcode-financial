@@ -10,6 +10,13 @@ import { useToast } from "@/hooks/use-toast";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { supabase } from "@/integrations/supabase/client";
 
+interface PaymentReminderSettings {
+  id: string;
+  notification_time: string;
+  days_interval: number;
+  active: boolean;
+}
+
 export const ReminderEmailSettings = () => {
   const { toast } = useToast();
   const [notificationTime, setNotificationTime] = useState("13:00");
@@ -26,9 +33,16 @@ export const ReminderEmailSettings = () => {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.rpc("get_payment_reminder_settings");
       
-      if (error) throw error;
+      // Fetch settings directly from the table
+      const { data, error } = await supabase
+        .from('payment_reminder_settings')
+        .select('*')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
       
       if (data) {
         setNotificationTime(data.notification_time.slice(0, 5));
@@ -51,13 +65,37 @@ export const ReminderEmailSettings = () => {
     try {
       setSaving(true);
       
-      const { error } = await supabase.rpc("update_payment_reminder_settings", {
-        p_notification_time: notificationTime + ":00",
-        p_days_interval: daysInterval,
-        p_active: active
-      });
-      
-      if (error) throw error;
+      // Update settings directly in the table
+      const { data: existingSettings } = await supabase
+        .from('payment_reminder_settings')
+        .select('id')
+        .single();
+
+      if (existingSettings) {
+        // Update existing
+        const { error } = await supabase
+          .from('payment_reminder_settings')
+          .update({
+            notification_time: notificationTime + ":00",
+            days_interval: daysInterval,
+            active: active,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingSettings.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('payment_reminder_settings')
+          .insert({
+            notification_time: notificationTime + ":00",
+            days_interval: daysInterval,
+            active: active
+          });
+
+        if (error) throw error;
+      }
       
       toast({
         title: "Configurações salvas",
