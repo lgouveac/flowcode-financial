@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { EditIcon, TrashIcon, PlusIcon } from "lucide-react";
+import { EditIcon, TrashIcon, PlusIcon, FileText } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { formatDate } from "@/utils/formatters";
@@ -47,11 +47,55 @@ export function ContractTable() {
   const { contracts, isLoading, deleteContract } = useContracts();
   const [newContractOpen, setNewContractOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [generatingContract, setGeneratingContract] = useState<number | null>(null);
   const { toast } = useToast();
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este contrato?")) {
       await deleteContract(id);
+    }
+  };
+
+  const handleGenerateContract = async (contract: Contract) => {
+    setGeneratingContract(contract.id);
+    
+    try {
+      const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/67b19232-a564-45af-b098-25b562c32694", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        mode: "no-cors",
+        body: JSON.stringify({
+          contract: {
+            id: contract.id,
+            client_name: contract.clients?.name,
+            scope: contract.scope,
+            total_value: contract.total_value,
+            installments: contract.installments,
+            installment_value: contract.installment_value,
+            start_date: contract.start_date,
+            end_date: contract.end_date,
+            status: contract.status
+          },
+          timestamp: new Date().toISOString(),
+          action: "generate_contract"
+        }),
+      });
+
+      toast({
+        title: "Solicitação enviada",
+        description: "A solicitação para gerar o contrato foi enviada com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao chamar webhook:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar a solicitação para gerar o contrato.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingContract(null);
     }
   };
 
@@ -130,7 +174,7 @@ export function ContractTable() {
                     <TableHead>Valor da Parcela</TableHead>
                     <TableHead>Data de Início</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[100px]">Ações</TableHead>
+                    <TableHead className="w-[150px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -156,11 +200,21 @@ export function ContractTable() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleGenerateContract(contract)}
+                            disabled={generatingContract === contract.id}
+                            title="Gerar Contrato"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setEditingContract(contract)}
+                            title="Editar"
                           >
                             <EditIcon className="h-4 w-4" />
                           </Button>
@@ -168,6 +222,7 @@ export function ContractTable() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(contract.id)}
+                            title="Excluir"
                           >
                             <TrashIcon className="h-4 w-4" />
                           </Button>

@@ -18,6 +18,11 @@ export interface Contract {
   ip?: string;
   created_at: string;
   updated_at?: string;
+  clients?: {
+    name: string;
+    email: string;
+    type: string;
+  } | null;
 }
 
 export type NewContract = Omit<Contract, 'id' | 'created_at' | 'updated_at'> & {
