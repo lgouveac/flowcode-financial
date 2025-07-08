@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CashFlow, validateCashFlowType } from "@/types/cashflow";
 import { useToast } from "@/components/ui/use-toast";
@@ -8,6 +8,12 @@ export const useCashFlow = (period: string = 'current') => {
   const [cashFlow, setCashFlow] = useState<CashFlow[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const { toast } = useToast();
+  
+  // Concurrency control and state management
+  const isSyncingRef = useRef(false);
+  const syncedPaymentsRef = useRef(new Set<string>());
+  const lastSyncTimeRef = useRef<number>(0);
+  const SYNC_COOLDOWN = 30000; // 30 seconds cooldown between syncs
 
   const getPeriodDates = (selectedPeriod: string) => {
     const now = new Date();
@@ -102,14 +108,34 @@ export const useCashFlow = (period: string = 'current') => {
   };
 
   const syncPaidPaymentsWithCashFlow = async () => {
+    // Prevent concurrent sync operations
+    if (isSyncingRef.current) {
+      console.log('Sync already in progress, skipping...');
+      return;
+    }
+
+    // Check cooldown period
+    const now = Date.now();
+    if (now - lastSyncTimeRef.current < SYNC_COOLDOWN) {
+      console.log('Sync cooldown active, skipping...');
+      return;
+    }
+
     try {
-      console.log('Checking for paid payments that might not have cash flow entries...');
+      isSyncingRef.current = true;
+      lastSyncTimeRef.current = now;
       
-      // Buscar pagamentos pagos que não têm entrada no cash_flow
+      console.log('Starting sync of paid payments with cash flow...');
+      
+      // Get all paid payments that might need cash flow entries
       const { data: paidPayments, error: paymentsError } = await supabase
         .from('payments')
         .select(`
-          *,
+          id,
+          description,
+          amount,
+          payment_date,
+          status,
           clients!inner(name)
         `)
         .eq('status', 'paid')
@@ -120,33 +146,44 @@ export const useCashFlow = (period: string = 'current') => {
         return;
       }
 
-      console.log('Found paid payments:', paidPayments?.length || 0);
+      console.log(`Found ${paidPayments?.length || 0} paid payments to check`);
 
       if (!paidPayments || paidPayments.length === 0) {
+        console.log('No paid payments found, sync complete');
         return;
       }
 
-      // Verificar quais pagamentos não têm entrada no cash flow
-      for (const payment of paidPayments) {
-        // Check if cash flow entry already exists for this payment
-        const { data: existingCashFlow, error: cashFlowError } = await supabase
-          .from('cash_flow')
-          .select('id')
-          .eq('payment_id', payment.id);
+      // Get all existing cash flow entries for these payments in one query
+      const paymentIds = paidPayments.map(p => p.id);
+      const { data: existingCashFlows, error: cashFlowError } = await supabase
+        .from('cash_flow')
+        .select('id, payment_id')
+        .in('payment_id', paymentIds);
 
-        if (cashFlowError) {
-          console.error('Error checking cash flow for payment:', payment.id, cashFlowError);
-          continue;
-        }
+      if (cashFlowError) {
+        console.error('Error fetching existing cash flows:', cashFlowError);
+        return;
+      }
 
-        // Only create if no cash flow entry exists
-        if (!existingCashFlow || existingCashFlow.length === 0) {
-          console.log('Creating missing cash flow entry for payment:', payment.id, payment.description);
-          
-          // Criar entrada no cash flow
+      // Create a set of payment IDs that already have cash flow entries
+      const existingPaymentIds = new Set(
+        existingCashFlows?.map(cf => cf.payment_id) || []
+      );
+
+      // Find payments that need cash flow entries
+      const paymentsNeedingCashFlow = paidPayments.filter(
+        payment => !existingPaymentIds.has(payment.id) && !syncedPaymentsRef.current.has(payment.id)
+      );
+
+      console.log(`Found ${paymentsNeedingCashFlow.length} payments needing cash flow entries`);
+
+      // Process payments that need cash flow entries
+      const insertPromises = paymentsNeedingCashFlow.map(async (payment) => {
+        try {
+          // Use upsert with the unique constraint to prevent duplicates
           const { error: insertError } = await supabase
             .from('cash_flow')
-            .insert({
+            .upsert({
               type: 'income',
               description: payment.description,
               amount: payment.amount,
@@ -154,26 +191,45 @@ export const useCashFlow = (period: string = 'current') => {
               category: 'payment',
               payment_id: payment.id,
               status: 'pending'
+            }, {
+              onConflict: 'payment_id',
+              ignoreDuplicates: true
             });
 
           if (insertError) {
-            console.error('Error creating cash flow entry:', insertError);
+            console.error(`Error creating cash flow entry for payment ${payment.id}:`, insertError);
+            return { success: false, paymentId: payment.id, error: insertError };
           } else {
-            console.log('Successfully created cash flow entry for payment:', payment.id);
+            console.log(`Successfully created cash flow entry for payment: ${payment.id} (${payment.description})`);
+            syncedPaymentsRef.current.add(payment.id);
+            return { success: true, paymentId: payment.id };
           }
-        } else {
-          console.log('Cash flow entry already exists for payment:', payment.id, 'Found:', existingCashFlow.length, 'entries');
+        } catch (error) {
+          console.error(`Exception creating cash flow for payment ${payment.id}:`, error);
+          return { success: false, paymentId: payment.id, error };
         }
-      }
+      });
+
+      // Wait for all insertions to complete
+      const results = await Promise.allSettled(insertPromises);
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+      const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success)).length;
+
+      console.log(`Sync complete: ${successful} successful, ${failed} failed`);
+
     } catch (error) {
-      console.error('Error in syncPaidPaymentsWithCashFlow:', error);
+      console.error('Critical error in syncPaidPaymentsWithCashFlow:', error);
+    } finally {
+      isSyncingRef.current = false;
     }
   };
 
-  const fetchCashFlow = async () => {
+  const fetchCashFlow = async (forcSync = false) => {
     try {
-      // Primeiro sincronizar pagamentos pagos
-      await syncPaidPaymentsWithCashFlow();
+      // Only sync paid payments if we're fetching current data or force sync is requested
+      if (forcSync || period === 'current' || period.includes(new Date().getFullYear().toString())) {
+        await syncPaidPaymentsWithCashFlow();
+      }
 
       const dates = getPeriodDates(period);
       
