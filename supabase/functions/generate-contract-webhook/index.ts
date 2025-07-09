@@ -22,17 +22,18 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Received request:', requestBody);
 
-    // Call the n8n webhook
+    // Call the n8n webhook with GET method and query parameters
     const webhookUrl = "https://n8n.sof.to/webhook-test/e39a39a2-b53d-4cda-b3cb-c526da442158";
-    console.log('Calling webhook:', webhookUrl);
+    const params = new URLSearchParams({
+      data: JSON.stringify(requestBody)
+    });
+    const fullUrl = `${webhookUrl}?${params.toString()}`;
+    
+    console.log('Calling webhook:', fullUrl);
     console.log('Payload being sent:', JSON.stringify(requestBody, null, 2));
 
-    const webhookResponse = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+    const webhookResponse = await fetch(fullUrl, {
+      method: 'GET',
     });
 
     console.log('Webhook response status:', webhookResponse.status);
