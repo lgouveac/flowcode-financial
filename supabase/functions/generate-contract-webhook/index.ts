@@ -25,6 +25,7 @@ serve(async (req) => {
     // Call the n8n webhook
     const webhookUrl = "https://n8n.sof.to/webhook-test/e39a39a2-b53d-4cda-b3cb-c526da442158";
     console.log('Calling webhook:', webhookUrl);
+    console.log('Payload being sent:', JSON.stringify(requestBody, null, 2));
 
     const webhookResponse = await fetch(webhookUrl, {
       method: 'POST',
@@ -35,9 +36,18 @@ serve(async (req) => {
     });
 
     console.log('Webhook response status:', webhookResponse.status);
+    console.log('Webhook response headers:', Object.fromEntries(webhookResponse.headers.entries()));
+    
+    let responseText = '';
+    try {
+      responseText = await webhookResponse.text();
+      console.log('Webhook response body:', responseText);
+    } catch (e) {
+      console.log('Could not read response body:', e);
+    }
 
     if (!webhookResponse.ok) {
-      throw new Error(`Webhook failed with status: ${webhookResponse.status}`);
+      throw new Error(`Webhook failed with status: ${webhookResponse.status}. Response: ${responseText}`);
     }
 
     return new Response(
