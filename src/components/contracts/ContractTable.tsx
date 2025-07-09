@@ -60,7 +60,7 @@ export function ContractTable() {
     setGeneratingContract(contract.id);
     
     try {
-      const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/67b19232-a564-45af-b098-25b562c32694", {
+      const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/cc67ccb6-86d4-4ec6-ba76-35f42280112c", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
