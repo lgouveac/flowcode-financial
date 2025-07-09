@@ -65,7 +65,6 @@ export function ContractTable() {
         headers: {
           "Content-Type": "application/json",
         },
-        mode: "no-cors",
         body: JSON.stringify({
           contract: {
             id: contract.id,
