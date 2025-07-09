@@ -59,38 +59,53 @@ export function ContractTable() {
   const handleGenerateContract = async (contract: Contract) => {
     setGeneratingContract(contract.id);
     
+    const payload = {
+      contract: {
+        id: contract.id,
+        client_name: contract.clients?.name,
+        scope: contract.scope,
+        total_value: contract.total_value,
+        installments: contract.installments,
+        installment_value: contract.installment_value,
+        start_date: contract.start_date,
+        end_date: contract.end_date,
+        status: contract.status
+      },
+      timestamp: new Date().toISOString(),
+      action: "generate_contract"
+    };
+
+    console.log("Enviando webhook para:", "https://n8n.sof.to/webhook-test/cc67ccb6-86d4-4ec6-ba76-35f42280112c");
+    console.log("Payload:", payload);
+    
     try {
       const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/cc67ccb6-86d4-4ec6-ba76-35f42280112c", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          contract: {
-            id: contract.id,
-            client_name: contract.clients?.name,
-            scope: contract.scope,
-            total_value: contract.total_value,
-            installments: contract.installments,
-            installment_value: contract.installment_value,
-            start_date: contract.start_date,
-            end_date: contract.end_date,
-            status: contract.status
-          },
-          timestamp: new Date().toISOString(),
-          action: "generate_contract"
-        }),
+        body: JSON.stringify(payload),
       });
+
+      console.log("Response status:", webhookResponse.status);
+      console.log("Response ok:", webhookResponse.ok);
+
+      if (!webhookResponse.ok) {
+        throw new Error(`HTTP error! status: ${webhookResponse.status}`);
+      }
 
       toast({
         title: "Solicitação enviada",
         description: "A solicitação para gerar o contrato foi enviada com sucesso.",
       });
     } catch (error) {
-      console.error("Erro ao chamar webhook:", error);
+      console.error("Erro completo:", error);
+      console.error("Tipo do erro:", typeof error);
+      console.error("Message:", error.message);
+      
       toast({
         title: "Erro",
-        description: "Não foi possível enviar a solicitação para gerar o contrato.",
+        description: `Não foi possível enviar a solicitação para gerar o contrato. ${error.message}`,
         variant: "destructive",
       });
     } finally {
