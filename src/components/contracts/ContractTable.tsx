@@ -75,24 +75,29 @@ export function ContractTable() {
       action: "generate_contract"
     };
 
-    console.log("Enviando webhook para:", "https://n8n.sof.to/webhook-test/cc67ccb6-86d4-4ec6-ba76-35f42280112c");
+    console.log("Enviando solicitação via edge function");
     console.log("Payload:", payload);
     
     try {
-      const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/cc67ccb6-86d4-4ec6-ba76-35f42280112c", {
+      const response = await fetch(`https://itlpvpdwgiwbdpqheemw.supabase.co/functions/v1/generate-contract-webhook`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bHB2cGR3Z2l3YmRwcWhlZW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxOTA5NzEsImV4cCI6MjA1NTc2Njk3MX0.gljQ6JAfbMzP-cbA68Iz21vua9YqAqVQgpB-eLk6nAg'}`,
         },
         body: JSON.stringify(payload),
       });
 
-      console.log("Response status:", webhookResponse.status);
-      console.log("Response ok:", webhookResponse.ok);
-
-      if (!webhookResponse.ok) {
-        throw new Error(`HTTP error! status: ${webhookResponse.status}`);
+      console.log("Response status:", response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const result = await response.json();
+      console.log("Success response:", result);
 
       toast({
         title: "Solicitação enviada",
@@ -100,8 +105,6 @@ export function ContractTable() {
       });
     } catch (error) {
       console.error("Erro completo:", error);
-      console.error("Tipo do erro:", typeof error);
-      console.error("Message:", error.message);
       
       toast({
         title: "Erro",
