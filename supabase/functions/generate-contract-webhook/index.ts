@@ -23,7 +23,7 @@ serve(async (req) => {
     console.log('Received request:', requestBody);
 
     // Call the n8n webhook
-    const webhookUrl = "https://n8n.sof.to/webhook-test/cc67ccb6-86d4-4ec6-ba76-35f42280112c";
+    const webhookUrl = "https://n8n.sof.to/webhook-test/e39a39a2-b53d-4cda-b3cb-c526da442158";
     console.log('Calling webhook:', webhookUrl);
 
     const webhookResponse = await fetch(webhookUrl, {
