@@ -13,6 +13,7 @@ import { Payment } from "@/types/payment";
 import { PaymentTable } from "../payments/PaymentTable";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface PaymentDetailsDialogProps {
   open: boolean;
   onClose: () => void;
@@ -324,10 +325,13 @@ export const PaymentDetailsDialog = ({
           <DialogTitle>Detalhes do Recebimento Recorrente</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Informações da Cobrança</h3>
-            
+        <Tabs defaultValue="informacoes" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="informacoes">Informações</TabsTrigger>
+            <TabsTrigger value="parcelas">Parcelas</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="informacoes" className="space-y-4 mt-6">
             <div className="grid gap-2">
               <label className="text-sm font-medium">Descrição</label>
               <Input value={description} onChange={e => setDescription(e.target.value)} />
@@ -377,10 +381,6 @@ export const PaymentDetailsDialog = ({
               </Select>
             </div>
 
-            
-
-            
-
             <div className="grid gap-2">
               <label className="text-sm font-medium">Template de Email</label>
               <Select value={emailTemplate} onValueChange={(value: string) => setEmailTemplate(value)}>
@@ -418,9 +418,9 @@ export const PaymentDetailsDialog = ({
                 {isUpdating ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
-          </div>
+          </TabsContent>
           
-          <div className="space-y-4">
+          <TabsContent value="parcelas" className="space-y-4 mt-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Parcelas</h3>
               <Badge variant="outline" className="px-2 py-1">
@@ -435,8 +435,8 @@ export const PaymentDetailsDialog = ({
               </div> : <div className="flex justify-center items-center h-64 border rounded-lg">
                 <p className="text-muted-foreground">Nenhuma parcela encontrada</p>
               </div>}
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>;
 };
