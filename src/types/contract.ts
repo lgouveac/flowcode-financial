@@ -11,6 +11,8 @@ export interface Contract {
   start_date?: string;
   end_date?: string;
   status?: "active" | "completed" | "cancelled" | "suspended";
+  contract_type?: "open_scope" | "closed_scope";
+  contractor_type?: "individual" | "legal_entity";
   data_de_assinatura?: string;
   signing_date_legacy?: string;
   link_contrato?: string;
@@ -31,4 +33,4 @@ export type NewContract = Omit<Contract, 'id' | 'created_at' | 'updated_at'> & {
   scope: string;
 };
 
-export type EditableContractFields = Pick<Contract, 'scope' | 'total_value' | 'installments' | 'start_date' | 'end_date' | 'status' | 'link_contrato' | 'obs'>;
+export type EditableContractFields = Pick<Contract, 'scope' | 'total_value' | 'installments' | 'start_date' | 'end_date' | 'status' | 'contract_type' | 'contractor_type' | 'data_de_assinatura' | 'link_contrato' | 'obs'>;

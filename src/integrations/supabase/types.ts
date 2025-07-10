@@ -137,6 +137,8 @@ export type Database = {
         Row: {
           client_id: string | null
           contract_id: string | null
+          contract_type: Database["public"]["Enums"]["contract_type"] | null
+          contractor_type: Database["public"]["Enums"]["contractor_type"] | null
           created_at: string
           data_de_assinatura: string | null
           end_date: string | null
@@ -157,6 +159,10 @@ export type Database = {
         Insert: {
           client_id?: string | null
           contract_id?: string | null
+          contract_type?: Database["public"]["Enums"]["contract_type"] | null
+          contractor_type?:
+            | Database["public"]["Enums"]["contractor_type"]
+            | null
           created_at?: string
           data_de_assinatura?: string | null
           end_date?: string | null
@@ -177,6 +183,10 @@ export type Database = {
         Update: {
           client_id?: string | null
           contract_id?: string | null
+          contract_type?: Database["public"]["Enums"]["contract_type"] | null
+          contractor_type?:
+            | Database["public"]["Enums"]["contractor_type"]
+            | null
           created_at?: string
           data_de_assinatura?: string | null
           end_date?: string | null
@@ -744,6 +754,8 @@ export type Database = {
       cash_flow_status: "pending" | "approved" | "rejected"
       client_status: "active" | "inactive" | "overdue"
       client_type: "pf" | "pj"
+      contract_type: "open_scope" | "closed_scope"
+      contractor_type: "individual" | "legal_entity"
       payment_method: "pix" | "boleto" | "credit_card"
     }
     CompositeTypes: {
@@ -884,6 +896,8 @@ export const Constants = {
       cash_flow_status: ["pending", "approved", "rejected"],
       client_status: ["active", "inactive", "overdue"],
       client_type: ["pf", "pj"],
+      contract_type: ["open_scope", "closed_scope"],
+      contractor_type: ["individual", "legal_entity"],
       payment_method: ["pix", "boleto", "credit_card"],
     },
   },

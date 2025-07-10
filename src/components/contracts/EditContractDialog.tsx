@@ -25,6 +25,9 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     start_date: "",
     end_date: "",
     status: "active" as "active" | "completed" | "cancelled" | "suspended",
+    contract_type: "closed_scope" as "open_scope" | "closed_scope",
+    contractor_type: "individual" as "individual" | "legal_entity",
+    data_de_assinatura: "",
     link_contrato: "",
     obs: "",
   });
@@ -38,6 +41,9 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         start_date: contract.start_date || "",
         end_date: contract.end_date || "",
         status: contract.status || "active",
+        contract_type: contract.contract_type || "closed_scope",
+        contractor_type: contract.contractor_type || "individual",
+        data_de_assinatura: contract.data_de_assinatura || "",
         link_contrato: contract.link_contrato || "",
         obs: contract.obs || "",
       });
@@ -64,6 +70,9 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         start_date: formData.start_date || undefined,
         end_date: formData.end_date || undefined,
         status: formData.status,
+        contract_type: formData.contract_type,
+        contractor_type: formData.contractor_type,
+        data_de_assinatura: formData.data_de_assinatura || undefined,
         link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
       });
@@ -143,6 +152,34 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="contract_type">Tipo de Contrato</Label>
+              <Select value={formData.contract_type} onValueChange={(value) => setFormData({ ...formData, contract_type: value as "open_scope" | "closed_scope" })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="closed_scope">Escopo Fechado</SelectItem>
+                  <SelectItem value="open_scope">Escopo Aberto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contractor_type">Tipo de Contratante</Label>
+              <Select value={formData.contractor_type} onValueChange={(value) => setFormData({ ...formData, contractor_type: value as "individual" | "legal_entity" })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Pessoa Física</SelectItem>
+                  <SelectItem value="legal_entity">Pessoa Jurídica</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="start_date">Data de Início</Label>
               <Input
                 id="start_date"
@@ -159,6 +196,16 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="data_de_assinatura">Data de Assinatura</Label>
+              <Input
+                id="data_de_assinatura"
+                type="date"
+                value={formData.data_de_assinatura}
+                onChange={(e) => setFormData({ ...formData, data_de_assinatura: e.target.value })}
               />
             </div>
           </div>
