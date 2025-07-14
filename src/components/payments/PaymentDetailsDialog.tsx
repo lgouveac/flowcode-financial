@@ -9,6 +9,7 @@ import type { Payment } from "@/types/payment";
 import type { EmailTemplate } from "@/types/email";
 import { Input } from "@/components/ui/input";
 import { format, isValid, parseISO } from "date-fns";
+import { syncPaymentToCashFlow } from "@/services/paymentCashFlowSync";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
@@ -105,20 +106,30 @@ export const PaymentDetailsDialog = ({
 
       console.log('Payment updated successfully');
 
-      // Log para verificar se o trigger foi executado
+      // Sincronizar com cash flow se o pagamento foi marcado como pago
       if (status === 'paid' && payment.status !== 'paid') {
-        console.log('Payment marked as paid, checking cash flow entry...');
+        console.log('Payment marked as paid, syncing with cash flow...');
         
-        // Verificar se a entrada do cash flow foi criada
-        const { data: cashFlowEntries, error: cashFlowError } = await supabase
-          .from('cash_flow')
-          .select('*')
-          .eq('payment_id', payment.id);
+        const syncResult = await syncPaymentToCashFlow(
+          payment.id,
+          payment.status,
+          status,
+          {
+            description,
+            amount: parseFloat(amount),
+            payment_date: paymentDate || null
+          }
+        );
 
-        if (cashFlowError) {
-          console.error('Error checking cash flow entries:', cashFlowError);
+        if (!syncResult.success) {
+          console.error('Failed to sync payment to cash flow:', syncResult.error);
+          toast({
+            title: "Aviso",
+            description: "Pagamento atualizado, mas houve um problema ao sincronizar com o fluxo de caixa.",
+            variant: "destructive"
+          });
         } else {
-          console.log('Cash flow entries for this payment:', cashFlowEntries);
+          console.log('Payment successfully synced to cash flow');
         }
       }
 
