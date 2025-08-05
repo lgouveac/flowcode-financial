@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -48,9 +47,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
           due_date: formData.due_date,
           payment_method: formData.payment_method,
           total_billing: formData.total_billing,
-          responsible_name: formData.responsible_name,
-          trade_name: formData.trade_name,
-          legal_name: formData.legal_name
+          responsible_name: formData.responsible_name
         })
         .eq('id', formData.id);
 
@@ -83,12 +80,12 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">{formData.type === "pj" ? "Nome Fantasia" : "Nome"}</Label>
+              <Label htmlFor="name">Nome</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required={formData.type === "pf"}
+                required
               />
             </div>
 
@@ -186,12 +183,11 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
           {formData.type === "pj" && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="legal_name">Razão Social</Label>
+                <Label htmlFor="company_name">Nome da Empresa</Label>
                 <Input
-                  id="legal_name"
-                  value={formData.legal_name || formData.company_name || ''}
-                  onChange={(e) => setFormData({ ...formData, legal_name: e.target.value, company_name: e.target.value })}
-                  required
+                  id="company_name"
+                  value={formData.company_name || ''}
+                  onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">

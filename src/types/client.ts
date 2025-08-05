@@ -17,8 +17,6 @@ export interface Client {
   due_date: string;
   payment_method: "pix" | "boleto" | "credit_card";
   responsible_name?: string;
-  trade_name?: string;
-  legal_name?: string;
   created_at?: string;
   updated_at?: string;
 }
