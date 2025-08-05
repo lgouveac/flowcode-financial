@@ -80,7 +80,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
+              <Label htmlFor="name">{formData.type === "pj" ? "Nome Fantasia" : "Nome"}</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -183,7 +183,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
           {formData.type === "pj" && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="company_name">Nome da Empresa</Label>
+                <Label htmlFor="company_name">Razão Social</Label>
                 <Input
                   id="company_name"
                   value={formData.company_name || ''}

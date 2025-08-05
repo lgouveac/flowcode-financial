@@ -12,7 +12,7 @@ export const CompanyForm = ({ formData, setFormData }: CompanyFormProps) => {
   return (
     <div className="grid gap-5">
       <div className="grid gap-2">
-        <Label htmlFor="company_name" className="text-sm font-medium">Razão Social da Empresa</Label>
+        <Label htmlFor="company_name" className="text-sm font-medium">Razão Social</Label>
         <Input
           id="company_name"
           value={formData.company_name}
