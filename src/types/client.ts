@@ -9,6 +9,7 @@ export interface Client {
   last_payment?: string;
   type: "pf" | "pj";
   company_name?: string;
+  trade_name?: string;
   cnpj?: string;
   partner_name?: string;
   partner_cpf?: string;

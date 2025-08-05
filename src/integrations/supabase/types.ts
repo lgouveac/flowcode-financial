@@ -84,6 +84,7 @@ export type Database = {
           send_email: boolean | null
           status: Database["public"]["Enums"]["client_status"] | null
           total_billing: number | null
+          trade_name: string | null
           type: Database["public"]["Enums"]["client_type"]
           updated_at: string | null
         }
@@ -106,6 +107,7 @@ export type Database = {
           send_email?: boolean | null
           status?: Database["public"]["Enums"]["client_status"] | null
           total_billing?: number | null
+          trade_name?: string | null
           type: Database["public"]["Enums"]["client_type"]
           updated_at?: string | null
         }
@@ -128,6 +130,7 @@ export type Database = {
           send_email?: boolean | null
           status?: Database["public"]["Enums"]["client_status"] | null
           total_billing?: number | null
+          trade_name?: string | null
           type?: Database["public"]["Enums"]["client_type"]
           updated_at?: string | null
         }

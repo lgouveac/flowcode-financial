@@ -21,6 +21,15 @@ export const CompanyForm = ({ formData, setFormData }: CompanyFormProps) => {
           placeholder="Nome da empresa"
         />
       </div>
+      <div className="grid gap-2">
+        <Label htmlFor="trade_name" className="text-sm font-medium">Nome Fantasia</Label>
+        <Input
+          id="trade_name"
+          value={formData.trade_name || ''}
+          onChange={(e) => setFormData({ ...formData, trade_name: e.target.value })}
+          placeholder="Nome fantasia da empresa"
+        />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="cnpj" className="text-sm font-medium">CNPJ</Label>

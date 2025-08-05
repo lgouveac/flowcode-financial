@@ -20,6 +20,7 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
     phone: "",
     type: "pj",
     company_name: "",
+    trade_name: "",
     cnpj: "",
     partner_name: "",
     partner_cpf: "",

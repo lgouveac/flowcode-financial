@@ -39,6 +39,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
           status: formData.status,
           type: formData.type,
           company_name: formData.company_name,
+          trade_name: formData.trade_name,
           cnpj: formData.cnpj,
           partner_name: formData.partner_name,
           partner_cpf: formData.partner_cpf,
@@ -188,6 +189,14 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
                   id="company_name"
                   value={formData.company_name || ''}
                   onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trade_name">Nome Fantasia</Label>
+                <Input
+                  id="trade_name"
+                  value={formData.trade_name || ''}
+                  onChange={(e) => setFormData({ ...formData, trade_name: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
