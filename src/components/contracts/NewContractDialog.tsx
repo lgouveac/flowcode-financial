@@ -34,6 +34,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
     data_de_assinatura: "",
     link_contrato: "",
     obs: "",
+    Horas: "",
   });
 
   const { data: clients = [] } = useQuery({
@@ -77,6 +78,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
         data_de_assinatura: formData.data_de_assinatura || undefined,
         link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
+        Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : undefined,
       };
 
       const createdContract = await addContract(contractData);
@@ -100,6 +102,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
         data_de_assinatura: "",
         link_contrato: "",
         obs: "",
+        Horas: "",
       });
       onClose();
     } catch (error) {
@@ -222,6 +225,21 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
                 </SelectContent>
               </Select>
             </div>
+
+            {formData.contract_type === "open_scope" && (
+              <div className="space-y-2">
+                <Label htmlFor="Horas">Horas</Label>
+                <Input
+                  id="Horas"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.Horas || ""}
+                  onChange={(e) => setFormData({ ...formData, Horas: e.target.value })}
+                  placeholder="Quantidade de horas"
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4">

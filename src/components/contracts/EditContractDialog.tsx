@@ -30,6 +30,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     data_de_assinatura: "",
     link_contrato: "",
     obs: "",
+    Horas: "",
   });
 
   useEffect(() => {
@@ -46,6 +47,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         data_de_assinatura: contract.data_de_assinatura || "",
         link_contrato: contract.link_contrato || "",
         obs: contract.obs || "",
+        Horas: contract.Horas || "",
       });
     }
   }, [contract]);
@@ -75,6 +77,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         data_de_assinatura: formData.data_de_assinatura || undefined,
         link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
+        Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : undefined,
       });
       
       onClose();
@@ -160,23 +163,40 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
                 <SelectContent>
                   <SelectItem value="closed_scope">Escopo Fechado</SelectItem>
                   <SelectItem value="open_scope">Escopo Aberto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                </Content>
+               </Select>
+             </div>
+           </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="contractor_type">Tipo de Contratante</Label>
-              <Select value={formData.contractor_type} onValueChange={(value) => setFormData({ ...formData, contractor_type: value as "individual" | "legal_entity" })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Pessoa Física</SelectItem>
-                  <SelectItem value="legal_entity">Pessoa Jurídica</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+           <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-2">
+               <Label htmlFor="contractor_type">Tipo de Contratante</Label>
+               <Select value={formData.contractor_type} onValueChange={(value) => setFormData({ ...formData, contractor_type: value as "individual" | "legal_entity" })}>
+                 <SelectTrigger>
+                   <SelectValue />
+                 </SelectTrigger>
+                 <SelectContent>
+                   <SelectItem value="individual">Pessoa Física</SelectItem>
+                   <SelectItem value="legal_entity">Pessoa Jurídica</SelectItem>
+                 </SelectContent>
+               </Select>
+             </div>
+
+             {formData.contract_type === "open_scope" && (
+               <div className="space-y-2">
+                 <Label htmlFor="Horas">Horas</Label>
+                 <Input
+                   id="Horas"
+                   type="number"
+                   min="0"
+                   step="1"
+                   value={formData.Horas || ""}
+                   onChange={(e) => setFormData({ ...formData, Horas: e.target.value })}
+                   placeholder="Quantidade de horas"
+                 />
+               </div>
+             )}
+           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
