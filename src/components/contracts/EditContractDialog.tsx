@@ -163,7 +163,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
                 <SelectContent>
                   <SelectItem value="closed_scope">Escopo Fechado</SelectItem>
                   <SelectItem value="open_scope">Escopo Aberto</SelectItem>
-                </Content>
+                </SelectContent>
                </Select>
              </div>
            </div>
