@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Payment } from "@/types/payment";
 import type { EmailTemplate } from "@/types/email";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format, isValid, parseISO } from "date-fns";
 import { syncPaymentToCashFlow } from "@/services/paymentCashFlowSync";
 
@@ -34,6 +35,7 @@ export const PaymentDetailsDialog = ({
   const [status, setStatus] = useState<"pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid">(payment.status);
   const [emailTemplate, setEmailTemplate] = useState<string>(payment.email_template || "none");
   const { toast } = useToast();
+  const [nfeIssued, setNfeIssued] = useState<boolean>(Boolean(payment.NFe_Emitida));
 
   useEffect(() => {
     if (open) {
@@ -44,6 +46,7 @@ export const PaymentDetailsDialog = ({
       setPaymentMethod(payment.payment_method);
       setStatus(payment.status);
       setEmailTemplate(payment.email_template || "none");
+      setNfeIssued(Boolean(payment.NFe_Emitida));
     }
   }, [open, payment]);
 
@@ -83,7 +86,8 @@ export const PaymentDetailsDialog = ({
         payment_date: paymentDate || null,
         payment_method: paymentMethod,
         status,
-        email_template: emailTemplate === "none" ? null : emailTemplate
+        email_template: emailTemplate === "none" ? null : emailTemplate,
+        NFe_Emitida: nfeIssued
       });
 
       const { error } = await supabase
@@ -95,7 +99,8 @@ export const PaymentDetailsDialog = ({
           payment_date: paymentDate || null,
           payment_method: paymentMethod,
           status,
-          email_template: emailTemplate === "none" ? null : emailTemplate
+          email_template: emailTemplate === "none" ? null : emailTemplate,
+          NFe_Emitida: nfeIssued
         })
         .eq('id', payment.id);
 
@@ -239,6 +244,11 @@ export const PaymentDetailsDialog = ({
                 <SelectItem value="partially_paid" className="text-gray-100 focus:bg-[#2a2f3d] focus:text-white">Parcialmente Pago</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox id="nfe_issued" checked={nfeIssued} onCheckedChange={(checked) => setNfeIssued(Boolean(checked))} />
+            <label htmlFor="nfe_issued" className="text-sm text-gray-300">NF-e emitida</label>
           </div>
 
           <div className="grid gap-2">

@@ -14,6 +14,7 @@ export interface Payment {
   total_installments?: number;
   email_template?: string;
   paid_amount?: number;
+  NFe_Emitida?: boolean;
   clients?: {
     name: string;
     email?: string;
