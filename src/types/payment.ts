@@ -15,6 +15,7 @@ export interface Payment {
   email_template?: string;
   paid_amount?: number;
   NFe_Emitida?: boolean;
+  Pagamento_Por_Entrega?: boolean;
   clients?: {
     name: string;
     email?: string;

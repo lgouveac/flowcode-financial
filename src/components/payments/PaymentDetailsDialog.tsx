@@ -36,6 +36,7 @@ export const PaymentDetailsDialog = ({
   const [emailTemplate, setEmailTemplate] = useState<string>(payment.email_template || "none");
   const { toast } = useToast();
   const [nfeIssued, setNfeIssued] = useState<boolean>(Boolean(payment.NFe_Emitida));
+  const [payOnDelivery, setPayOnDelivery] = useState<boolean>(Boolean(payment.Pagamento_Por_Entrega));
 
   useEffect(() => {
     if (open) {
@@ -47,6 +48,7 @@ export const PaymentDetailsDialog = ({
       setStatus(payment.status);
       setEmailTemplate(payment.email_template || "none");
       setNfeIssued(Boolean(payment.NFe_Emitida));
+      setPayOnDelivery(Boolean(payment.Pagamento_Por_Entrega));
     }
   }, [open, payment]);
 
@@ -68,11 +70,11 @@ export const PaymentDetailsDialog = ({
 
   const handleSave = async () => {
     try {
-      // Validar payment_date se status for 'paid'
-      if (status === 'paid' && !paymentDate) {
+      // Validar payment_date se status for 'paid' (exceto quando for pagamento por entrega)
+      if (status === 'paid' && !paymentDate && !payOnDelivery) {
         toast({
           title: "Erro de validação",
-          description: "Data de pagamento é obrigatória quando status é 'Pago'.",
+          description: "Informe a data de pagamento ou marque 'Pagamento por entrega' ao definir como Pago.",
           variant: "destructive"
         });
         return;
@@ -83,11 +85,12 @@ export const PaymentDetailsDialog = ({
         description,
         amount: parseFloat(amount),
         due_date: dueDate,
-        payment_date: paymentDate || null,
+        payment_date: payOnDelivery ? null : (paymentDate || null),
         payment_method: paymentMethod,
         status,
         email_template: emailTemplate === "none" ? null : emailTemplate,
-        NFe_Emitida: nfeIssued
+        NFe_Emitida: nfeIssued,
+        Pagamento_Por_Entrega: payOnDelivery
       });
 
       const { error } = await supabase
@@ -96,11 +99,12 @@ export const PaymentDetailsDialog = ({
           description,
           amount: parseFloat(amount),
           due_date: dueDate,
-          payment_date: paymentDate || null,
+          payment_date: payOnDelivery ? null : (paymentDate || null),
           payment_method: paymentMethod,
           status,
           email_template: emailTemplate === "none" ? null : emailTemplate,
-          NFe_Emitida: nfeIssued
+          NFe_Emitida: nfeIssued,
+          Pagamento_Por_Entrega: payOnDelivery
         })
         .eq('id', payment.id);
 
@@ -122,7 +126,7 @@ export const PaymentDetailsDialog = ({
           {
             description,
             amount: parseFloat(amount),
-            payment_date: paymentDate || null
+            payment_date: payOnDelivery ? null : (paymentDate || null)
           }
         );
 
@@ -195,15 +199,36 @@ export const PaymentDetailsDialog = ({
           <div className="grid gap-2">
             <label className="text-sm text-gray-300">
               Data de Pagamento
-              {status === 'paid' && <span className="text-red-500 ml-1">*</span>}
+              {status === 'paid' && !payOnDelivery && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <Input
-              type="date"
-              value={paymentDate ? formatDate(paymentDate) : ""}
-              onChange={(e) => setPaymentDate(e.target.value)}
-              className="bg-[#151820] border-[#2a2f3d] text-white"
-            />
-            {status === 'paid' && !paymentDate && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="pay_on_delivery"
+                checked={payOnDelivery}
+                onCheckedChange={(checked) => {
+                  const value = Boolean(checked);
+                  setPayOnDelivery(value);
+                  if (value) setPaymentDate("");
+                }}
+              />
+              <label htmlFor="pay_on_delivery" className="text-sm text-gray-300">Pagamento por entrega</label>
+            </div>
+            {payOnDelivery ? (
+              <Input
+                value="Pagamento na entrega"
+                readOnly
+                disabled
+                className="bg-[#151820] border-[#2a2f3d] text-white"
+              />
+            ) : (
+              <Input
+                type="date"
+                value={paymentDate ? formatDate(paymentDate) : ""}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="bg-[#151820] border-[#2a2f3d] text-white"
+              />
+            )}
+            {status === 'paid' && !payOnDelivery && !paymentDate && (
               <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
             )}
           </div>
