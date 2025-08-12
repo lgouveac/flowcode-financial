@@ -159,7 +159,8 @@ export const NewPaymentDialog = ({
           payment_method: paymentData.payment_method,
           status: paymentData.status,
           email_template: paymentData.email_template,
-          paid_amount: paymentData.paid_amount
+          paid_amount: paymentData.paid_amount,
+          Pagamento_Por_Entrega: paymentData.Pagamento_Por_Entrega
         });
 
       if (error) {

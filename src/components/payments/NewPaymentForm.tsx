@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { EmailTemplate } from "@/types/email";
 import type { NewPayment } from "@/types/payment";
@@ -38,6 +39,7 @@ export const NewPaymentForm = ({
     amount: 0,
     due_date: '',
     payment_date: '',
+    Pagamento_Por_Entrega: false,
     payment_method: 'pix',
     status: 'pending'
   });
@@ -108,9 +110,9 @@ export const NewPaymentForm = ({
       return false;
     }
 
-    // Validar payment_date se status for 'paid'
-    if (formData.status === 'paid' && !formData.payment_date) {
-      setValidationError("Data de pagamento é obrigatória quando status é 'Pago'");
+    // Validar payment_date se status for 'paid' (exceto quando for Pagamento por entrega)
+    if (formData.status === 'paid' && !formData.payment_date && !formData.Pagamento_Por_Entrega) {
+      setValidationError("Informe a data de pagamento ou marque 'Pagamento por entrega' ao definir como Pago");
       return false;
     }
     
@@ -323,17 +325,36 @@ export const NewPaymentForm = ({
         <div className="grid gap-2">
           <Label htmlFor="payment_date">
             Data de Pagamento
-            {formData.status === 'paid' && <span className="text-red-500 ml-1">*</span>}
+            {formData.status === 'paid' && !formData.Pagamento_Por_Entrega && <span className="text-red-500 ml-1">*</span>}
           </Label>
-          <Input
-            id="payment_date"
-            type="date"
-            value={formData.payment_date || ""}
-            onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
-            required={formData.status === 'paid'}
-            disabled={isSubmitting}
-          />
-          {formData.status === 'paid' && !formData.payment_date && (
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="pay_on_delivery"
+              checked={Boolean(formData.Pagamento_Por_Entrega)}
+              onCheckedChange={(checked) => {
+                const value = Boolean(checked);
+                setFormData({ ...formData, Pagamento_Por_Entrega: value, payment_date: value ? '' : formData.payment_date });
+              }}
+            />
+            <Label htmlFor="pay_on_delivery" className="text-sm">Pagamento por entrega</Label>
+          </div>
+          {formData.Pagamento_Por_Entrega ? (
+            <Input
+              value="Pagamento na entrega"
+              readOnly
+              disabled
+            />
+          ) : (
+            <Input
+              id="payment_date"
+              type="date"
+              value={formData.payment_date || ""}
+              onChange={(e) => setFormData({ ...formData, payment_date: e.target.value })}
+              required={formData.status === 'paid' && !formData.Pagamento_Por_Entrega}
+              disabled={isSubmitting}
+            />
+          )}
+          {formData.status === 'paid' && !formData.Pagamento_Por_Entrega && !formData.payment_date && (
             <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
           )}
         </div>
