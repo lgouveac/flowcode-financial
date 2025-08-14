@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RecurringBilling } from "@/types/billing";
@@ -44,6 +45,8 @@ export const PaymentDetailsDialog = ({
   const [installments, setInstallments] = useState(billing.installments.toString());
   const [additionalInstallments, setAdditionalInstallments] = useState("1");
   const [isAddingInstallments, setIsAddingInstallments] = useState(false);
+  const [payOnDelivery, setPayOnDelivery] = useState(false);
+  const [newInstallmentsPayOnDelivery, setNewInstallmentsPayOnDelivery] = useState(false);
   useEffect(() => {
     if (open) {
       setDescription(billing.description);
@@ -136,7 +139,7 @@ export const PaymentDetailsDialog = ({
       const baseDescription = description.replace(/\s*\(\d+\/\d+\)$/, '');
 
       // Criar as novas parcelas
-      const newPayments = [];
+        const newPayments = [];
       for (let i = 1; i <= additionalCount; i++) {
         const installmentNumber = currentPaymentCount + i;
         newPayments.push({
@@ -147,7 +150,8 @@ export const PaymentDetailsDialog = ({
           payment_method: paymentMethod,
           status: 'pending' as const,
           installment_number: installmentNumber,
-          total_installments: newTotalInstallments
+          total_installments: newTotalInstallments,
+          Pagamento_Por_Entrega: newInstallmentsPayOnDelivery
         });
 
         // Próximo mês
@@ -220,9 +224,9 @@ export const PaymentDetailsDialog = ({
         throw new Error("Total de parcelas deve ser maior que 0");
       }
 
-      // Validar payment_date se status for 'paid'
-      if (status === 'paid' && !paymentDate) {
-        throw new Error("Data de pagamento é obrigatória quando status é 'Pago'");
+      // Validar payment_date se status for 'paid' (exceto quando for Pagamento por entrega)
+      if (status === 'paid' && !paymentDate && !payOnDelivery) {
+        throw new Error("Informe a data de pagamento ou marque 'Pagamento por entrega' ao definir como Pago");
       }
       const updateData = {
         description,
@@ -398,15 +402,25 @@ export const PaymentDetailsDialog = ({
 
             <div className="border-t pt-4">
               <h4 className="text-md font-medium mb-3">Adicionar Parcelas</h4>
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
-                  <label className="text-sm font-medium">Qtd. de Parcelas</label>
-                  <Input type="number" min="1" value={additionalInstallments} onChange={e => setAdditionalInstallments(e.target.value)} placeholder="Número de parcelas" />
+              <div className="space-y-3">
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium">Qtd. de Parcelas</label>
+                    <Input type="number" min="1" value={additionalInstallments} onChange={e => setAdditionalInstallments(e.target.value)} placeholder="Número de parcelas" />
+                  </div>
+                  <Button onClick={addInstallments} disabled={isAddingInstallments} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    {isAddingInstallments ? "Adicionando..." : "Adicionar"}
+                  </Button>
                 </div>
-                <Button onClick={addInstallments} disabled={isAddingInstallments} className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  {isAddingInstallments ? "Adicionando..." : "Adicionar"}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="new_installments_pay_on_delivery"
+                    checked={newInstallmentsPayOnDelivery}
+                    onCheckedChange={(checked) => setNewInstallmentsPayOnDelivery(Boolean(checked))}
+                  />
+                  <label htmlFor="new_installments_pay_on_delivery" className="text-sm">Marcar novas parcelas como Pagamento por entrega</label>
+                </div>
               </div>
             </div>
 

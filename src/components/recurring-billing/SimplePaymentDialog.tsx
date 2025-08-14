@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClientSelector } from "./ClientSelector";
 import { PaymentMethodSelector } from "./PaymentMethodSelector";
 import { useToast } from "@/components/ui/use-toast";
@@ -40,6 +42,9 @@ export function SimplePaymentDialog({
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'boleto' | 'credit_card'>('pix');
   const [installments, setInstallments] = useState("1");
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
+  const [status, setStatus] = useState<'pending' | 'paid'>('pending');
+  const [paymentDate, setPaymentDate] = useState("");
+  const [payOnDelivery, setPayOnDelivery] = useState(false);
   
   // Verificar se clients é undefined ou não é um array
   const safeClients = Array.isArray(clients) 
@@ -63,6 +68,9 @@ export function SimplePaymentDialog({
     setInstallments("1");
     setDueDate(new Date().toISOString().split('T')[0]);
     setPaymentType('onetime');
+    setStatus('pending');
+    setPaymentDate("");
+    setPayOnDelivery(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,6 +80,16 @@ export function SimplePaymentDialog({
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validar payment_date se status for 'paid' (exceto quando for Pagamento por entrega)
+    if (status === 'paid' && !paymentDate && !payOnDelivery) {
+      toast({
+        title: "Erro",
+        description: "Informe a data de pagamento ou marque 'Pagamento por entrega' ao definir como Pago",
         variant: "destructive",
       });
       return;
@@ -102,7 +120,9 @@ export function SimplePaymentDialog({
             amount: amountValue,
             due_date: dueDate,
             payment_method: paymentMethod,
-            status: 'pending'
+            status: status,
+            payment_date: payOnDelivery ? null : (paymentDate || null),
+            Pagamento_Por_Entrega: payOnDelivery
           });
 
         if (error) {
@@ -263,6 +283,61 @@ export function SimplePaymentDialog({
                 onChange={setPaymentMethod}
                 disabled={isSubmitting}
               />
+
+              {paymentType === 'onetime' && (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={status} onValueChange={(value: 'pending' | 'paid') => setStatus(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pendente</SelectItem>
+                        <SelectItem value="paid">Pago</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="payment_date">
+                      Data de Pagamento
+                      {status === 'paid' && !payOnDelivery && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="pay_on_delivery"
+                        checked={payOnDelivery}
+                        onCheckedChange={(checked) => {
+                          const value = Boolean(checked);
+                          setPayOnDelivery(value);
+                          if (value) setPaymentDate("");
+                        }}
+                      />
+                      <Label htmlFor="pay_on_delivery" className="text-sm">Pagamento por entrega</Label>
+                    </div>
+                    {payOnDelivery ? (
+                      <Input
+                        value="Pagamento na entrega"
+                        readOnly
+                        disabled
+                      />
+                    ) : (
+                      <Input
+                        id="payment_date"
+                        type="date"
+                        value={paymentDate}
+                        onChange={(e) => setPaymentDate(e.target.value)}
+                        disabled={isSubmitting}
+                        required={status === 'paid' && !payOnDelivery}
+                      />
+                    )}
+                    {status === 'paid' && !payOnDelivery && !paymentDate && (
+                      <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="flex justify-end space-x-2 pt-4">

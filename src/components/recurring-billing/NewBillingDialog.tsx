@@ -78,6 +78,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
     email_template?: string; 
     responsible_name?: string;
     disable_notifications?: boolean;
+    pay_on_delivery?: boolean;
   }) => {
     if (!billingData || typeof billingData !== 'object') {
       toast({
@@ -92,8 +93,8 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
     setIsSubmitting(true);
 
     try {
-      // Extract responsible_name and disable_notifications to update client and billing
-      const { responsible_name, disable_notifications, ...billingRecordData } = billingData;
+      // Extract responsible_name, disable_notifications and pay_on_delivery to update client and billing
+      const { responsible_name, disable_notifications, pay_on_delivery, ...billingRecordData } = billingData;
       
       // First, update the client's responsible_name if provided
       if (responsible_name && billingData.client_id) {
@@ -136,6 +137,45 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
         });
         setIsSubmitting(false);
         return;
+      }
+
+      // Create initial installments if requested
+      if (data && billingData.installments && billingData.installments > 0) {
+        try {
+          const baseDescription = billingData.description;
+          const startDate = new Date(billingData.start_date);
+          
+          // Create installments
+          const installmentsToCreate = [];
+          for (let i = 1; i <= billingData.installments; i++) {
+            const dueDate = new Date(startDate);
+            dueDate.setMonth(dueDate.getMonth() + (i - 1));
+            dueDate.setDate(billingData.due_day);
+            
+            installmentsToCreate.push({
+              client_id: billingData.client_id,
+              description: `${baseDescription} (${i}/${billingData.installments})`,
+              amount: billingData.amount,
+              due_date: dueDate.toISOString().split('T')[0],
+              payment_method: billingData.payment_method,
+              status: 'pending' as const,
+              installment_number: i,
+              total_installments: billingData.installments,
+              Pagamento_Por_Entrega: pay_on_delivery || false
+            });
+          }
+          
+          const { error: installmentsError } = await supabase
+            .from('payments')
+            .insert(installmentsToCreate);
+            
+          if (installmentsError) {
+            console.error('Error creating initial installments:', installmentsError);
+            // Don't fail the whole operation for this
+          }
+        } catch (installmentsErr) {
+          console.error('Error creating installments:', installmentsErr);
+        }
       }
 
       toast({

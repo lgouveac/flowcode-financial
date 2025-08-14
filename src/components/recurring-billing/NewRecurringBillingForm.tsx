@@ -22,7 +22,7 @@ interface Client {
 }
 
 interface NewRecurringBillingFormProps {
-  onSubmit: (billing: RecurringBilling & { email_template?: string; responsible_name?: string; disable_notifications?: boolean }) => void;
+  onSubmit: (billing: RecurringBilling & { email_template?: string; responsible_name?: string; disable_notifications?: boolean; pay_on_delivery?: boolean }) => void;
   onClose: () => void;
   clients: Client[];
   templates?: EmailTemplate[];
@@ -41,6 +41,7 @@ export const NewRecurringBillingForm = ({
   const [responsibleName, setResponsibleName] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [disableNotifications, setDisableNotifications] = useState(false);
+  const [payOnDelivery, setPayOnDelivery] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // Ensure we always have valid clients array
@@ -101,11 +102,12 @@ export const NewRecurringBillingForm = ({
       return;
     }
     
-    // Send both formData, responsible_name and disable_notifications flag
+    // Send both formData, responsible_name, disable_notifications and pay_on_delivery flags
     onSubmit({
       ...(formData as RecurringBilling & { email_template?: string }),
       responsible_name: responsibleName,
-      disable_notifications: disableNotifications
+      disable_notifications: disableNotifications,
+      pay_on_delivery: payOnDelivery
     });
   };
 
@@ -158,6 +160,18 @@ export const NewRecurringBillingForm = ({
         />
         <Label htmlFor="disable_notifications">
           Desativar notificações automáticas
+        </Label>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="pay_on_delivery"
+          checked={payOnDelivery}
+          onCheckedChange={(checked) => setPayOnDelivery(checked as boolean)}
+          disabled={isSubmitting}
+        />
+        <Label htmlFor="pay_on_delivery">
+          Pagamento por entrega nas parcelas
         </Label>
       </div>
 
