@@ -1,5 +1,5 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3 } from "lucide-react";
@@ -83,19 +83,57 @@ export const CashFlowChart = ({
         <div className="h-[300px] w-full border border-border rounded-lg p-6">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart 
+              <AreaChart 
                 data={chartData}
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
+                <defs>
+                  <linearGradient id="colorEntrada" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorSaida" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#EF4444" stopOpacity={0.1}/>
+                  </linearGradient>
+                  <linearGradient id="colorSaldo" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="entrada" name="Entradas" stroke="#7C3AED" activeDot={{ r: 8 }} />
-                <Line type="monotone" dataKey="saida" name="Saídas" stroke="#EF4444" />
-                <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#3B82F6" />
-              </LineChart>
+                <Area 
+                  type="monotone" 
+                  dataKey="entrada" 
+                  name="Entradas" 
+                  stroke="#7C3AED" 
+                  fillOpacity={1} 
+                  fill="url(#colorEntrada)" 
+                  strokeWidth={2}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="saida" 
+                  name="Saídas" 
+                  stroke="#EF4444" 
+                  fillOpacity={1} 
+                  fill="url(#colorSaida)" 
+                  strokeWidth={2}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="saldo" 
+                  name="Saldo" 
+                  stroke="#3B82F6" 
+                  fillOpacity={1} 
+                  fill="url(#colorSaldo)" 
+                  strokeWidth={2}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex flex-col items-center justify-center h-full">
