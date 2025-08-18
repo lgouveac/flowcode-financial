@@ -4,13 +4,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { EditIcon, TrashIcon, PlusIcon, FileText } from "lucide-react";
+import { EditIcon, TrashIcon, PlusIcon, FileText, CheckIcon } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { formatDate } from "@/utils/formatters";
 import { Contract } from "@/types/contract";
 import { NewContractDialog } from "./NewContractDialog";
 import { EditContractDialog } from "./EditContractDialog";
+import { SignContractDialog } from "./SignContractDialog";
 import { useToast } from "@/hooks/use-toast";
 
 const getStatusColor = (status?: string) => {
@@ -47,6 +48,7 @@ export function ContractTable() {
   const { contracts, isLoading, deleteContract } = useContracts();
   const [newContractOpen, setNewContractOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [generatingContract, setGeneratingContract] = useState<number | null>(null);
   const { toast } = useToast();
 
@@ -218,6 +220,16 @@ export function ContractTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-1">
+                          {contract.status !== "completed" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSigningContract(contract)}
+                              title="Marcar como Assinado"
+                            >
+                              <CheckIcon className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -265,6 +277,14 @@ export function ContractTable() {
           contract={editingContract}
           open={!!editingContract}
           onClose={() => setEditingContract(null)}
+        />
+      )}
+
+      {signingContract && (
+        <SignContractDialog
+          contract={signingContract}
+          open={!!signingContract}
+          onClose={() => setSigningContract(null)}
         />
       )}
     </>
