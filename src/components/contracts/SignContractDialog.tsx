@@ -34,6 +34,14 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
     const defaultValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
     return Array(contract.installments || 1).fill(defaultValue);
   });
+  const [installmentDates, setInstallmentDates] = useState<string[]>(() => {
+    const today = new Date();
+    return Array(contract.installments || 1).fill(0).map((_, index) => {
+      const date = new Date(today);
+      date.setMonth(date.getMonth() + index);
+      return date.toISOString().split('T')[0];
+    });
+  });
   
   const { toast } = useToast();
   const { updateContract } = useContracts();
@@ -45,6 +53,12 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
     setInstallmentValues(newValues);
   };
 
+  const updateInstallmentDate = (index: number, date: string) => {
+    const newDates = [...installmentDates];
+    newDates[index] = date;
+    setInstallmentDates(newDates);
+  };
+
   const updateInstallmentCount = (newCount: number) => {
     setInstallmentCount(newCount);
     if (newCount > installmentValues.length) {
@@ -52,9 +66,20 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
       const defaultValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
       const newValues = [...installmentValues, ...Array(newCount - installmentValues.length).fill(defaultValue)];
       setInstallmentValues(newValues);
+      
+      // Adicionar novas datas baseadas na última data
+      const lastDate = installmentDates[installmentDates.length - 1] || new Date().toISOString().split('T')[0];
+      const newDates = [...installmentDates];
+      for (let i = installmentDates.length; i < newCount; i++) {
+        const date = new Date(lastDate);
+        date.setMonth(date.getMonth() + i - installmentDates.length + 1);
+        newDates.push(date.toISOString().split('T')[0]);
+      }
+      setInstallmentDates(newDates);
     } else {
-      // Remover parcelas extras
+      // Remover parcelas e datas extras
       setInstallmentValues(installmentValues.slice(0, newCount));
+      setInstallmentDates(installmentDates.slice(0, newCount));
     }
   };
 
@@ -94,16 +119,12 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
 
         if (paymentError) throw paymentError;
       } else {
-        // Criar parcelas individuais baseadas nos valores editados
+        // Criar parcelas individuais baseadas nos valores e datas editados
         const paymentsToInsert = installmentValues.slice(0, installmentCount).map((amount, index) => ({
           client_id: contract.client_id,
           description: `Contrato: ${contract.scope || `Contrato #${contract.id}`} (${index + 1}/${installmentCount})`,
           amount: amount,
-          due_date: (() => {
-            const date = new Date(dueDate);
-            date.setMonth(date.getMonth() + index);
-            return date.toISOString().split('T')[0];
-          })(),
+          due_date: installmentDates[index],
           payment_method: paymentMethod,
           status: "pending" as const,
           installment_number: index + 1,
@@ -115,6 +136,52 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
           .insert(paymentsToInsert);
 
         if (paymentsError) throw paymentsError;
+      }
+
+      // 3. Enviar dados para o webhook
+      try {
+        const webhookData = {
+          contract: {
+            id: contract.id,
+            contract_id: contract.contract_id,
+            scope: contract.scope,
+            total_value: contract.total_value,
+            installments: contract.installments,
+            status: "completed",
+            signing_date: signingDate,
+            payment_type: paymentType,
+            payment_method: paymentMethod,
+          },
+          client: {
+            id: contract.client_id,
+            name: contract.clients?.name,
+            email: contract.clients?.email,
+            type: contract.clients?.type,
+          },
+          payment_details: paymentType === "pontual" 
+            ? {
+                amount: singlePaymentAmount,
+                due_date: dueDate,
+                pagamento_por_entrega: pagamentoPorEntrega,
+              }
+            : {
+                installment_count: installmentCount,
+                installments: installmentValues.slice(0, installmentCount).map((amount, index) => ({
+                  number: index + 1,
+                  amount: amount,
+                  due_date: installmentDates[index],
+                })),
+              }
+        };
+
+        await supabase.functions.invoke('send-contract-webhook', {
+          body: webhookData,
+        });
+
+        console.log('Contract webhook sent successfully');
+      } catch (webhookError) {
+        console.error('Error sending contract webhook:', webhookError);
+        // Não falhar o processo principal se o webhook falhar
       }
 
       toast({
@@ -248,20 +315,32 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Valores das Parcelas</Label>
-                  <div className="max-h-40 overflow-y-auto space-y-2">
+                  <Label>Parcelas e Datas de Vencimento</Label>
+                  <div className="max-h-60 overflow-y-auto space-y-3">
                     {installmentValues.slice(0, installmentCount).map((value, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <Label className="min-w-0 w-20 text-sm">
-                          {index + 1}ª:
+                      <div key={index} className="space-y-2 border rounded-lg p-3 bg-muted/30">
+                        <Label className="text-sm font-medium">
+                          {index + 1}ª Parcela
                         </Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={value}
-                          onChange={(e) => updateInstallmentValue(index, Number(e.target.value))}
-                          className="flex-1"
-                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Valor</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={value}
+                              onChange={(e) => updateInstallmentValue(index, Number(e.target.value))}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Vencimento</Label>
+                            <Input
+                              type="date"
+                              value={installmentDates[index] || new Date().toISOString().split('T')[0]}
+                              onChange={(e) => updateInstallmentDate(index, e.target.value)}
+                            />
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
