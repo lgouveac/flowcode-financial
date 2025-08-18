@@ -27,8 +27,36 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
   const [dueDay, setDueDay] = useState(5);
   const [pagamentoPorEntrega, setPagamentoPorEntrega] = useState(false);
   
+  // Estados para valores editáveis
+  const [singlePaymentAmount, setSinglePaymentAmount] = useState(contract.total_value || 0);
+  const [installmentCount, setInstallmentCount] = useState(contract.installments || 1);
+  const [installmentValues, setInstallmentValues] = useState<number[]>(() => {
+    const defaultValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
+    return Array(contract.installments || 1).fill(defaultValue);
+  });
+  
   const { toast } = useToast();
   const { updateContract } = useContracts();
+
+  // Funções auxiliares
+  const updateInstallmentValue = (index: number, value: number) => {
+    const newValues = [...installmentValues];
+    newValues[index] = value;
+    setInstallmentValues(newValues);
+  };
+
+  const updateInstallmentCount = (newCount: number) => {
+    setInstallmentCount(newCount);
+    if (newCount > installmentValues.length) {
+      // Adicionar novas parcelas com valor padrão
+      const defaultValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
+      const newValues = [...installmentValues, ...Array(newCount - installmentValues.length).fill(defaultValue)];
+      setInstallmentValues(newValues);
+    } else {
+      // Remover parcelas extras
+      setInstallmentValues(installmentValues.slice(0, newCount));
+    }
+  };
 
   const handleSubmit = async () => {
     if (!contract.client_id || !contract.total_value || !contract.installments) {
@@ -57,7 +85,7 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
           .insert({
             client_id: contract.client_id,
             description: `Contrato: ${contract.scope || `Contrato #${contract.id}`}`,
-            amount: contract.total_value,
+            amount: singlePaymentAmount,
             due_date: dueDate,
             payment_method: paymentMethod,
             status: "pending",
@@ -66,26 +94,27 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
 
         if (paymentError) throw paymentError;
       } else {
-        // Criar recebimento recorrente
-        const startDate = new Date(dueDate);
-        const endDate = new Date(startDate);
-        endDate.setMonth(endDate.getMonth() + (contract.installments - 1));
+        // Criar parcelas individuais baseadas nos valores editados
+        const paymentsToInsert = installmentValues.slice(0, installmentCount).map((amount, index) => ({
+          client_id: contract.client_id,
+          description: `Contrato: ${contract.scope || `Contrato #${contract.id}`} (${index + 1}/${installmentCount})`,
+          amount: amount,
+          due_date: (() => {
+            const date = new Date(dueDate);
+            date.setMonth(date.getMonth() + index);
+            return date.toISOString().split('T')[0];
+          })(),
+          payment_method: paymentMethod,
+          status: "pending" as const,
+          installment_number: index + 1,
+          total_installments: installmentCount,
+        }));
 
-        const { error: recurringError } = await supabase
-          .from("recurring_billing")
-          .insert({
-            client_id: contract.client_id,
-            description: `Contrato: ${contract.scope || `Contrato #${contract.id}`}`,
-            amount: contract.installment_value || (contract.total_value / contract.installments),
-            due_day: dueDay,
-            payment_method: paymentMethod,
-            start_date: startDate.toISOString().split('T')[0],
-            end_date: endDate.toISOString().split('T')[0],
-            installments: contract.installments,
-            status: "pending",
-          });
+        const { error: paymentsError } = await supabase
+          .from("payments")
+          .insert(paymentsToInsert);
 
-        if (recurringError) throw recurringError;
+        if (paymentsError) throw paymentsError;
       }
 
       toast({
@@ -176,6 +205,17 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
             {paymentType === "pontual" ? (
               <div className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="singleAmount">Valor do Pagamento</Label>
+                  <Input
+                    id="singleAmount"
+                    type="number"
+                    step="0.01"
+                    value={singlePaymentAmount}
+                    onChange={(e) => setSinglePaymentAmount(Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="dueDate">Data de Vencimento</Label>
                   <Input
                     id="dueDate"
@@ -197,19 +237,34 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
             ) : (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="dueDay">Dia de Vencimento</Label>
-                  <Select value={dueDay.toString()} onValueChange={(value) => setDueDay(Number(value))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => (
-                        <SelectItem key={day} value={day.toString()}>
-                          Dia {day}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="installmentCount">Número de Parcelas</Label>
+                  <Input
+                    id="installmentCount"
+                    type="number"
+                    min="1"
+                    value={installmentCount}
+                    onChange={(e) => updateInstallmentCount(Number(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Valores das Parcelas</Label>
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {installmentValues.slice(0, installmentCount).map((value, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Label className="min-w-0 w-20 text-sm">
+                          {index + 1}ª:
+                        </Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={value}
+                          onChange={(e) => updateInstallmentValue(index, Number(e.target.value))}
+                          className="flex-1"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
