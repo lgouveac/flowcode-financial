@@ -11,7 +11,7 @@ import { EmailTemplate } from "@/types/email";
 import { format, isValid, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Payment } from "@/types/payment";
-import { PaymentTable } from "../payments/PaymentTable";
+import { EditablePaymentTable } from "../payments/EditablePaymentTable";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,6 +47,7 @@ export const PaymentDetailsDialog = ({
   const [isAddingInstallments, setIsAddingInstallments] = useState(false);
   const [payOnDelivery, setPayOnDelivery] = useState(false);
   const [newInstallmentsPayOnDelivery, setNewInstallmentsPayOnDelivery] = useState(false);
+  const [newInstallmentAmount, setNewInstallmentAmount] = useState("");
   useEffect(() => {
     if (open) {
       setDescription(billing.description);
@@ -138,14 +139,15 @@ export const PaymentDetailsDialog = ({
       // Extrair a descrição base (sem numeração de parcela)
       const baseDescription = description.replace(/\s*\(\d+\/\d+\)$/, '');
 
-      // Criar as novas parcelas
-        const newPayments = [];
+      // Criar as novas parcelas com valores individuais
+      const newPayments = [];
       for (let i = 1; i <= additionalCount; i++) {
         const installmentNumber = currentPaymentCount + i;
+        const installmentAmount = newInstallmentAmount ? parseFloat(newInstallmentAmount) : parseFloat(amount);
         newPayments.push({
           client_id: billing.client_id,
           description: `${baseDescription} (${installmentNumber}/${newTotalInstallments})`,
-          amount: parseFloat(amount),
+          amount: installmentAmount, // Valor customizável ou valor padrão
           due_date: nextDueDate.toISOString().split('T')[0],
           payment_method: paymentMethod,
           status: 'pending' as const,
@@ -197,6 +199,7 @@ export const PaymentDetailsDialog = ({
       // Chamar onUpdate para atualizar a lista principal
       onUpdate();
       setAdditionalInstallments("1");
+      setNewInstallmentAmount("");
     } catch (error) {
       console.error("Erro ao adicionar parcelas:", error);
       toast({
@@ -403,10 +406,20 @@ export const PaymentDetailsDialog = ({
             <div className="border-t pt-4">
               <h4 className="text-md font-medium mb-3">Adicionar Parcelas</h4>
               <div className="space-y-3">
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1">
+                <div className="grid grid-cols-3 gap-2 items-end">
+                  <div>
                     <label className="text-sm font-medium">Qtd. de Parcelas</label>
                     <Input type="number" min="1" value={additionalInstallments} onChange={e => setAdditionalInstallments(e.target.value)} placeholder="Número de parcelas" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Valor (opcional)</label>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      value={newInstallmentAmount} 
+                      onChange={e => setNewInstallmentAmount(e.target.value)} 
+                      placeholder={`Padrão: ${amount}`} 
+                    />
                   </div>
                   <Button onClick={addInstallments} disabled={isAddingInstallments} className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
@@ -445,7 +458,7 @@ export const PaymentDetailsDialog = ({
             {isLoadingPayments ? <div className="flex justify-center items-center h-64">
                 <p>Carregando parcelas...</p>
               </div> : relatedPayments.length > 0 ? <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-y-auto">
-                <PaymentTable payments={relatedPayments} onRefresh={fetchRelatedPayments} templates={templates} />
+                <EditablePaymentTable payments={relatedPayments} onRefresh={fetchRelatedPayments} />
               </div> : <div className="flex justify-center items-center h-64 border rounded-lg">
                 <p className="text-muted-foreground">Nenhuma parcela encontrada</p>
               </div>}
