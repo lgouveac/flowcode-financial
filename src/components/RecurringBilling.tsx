@@ -90,8 +90,8 @@ export const RecurringBilling = () => {
 
       <Tabs defaultValue="recurring" className="w-full" onValueChange={value => setActiveTab(value)}>
         <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-          <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
-          <TabsTrigger value="onetime">Pontuais</TabsTrigger>
+          <TabsTrigger value="recurring">Escopo Aberto</TabsTrigger>
+          <TabsTrigger value="onetime">Escopo Fechado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="recurring" className="border border-0 ">
@@ -109,10 +109,8 @@ export const RecurringBilling = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os status</SelectItem>
-                    <SelectItem value="pending">Pendente</SelectItem>
-                    <SelectItem value="paid">Pago</SelectItem>
-                    <SelectItem value="overdue">Atrasado</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                    <SelectItem value="pending">Ativo</SelectItem>
+                    <SelectItem value="cancelled">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

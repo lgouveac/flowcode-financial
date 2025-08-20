@@ -23,10 +23,10 @@ interface RecurringBillingRowProps {
 }
 
 export const RecurringBillingRowStatus = {
-  pending: { label: "Pendente", color: "bg-yellow-500" },
+  pending: { label: "Ativo", color: "bg-green-500" },
   paid: { label: "Pago", color: "bg-green-500" },
   overdue: { label: "Atrasado", color: "bg-red-500" },
-  cancelled: { label: "Cancelado", color: "bg-gray-500" },
+  cancelled: { label: "Inativo", color: "bg-gray-500" },
   partially_paid: { label: "Parcialmente Pago", color: "bg-blue-500" },
   billed: { label: "Faturado", color: "bg-purple-500" },
   awaiting_invoice: { label: "Aguardando NF", color: "bg-orange-500" },
