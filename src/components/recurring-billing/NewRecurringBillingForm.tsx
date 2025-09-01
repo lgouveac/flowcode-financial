@@ -94,6 +94,7 @@ export const NewRecurringBillingForm = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Submitting recurring billing form with data:", formData);
+    console.log("Installments value:", formData.installments, "type:", typeof formData.installments);
     
     setValidationError(null);
     
@@ -102,13 +103,18 @@ export const NewRecurringBillingForm = ({
       return;
     }
     
-    // Send both formData, responsible_name, disable_notifications and pay_on_delivery flags
-    onSubmit({
+    const submitData = {
       ...(formData as RecurringBilling & { email_template?: string }),
       responsible_name: responsibleName,
       disable_notifications: disableNotifications,
       pay_on_delivery: payOnDelivery
-    });
+    };
+    
+    console.log("Final submit data:", submitData);
+    console.log("Submit data installments:", submitData.installments);
+    
+    // Send both formData, responsible_name, disable_notifications and pay_on_delivery flags
+    onSubmit(submitData);
   };
 
   // Ensure selectedClient is valid

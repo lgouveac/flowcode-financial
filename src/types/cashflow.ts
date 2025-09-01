@@ -8,6 +8,11 @@ export interface CashFlow {
   category: string;
   payment_id?: string;
   employee_id?: string;
+  client_id?: string;
+  clients?: {
+    id: string;
+    name: string;
+  };
   created_at?: string;
   updated_at?: string;
   status?: string;

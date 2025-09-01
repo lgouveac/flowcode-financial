@@ -172,10 +172,7 @@ export const ClientTable = () => {
     return matchesSearch && matchesStatus;
   });
   const handlePaymentSuccess = () => {
-    toast({
-      title: "Sucesso",
-      description: "Recebimento criado com sucesso."
-    });
+    // Toast is handled by SimplePaymentDialog
   };
   return <div className="space-y-4 p-4 sm:p-6 md:p-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

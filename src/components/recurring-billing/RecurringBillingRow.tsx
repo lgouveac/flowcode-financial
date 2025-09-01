@@ -23,17 +23,38 @@ interface RecurringBillingRowProps {
 }
 
 export const RecurringBillingRowStatus = {
-  pending: { label: "Ativo", color: "bg-green-500" },
+  pending: { label: "Pendente", color: "bg-yellow-500" },
   paid: { label: "Pago", color: "bg-green-500" },
   overdue: { label: "Atrasado", color: "bg-red-500" },
-  cancelled: { label: "Inativo", color: "bg-gray-500" },
+  cancelled: { label: "Cancelado", color: "bg-gray-500" },
   partially_paid: { label: "Parcialmente Pago", color: "bg-blue-500" },
   billed: { label: "Faturado", color: "bg-purple-500" },
   awaiting_invoice: { label: "Aguardando NF", color: "bg-orange-500" },
 };
 
 export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates, onOpenDetails, onDuplicate }: RecurringBillingRowProps) => {
-  const statusInfo = RecurringBillingRowStatus[billing.status] || RecurringBillingRowStatus.pending;
+  // Detectar tipos: billing virtual agrupado, pagamento expandido individual, ou billing normal
+  const isVirtualBilling = Boolean(billing.related_payments);
+  const isExpandedPayment = Boolean(billing.individual_payment);
+  
+  let statusInfo;
+  
+  if (isExpandedPayment) {
+    // Para pagamento expandido (ambos escopos): mostrar status real (pendente, pago, etc)
+    const realStatus = billing.individual_payment?.status || billing.status;
+    statusInfo = RecurringBillingRowStatus[realStatus] || RecurringBillingRowStatus.pending;
+  } else if (isVirtualBilling) {
+    // Para escopo fechado agrupado: apenas Ativo/Inativo
+    statusInfo = billing.status === 'cancelled' 
+      ? { label: "Inativo", color: "bg-gray-500" }
+      : { label: "Ativo", color: "bg-green-500" };
+  } else {
+    // Para escopo aberto agrupado: apenas Ativo/Inativo
+    statusInfo = billing.status === 'cancelled' 
+      ? { label: "Inativo", color: "bg-gray-500" }
+      : { label: "Ativo", color: "bg-green-500" };
+  }
+  
   const { toast } = useToast();
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
@@ -71,24 +92,60 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
     try {
       setDeleting(true);
       
-      const { error } = await supabase
-        .from('recurring_billing')
-        .delete()
-        .eq('id', billing.id);
+      // Verificar se é billing virtual (escopo fechado agrupado)
+      if (isVirtualBilling && billing.related_payments) {
+        // Deletar todos os pagamentos relacionados (escopo fechado)
+        const paymentIds = billing.related_payments.map(p => p.id);
+        
+        const { error } = await supabase
+          .from('payments')
+          .delete()
+          .in('id', paymentIds);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Cobrança recorrente excluída",
-        description: "A cobrança foi excluída com sucesso."
-      });
+        toast({
+          title: "Recebimentos excluídos",
+          description: `${billing.related_payments.length} recebimentos foram excluídos com sucesso.`
+        });
+      } else if (isExpandedPayment && billing.individual_payment) {
+        // Deletar pagamento individual expandido
+        const { error } = await supabase
+          .from('payments')
+          .delete()
+          .eq('id', billing.individual_payment.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Recebimento excluído",
+          description: "O recebimento foi excluído com sucesso."
+        });
+      } else {
+        // Billing normal (escopo aberto) - só deletar se o ID for um UUID válido
+        if (billing.id && billing.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          const { error } = await supabase
+            .from('recurring_billing')
+            .delete()
+            .eq('id', billing.id);
+
+          if (error) throw error;
+
+          toast({
+            title: "Cobrança recorrente excluída",
+            description: "A cobrança foi excluída com sucesso."
+          });
+        } else {
+          throw new Error("ID inválido para exclusão");
+        }
+      }
       
       onRefresh();
     } catch (error) {
-      console.error("Erro ao excluir cobrança:", error);
+      console.error("Erro ao excluir:", error);
       toast({
         title: "Erro ao excluir",
-        description: "Não foi possível excluir a cobrança.",
+        description: error.message || "Não foi possível excluir.",
         variant: "destructive"
       });
     } finally {
@@ -109,9 +166,6 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
         <Badge variant="outline" className={`${statusInfo.color} text-white`}>
           {statusInfo.label}
         </Badge>
-      </TableCell>
-      <TableCell>
-        {billing.current_installment}/{billing.installments}
       </TableCell>
       <TableCell>
         <div className="flex items-center justify-end gap-2">

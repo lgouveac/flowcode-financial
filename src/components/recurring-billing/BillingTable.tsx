@@ -4,10 +4,12 @@ import type { RecurringBilling } from "@/types/billing";
 import { RecurringBillingRow } from "./RecurringBillingRow";
 import { useState } from "react";
 import { PaymentDetailsDialog } from "./PaymentDetailsDialog";
+import { PaymentDetailsDialog as IndividualPaymentDialog } from "../payments/PaymentDetailsDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplate } from "@/types/email";
 import { EmptyState } from "../payments/EmptyState";
+import { Payment } from "@/types/payment";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
@@ -18,12 +20,26 @@ interface BillingTableProps {
 
 export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates = [] }: BillingTableProps) => {
   const [selectedBilling, setSelectedBilling] = useState<RecurringBilling | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [showIndividualPaymentDetails, setShowIndividualPaymentDetails] = useState(false);
   const { toast } = useToast();
 
   const handleOpenDetails = (billing: RecurringBilling) => {
-    setSelectedBilling(billing);
-    setShowPaymentDetails(true);
+    // Verificar se é uma parcela individual (expandida) ou agrupada
+    if (billing.individual_payment) {
+      // Abrir modal individual para a parcela específica
+      setSelectedPayment(billing.individual_payment);
+      setShowIndividualPaymentDetails(true);
+    } else if (billing.is_virtual) {
+      // Para parcelas virtuais, abrir modal da cobrança recorrente
+      setSelectedBilling(billing);
+      setShowPaymentDetails(true);
+    } else {
+      // Abrir modal completo para todas as parcelas do cliente
+      setSelectedBilling(billing);
+      setShowPaymentDetails(true);
+    }
   };
 
   const handleCloseDetails = () => {
@@ -32,6 +48,22 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
     if (onRefresh) {
       onRefresh();
     }
+  };
+
+  const handleCloseIndividualDetails = () => {
+    setShowIndividualPaymentDetails(false);
+    setSelectedPayment(null);
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleUpdate = () => {
+    // Atualizar dados sem fechar o modal
+    if (onRefresh) {
+      onRefresh();
+    }
+    // O modal deve permanecer aberto automaticamente
   };
 
   const handleDuplicate = async (billing: RecurringBilling): Promise<void> => {
@@ -92,7 +124,6 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
             <TableHead>Valor</TableHead>
             <TableHead>Vencimento</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Parcela</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -116,7 +147,17 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
           billing={selectedBilling}
           open={showPaymentDetails}
           onClose={handleCloseDetails}
-          onUpdate={onRefresh || (() => {})}
+          onUpdate={handleUpdate}
+          templates={templates}
+        />
+      )}
+
+      {selectedPayment && (
+        <IndividualPaymentDialog
+          payment={selectedPayment}
+          open={showIndividualPaymentDetails}
+          onClose={handleCloseIndividualDetails}
+          onUpdate={handleUpdate}
           templates={templates}
         />
       )}

@@ -9,7 +9,7 @@ interface BillingDetailsProps {
   dueDay: string | number;
   startDate: string;
   endDate: string;
-  onUpdate: (field: string, value: string | number) => void;
+  onUpdate: (field: string, value: string | number | string[]) => void;
   disabled?: boolean;
 }
 
@@ -36,6 +36,7 @@ export function BillingDetails({
           required
         />
       </div>
+
 
       <div className="grid gap-2">
         <Label htmlFor="amount">Valor (R$)</Label>

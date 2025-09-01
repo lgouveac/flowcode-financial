@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, isValid, parseISO } from "date-fns";
 import { syncPaymentToCashFlow } from "@/services/paymentCashFlowSync";
+import { ArrowRightLeft } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
@@ -148,7 +150,6 @@ export const PaymentDetailsDialog = ({
       });
 
       onUpdate();
-      onClose();
     } catch (error) {
       console.error("Error updating payment:", error);
       toast({
@@ -159,11 +160,12 @@ export const PaymentDetailsDialog = ({
     }
   };
 
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md bg-[#0a0c10] border-[#1e2030] text-white">
         <DialogHeader>
-          <DialogTitle className="text-lg font-semibold text-white">Editar Pagamento</DialogTitle>
+          <DialogTitle className="text-lg font-semibold text-white">Editar Escopo Fechado</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">

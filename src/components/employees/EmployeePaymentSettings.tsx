@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarIcon, EditIcon, SaveIcon } from "lucide-react";
+import { CalendarIcon, EditIcon, SaveIcon, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Employee } from "@/types/employee";
 import { EmployeeMonthlyValue } from "@/types/employee";
 import { formatDate } from "@/utils/formatters";
@@ -121,6 +122,63 @@ export function EmployeePaymentSettings() {
     }
     
     setTemplateType(employee.preferred_template || "invoice");
+  };
+
+  // Delete the payment settings
+  const handleDelete = async (employee: Employee) => {
+    try {
+      console.log(`Deleting payment settings for employee: ${employee.name}`);
+      
+      const existingValue = monthlyValues[employee.id];
+      
+      if (existingValue) {
+        console.log(`Deleting monthly value with ID: ${existingValue.id}`);
+        
+        // Delete the monthly value record
+        const { data: deletedData, error: deleteError } = await supabase
+          .from("employee_monthly_values")
+          .delete()
+          .eq("id", existingValue.id)
+          .select();
+
+        console.log("Delete result:", { deletedData, deleteError });
+
+        if (deleteError) throw deleteError;
+
+        console.log(`Resetting template for employee: ${employee.id}`);
+        
+        // Reset employee preferred template to default
+        const { error: templateError } = await supabase
+          .from("employees")
+          .update({ preferred_template: "invoice" })
+          .eq("id", employee.id);
+
+        console.log("Template update result:", { templateError });
+
+        if (templateError) throw templateError;
+
+        toast({
+          title: "Configuração de pagamento excluída",
+          description: `A configuração de pagamento para ${employee.name} foi removida com sucesso.`,
+        });
+
+        // Refresh all data from database to ensure consistency
+        await fetchEmployeesAndValues();
+      } else {
+        toast({
+          title: "Nenhuma configuração encontrada",
+          description: `${employee.name} não possui configuração de pagamento para excluir.`,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error deleting payment settings:", error);
+      toast({
+        title: "Erro ao excluir configuração",
+        description: error.message || "Não foi possível excluir a configuração de pagamento.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Save the payment settings
@@ -315,15 +373,50 @@ export function EmployeePaymentSettings() {
                       {renderTemplateType(employee.preferred_template)}
                     </TableCell>
                     <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEdit(employee)}
-                        className="flex items-center gap-1"
-                      >
-                        <EditIcon className="h-4 w-4" />
-                        Editar
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleEdit(employee)}
+                          className="flex items-center gap-1"
+                        >
+                          <EditIcon className="h-4 w-4" />
+                          Editar
+                        </Button>
+                        
+                        {monthlyValues[employee.id] && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 flex items-center gap-1"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Excluir
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir Configuração de Pagamento</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir a configuração de pagamento para <strong>{employee.name}</strong>? 
+                                  Isso removerá o valor mensal configurado e resetará o template para "Nota Fiscal". Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(employee)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Excluir Configuração
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </TableCell>
                   </>
                 )}

@@ -16,6 +16,8 @@ import { RecurringBilling } from "@/components/RecurringBilling";
 import { CashFlow } from "@/components/CashFlow";
 import Emails from "./pages/Emails";
 import Contracts from "./pages/Contracts";
+import ContractSigning from "./pages/ContractSigning";
+import PaymentsByClient from "./pages/PaymentsByClient";
 import EstimatedExpenses from "./pages/EstimatedExpenses";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -28,6 +30,7 @@ import PublicClientForm from "./pages/PublicClientForm";
 import PublicEmployeeForm from "./pages/PublicEmployeeForm";
 import ThankYou from "./pages/ThankYou";
 import EmployeesPage from "./pages/Employees";
+import Users from "./pages/Users";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +59,7 @@ const App = () => (
                 <Route path="/register-client" element={<PublicClientForm />} />
                 <Route path="/register-employee" element={<PublicEmployeeForm />} />
                 <Route path="/thank-you" element={<ThankYou />} />
+                <Route path="/contract-signing/:contractId" element={<ContractSigning />} />
                 
                 {/* Auth pages - wrapped in AuthProvider but not in ProtectedRoute */}
                 <Route path="/auth/login" element={<Login />} />
@@ -73,8 +77,10 @@ const App = () => (
                   <Route path="receivables" element={<RecurringBilling />} />
                   <Route path="contracts" element={<Contracts />} />
                   <Route path="emails" element={<Emails />} />
+                  <Route path="payments" element={<PaymentsByClient />} />
                   <Route path="cashflow" element={<CashFlow showChart={true} />} />
                   <Route path="estimated-expenses" element={<EstimatedExpenses />} />
+                  <Route path="users" element={<Users />} />
                 </Route>
                 
                 {/* Catch all other routes */}

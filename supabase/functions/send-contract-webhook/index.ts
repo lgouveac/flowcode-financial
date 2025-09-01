@@ -23,7 +23,7 @@ serve(async (req) => {
     console.log('Received contract webhook request:', requestBody);
 
     // Call the n8n webhook
-    const webhookUrl = "https://n8n.sof.to/webhook-test/cf2248ee-f322-4d3a-8c7b-a9f195755670";
+    const webhookUrl = "https://n8n.sof.to/webhook-test/e39a39a2-b53d-4cda-b3cb-c526da442158";
     
     console.log('Calling contract webhook:', webhookUrl);
     console.log('Contract data being sent:', JSON.stringify(requestBody, null, 2));

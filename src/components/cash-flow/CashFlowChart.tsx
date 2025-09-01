@@ -44,26 +44,29 @@ export const CashFlowChart = ({
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Todos os recebimentos</SelectItem>
               <SelectItem value="month">Mensal</SelectItem>
               <SelectItem value="quarter">Trimestral</SelectItem>
               <SelectItem value="year">Anual</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={year} onValueChange={setYear}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Ano" />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 3 }, (_, i) => {
-                const yearValue = new Date().getFullYear() - i;
-                return (
-                  <SelectItem key={yearValue} value={yearValue.toString()}>
-                    {yearValue}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          {period !== 'all' && (
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 3 }, (_, i) => {
+                  const yearValue = new Date().getFullYear() - i;
+                  return (
+                    <SelectItem key={yearValue} value={yearValue.toString()}>
+                      {yearValue}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
           {period === 'month' && (
             <Select value={month} onValueChange={setMonth}>
               <SelectTrigger className="w-[140px]">

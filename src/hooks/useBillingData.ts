@@ -53,14 +53,15 @@ export const useBillingData = () => {
     
     try {
       const { data, error } = await supabase
-        .from('recurring_billing')
-        .select('*');
+        .from('payments')
+        .select('*')
+        .eq('scope_type', 'open');
 
       if (error) {
         console.error('Error fetching billings:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar os recebimentos recorrentes.",
+          description: "Não foi possível carregar os recebimentos do escopo aberto.",
           variant: "destructive",
         });
         return;
@@ -78,7 +79,7 @@ export const useBillingData = () => {
       console.error("Error in fetchBillings:", err);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao carregar os recebimentos recorrentes.",
+        description: "Ocorreu um erro ao carregar os recebimentos do escopo aberto.",
         variant: "destructive",
       });
     } finally {
@@ -128,13 +129,14 @@ export const useBillingData = () => {
       const { data, error } = await supabase
         .from('payments')
         .select('*')
+        .eq('scope_type', 'closed')
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching payments:', error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar os recebimentos pontuais.",
+          description: "Não foi possível carregar os recebimentos do escopo fechado.",
           variant: "destructive",
         });
         return;
@@ -152,7 +154,7 @@ export const useBillingData = () => {
       console.error("Error in fetchPayments:", err);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao carregar os recebimentos pontuais.",
+        description: "Ocorreu um erro ao carregar os recebimentos do escopo fechado.",
         variant: "destructive",
       });
     } finally {
@@ -323,20 +325,7 @@ export const useBillingData = () => {
       });
     });
 
-    // Subscribe to changes in both tables
-    const billingChannel = supabase
-      .channel('billing-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'recurring_billing' },
-        () => {
-          console.log('Recurring billing changes detected, refreshing data...');
-          fetchBillings();
-          fetchPayments();
-        }
-      )
-      .subscribe();
-
+    // Subscribe to changes in payments table
     const paymentsChannel = supabase
       .channel('payment-changes')
       .on(
@@ -344,7 +333,8 @@ export const useBillingData = () => {
         { event: '*', schema: 'public', table: 'payments' },
         () => {
           console.log('Payment changes detected, refreshing data...');
-          fetchPayments();
+          fetchBillings(); // Now fetches from payments with scope_type = 'open'
+          fetchPayments(); // Now fetches from payments with scope_type = 'closed'
         }
       )
       .subscribe();
@@ -362,7 +352,6 @@ export const useBillingData = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(billingChannel);
       supabase.removeChannel(paymentsChannel);
       supabase.removeChannel(templatesChannel);
     };

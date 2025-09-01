@@ -15,6 +15,7 @@ interface PaymentRowProps {
   onPaymentUpdated: () => void;
   enableDuplicate?: boolean;
   templates?: EmailTemplate[];
+  hideClientName?: boolean;
 }
 
 export const PaymentRow = ({ 
@@ -22,7 +23,8 @@ export const PaymentRow = ({
   onEmailSent, 
   onPaymentUpdated, 
   enableDuplicate = false,
-  templates = []
+  templates = [],
+  hideClientName = false
 }: PaymentRowProps) => {
   // Format due date safely
   const formattedDueDate = payment.due_date 

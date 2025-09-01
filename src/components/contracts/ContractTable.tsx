@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { EditIcon, TrashIcon, PlusIcon, FileText, CheckIcon } from "lucide-react";
+import { EditIcon, TrashIcon, PlusIcon, FileText, CheckIcon, Grid, List, Copy, Eye, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { formatDate } from "@/utils/formatters";
@@ -12,7 +12,9 @@ import { Contract } from "@/types/contract";
 import { NewContractDialog } from "./NewContractDialog";
 import { EditContractDialog } from "./EditContractDialog";
 import { SignContractDialog } from "./SignContractDialog";
+import { ContractDetailsDialog } from "./ContractDetailsDialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const getStatusColor = (status?: string) => {
   switch (status) {
@@ -49,13 +51,29 @@ export function ContractTable() {
   const [newContractOpen, setNewContractOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
+  const [viewingContract, setViewingContract] = useState<Contract | null>(null);
   const [generatingContract, setGeneratingContract] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const { toast } = useToast();
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este contrato?")) {
       await deleteContract(id);
     }
+  };
+
+  const handleCopySigningLink = (contractId: number) => {
+    const signingUrl = `${window.location.origin}/contract-signing/${contractId}`;
+    navigator.clipboard.writeText(signingUrl);
+    toast({
+      title: "Link copiado",
+      description: "Link de assinatura copiado para a área de transferência.",
+    });
+  };
+
+  const handleOpenSigningPage = (contractId: number) => {
+    const signingUrl = `${window.location.origin}/contract-signing/${contractId}`;
+    window.open(signingUrl, '_blank');
   };
 
   const handleGenerateContract = async (contract: Contract) => {
@@ -120,8 +138,8 @@ export function ContractTable() {
 
   const handleCreateContract = async (contractData: Contract) => {
     try {
-      // Chama o webhook do n8n
-      const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/44fbe481-ddef-4c19-ba63-59cc1c1e7413", {
+      // Chama o webhook do n8n diretamente (igual ao GitHub)
+      const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/e39a39a2-b53d-4cda-b3cb-c526da442158", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -171,17 +189,39 @@ export function ContractTable() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Contratos</CardTitle>
-          <Button onClick={() => setNewContractOpen(true)}>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Novo Contrato
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Toggle de visualização */}
+            <div className="flex bg-muted rounded-lg p-1">
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className="px-3 py-1"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="px-3 py-1"
+              >
+                <Grid className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <Button onClick={() => setNewContractOpen(true)}>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Novo Contrato
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {contracts.length === 0 ? (
             <div className="flex items-center justify-center h-40">
               <p className="text-muted-foreground">Nenhum contrato encontrado.</p>
             </div>
-          ) : (
+          ) : viewMode === 'table' ? (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -220,6 +260,30 @@ export function ContractTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setViewingContract(contract)}
+                            title="Ver Detalhes"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopySigningLink(contract.id)}
+                            title="Copiar Link de Assinatura"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenSigningPage(contract.id)}
+                            title="Abrir Página de Assinatura"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
                           {contract.status !== "completed" && (
                             <Button
                               variant="ghost"
@@ -262,6 +326,144 @@ export function ContractTable() {
                 </TableBody>
               </Table>
             </div>
+          ) : (
+            // Visualização em Grid
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {contracts.map((contract) => (
+                <Card key={contract.id} className="hover:shadow-lg transition-shadow h-80 flex flex-col">
+                  <CardHeader className="pb-3 flex-shrink-0">
+                    <div className="flex justify-between items-start min-h-0">
+                      <div className="min-w-0 flex-1 mr-2">
+                        <CardTitle className="text-lg truncate" title={contract.clients?.name || "Cliente não vinculado"}>
+                          {contract.clients?.name || "Cliente não vinculado"}
+                        </CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          ID: {contract.id}
+                        </p>
+                      </div>
+                      <Badge className={`${getStatusColor(contract.status)} flex-shrink-0`}>
+                        {getStatusLabel(contract.status)}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Valor Total</p>
+                          <p className="font-medium truncate" title={contract.total_value ? formatCurrency(contract.total_value) : "-"}>
+                            {contract.total_value ? formatCurrency(contract.total_value) : "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Parcelas</p>
+                          <p className="font-medium">{contract.installments || "1"}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground">Escopo</p>
+                          <p 
+                            className="font-medium text-xs leading-relaxed overflow-hidden" 
+                            style={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical'
+                            }}
+                            title={contract.scope || "-"}
+                          >
+                            {contract.scope || "-"}
+                          </p>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground">Data Início</p>
+                          <p className="font-medium">
+                            {contract.start_date ? formatDate(new Date(contract.start_date), "dd/MM/yyyy") : "-"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Ações - fixas no bottom */}
+                    <div className="flex-shrink-0 pt-3 border-t">
+                      <div className="flex flex-wrap gap-1 justify-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewingContract(contract)}
+                          title="Ver Detalhes"
+                          className="h-8 px-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopySigningLink(contract.id)}
+                          title="Copiar Link de Assinatura"
+                          className="h-8 px-2"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenSigningPage(contract.id)}
+                          title="Abrir Página de Assinatura"
+                          className="h-8 px-2"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                        
+                        {contract.status !== "completed" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSigningContract(contract)}
+                            title="Marcar como Assinado"
+                            className="h-8 px-2"
+                          >
+                            <CheckIcon className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleGenerateContract(contract)}
+                          disabled={generatingContract === contract.id}
+                          title="Gerar Contrato"
+                          className="h-8 px-2"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingContract(contract)}
+                          title="Editar"
+                          className="h-8 px-2"
+                        >
+                          <EditIcon className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(contract.id)}
+                          title="Excluir"
+                          className="h-8 px-2"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -285,6 +487,14 @@ export function ContractTable() {
           contract={signingContract}
           open={!!signingContract}
           onClose={() => setSigningContract(null)}
+        />
+      )}
+
+      {viewingContract && (
+        <ContractDetailsDialog
+          contract={viewingContract}
+          open={!!viewingContract}
+          onClose={() => setViewingContract(null)}
         />
       )}
     </>

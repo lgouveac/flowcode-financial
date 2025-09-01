@@ -84,32 +84,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setLoading(false);
-          console.log('User signed out');
+          console.log('User signed out - explicit sign out');
           
           // Only navigate to login if we're not already on an auth page
           if (!isAuthPage()) {
             navigate('/auth/login');
           }
         } else if (event === 'USER_UPDATED') {
-          console.log(`Auth event: ${event}`);
+          console.log(`Auth event: ${event} - user info updated, no navigation needed`);
+          setLoading(false);
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log(`Auth event: ${event} - token refreshed, no navigation needed`);
+          setLoading(false);
         } else {
-          // For other events or when no session
+          // For other events, be more conservative about navigation
+          console.log(`Auth event: ${event} - checking session validity`);
+          
           if (!newSession) {
-            console.log('No valid session found for event:', event);
-            setSession(null);
-            setUser(null);
-            setProfile(null);
-            setLoading(false);
+            // Only navigate if this looks like an actual logout/session expiry
+            // Don't navigate on transient events during database operations
+            console.log('No session found, but checking if this is a real logout...');
             
-            // Only navigate to login if we're not on an auth page and not on public routes
-            if (!isAuthPage() && 
-                !location.pathname.startsWith('/register-client') && 
-                !location.pathname.startsWith('/register-employee') && 
-                !location.pathname.startsWith('/thank-you')) {
-              navigate('/auth/login');
-            }
+            // Check if we actually lost authentication by trying to get session again
+            setTimeout(() => {
+              supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+                if (!currentSession) {
+                  console.log('Confirmed: No valid session, redirecting to login');
+                  setSession(null);
+                  setUser(null);
+                  setProfile(null);
+                  setLoading(false);
+                  
+                  // Only navigate to login if we're not on an auth page and not on public routes
+                  if (!isAuthPage() && 
+                      !location.pathname.startsWith('/register-client') && 
+                      !location.pathname.startsWith('/register-employee') && 
+                      !location.pathname.startsWith('/thank-you')) {
+                    navigate('/auth/login');
+                  }
+                } else {
+                  console.log('Session recovered, no navigation needed');
+                  setLoading(false);
+                }
+              });
+            }, 500); // Small delay to avoid navigating on transient events
           } else {
-            console.log(`Other auth event: ${event}`);
+            console.log(`Auth event: ${event} - session exists, no navigation needed`);
+            setLoading(false);
           }
         }
       }

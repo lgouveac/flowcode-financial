@@ -102,10 +102,39 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
     }
   };
 
+  const deleteMonthlyValue = async (monthlyValueId: string) => {
+    try {
+      console.log("Deleting monthly value:", monthlyValueId);
+      
+      const { error } = await supabase
+        .from("employee_monthly_values")
+        .delete()
+        .eq("id", monthlyValueId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ["employee-monthly-values", employeeId] });
+
+      toast({
+        title: "Valor mensal excluído",
+        description: "O valor mensal foi excluído com sucesso.",
+      });
+    } catch (error: any) {
+      console.error("Error deleting monthly value:", error);
+      toast({
+        title: "Erro ao excluir valor mensal",
+        description: error.message || "Não foi possível excluir o valor mensal.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return {
     monthlyValues,
     isLoading,
     addMonthlyValue,
-    updateMonthlyValue
+    updateMonthlyValue,
+    deleteMonthlyValue
   };
 };

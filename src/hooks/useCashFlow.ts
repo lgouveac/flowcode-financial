@@ -65,6 +65,9 @@ export const useCashFlow = (period: string = 'current') => {
 
     // Default period handlers from before
     switch (selectedPeriod) {
+      case 'all':
+        // Return null to fetch all data without date filtering
+        return null;
       case 'current':
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
@@ -189,11 +192,9 @@ export const useCashFlow = (period: string = 'current') => {
               amount: payment.amount,
               date: payment.payment_date,
               category: 'payment',
-              payment_id: payment.id,
-              status: 'pending'
+              payment_id: payment.id
             }, {
-              onConflict: 'payment_id',
-              ignoreDuplicates: true
+              onConflict: 'payment_id'
             });
 
           if (insertError) {
@@ -226,20 +227,33 @@ export const useCashFlow = (period: string = 'current') => {
 
   const fetchCashFlow = async (forcSync = false) => {
     try {
-      // Only sync paid payments if we're fetching current data or force sync is requested
-      if (forcSync || period === 'current' || period.includes(new Date().getFullYear().toString())) {
-        await syncPaidPaymentsWithCashFlow();
-      }
+      // Temporarily disable sync to fix the search issue
+      // if (forcSync || period === 'current' || period.includes(new Date().getFullYear().toString())) {
+      //   await syncPaidPaymentsWithCashFlow();
+      // }
 
       const dates = getPeriodDates(period);
       
       console.log('Fetching cash flow for:', { period, dates });
       
-      const { data: cashFlowData, error: cashFlowError } = await supabase
+      let query = supabase
         .from('cash_flow')
-        .select('*')
-        .gte('date', dates.start)
-        .lt('date', dates.end)
+        .select(`
+          *,
+          clients (
+            id,
+            name
+          )
+        `);
+      
+      // Apply date filters only if dates are provided (not for 'all' period)
+      if (dates) {
+        query = query
+          .gte('date', dates.start)
+          .lt('date', dates.end);
+      }
+      
+      const { data: cashFlowData, error: cashFlowError } = await query
         .order('date', { ascending: true });
 
       if (cashFlowError) throw cashFlowError;
@@ -272,6 +286,8 @@ export const useCashFlow = (period: string = 'current') => {
           date: item.date,
           category: item.category,
           payment_id: item.payment_id || undefined,
+          client_id: item.client_id || undefined,
+          clients: item.clients || undefined,
           created_at: item.created_at || undefined,
           updated_at: item.updated_at || undefined
         };

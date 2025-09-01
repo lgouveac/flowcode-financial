@@ -90,11 +90,15 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
     }
     
     console.log("Creating new recurring billing:", billingData);
+    console.log("Raw billingData.installments:", billingData.installments, "type:", typeof billingData.installments);
     setIsSubmitting(true);
 
     try {
-      // Extract responsible_name, disable_notifications and pay_on_delivery to update client and billing
-      const { responsible_name, disable_notifications, pay_on_delivery, ...billingRecordData } = billingData;
+      // Extract responsible_name, disable_notifications, pay_on_delivery and installments to update client and billing
+      const { responsible_name, disable_notifications, pay_on_delivery, installments, ...billingRecordData } = billingData;
+      
+      console.log("After extraction - installments:", installments, "type:", typeof installments);
+      console.log("billingRecordData:", billingRecordData);
       
       // First, update the client's responsible_name if provided
       if (responsible_name && billingData.client_id) {
@@ -118,63 +122,50 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
         }
       }
 
-      // Now insert the billing record with the disable_notifications flag
-      const { data, error } = await supabase
-        .from('recurring_billing')
-        .insert({
-          ...billingRecordData,
-          disable_notifications: disable_notifications || false
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating recurring billing:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível criar o recebimento recorrente.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Create initial installments if requested
-      if (data && billingData.installments && billingData.installments > 0) {
+      // Create installments directly in payments table (same logic as closed scope)
+      const numInstallments = Number(installments);
+      
+      if (numInstallments && numInstallments > 0) {
+        console.log('Creating installments for open scope billing:', numInstallments);
         try {
-          const baseDescription = billingData.description;
-          const startDate = new Date(billingData.start_date);
+          const baseDescription = billingRecordData.description;
+          const startDate = new Date(billingRecordData.start_date);
           
-          // Create installments
-          const installmentsToCreate = [];
-          for (let i = 1; i <= billingData.installments; i++) {
-            const dueDate = new Date(startDate);
-            dueDate.setMonth(dueDate.getMonth() + (i - 1));
-            dueDate.setDate(billingData.due_day);
+          const paymentsToInsert = [];
+          for (let i = 1; i <= numInstallments; i++) {
+            const installmentDueDate = new Date(startDate);
+            installmentDueDate.setMonth(installmentDueDate.getMonth() + (i - 1));
+            installmentDueDate.setDate(billingRecordData.due_day);
             
-            installmentsToCreate.push({
-              client_id: billingData.client_id,
-              description: `${baseDescription} (${i}/${billingData.installments})`,
-              amount: billingData.amount,
-              due_date: dueDate.toISOString().split('T')[0],
-              payment_method: billingData.payment_method,
-              status: 'pending' as const,
+            paymentsToInsert.push({
+              client_id: billingRecordData.client_id,
+              description: `${baseDescription} (${i}/${numInstallments})`,
+              amount: billingRecordData.amount,
+              due_date: installmentDueDate.toISOString().split('T')[0],
+              payment_method: billingRecordData.payment_method,
+              status: 'pending',
               installment_number: i,
-              total_installments: billingData.installments,
-              Pagamento_Por_Entrega: pay_on_delivery || false
+              total_installments: numInstallments,
+              Pagamento_Por_Entrega: pay_on_delivery || false,
+              scope_type: 'open'
             });
           }
           
-          const { error: installmentsError } = await supabase
+          console.log('About to create payments:', paymentsToInsert);
+          
+          const { error: paymentsError } = await supabase
             .from('payments')
-            .insert(installmentsToCreate);
+            .insert(paymentsToInsert);
             
-          if (installmentsError) {
-            console.error('Error creating initial installments:', installmentsError);
-            // Don't fail the whole operation for this
+          if (paymentsError) {
+            console.error('Error creating payments:', paymentsError);
+            throw paymentsError;
+          } else {
+            console.log('Successfully created payments');
           }
-        } catch (installmentsErr) {
-          console.error('Error creating installments:', installmentsErr);
+        } catch (paymentsErr) {
+          console.error('Error creating payments:', paymentsErr);
+          throw paymentsErr;
         }
       }
 
@@ -196,7 +187,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
     }
   };
 
-  const handleNewPayment = async (payment: NewPayment & { responsible_name?: string }) => {
+  const handleNewPayment = async (payment: NewPayment & { responsible_name?: string; installments?: number }) => {
     if (!payment || typeof payment !== 'object') {
       toast({
         title: "Erro",
@@ -231,8 +222,8 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
         }
       }
       
-      // Extract responsible_name before sending to avoid DB error
-      const { responsible_name, ...paymentData } = payment;
+      // Extract responsible_name and installments before processing
+      const { responsible_name, installments = 1, ...paymentData } = payment;
       
       // Make sure we're sending valid data - ensure dates are formatted correctly
       if (paymentData.due_date && typeof paymentData.due_date === 'string') {
@@ -250,28 +241,74 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
         }
       }
       
-      // Use single object insert
-      const { data, error } = await supabase
-        .from('payments')
-        .insert(paymentData)
-        .select()
-        .single();
+      // Create multiple installments if needed
+      if (installments > 1) {
+        const baseDescription = paymentData.description;
+        const startDate = new Date(paymentData.due_date);
+        const installmentValue = paymentData.amount / installments;
         
-      if (error) {
-        console.error('Error creating payment:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível criar o recebimento: " + error.message,
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
+        const installmentsToCreate = [];
+        for (let i = 1; i <= installments; i++) {
+          const dueDate = new Date(startDate);
+          dueDate.setMonth(dueDate.getMonth() + (i - 1));
+          
+          installmentsToCreate.push({
+            ...paymentData,
+            description: `${baseDescription} (${i}/${installments})`,
+            amount: installmentValue,
+            due_date: dueDate.toISOString().split('T')[0],
+            installment_number: i,
+            total_installments: installments,
+            // Only first installment keeps original status/payment_date if paid
+            status: i === 1 ? paymentData.status : 'pending',
+            payment_date: i === 1 ? paymentData.payment_date : undefined
+          });
+        }
+        
+        const { data, error } = await supabase
+          .from('payments')
+          .insert(installmentsToCreate)
+          .select();
+          
+        if (error) {
+          console.error('Error creating installments:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível criar as parcelas: " + error.message,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
 
-      toast({
-        title: "Sucesso",
-        description: "Recebimento criado com sucesso.",
-      });
+        toast({
+          title: "Sucesso",
+          description: `${installments} parcelas criadas com sucesso.`,
+        });
+      } else {
+        // Single payment
+        const { data, error } = await supabase
+          .from('payments')
+          .insert(paymentData)
+          .select()
+          .single();
+          
+        if (error) {
+          console.error('Error creating payment:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível criar o recebimento: " + error.message,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        toast({
+          title: "Sucesso",
+          description: "Recebimento criado com sucesso.",
+        });
+      }
 
       handleSuccess();
     } catch (error) {

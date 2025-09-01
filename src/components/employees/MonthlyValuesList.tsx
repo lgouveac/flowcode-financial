@@ -2,12 +2,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Trash2, Edit } from "lucide-react";
 import { useEmployeeMonthlyValues } from "@/hooks/useEmployeeMonthlyValues";
 import { NewMonthlyValueDialog } from "./NewMonthlyValueDialog";
 import { useState } from "react";
 import { EditMonthlyValueDialog } from "./EditMonthlyValueDialog";
 import { EmployeeMonthlyValue } from "@/types/employee";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface MonthlyValuesListProps {
   employeeId: string;
@@ -18,10 +19,12 @@ export const MonthlyValuesList = ({
 }: MonthlyValuesListProps) => {
   const {
     monthlyValues,
-    isLoading
+    isLoading,
+    deleteMonthlyValue
   } = useEmployeeMonthlyValues(employeeId);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
   const [editingValue, setEditingValue] = useState<EmployeeMonthlyValue | null>(null);
+  const [deletingValue, setDeletingValue] = useState<EmployeeMonthlyValue | null>(null);
 
   if (isLoading) {
     return <Card>
@@ -54,10 +57,11 @@ export const MonthlyValuesList = ({
                   <TableHead>Mês</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Observações</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {monthlyValues.map(value => <TableRow key={value.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setEditingValue(value)}>
+                {monthlyValues.map(value => <TableRow key={value.id} className="hover:bg-muted/50">
                     <TableCell>
                       {new Date(value.due_date).toLocaleDateString('pt-BR', {
                         month: 'long',
@@ -71,6 +75,47 @@ export const MonthlyValuesList = ({
                       }).format(value.due_data)}
                     </TableCell>
                     <TableCell>{value.notes || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingValue(value)}
+                          title="Editar"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Valor Mensal</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir este valor mensal? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteMonthlyValue(value.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
                   </TableRow>)}
               </TableBody>
             </Table>}

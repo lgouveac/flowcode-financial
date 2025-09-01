@@ -43,6 +43,7 @@ export const NewPaymentForm = ({
     payment_method: 'pix',
     status: 'pending'
   });
+  const [installments, setInstallments] = useState(1);
   const [responsibleName, setResponsibleName] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -164,10 +165,11 @@ export const NewPaymentForm = ({
         }
       }
       
-      // Send both formData and responsible_name
+      // Send both formData, responsible_name, and installments
       onSubmit({
         ...formattedData,
-        responsible_name: responsibleName
+        responsible_name: responsibleName,
+        installments: installments
       });
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -264,6 +266,23 @@ export const NewPaymentForm = ({
             required
             disabled={isSubmitting}
           />
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="installments">Número de Parcelas</Label>
+          <Input
+            id="installments"
+            type="number"
+            min="1"
+            value={installments}
+            onChange={(e) => setInstallments(Number(e.target.value))}
+            disabled={isSubmitting}
+          />
+          {installments > 1 && (
+            <p className="text-sm text-muted-foreground">
+              Valor por parcela: R$ {(formData.amount / installments).toFixed(2)}
+            </p>
+          )}
         </div>
 
         <div className="grid gap-2">

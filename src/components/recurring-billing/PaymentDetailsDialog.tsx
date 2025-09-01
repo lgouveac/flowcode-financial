@@ -13,8 +13,9 @@ import { ptBR } from "date-fns/locale";
 import { Payment } from "@/types/payment";
 import { EditablePaymentTable } from "../payments/EditablePaymentTable";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
+import { Plus, ArrowRightLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 interface PaymentDetailsDialogProps {
   open: boolean;
   onClose: () => void;
@@ -31,53 +32,65 @@ export const PaymentDetailsDialog = ({
 }: PaymentDetailsDialogProps) => {
   const [description, setDescription] = useState(billing.description);
   const [amount, setAmount] = useState(billing.amount.toString());
-  const [dueDay, setDueDay] = useState(billing.due_day.toString());
+  const [dueDay, setDueDay] = useState((billing.due_day || 1).toString());
   const [paymentMethod, setPaymentMethod] = useState(billing.payment_method);
   const [status, setStatus] = useState(billing.status);
   const [paymentDate, setPaymentDate] = useState(billing.payment_date || "");
   const [emailTemplate, setEmailTemplate] = useState(billing.email_template || "none");
-  const [relatedPayments, setRelatedPayments] = useState<Payment[]>([]);
+  const [relatedPayments, setRelatedPayments] = useState<Payment[]>(billing.related_payments || []);
   const [isUpdating, setIsUpdating] = useState(false);
   const [startDate, setStartDate] = useState(billing.start_date);
   const [endDate, setEndDate] = useState(billing.end_date || "");
   const [isLoadingPayments, setIsLoadingPayments] = useState(false);
-  const [currentInstallment, setCurrentInstallment] = useState(billing.current_installment.toString());
-  const [installments, setInstallments] = useState(billing.installments.toString());
+  const [currentInstallment, setCurrentInstallment] = useState((billing.current_installment || 1).toString());
+  const [installments, setInstallments] = useState((billing.installments || 1).toString());
   const [additionalInstallments, setAdditionalInstallments] = useState("1");
   const [isAddingInstallments, setIsAddingInstallments] = useState(false);
   const [payOnDelivery, setPayOnDelivery] = useState(false);
   const [newInstallmentsPayOnDelivery, setNewInstallmentsPayOnDelivery] = useState(false);
   const [newInstallmentAmount, setNewInstallmentAmount] = useState("");
+  const [isChangingServiceStatus, setIsChangingServiceStatus] = useState(false);
   useEffect(() => {
     if (open) {
-      setDescription(billing.description);
-      setAmount(billing.amount.toString());
-      setDueDay(billing.due_day.toString());
-      setPaymentMethod(billing.payment_method);
-      setStatus(billing.status);
+      setDescription(billing.description || "");
+      setAmount((billing.amount || 0).toString());
+      setDueDay((billing.due_day || 1).toString());
+      setPaymentMethod(billing.payment_method || "");
+      setStatus(billing.status || "pending");
       setPaymentDate(billing.payment_date || "");
       setEmailTemplate(billing.email_template || "none");
-      setStartDate(billing.start_date);
+      setStartDate(billing.start_date || "");
       setEndDate(billing.end_date || "");
-      setCurrentInstallment(billing.current_installment.toString());
-      setInstallments(billing.installments.toString());
+      setCurrentInstallment((billing.current_installment || 1).toString());
+      setInstallments((billing.installments || 1).toString());
       fetchRelatedPayments();
     }
   }, [open, billing]);
   const fetchRelatedPayments = async () => {
     setIsLoadingPayments(true);
     try {
-      // Buscar todos os pagamentos relacionados a esta cobrança recorrente
-      // com base no client_id e descrição similar (sem a parte da parcela)
-      const baseDescription = billing.description;
-      const {
-        data,
-        error
-      } = await supabase.from('payments').select('*, clients(*)').eq('client_id', billing.client_id).like('description', `${baseDescription}%`).order('due_date', {
-        ascending: true
-      });
-      if (error) throw error;
-      setRelatedPayments(data || []);
+      // Verificar se é um "billing virtual" do escopo fechado
+      if (billing.related_payments) {
+        // Usar os pagamentos já agrupados do escopo fechado
+        setRelatedPayments(billing.related_payments);
+      } else {
+        // Buscar todos os pagamentos relacionados a esta cobrança do escopo aberto
+        // com base no client_id, descrição similar e scope_type = 'open'
+        const baseDescription = billing.description;
+        const {
+          data,
+          error
+        } = await supabase
+          .from('payments')
+          .select('*, clients(*)')
+          .eq('client_id', billing.client_id)
+          .eq('scope_type', 'open')
+          .like('description', `${baseDescription}%`)
+          .order('due_date', { ascending: true });
+        
+        if (error) throw error;
+        setRelatedPayments(data || []);
+      }
     } catch (error) {
       console.error("Erro ao buscar pagamentos relacionados:", error);
       toast({
@@ -326,10 +339,58 @@ export const PaymentDetailsDialog = ({
       });
     }
   };
-  return <Dialog open={open} onOpenChange={onClose}>
+
+  const toggleServiceStatus = async () => {
+    if (!billing.related_payments) {
+      toast({
+        title: "Erro",
+        description: "Esta funcionalidade é apenas para serviços do escopo fechado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsChangingServiceStatus(true);
+    try {
+      // Determinar novo status: se algum estiver cancelado, ativar todos; senão, inativar todos
+      const hasActivePendingPayments = billing.related_payments.some(p => p.status === 'pending');
+      const newStatus = hasActivePendingPayments ? 'cancelled' : 'pending';
+      
+      // Atualizar status de todos os pagamentos do serviço
+      const { error } = await supabase
+        .from('payments')
+        .update({ status: newStatus })
+        .in('id', billing.related_payments.map(p => p.id));
+
+      if (error) throw error;
+
+      toast({
+        title: "Status atualizado",
+        description: `Serviço ${newStatus === 'cancelled' ? 'inativado' : 'ativado'} com sucesso.`
+      });
+      
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao alterar status do serviço:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar o status do serviço.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsChangingServiceStatus(false);
+    }
+  };
+
+
+  return <Dialog open={open} onOpenChange={(isOpen) => {
+    if (!isOpen) {
+      onClose();
+    }
+  }}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Detalhes do Recebimento Recorrente</DialogTitle>
+          <DialogTitle>Detalhes do Escopo Aberto</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="informacoes" className="w-full">
@@ -389,6 +450,19 @@ export const PaymentDetailsDialog = ({
             </div>
 
             <div className="grid gap-2">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={status} onValueChange={(value: "pending" | "paid" | "overdue" | "cancelled" | "billed" | "awaiting_invoice" | "partially_paid") => setStatus(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Ativo</SelectItem>
+                  <SelectItem value="cancelled">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
               <label className="text-sm font-medium">Template de Email</label>
               <Select value={emailTemplate} onValueChange={(value: string) => setEmailTemplate(value)}>
                 <SelectTrigger>
@@ -402,6 +476,33 @@ export const PaymentDetailsDialog = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Botão para ativar/inativar serviço - apenas para escopo fechado */}
+            {billing.related_payments && (
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-md font-medium">Status do Serviço</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Ativar ou inativar todas as parcelas deste serviço
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={toggleServiceStatus} 
+                    disabled={isChangingServiceStatus}
+                    variant={billing.related_payments.some(p => p.status === 'pending') ? "destructive" : "default"}
+                    className="flex items-center gap-2"
+                  >
+                    {isChangingServiceStatus 
+                      ? "Alterando..." 
+                      : billing.related_payments.some(p => p.status === 'pending')
+                        ? "Inativar Serviço"
+                        : "Ativar Serviço"
+                    }
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="border-t pt-4">
               <h4 className="text-md font-medium mb-3">Adicionar Parcelas</h4>

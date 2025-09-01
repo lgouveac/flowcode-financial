@@ -5,6 +5,8 @@ import { Payment } from "@/types/payment";
 import { PaymentRow } from "./PaymentRow";
 import { EmptyState } from "./EmptyState";
 import { EmailTemplate } from "@/types/email";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/utils/formatters";
 
 interface PaymentTableProps {
   payments?: Payment[];
@@ -43,6 +45,7 @@ export const PaymentTable = ({
       return matchesSearch && matchesStatus;
     });
   }, [payments, searchTerm, statusFilter]);
+
 
   const handleEmailSent = () => {
     if (onRefresh) {
