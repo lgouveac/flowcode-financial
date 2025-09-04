@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { EditIcon, TrashIcon, PlusIcon, FileText, CheckIcon, Grid, List, Copy, Eye, ExternalLink } from "lucide-react";
+import { EditIcon, TrashIcon, PlusIcon, FileText, CheckIcon, Grid, List, Copy, Eye, ExternalLink, Shield } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { formatDate } from "@/utils/formatters";
@@ -13,6 +13,7 @@ import { NewContractDialog } from "./NewContractDialog";
 import { EditContractDialog } from "./EditContractDialog";
 import { SignContractDialog } from "./SignContractDialog";
 import { ContractDetailsDialog } from "./ContractDetailsDialog";
+import { NDADialog } from "./NDADialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -54,6 +55,7 @@ export function ContractTable() {
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
   const [generatingContract, setGeneratingContract] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [ndaDialogOpen, setNdaDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleDelete = async (id: number) => {
@@ -62,7 +64,7 @@ export function ContractTable() {
     }
   };
 
-  const handleCopySigningLink = (contractId: number) => {
+  const handleCopySigningLink = (contractId: string) => {
     const signingUrl = `${window.location.origin}/contract-signing/${contractId}`;
     navigator.clipboard.writeText(signingUrl);
     toast({
@@ -71,7 +73,7 @@ export function ContractTable() {
     });
   };
 
-  const handleOpenSigningPage = (contractId: number) => {
+  const handleOpenSigningPage = (contractId: string) => {
     const signingUrl = `${window.location.origin}/contract-signing/${contractId}`;
     window.open(signingUrl, '_blank');
   };
@@ -210,6 +212,14 @@ export function ContractTable() {
               </Button>
             </div>
             
+            <Button 
+              onClick={() => setNdaDialogOpen(true)}
+              variant="outline"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Enviar NDA
+            </Button>
+            
             <Button onClick={() => setNewContractOpen(true)}>
               <PlusIcon className="h-4 w-4 mr-2" />
               Novo Contrato
@@ -271,7 +281,7 @@ export function ContractTable() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleCopySigningLink(contract.id)}
+                            onClick={() => handleCopySigningLink(contract.contract_id)}
                             title="Copiar Link de Assinatura"
                           >
                             <Copy className="h-4 w-4" />
@@ -279,7 +289,7 @@ export function ContractTable() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleOpenSigningPage(contract.id)}
+                            onClick={() => handleOpenSigningPage(contract.contract_id)}
                             title="Abrir Página de Assinatura"
                           >
                             <ExternalLink className="h-4 w-4" />
@@ -399,7 +409,7 @@ export function ContractTable() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleCopySigningLink(contract.id)}
+                          onClick={() => handleCopySigningLink(contract.contract_id)}
                           title="Copiar Link de Assinatura"
                           className="h-8 px-2"
                         >
@@ -409,7 +419,7 @@ export function ContractTable() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleOpenSigningPage(contract.id)}
+                          onClick={() => handleOpenSigningPage(contract.contract_id)}
                           title="Abrir Página de Assinatura"
                           className="h-8 px-2"
                         >
@@ -497,6 +507,11 @@ export function ContractTable() {
           onClose={() => setViewingContract(null)}
         />
       )}
+
+      <NDADialog
+        open={ndaDialogOpen}
+        onClose={() => setNdaDialogOpen(false)}
+      />
     </>
   );
 }

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency, formatDate } from "@/utils/formatters";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 
 interface Contract {
   id: number;
@@ -50,9 +50,10 @@ export default function ContractSigning() {
       return;
     }
 
-    console.log('Fetching contract with ID:', contractId);
+    console.log('Fetching contract with contract_id:', contractId);
 
     try {
+      // Buscar contrato apenas pelo contract_id
       const { data, error } = await supabase
         .from('Contratos')
         .select(`
@@ -62,7 +63,7 @@ export default function ContractSigning() {
             email
           )
         `)
-        .eq('id', parseInt(contractId))
+        .eq('contract_id', contractId)
         .single();
 
       console.log('Supabase response:', { data, error });
@@ -70,6 +71,15 @@ export default function ContractSigning() {
       if (error) {
         console.error('Supabase error details:', error);
         throw error;
+      }
+
+      if (!data) {
+        console.log('No contract found with contract_id:', contractId);
+        console.log('This might mean:');
+        console.log('1. Contract_id does not exist in database');  
+        console.log('2. Contract exists but contract_id field is empty');
+        console.log('3. URL parameter is incorrect');
+        return;
       }
       
       console.log('Contract loaded successfully:', data);
@@ -223,9 +233,14 @@ export default function ContractSigning() {
         <Card>
           <CardContent className="text-center py-12">
             <h2 className="text-2xl font-bold mb-4">Contrato não encontrado</h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-4">
               O contrato solicitado não existe ou não está disponível.
             </p>
+            <div className="text-xs text-muted-foreground bg-gray-50 p-3 rounded">
+              <p><strong>Contract ID buscado:</strong> {contractId}</p>
+              <p><strong>Loading state:</strong> {loading ? 'true' : 'false'}</p>
+              <p>Verifique se o contract_id está correto na URL</p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -431,19 +446,65 @@ export default function ContractSigning() {
         )}
 
         {contract.status === 'completed' && (
-          <Card>
-            <CardContent className="text-center py-8">
-              <div className="mb-4 text-green-600">
-                <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+          <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 z-50 flex flex-col text-white">
+            {/* Header */}
+            <div className="border-b border-blue-700/30 p-6 text-center">
+              <div className="mb-4 text-white">
+                <svg className="w-12 h-12 mx-auto bg-green-500 rounded-full p-2" fill="white" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-green-600 mb-2">Contrato Assinado!</h3>
-              <p className="text-muted-foreground">
-                O contrato foi assinado com sucesso e está sendo processado.
+              <h1 className="text-3xl font-bold text-white mb-2">Contrato Assinado com Sucesso!</h1>
+              <p className="text-blue-100">
+                Obrigado por assinar o contrato. Abaixo estão as informações importantes:
               </p>
-            </CardContent>
-          </Card>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="max-w-4xl mx-auto">
+                {contract.obs && (
+                  <Card className="bg-blue-800/50 border-blue-700/30">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-white">
+                        <FileText className="h-5 w-5" />
+                        Observações e Instruções Importantes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div 
+                        className="prose prose-lg max-w-none text-blue-50 whitespace-pre-wrap [&_p]:text-blue-50 [&_ul]:text-blue-50 [&_ol]:text-blue-50 [&_li]:text-blue-50 [&_strong]:text-white [&_b]:text-white"
+                        dangerouslySetInnerHTML={{ __html: contract.obs }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {!contract.obs && (
+                  <Card className="bg-blue-800/50 border-blue-700/30">
+                    <CardContent className="text-center py-12">
+                      <p className="text-blue-100 text-lg">
+                        Não há observações adicionais para este contrato.
+                      </p>
+                      <p className="text-blue-200 mt-2">
+                        O contrato foi processado com sucesso.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-blue-700/30 p-6 text-center">
+              <p className="text-sm text-blue-200">
+                Em caso de dúvidas, entre em contato conosco através dos canais oficiais.
+              </p>
+              <p className="text-xs text-blue-300 mt-2">
+                FlowCode Financial • Contrato assinado em {new Date().toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+          </div>
         )}
       </div>
     </div>
