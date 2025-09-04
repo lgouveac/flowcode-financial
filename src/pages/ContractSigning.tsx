@@ -323,7 +323,14 @@ export default function ContractSigning() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Parcelas</Label>
-                <p className="text-lg">{contract.installments}x de {formatCurrency(contract.installment_value)}</p>
+                <p className="text-lg">
+                  {contract.installment_value_text 
+                    ? contract.installment_value_text 
+                    : contract.installment_value 
+                      ? `${contract.installments}x de ${formatCurrency(contract.installment_value)}`
+                      : `${contract.installments}x parcelas`
+                  }
+                </p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Data de Início</Label>

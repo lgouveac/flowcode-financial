@@ -143,12 +143,14 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                 
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Parcelas</Label>
-                  <p className="text-lg">{contract.installments || "1"}</p>
-                  {contract.installment_value && (
-                    <p className="text-sm text-muted-foreground">
-                      {formatCurrency(contract.installment_value)} cada
-                    </p>
-                  )}
+                  <p className="text-lg">
+                    {contract.installment_value_text 
+                      ? contract.installment_value_text 
+                      : contract.installment_value 
+                        ? `${contract.installments || 1}x de ${formatCurrency(contract.installment_value)}`
+                        : `${contract.installments || 1}x parcelas`
+                    }
+                  </p>
                 </div>
                 
                 <div>
