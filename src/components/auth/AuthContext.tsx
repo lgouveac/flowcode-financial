@@ -119,7 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   if (!isAuthPage() && 
                       !location.pathname.startsWith('/register-client') && 
                       !location.pathname.startsWith('/register-employee') && 
-                      !location.pathname.startsWith('/thank-you')) {
+                      !location.pathname.startsWith('/thank-you') &&
+                      !location.pathname.startsWith('/contract-signing')) {
                     navigate('/auth/login');
                   }
                 } else {
