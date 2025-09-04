@@ -179,8 +179,7 @@ export default function ContractSigning() {
         .from('Contratos')
         .update({
           status: 'completed',
-          signature_data: signatureData,
-          signed_at: new Date().toISOString(),
+          data_de_assinatura: new Date().toISOString(),
           ip: ipData.ip,
         })
         .eq('id', contract.id);
