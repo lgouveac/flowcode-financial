@@ -2,7 +2,7 @@
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import type { Payment } from "@/types/payment";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { PaymentActions } from "./PaymentActions";
@@ -26,15 +26,23 @@ export const PaymentRow = ({
   templates = [],
   hideClientName = false
 }: PaymentRowProps) => {
-  // Format due date safely
+  // Format due date safely without timezone conversion
   const formattedDueDate = payment.due_date 
-    ? format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: ptBR })
+    ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
     : 'Data não definida';
     
   return (
     <TableRow className="hover:bg-muted/50">
-      <TableCell>{payment.clients?.name || 'Cliente não encontrado'}</TableCell>
-      <TableCell>{payment.description || 'Sem descrição'}</TableCell>
+      <TableCell>
+        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={payment.clients?.name || 'Cliente não encontrado'}>
+          {payment.clients?.name || 'Cliente não encontrado'}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={payment.description || 'Sem descrição'}>
+          {payment.description || 'Sem descrição'}
+        </div>
+      </TableCell>
       <TableCell>{formatCurrency(payment.amount)}</TableCell>
       <TableCell>{formattedDueDate}</TableCell>
       <TableCell>{(payment.payment_method || '').toUpperCase()}</TableCell>

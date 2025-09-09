@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { EditIcon, TrashIcon, PlusIcon, FileText, CheckIcon, Grid, List, Copy, Eye, ExternalLink, Shield } from "lucide-react";
+import { EditIcon, TrashIcon, PlusIcon, FileText, CheckIcon, Grid, List, Copy, Eye, ExternalLink } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { formatDate } from "@/utils/formatters";
@@ -13,22 +13,22 @@ import { NewContractDialog } from "./NewContractDialog";
 import { EditContractDialog } from "./EditContractDialog";
 import { SignContractDialog } from "./SignContractDialog";
 import { ContractDetailsDialog } from "./ContractDetailsDialog";
-import { NDADialog } from "./NDADialog";
+import { useWebhooks } from "@/hooks/useWebhooks";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-const getStatusColor = (status?: string) => {
+const getStatusVariant = (status?: string): "success" | "info" | "danger" | "warning" | "neutral" => {
   switch (status) {
     case "active":
-      return "bg-green-100 text-green-800";
+      return "success";
     case "completed":
-      return "bg-blue-100 text-blue-800";
+      return "info";
     case "cancelled":
-      return "bg-red-100 text-red-800";
+      return "danger";
     case "suspended":
-      return "bg-yellow-100 text-yellow-800";
+      return "warning";
     default:
-      return "bg-gray-100 text-gray-800";
+      return "neutral";
   }
 };
 
@@ -53,10 +53,9 @@ export function ContractTable() {
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
-  const [generatingContract, setGeneratingContract] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-  const [ndaDialogOpen, setNdaDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { getWebhook } = useWebhooks();
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este contrato?")) {
@@ -78,79 +77,46 @@ export function ContractTable() {
     window.open(signingUrl, '_blank');
   };
 
-  const handleGenerateContract = async (contract: Contract) => {
-    setGeneratingContract(contract.id);
-    
-    const payload = {
-      contract: {
-        id: contract.id,
-        client_name: contract.clients?.name,
-        scope: contract.scope,
-        total_value: contract.total_value,
-        installments: contract.installments,
-        installment_value: contract.installment_value,
-        start_date: contract.start_date,
-        end_date: contract.end_date,
-        status: contract.status
-      },
-      timestamp: new Date().toISOString(),
-      action: "generate_contract"
-    };
 
-    console.log("Enviando solicitação via edge function");
-    console.log("Payload:", payload);
-    
-    try {
-      const response = await fetch(`https://itlpvpdwgiwbdpqheemw.supabase.co/functions/v1/generate-contract-webhook`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bHB2cGR3Z2l3YmRwcWhlZW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxOTA5NzEsImV4cCI6MjA1NTc2Njk3MX0.gljQ6JAfbMzP-cbA68Iz21vua9YqAqVQgpB-eLk6nAg'}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      console.log("Response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("Success response:", result);
-
-      toast({
-        title: "Solicitação enviada",
-        description: "A solicitação para gerar o contrato foi enviada com sucesso.",
-      });
-    } catch (error) {
-      console.error("Erro completo:", error);
-      
-      toast({
-        title: "Erro",
-        description: `Não foi possível enviar a solicitação para gerar o contrato. ${error.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setGeneratingContract(null);
-    }
-  };
 
   const handleCreateContract = async (contractData: Contract) => {
     try {
-      // Chama o webhook do n8n diretamente (igual ao GitHub)
-      const webhookResponse = await fetch("https://n8n.sof.to/webhook-test/e39a39a2-b53d-4cda-b3cb-c526da442158", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contract: contractData,
-          timestamp: new Date().toISOString(),
-          action: "create_contract"
-        }),
+      // Buscar URL do webhook dinâmico
+      const webhookUrl = getWebhook('prestacao_servico', 'criacao');
+      
+      if (!webhookUrl) {
+        console.warn('Webhook de criação não configurado, pulando chamada');
+        toast({
+          title: "Webhook não configurado",
+          description: "Configure o webhook de criação nas configurações da página",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Chama o webhook configurado dinamicamente (GET) - TODOS os dados
+      const webhookParams = new URLSearchParams();
+      
+      // Campos básicos obrigatórios
+      webhookParams.append('action', 'create_contract');
+      webhookParams.append('timestamp', new Date().toISOString());
+      
+      // Todos os campos do contrato
+      Object.entries(contractData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (key === 'clients' && typeof value === 'object') {
+            // Expandir dados do cliente
+            webhookParams.append('client_name', value.name || '');
+            webhookParams.append('client_email', value.email || '');
+            webhookParams.append('client_type', value.type || '');
+          } else {
+            webhookParams.append(key, value.toString());
+          }
+        }
+      });
+      
+      const webhookResponse = await fetch(`${webhookUrl}?${webhookParams}`, {
+        method: "GET",
       });
 
       if (webhookResponse.ok) {
@@ -212,13 +178,6 @@ export function ContractTable() {
               </Button>
             </div>
             
-            <Button 
-              onClick={() => setNdaDialogOpen(true)}
-              variant="outline"
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              Enviar NDA
-            </Button>
             
             <Button onClick={() => setNewContractOpen(true)}>
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -233,7 +192,8 @@ export function ContractTable() {
             </div>
           ) : viewMode === 'table' ? (
             <div className="overflow-x-auto">
-              <Table>
+              <div className="min-w-[800px]">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Cliente</TableHead>
@@ -250,9 +210,15 @@ export function ContractTable() {
                   {contracts.map((contract) => (
                     <TableRow key={contract.id}>
                       <TableCell className="font-medium">
-                        {contract.clients?.name || "Cliente não vinculado"}
+                        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={contract.clients?.name || "Cliente não vinculado"}>
+                          {contract.clients?.name || (contract.contract_type === "NDA" && contract.obs?.includes("Funcionário") ? contract.obs.split(" - ")[1] : "Cliente não vinculado")}
+                        </div>
                       </TableCell>
-                      <TableCell>{contract.scope || "-"}</TableCell>
+                      <TableCell>
+                        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={contract.scope}>
+                          {contract.scope || "-"}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {contract.total_value ? formatCurrency(contract.total_value) : "-"}
                       </TableCell>
@@ -264,7 +230,7 @@ export function ContractTable() {
                         {contract.start_date ? formatDate(new Date(contract.start_date), "dd/MM/yyyy") : "-"}
                       </TableCell>
                       <TableCell>
-                        <Badge className={getStatusColor(contract.status)}>
+                        <Badge variant={getStatusVariant(contract.status)}>
                           {getStatusLabel(contract.status)}
                         </Badge>
                       </TableCell>
@@ -277,14 +243,6 @@ export function ContractTable() {
                             title="Ver Detalhes"
                           >
                             <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopySigningLink(contract.contract_id)}
-                            title="Copiar Link de Assinatura"
-                          >
-                            <Copy className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -307,15 +265,6 @@ export function ContractTable() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleGenerateContract(contract)}
-                            disabled={generatingContract === contract.id}
-                            title="Gerar Contrato"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
                             onClick={() => setEditingContract(contract)}
                             title="Editar"
                           >
@@ -335,6 +284,7 @@ export function ContractTable() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </div>
           ) : (
             // Visualização em Grid
@@ -344,14 +294,22 @@ export function ContractTable() {
                   <CardHeader className="pb-3 flex-shrink-0">
                     <div className="flex justify-between items-start min-h-0">
                       <div className="min-w-0 flex-1 mr-2">
-                        <CardTitle className="text-lg truncate" title={contract.clients?.name || "Cliente não vinculado"}>
-                          {contract.clients?.name || "Cliente não vinculado"}
+                        <CardTitle 
+                          className="text-lg overflow-hidden" 
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical'
+                          }}
+                          title={contract.clients?.name || "Cliente não vinculado"}
+                        >
+                          {contract.clients?.name || (contract.contract_type === "NDA" && contract.obs?.includes("Funcionário") ? contract.obs.split(" - ")[1] : "Cliente não vinculado")}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
                           ID: {contract.id}
                         </p>
                       </div>
-                      <Badge className={`${getStatusColor(contract.status)} flex-shrink-0`}>
+                      <Badge variant={getStatusVariant(contract.status)} className="flex-shrink-0">
                         {getStatusLabel(contract.status)}
                       </Badge>
                     </div>
@@ -406,15 +364,6 @@ export function ContractTable() {
                           <Eye className="h-4 w-4" />
                         </Button>
                         
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopySigningLink(contract.contract_id)}
-                          title="Copiar Link de Assinatura"
-                          className="h-8 px-2"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
                         
                         <Button
                           variant="ghost"
@@ -425,6 +374,7 @@ export function ContractTable() {
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Button>
+                        
                         
                         {contract.status !== "completed" && (
                           <Button
@@ -438,16 +388,6 @@ export function ContractTable() {
                           </Button>
                         )}
                         
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleGenerateContract(contract)}
-                          disabled={generatingContract === contract.id}
-                          title="Gerar Contrato"
-                          className="h-8 px-2"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
                         
                         <Button
                           variant="ghost"
@@ -508,10 +448,6 @@ export function ContractTable() {
         />
       )}
 
-      <NDADialog
-        open={ndaDialogOpen}
-        onClose={() => setNdaDialogOpen(false)}
-      />
     </>
   );
 }

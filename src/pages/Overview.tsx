@@ -8,11 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import { EstimatedExpensesDialog } from "@/components/cash-flow/EstimatedExpensesDialog";
 import type { Payment } from "@/types/payment";
-import { FileText, Calculator, BarChart3, Users, TrendingUp } from "lucide-react";
+import { FileText, Calculator, BarChart3, Users, TrendingUp, ChevronDown } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -49,11 +56,17 @@ export const Overview = () => {
   const [futureProjections, setFutureProjections] = useState<FutureProjection[]>([]);
   const [projectionsLoading, setProjectionsLoading] = useState(false);
   const [projectionDialogOpen, setProjectionDialogOpen] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [isCustomPeriod, setIsCustomPeriod] = useState(false);
   
   const {
     metrics,
     isLoading
-  } = useMetrics(period);
+  } = useMetrics(period, {
+    customStartDate,
+    customEndDate
+  });
   
   const { estimatedExpenses, isLoading: isLoadingEstimates } = useEstimatedExpenses(period);
   
@@ -120,11 +133,57 @@ export const Overview = () => {
           start: lastYear.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0],
         };
+      case 'current_year':
+        return {
+          start: `${currentYear}-01-01`,
+          end: `${currentYear}-12-31`,
+        };
+      case 'previous_year':
+        const previousYear = currentYear - 1;
+        return {
+          start: `${previousYear}-01-01`,
+          end: `${previousYear}-12-31`,
+        };
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            start: customStartDate.toISOString().split('T')[0],
+            end: customEndDate.toISOString().split('T')[0],
+          };
+        }
+        // Fallback to current month if custom dates not set
+        return {
+          start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+          end: new Date(currentYear, currentMonth, 0).toISOString().split('T')[0],
+        };
       default:
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
           end: new Date(currentYear, currentMonth, 0).toISOString().split('T')[0],
         };
+    }
+  };
+
+  // Handle period change
+  const handlePeriodChange = (newPeriod: string) => {
+    setPeriod(newPeriod);
+    setIsCustomPeriod(newPeriod === 'custom');
+  };
+
+  // Get period label for display
+  const getPeriodLabel = () => {
+    switch (period) {
+      case 'current': return 'Mês Atual';
+      case 'last_month': return 'Mês Anterior';
+      case 'last_3_months': return 'Últimos 3 Meses';
+      case 'last_6_months': return 'Últimos 6 Meses';
+      case 'last_year': return 'Último Ano';
+      case 'current_year': return 'Ano Atual';
+      case 'previous_year': return 'Ano Anterior';
+      case 'custom': return customStartDate && customEndDate 
+        ? `${format(customStartDate, 'dd/MM/yyyy', { locale: ptBR })} - ${format(customEndDate, 'dd/MM/yyyy', { locale: ptBR })}`
+        : 'Período Personalizado';
+      default: return 'Período selecionado';
     }
   };
   
@@ -364,17 +423,17 @@ export const Overview = () => {
     title: "Receita Total",
     value: formatCurrency(metrics.totalRevenue || 0),
     change: metrics.revenueChange || "0%",
-    description: period === "current" ? "Mês atual" : "Período selecionado",
+    description: getPeriodLabel(),
   }, {
     title: "Despesas Totais",
     value: formatCurrency(metrics.totalExpenses || 0),
     change: metrics.expensesChange || "0%",
-    description: period === "current" ? "Mês atual" : "Período selecionado",
+    description: getPeriodLabel(),
   }, {
     title: "Lucro Líquido",
     value: formatCurrency(metrics.netProfit || 0),
     change: metrics.profitChange || "0%",
-    description: period === "current" ? "Mês atual" : "Período selecionado",
+    description: getPeriodLabel(),
   }, {
     title: "Clientes Ativos",
     value: (metrics.activeClients || 0).toString(),
@@ -436,8 +495,8 @@ export const Overview = () => {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <h1 className="text-2xl font-semibold">Visão Geral</h1>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+          <Select value={period} onValueChange={handlePeriodChange}>
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Selecione o período" />
             </SelectTrigger>
             <SelectContent>
@@ -446,19 +505,102 @@ export const Overview = () => {
               <SelectItem value="last_3_months">Últimos 3 Meses</SelectItem>
               <SelectItem value="last_6_months">Últimos 6 Meses</SelectItem>
               <SelectItem value="last_year">Último Ano</SelectItem>
+              <SelectItem value="current_year">Ano Atual</SelectItem>
+              <SelectItem value="previous_year">Ano Anterior</SelectItem>
+              <SelectItem value="custom">Período Personalizado</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Custom Date Range Picker */}
+          {isCustomPeriod && (
+            <div className="flex flex-col sm:flex-row gap-2 relative z-10">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full sm:w-[140px] justify-start text-left font-normal",
+                      !customStartDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customStartDate ? format(customStartDate, "dd/MM/yy", { locale: ptBR }) : "Data início"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-auto p-0" 
+                  align="start" 
+                  side="bottom" 
+                  sideOffset={5}
+                  style={{ zIndex: 9999 }}
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  <Calendar
+                    mode="single"
+                    selected={customStartDate}
+                    onSelect={(date) => {
+                      console.log('Start date selected:', date);
+                      setCustomStartDate(date);
+                    }}
+                    disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
+                    locale={ptBR}
+                    fixedWeeks
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full sm:w-[140px] justify-start text-left font-normal",
+                      !customEndDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customEndDate ? format(customEndDate, "dd/MM/yy", { locale: ptBR }) : "Data fim"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-auto p-0" 
+                  align="start" 
+                  side="bottom" 
+                  sideOffset={5}
+                  style={{ zIndex: 9999 }}
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  <Calendar
+                    mode="single"
+                    selected={customEndDate}
+                    onSelect={(date) => {
+                      console.log('End date selected:', date);
+                      setCustomEndDate(date);
+                    }}
+                    disabled={(date) => {
+                      const isDisabled = date > new Date() || 
+                        date < new Date("2020-01-01") || 
+                        (customStartDate && date < customStartDate);
+                      return isDisabled;
+                    }}
+                    locale={ptBR}
+                    fixedWeeks
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center justify-between whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 w-full sm:w-[180px]">
+              <Button variant="outline" className="w-full sm:w-[180px] justify-between">
                 {categoryFilter === "all" ? "Todas Categorias" : 
                  categoryFilter === "investment" ? "Investimento" :
                  categoryFilter === "pro_labore" ? "Pro Labore" :
                  categoryFilter === "profit_distribution" ? "Lucros" : 
                  "Filtrar"}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 h-4 w-4 opacity-50"><path d="m6 9 6 6 6-6"></path></svg>
-              </button>
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[180px]">
               <DropdownMenuItem onClick={() => setCategoryFilter("all")}>

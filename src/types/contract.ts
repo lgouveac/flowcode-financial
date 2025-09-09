@@ -1,7 +1,8 @@
 
 export interface Contract {
   id: number;
-  client_id: string;
+  client_id?: string;
+  employee_id?: string;
   contract_id?: string;
   scope?: string;
   total_value?: number;
@@ -11,7 +12,7 @@ export interface Contract {
   start_date?: string;
   end_date?: string;
   status?: "active" | "completed" | "cancelled" | "suspended";
-  contract_type?: "open_scope" | "closed_scope";
+  contract_type?: "open_scope" | "closed_scope" | "NDA";
   contractor_type?: "individual" | "legal_entity";
   data_de_assinatura?: string;
   signing_date_legacy?: string;
@@ -34,6 +35,10 @@ export interface Contract {
     name: string;
     email: string;
     type: string;
+  } | null;
+  employees?: {
+    name: string;
+    email: string;
   } | null;
 }
 

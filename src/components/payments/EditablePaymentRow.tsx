@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, X, Edit2, Trash2 } from "lucide-react";
 import type { Payment } from "@/types/payment";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { formatCurrency } from "@/utils/formatters";
@@ -101,7 +101,7 @@ export const EditablePaymentRow = ({
   };
 
   const formattedDueDate = payment.due_date 
-    ? format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: ptBR })
+    ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
     : 'Data não definida';
 
   return (

@@ -14,7 +14,7 @@ import { SimplePaymentDialog } from "./recurring-billing/SimplePaymentDialog";
 import { Skeleton } from "./ui/skeleton";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 export const RecurringBilling = () => {
   const {
@@ -30,9 +30,9 @@ export const RecurringBilling = () => {
   const [showSimplePaymentDialog, setShowSimplePaymentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [paymentSearch, setPaymentSearch] = useState("");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("pending"); // Ativo por padrão
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("pending,overdue"); // Pendente e atrasado por padrão
   const [billingSearch, setBillingSearch] = useState("");
-  const [billingStatusFilter, setBillingStatusFilter] = useState("pending"); // Pendente por padrão no escopo aberto
+  const [billingStatusFilter, setBillingStatusFilter] = useState("pending,overdue"); // Pendente e atrasado por padrão no escopo aberto
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(true); // Filtros expandidos por padrão no escopo fechado
   const [showAdvancedFiltersOpen, setShowAdvancedFiltersOpen] = useState(true); // Filtros expandidos por padrão no escopo aberto
   const [expandCharges, setExpandCharges] = useState(true); // Expandido por padrão
@@ -40,8 +40,8 @@ export const RecurringBilling = () => {
   const [expandChargesAll, setExpandChargesAll] = useState(true); // Expandido por padrão na aba Todos
   const [sortBy, setSortBy] = useState("due_date"); // Vencimento próximo por padrão
   const [sortByOpen, setSortByOpen] = useState("due_date"); // Vencimento próximo por padrão no escopo aberto
-  const [paymentStatusDetailFilter, setPaymentStatusDetailFilter] = useState<string[]>(["pending"]); // Pendente por padrão
-  const [billingStatusDetailFilter, setBillingStatusDetailFilter] = useState<string[]>(["pending"]); // Pendente por padrão no escopo aberto
+  const [paymentStatusDetailFilter, setPaymentStatusDetailFilter] = useState<string[]>(["pending", "overdue"]); // Pendente e atrasado por padrão
+  const [billingStatusDetailFilter, setBillingStatusDetailFilter] = useState<string[]>(["pending", "overdue"]); // Pendente e atrasado por padrão no escopo aberto
   const [showStatusFilterModal, setShowStatusFilterModal] = useState(false);
   const [currentFilterType, setCurrentFilterType] = useState<'payment' | 'billing'>('payment');
 
@@ -334,7 +334,7 @@ export const RecurringBilling = () => {
       .map(payment => {
         // Formatar data de vencimento
         const formattedDueDate = payment.due_date 
-          ? format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: ptBR })
+          ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
           : 'Dia --';
 
         return {
@@ -402,7 +402,7 @@ export const RecurringBilling = () => {
       .map(payment => {
         // Formatar data de vencimento
         const formattedDueDate = payment.due_date 
-          ? format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: ptBR })
+          ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
           : 'Dia --';
 
         return {
