@@ -33,7 +33,7 @@ export function WebhookConfigModal({ open, onClose, contractType, title }: Webho
       setWebhookCriacao(getWebhook(contractType, 'criacao'));
       setWebhookAssinatura(getWebhook(contractType, 'assinatura'));
     }
-  }, [open, contractType]);
+  }, [open, contractType, getWebhook]);
 
   const handleSave = () => {
     updateWebhook(contractType, 'criacao', webhookCriacao);
