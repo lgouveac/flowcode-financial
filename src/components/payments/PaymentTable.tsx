@@ -64,8 +64,9 @@ export const PaymentTable = ({
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
+    <div className="rounded-md border overflow-x-auto">
+      <div className="min-w-[700px]">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Cliente</TableHead>
@@ -90,6 +91,7 @@ export const PaymentTable = ({
           ))}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 };

@@ -98,10 +98,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     // Process for recurring billing notifications
-    let emailsSentRecurring = await processRecurringBillingNotifications(supabase, intervals);
+    const emailsSentRecurring = await processRecurringBillingNotifications(supabase, intervals);
     
     // Process for one-time payment notifications
-    let emailsSentOneTime = await processOneTimePaymentNotifications(supabase, intervals);
+    const emailsSentOneTime = await processOneTimePaymentNotifications(supabase, intervals);
     
     const totalEmailsSent = emailsSentRecurring + emailsSentOneTime;
     

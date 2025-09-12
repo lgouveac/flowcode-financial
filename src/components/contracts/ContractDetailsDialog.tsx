@@ -112,7 +112,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                 
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Escopo</Label>
-                  <p className="text-lg">{contract.scope || "-"}</p>
+                  <p className="text-lg line-clamp-2 leading-6 max-h-12 overflow-hidden">{contract.scope || "-"}</p>
                 </div>
                 
                 <div>
@@ -402,7 +402,9 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
               </CardHeader>
               <CardContent>
                 <div className="p-4 border rounded-lg bg-muted/30">
-                  <p className="whitespace-pre-wrap">{contract.obs}</p>
+                  <div className="max-h-32 overflow-y-auto">
+                    <p className="whitespace-pre-wrap">{contract.obs}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

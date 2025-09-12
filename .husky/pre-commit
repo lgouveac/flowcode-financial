@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run linting with auto-fix
+npm run lint:fix
+
+# Run security audit (allow to continue if issues found)
+npm run security:audit || true
+
+# Check that build still works
+npm run build

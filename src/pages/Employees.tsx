@@ -10,8 +10,8 @@ import { EmployeePaymentSettings } from "@/components/employees/EmployeePaymentS
 export default function EmployeesPage() {
   const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
   return <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        <h1 className="text-2xl font-bold tracking-tight">Funcionários</h1>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold">Funcionários</h1>
         <div className="flex gap-2">
           <ShareEmployeeFormButton />
           <Button onClick={() => setRegistrationDialogOpen(true)}>

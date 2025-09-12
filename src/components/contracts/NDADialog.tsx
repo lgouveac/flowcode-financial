@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Settings, FileText, User, UserCheck } from "lucide-react";
+import { useWebhooks } from "@/hooks/useWebhooks";
 
 interface NDADialogProps {
   open: boolean;
@@ -69,17 +70,16 @@ export function NDADialog({ open, onClose }: NDADialogProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedType, setSelectedType] = useState<'client' | 'employee'>('client');
   const [selectedPersonId, setSelectedPersonId] = useState('');
+  const { getNDAWebhook, updateNDAWebhook } = useWebhooks();
   const [webhookUrl, setWebhookUrl] = useState('');
   const [isConfiguring, setIsConfiguring] = useState(false);
   const { toast } = useToast();
 
-  // Load webhook URL from localStorage
+  // Load webhook URL from localStorage via hook
   useEffect(() => {
-    const savedWebhookUrl = localStorage.getItem('nda_webhook_url');
-    if (savedWebhookUrl) {
-      setWebhookUrl(savedWebhookUrl);
-    }
-  }, []);
+    const savedWebhookUrl = getNDAWebhook();
+    setWebhookUrl(savedWebhookUrl);
+  }, [getNDAWebhook]);
 
   // Load clients and employees
   useEffect(() => {
@@ -129,7 +129,7 @@ export function NDADialog({ open, onClose }: NDADialogProps) {
   };
 
   const saveWebhookConfig = () => {
-    localStorage.setItem('nda_webhook_url', webhookUrl);
+    updateNDAWebhook(webhookUrl);
     setIsConfiguring(false);
     toast({
       title: "Configuração salva",

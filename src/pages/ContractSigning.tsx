@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { Loader2, FileText } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthContext";
 
 interface Contract {
   id: number;
@@ -21,22 +22,35 @@ interface Contract {
   total_value: number;
   installments: number;
   installment_value: number;
+  installment_value_text?: string;
   start_date: string;
   end_date?: string;
   status: string;
   link_contrato?: string;
+  obs?: string;
+  // Campos de assinatura cliente
+  data_de_assinatura?: string;
+  ip?: string;
+  // Campos de assinatura FlowCode
+  data_assinatura_flowcode?: string;
+  ip_flowcode?: string;
+  assinante_flowcode?: string;
 }
 
 export default function ContractSigning() {
   const { contractId } = useParams<{ contractId: string }>();
+  const { user } = useAuth(); // Verificar se usuário está logado
   console.log('ContractSigning component loaded with contractId:', contractId);
   
   const [contract, setContract] = useState<Contract | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Estados para assinatura do cliente
   const [signing, setSigning] = useState(false);
   const [signatureType, setSignatureType] = useState<'text' | 'draw'>('text');
   const [textSignature, setTextSignature] = useState('');
   const [isDrawing, setIsDrawing] = useState(false);
+  
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
@@ -99,6 +113,7 @@ export default function ContractSigning() {
     }
   };
 
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
     const canvas = canvasRef.current;
@@ -137,6 +152,7 @@ export default function ContractSigning() {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
+
 
   const handleSubmit = async () => {
     if (!contract) return;
@@ -184,7 +200,7 @@ export default function ContractSigning() {
       const ipResponse = await fetch('https://api.ipify.org?format=json');
       const ipData = await ipResponse.json();
 
-      // Atualizar contrato como assinado
+      // Atualizar contrato como assinado pelo cliente
       const { error } = await supabase
         .from('Contratos')
         .update({
@@ -202,7 +218,11 @@ export default function ContractSigning() {
       });
 
       // Atualizar estado local
-      setContract({ ...contract, status: 'completed' });
+      setContract({ 
+        ...contract, 
+        status: 'completed',
+        data_de_assinatura: new Date().toISOString(),
+      });
 
     } catch (error) {
       console.error('Error signing contract:', error);
@@ -218,7 +238,7 @@ export default function ContractSigning() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6">
+      <div className="py-6">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin" />
           <span className="ml-2">Carregando contrato...</span>
@@ -229,8 +249,8 @@ export default function ContractSigning() {
 
   if (!contract) {
     return (
-      <div className="container mx-auto py-6">
-        <Card>
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
           <CardContent className="text-center py-12">
             <h2 className="text-2xl font-bold mb-4">Contrato não encontrado</h2>
             <p className="text-muted-foreground mb-4">
@@ -248,11 +268,11 @@ export default function ContractSigning() {
   }
 
   return (
-    <div className="container mx-auto py-6 max-w-4xl">
-      <div className="space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Assinatura de Contrato</h1>
-          <p className="text-muted-foreground">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl space-y-6">
+        <div className="text-center text-white">
+          <h1 className="text-2xl font-bold">Assinatura de Contrato</h1>
+          <p className="text-blue-100">
             Revise as informações e assine o contrato abaixo
           </p>
         </div>
@@ -361,7 +381,7 @@ export default function ContractSigning() {
           </CardContent>
         </Card>
 
-        {/* Assinatura */}
+        {/* Assinatura do Cliente */}
         {contract.status !== 'completed' && (
           <Card>
             <CardHeader>
@@ -445,6 +465,7 @@ export default function ContractSigning() {
           </Card>
         )}
 
+
         {contract.status === 'completed' && (
           <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 z-50 flex flex-col text-white">
             {/* Header */}
@@ -454,7 +475,7 @@ export default function ContractSigning() {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2">Contrato Assinado com Sucesso!</h1>
+              <h1 className="text-2xl font-bold text-white">Contrato Assinado com Sucesso!</h1>
               <p className="text-blue-100">
                 Obrigado por assinar o contrato. Abaixo estão as informações importantes:
               </p>

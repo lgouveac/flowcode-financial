@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     let subject = '';
     let content = '';
-    let to = requestData.to;
+    const to = requestData.to;
     let emailData: EmailData;
     
     // Check if we're using template ID or direct content

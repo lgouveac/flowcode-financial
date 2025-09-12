@@ -158,8 +158,16 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
       className="hover:bg-muted/50"
       onClick={handleViewDetails}
     >
-      <TableCell className="font-medium">{billing.clients?.name || "Cliente não encontrado"}</TableCell>
-      <TableCell>{billing.description}</TableCell>
+      <TableCell className="font-medium">
+        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={billing.clients?.name || "Cliente não encontrado"}>
+          {billing.clients?.name || "Cliente não encontrado"}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={billing.description}>
+          {billing.description}
+        </div>
+      </TableCell>
       <TableCell>{formatCurrency(billing.amount)}</TableCell>
       <TableCell>Dia {billing.due_day}</TableCell>
       <TableCell>

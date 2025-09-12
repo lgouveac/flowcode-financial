@@ -24,10 +24,12 @@ export const ClientRow = ({ client, onUpdate, onClick, onDelete }: ClientRowProp
       onClick={onClick}
     >
       <td className="py-2 px-4">
-        <EditableCell
-          value={client.name}
-          onChange={(value) => onUpdate(client.id, 'name', value)}
-        />
+        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden">
+          <EditableCell
+            value={client.name}
+            onChange={(value) => onUpdate(client.id, 'name', value)}
+          />
+        </div>
       </td>
       <td className="py-2 px-4 hidden md:table-cell">
         <div className="flex flex-col gap-1">

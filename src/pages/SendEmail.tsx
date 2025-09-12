@@ -52,10 +52,10 @@ export default function SendEmail() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Enviar E-mail</h1>
+          <h1 className="text-2xl font-bold">Enviar E-mail</h1>
           <p className="text-muted-foreground">
             Envie emails para seus clientes usando templates personalizados.
           </p>

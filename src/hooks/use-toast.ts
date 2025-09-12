@@ -130,7 +130,7 @@ function addToRemoveQueue(toastId: string) {
 }
 
 let memoryState: State = { toasts: [] }
-let listeners: ((state: State) => void)[] = []
+const listeners: ((state: State) => void)[] = []
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)

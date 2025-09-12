@@ -84,15 +84,12 @@ export function ContractTable() {
       // Buscar URL do webhook dinâmico
       const webhookUrl = getWebhook('prestacao_servico', 'criacao');
       
-      if (!webhookUrl) {
-        console.warn('Webhook de criação não configurado, pulando chamada');
-        toast({
-          title: "Webhook não configurado",
-          description: "Configure o webhook de criação nas configurações da página",
-          variant: "destructive",
-        });
+      if (!webhookUrl || webhookUrl.trim() === '') {
+        console.log('No webhook configured for contract creation');
         return;
       }
+      
+      console.log('Calling webhook:', webhookUrl);
 
       // Chama o webhook configurado dinamicamente (GET) - TODOS os dados
       const webhookParams = new URLSearchParams();
@@ -124,8 +121,6 @@ export function ContractTable() {
           title: "Webhook enviado",
           description: "O webhook foi chamado com sucesso para o novo contrato.",
         });
-      } else {
-        console.warn("Webhook não foi enviado com sucesso, mas o contrato foi criado");
       }
     } catch (error) {
       console.error("Erro ao chamar webhook:", error);
@@ -157,7 +152,7 @@ export function ContractTable() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Contratos</CardTitle>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-6">
             {/* Toggle de visualização */}
             <div className="flex bg-muted rounded-lg p-1">
               <Button
@@ -178,7 +173,6 @@ export function ContractTable() {
               </Button>
             </div>
             
-            
             <Button onClick={() => setNewContractOpen(true)}>
               <PlusIcon className="h-4 w-4 mr-2" />
               Novo Contrato
@@ -192,7 +186,7 @@ export function ContractTable() {
             </div>
           ) : viewMode === 'table' ? (
             <div className="overflow-x-auto">
-              <div className="min-w-[800px]">
+              <div className="w-full">
                 <Table>
                 <TableHeader>
                   <TableRow>
@@ -203,20 +197,22 @@ export function ContractTable() {
                     <TableHead>Valor da Parcela</TableHead>
                     <TableHead>Data de Início</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[150px]">Ações</TableHead>
+                    <TableHead className="w-[200px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {contracts.map((contract) => (
                     <TableRow key={contract.id}>
-                      <TableCell className="font-medium">
-                        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={contract.clients?.name || "Cliente não vinculado"}>
+                      <TableCell className="font-medium w-[200px]">
+                        <div className="text-sm leading-5" title={contract.clients?.name || "Cliente não vinculado"}>
                           {contract.clients?.name || (contract.contract_type === "NDA" && contract.obs?.includes("Funcionário") ? contract.obs.split(" - ")[1] : "Cliente não vinculado")}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={contract.scope}>
-                          {contract.scope || "-"}
+                      <TableCell className="max-w-[300px]">
+                        <div className="text-sm leading-5" title={contract.scope}>
+                          <div className="line-clamp-3">
+                            {contract.scope || "-"}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -235,7 +231,7 @@ export function ContractTable() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-1">
+                        <div className="flex flex-wrap gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -288,9 +284,9 @@ export function ContractTable() {
             </div>
           ) : (
             // Visualização em Grid
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {contracts.map((contract) => (
-                <Card key={contract.id} className="hover:shadow-lg transition-shadow h-80 flex flex-col">
+                <Card key={contract.id} className="hover:shadow-lg transition-shadow h-auto min-h-[320px] flex flex-col">
                   <CardHeader className="pb-3 flex-shrink-0">
                     <div className="flex justify-between items-start min-h-0">
                       <div className="min-w-0 flex-1 mr-2">
@@ -315,8 +311,8 @@ export function ContractTable() {
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                  <CardContent className="flex-1 flex flex-col min-h-0 overflow-hidden p-6">
+                    <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Valor Total</p>
@@ -352,7 +348,7 @@ export function ContractTable() {
                     </div>
                     
                     {/* Ações - fixas no bottom */}
-                    <div className="flex-shrink-0 pt-3 border-t">
+                    <div className="flex-shrink-0 pt-4 border-t mt-4">
                       <div className="flex flex-wrap gap-1 justify-center">
                         <Button
                           variant="ghost"

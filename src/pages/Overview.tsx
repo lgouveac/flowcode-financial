@@ -19,13 +19,7 @@ import { supabase } from "@/lib/supabase";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import { EstimatedExpensesDialog } from "@/components/cash-flow/EstimatedExpensesDialog";
 import type { Payment } from "@/types/payment";
-import { FileText, Calculator, BarChart3, Users, TrendingUp, ChevronDown } from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
+import { FileText, Calculator, BarChart3 } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -52,7 +46,6 @@ interface FutureProjection {
 
 export const Overview = () => {
   const [period, setPeriod] = useState("current");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [futureProjections, setFutureProjections] = useState<FutureProjection[]>([]);
   const [projectionsLoading, setProjectionsLoading] = useState(false);
   const [projectionDialogOpen, setProjectionDialogOpen] = useState(false);
@@ -112,12 +105,26 @@ export const Overview = () => {
           start: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`,
           end: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
+      case 'next_month':
+        const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+        return {
+          start: `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`,
+          end: new Date(nextMonthYear, nextMonth, 0).toISOString().split('T')[0],
+        };
       case 'last_3_months':
         const threeMonthsAgo = new Date(now);
         threeMonthsAgo.setMonth(now.getMonth() - 3);
         return {
           start: threeMonthsAgo.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0],
+        };
+      case 'next_3_months':
+        const threeMonthsFromNow = new Date(now);
+        threeMonthsFromNow.setMonth(now.getMonth() + 3);
+        return {
+          start: now.toISOString().split('T')[0],
+          end: threeMonthsFromNow.toISOString().split('T')[0],
         };
       case 'last_6_months':
         const sixMonthsAgo = new Date(now);
@@ -126,12 +133,26 @@ export const Overview = () => {
           start: sixMonthsAgo.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0],
         };
+      case 'next_6_months':
+        const sixMonthsFromNow = new Date(now);
+        sixMonthsFromNow.setMonth(now.getMonth() + 6);
+        return {
+          start: now.toISOString().split('T')[0],
+          end: sixMonthsFromNow.toISOString().split('T')[0],
+        };
       case 'last_year':
         const lastYear = new Date(now);
         lastYear.setFullYear(now.getFullYear() - 1);
         return {
           start: lastYear.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0],
+        };
+      case 'next_year':
+        const nextYear = new Date(now);
+        nextYear.setFullYear(now.getFullYear() + 1);
+        return {
+          start: now.toISOString().split('T')[0],
+          end: nextYear.toISOString().split('T')[0],
         };
       case 'current_year':
         return {
@@ -175,9 +196,13 @@ export const Overview = () => {
     switch (period) {
       case 'current': return 'Mês Atual';
       case 'last_month': return 'Mês Anterior';
+      case 'next_month': return 'Próximo Mês';
       case 'last_3_months': return 'Últimos 3 Meses';
+      case 'next_3_months': return 'Próximos 3 Meses';
       case 'last_6_months': return 'Últimos 6 Meses';
+      case 'next_6_months': return 'Próximos 6 Meses';
       case 'last_year': return 'Último Ano';
+      case 'next_year': return 'Próximo Ano';
       case 'current_year': return 'Ano Atual';
       case 'previous_year': return 'Ano Anterior';
       case 'custom': return customStartDate && customEndDate 
@@ -485,15 +510,10 @@ export const Overview = () => {
     category: "profit_distribution",
   }];
 
-  // Filter the category stats based on selected filter
-  const filteredCategoryStats = categoryFilter === "all" 
-    ? categoryStats 
-    : categoryStats.filter(stat => stat.category === categoryFilter);
-
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <h1 className="text-2xl font-semibold">Visão Geral</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold">Visão Geral</h1>
         <div className="flex flex-col sm:flex-row gap-2">
           <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-full sm:w-[200px]">
@@ -502,9 +522,13 @@ export const Overview = () => {
             <SelectContent>
               <SelectItem value="current">Mês Atual</SelectItem>
               <SelectItem value="last_month">Mês Anterior</SelectItem>
+              <SelectItem value="next_month">Próximo Mês</SelectItem>
               <SelectItem value="last_3_months">Últimos 3 Meses</SelectItem>
+              <SelectItem value="next_3_months">Próximos 3 Meses</SelectItem>
               <SelectItem value="last_6_months">Últimos 6 Meses</SelectItem>
+              <SelectItem value="next_6_months">Próximos 6 Meses</SelectItem>
               <SelectItem value="last_year">Último Ano</SelectItem>
+              <SelectItem value="next_year">Próximo Ano</SelectItem>
               <SelectItem value="current_year">Ano Atual</SelectItem>
               <SelectItem value="previous_year">Ano Anterior</SelectItem>
               <SelectItem value="custom">Período Personalizado</SelectItem>
@@ -528,7 +552,7 @@ export const Overview = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent 
-                  className="w-auto p-0" 
+                  className="w-auto p-0 bg-card border shadow-lg" 
                   align="start" 
                   side="bottom" 
                   sideOffset={5}
@@ -542,7 +566,7 @@ export const Overview = () => {
                       console.log('Start date selected:', date);
                       setCustomStartDate(date);
                     }}
-                    disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
+                    disabled={(date) => date < new Date("2020-01-01")}
                     locale={ptBR}
                     fixedWeeks
                   />
@@ -563,7 +587,7 @@ export const Overview = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent 
-                  className="w-auto p-0" 
+                  className="w-auto p-0 bg-card border shadow-lg" 
                   align="start" 
                   side="bottom" 
                   sideOffset={5}
@@ -578,8 +602,7 @@ export const Overview = () => {
                       setCustomEndDate(date);
                     }}
                     disabled={(date) => {
-                      const isDisabled = date > new Date() || 
-                        date < new Date("2020-01-01") || 
+                      const isDisabled = date < new Date("2020-01-01") || 
                         (customStartDate && date < customStartDate);
                       return isDisabled;
                     }}
@@ -590,41 +613,6 @@ export const Overview = () => {
               </Popover>
             </div>
           )}
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-[180px] justify-between">
-                {categoryFilter === "all" ? "Todas Categorias" : 
-                 categoryFilter === "investment" ? "Investimento" :
-                 categoryFilter === "pro_labore" ? "Pro Labore" :
-                 categoryFilter === "profit_distribution" ? "Lucros" : 
-                 "Filtrar"}
-                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[180px]">
-              <DropdownMenuItem onClick={() => setCategoryFilter("all")}>
-                Todas Categorias
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCategoryFilter("investment")}>
-                Investimento
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCategoryFilter("pro_labore")}>
-                Pro Labore
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setCategoryFilter("profit_distribution")}>
-                Lucros
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleTopClientsClick}>
-                <Users className="mr-2 h-4 w-4" />
-                Top Clientes
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleFutureProjectionsClick}>
-                <TrendingUp className="mr-2 h-4 w-4" />
-                Projeções Futuras
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 
@@ -739,7 +727,7 @@ export const Overview = () => {
                 </CardContent>
               </Card>
             )) : 
-            filteredCategoryStats.map((stat, i) => (
+            categoryStats.map((stat, i) => (
               <motion.div key={stat.title} initial={{
                 opacity: 0,
                 y: 20
@@ -814,11 +802,7 @@ export const Overview = () => {
       <Dialog open={pendingPaymentsOpen} onOpenChange={setPendingPaymentsOpen}>
         <DialogContent className="w-full max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Recebimentos Pendentes - {period === "current" ? "Mês Atual" : 
-                          period === "last_month" ? "Mês Anterior" : 
-                          period === "last_3_months" ? "Últimos 3 Meses" : 
-                          period === "last_6_months" ? "Últimos 6 Meses" : 
-                          "Último Ano"}</DialogTitle>
+            <DialogTitle>Recebimentos Pendentes - {getPeriodLabel()}</DialogTitle>
           </DialogHeader>
           
           {loadingPayments ? (
@@ -849,11 +833,7 @@ export const Overview = () => {
       <Dialog open={topClientsOpen} onOpenChange={setTopClientsOpen}>
         <DialogContent className="w-full max-w-md">
           <DialogHeader>
-            <DialogTitle>Top Clientes - {period === "current" ? "Mês Atual" : 
-                          period === "last_month" ? "Mês Anterior" : 
-                          period === "last_3_months" ? "Últimos 3 Meses" : 
-                          period === "last_6_months" ? "Últimos 6 Meses" : 
-                          "Último Ano"}</DialogTitle>
+            <DialogTitle>Top Clientes - {getPeriodLabel()}</DialogTitle>
           </DialogHeader>
           
           {loadingTopClients ? (

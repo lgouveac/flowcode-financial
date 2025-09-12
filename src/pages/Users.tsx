@@ -264,23 +264,22 @@ export default function Users() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <UsersIcon className="h-8 w-8" />
-            Usuários
-          </h1>
-          <p className="text-muted-foreground">
-            Gerencie usuários do sistema e aprovações pendentes
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <UsersIcon className="h-6 w-6" />
+          Usuários
+        </h1>
+        <p className="text-muted-foreground">
+          Gerencie usuários do sistema e aprovações pendentes
+        </p>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total</p>
@@ -288,11 +287,11 @@ export default function Users() {
                 </div>
                 <UsersIcon className="h-8 w-8 text-muted-foreground" />
               </div>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="p-6">
+        <Card>
+          <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Ativos</p>
@@ -300,11 +299,11 @@ export default function Users() {
                 </div>
                 <UserCheck className="h-8 w-8 text-green-600" />
               </div>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="p-6">
+        <Card>
+          <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Pendentes</p>
@@ -312,11 +311,11 @@ export default function Users() {
                 </div>
                 <Clock className="h-8 w-8 text-yellow-600" />
               </div>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="p-6">
+        <Card>
+          <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Bloqueados</p>
@@ -326,44 +325,44 @@ export default function Users() {
                 </div>
                 <UserX className="h-8 w-8 text-red-600" />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Pending Users Alert */}
-        {pendingCount > 0 && (
-          <Card className="border-yellow-200 bg-yellow-50">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-6 w-6 text-yellow-600" />
-                <div>
-                  <h3 className="font-semibold text-yellow-800">
-                    {pendingCount} usuário{pendingCount > 1 ? 's' : ''} aguardando aprovação
-                  </h3>
-                  <p className="text-sm text-yellow-700">
-                    Há novos cadastros que precisam ser aprovados por você.
-                  </p>
-                </div>
+      {/* Pending Users Alert */}
+      {pendingCount > 0 && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 text-yellow-600" />
+              <div>
+                <h3 className="font-semibold text-yellow-800">
+                  {pendingCount} usuário{pendingCount > 1 ? 's' : ''} aguardando aprovação
+                </h3>
+                <p className="text-sm text-yellow-700">
+                  Há novos cadastros que precisam ser aprovados por você.
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {/* Pending Users Section */}
-        {pendingCount > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Usuários Pendentes de Aprovação
-                <Badge variant="destructive" className="bg-orange-500">
-                  {pendingCount}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {pendingUsers.map((user) => (
+      {/* Pending Users Section */}
+      {pendingCount > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Usuários Pendentes de Aprovação
+              <Badge variant="destructive" className="bg-orange-500">
+                {pendingCount}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {pendingUsers.map((user) => (
                   <div key={user.id} className="border rounded-lg p-4 bg-muted/30">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -414,45 +413,45 @@ export default function Users() {
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Users List */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <CardTitle>Usuários do Sistema</CardTitle>
-              <div className="relative w-full sm:w-auto">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar usuário..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full sm:w-64"
-                />
-              </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            {filteredUsers.length === 0 ? (
-              <div className="text-center py-8">
-                <UsersIcon className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                <h3 className="text-lg font-medium mb-2">
-                  {searchTerm ? 'Nenhum usuário encontrado' : 'Nenhum usuário cadastrado'}
-                </h3>
-                <p className="text-muted-foreground">
-                  {searchTerm 
-                    ? `Nenhum usuário corresponde ao termo "${searchTerm}"`
-                    : 'Não há usuários cadastrados no sistema.'
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredUsers.map((user) => (
-                  <div key={user.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Users List */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle>Usuários do Sistema</CardTitle>
+            <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar usuário..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full sm:w-64"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredUsers.length === 0 ? (
+            <div className="text-center py-8">
+              <UsersIcon className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <h3 className="text-lg font-medium mb-2">
+                {searchTerm ? 'Nenhum usuário encontrado' : 'Nenhum usuário cadastrado'}
+              </h3>
+              <p className="text-muted-foreground">
+                {searchTerm 
+                  ? `Nenhum usuário corresponde ao termo "${searchTerm}"`
+                  : 'Não há usuários cadastrados no sistema.'
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredUsers.map((user) => (
+                <div key={user.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
@@ -487,13 +486,12 @@ export default function Users() {
                         </Badge>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Link } from "lucide-react";
 import { useWebhooks } from "@/hooks/useWebhooks";
@@ -23,17 +22,18 @@ export function WebhookConfigModal({ open, onClose, contractType, title }: Webho
   const { getWebhook, updateWebhook } = useWebhooks();
   const { toast } = useToast();
   
-  // Estados para webhooks
   const [webhookCriacao, setWebhookCriacao] = useState('');
   const [webhookAssinatura, setWebhookAssinatura] = useState('');
   
-  // Atualizar estados quando o modal abrir ou contractType mudar
+  // Carregar webhooks quando modal abrir
   useEffect(() => {
     if (open) {
-      setWebhookCriacao(getWebhook(contractType, 'criacao'));
-      setWebhookAssinatura(getWebhook(contractType, 'assinatura'));
+      const criacao = getWebhook(contractType, 'criacao') || '';
+      const assinatura = getWebhook(contractType, 'assinatura') || '';
+      setWebhookCriacao(criacao);
+      setWebhookAssinatura(assinatura);
     }
-  }, [open, contractType, getWebhook]);
+  }, [open, contractType]);
 
   const handleSave = () => {
     updateWebhook(contractType, 'criacao', webhookCriacao);
@@ -48,9 +48,6 @@ export function WebhookConfigModal({ open, onClose, contractType, title }: Webho
   };
 
   const handleCancel = () => {
-    // Restaurar valores originais
-    setWebhookCriacao(getWebhook(contractType, 'criacao'));
-    setWebhookAssinatura(getWebhook(contractType, 'assinatura'));
     onClose();
   };
 
@@ -65,39 +62,38 @@ export function WebhookConfigModal({ open, onClose, contractType, title }: Webho
         </DialogHeader>
         
         <div className="space-y-4">
-          {/* Webhook de Criação */}
           <div className="space-y-2">
-            <Label htmlFor={`${contractType}-criacao`}>
+            <Label>
               Webhook de Criação
               <span className="text-xs text-muted-foreground ml-2">
                 (chamado quando contrato é criado)
               </span>
             </Label>
-            <Input
-              id={`${contractType}-criacao`}
+            <input
+              type="text"
               value={webhookCriacao}
               onChange={(e) => setWebhookCriacao(e.target.value)}
               placeholder="https://n8n.exemplo.com/webhook-criacao"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
-          {/* Webhook de Assinatura */}
           <div className="space-y-2">
-            <Label htmlFor={`${contractType}-assinatura`}>
+            <Label>
               Webhook de Assinatura
               <span className="text-xs text-muted-foreground ml-2">
                 (chamado quando contrato é assinado)
               </span>
             </Label>
-            <Input
-              id={`${contractType}-assinatura`}
+            <input
+              type="text"
               value={webhookAssinatura}
               onChange={(e) => setWebhookAssinatura(e.target.value)}
               placeholder="https://n8n.exemplo.com/webhook-assinatura"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
-          {/* Botões */}
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={handleCancel}>
               Cancelar

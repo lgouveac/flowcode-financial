@@ -14,18 +14,17 @@ export default function Contracts() {
   const [webhookModalOpen, setWebhookModalOpen] = useState(false);
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestão de Contratos</h1>
-          <p className="text-muted-foreground">
-            Gerencie diferentes tipos de contratos e documentos legais
-          </p>
-        </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Gestão de Contratos</h1>
+        <p className="text-muted-foreground">
+          Gerencie diferentes tipos de contratos e documentos legais
+        </p>
+      </div>
 
-        {/* Tabs Container */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      {/* Tabs Container */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-3">
             <TabsTrigger value="service-contracts" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -51,7 +50,7 @@ export default function Contracts() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setWebhookModalOpen(true)}
-                className="absolute top-0 right-0 h-8 w-8 p-0 z-10"
+                className="absolute -top-2 -right-2 h-8 w-8 p-0 z-10"
                 title="Configurar Webhooks"
               >
                 <Settings className="h-4 w-4" />
@@ -67,7 +66,7 @@ export default function Contracts() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setWebhookModalOpen(true)}
-                className="absolute top-0 right-0 h-8 w-8 p-0 z-10"
+                className="absolute -top-2 -right-2 h-8 w-8 p-0 z-10"
                 title="Configurar Webhooks"
               >
                 <Settings className="h-4 w-4" />
@@ -83,7 +82,7 @@ export default function Contracts() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setWebhookModalOpen(true)}
-                className="absolute top-0 right-0 h-8 w-8 p-0 z-10"
+                className="absolute -top-2 -right-2 h-8 w-8 p-0 z-10"
                 title="Configurar Webhooks"
               >
                 <Settings className="h-4 w-4" />
@@ -91,22 +90,21 @@ export default function Contracts() {
               <ColaboradorContractsTab />
             </div>
           </TabsContent>
-        </Tabs>
+      </Tabs>
 
-        {/* Webhook Configuration Modal */}
-        <WebhookConfigModal
-          open={webhookModalOpen}
-          onClose={() => setWebhookModalOpen(false)}
-          contractType={
-            activeTab === "service-contracts" ? "prestacao_servico" :
-            activeTab === "nda-contracts" ? "nda" : "profissionais"
-          }
-          title={
-            activeTab === "service-contracts" ? "Prestação de Serviço" :
-            activeTab === "nda-contracts" ? "NDAs" : "Colaboradores"
-          }
-        />
-      </div>
+      {/* Webhook Configuration Modal */}
+      <WebhookConfigModal
+        open={webhookModalOpen}
+        onClose={() => setWebhookModalOpen(false)}
+        contractType={
+          activeTab === "service-contracts" ? "prestacao_servico" :
+          activeTab === "nda-contracts" ? "nda" : "profissionais"
+        }
+        title={
+          activeTab === "service-contracts" ? "Prestação de Serviço" :
+          activeTab === "nda-contracts" ? "NDAs" : "Colaboradores"
+        }
+      />
     </div>
   );
 }

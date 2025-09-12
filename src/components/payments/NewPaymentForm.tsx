@@ -129,7 +129,7 @@ export const NewPaymentForm = ({
     
     try {
       // Format dates if needed to ensure ISO format
-      let formattedData = { ...formData };
+      const formattedData = { ...formData };
       
       if (formData.due_date && typeof formData.due_date === 'string') {
         // Make sure the date is in ISO format YYYY-MM-DD

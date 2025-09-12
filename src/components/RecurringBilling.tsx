@@ -358,12 +358,24 @@ export const RecurringBilling = () => {
   }, [closedScopeBillings, expandCharges, payments, billings]);
 
   // Aplicar filtro por status de pagamento específico
+  // Aplicar busca por texto nos payments (escopo fechado)
+  const filteredPayments = useMemo(() => {
+    if (!finalClosedScopeBillings || !Array.isArray(finalClosedScopeBillings)) return [];
+    return finalClosedScopeBillings.filter(billing => {
+      const client = billing.clients?.name || "";
+      const description = (billing.description || "").toLowerCase();
+      const search = paymentSearch.toLowerCase();
+      const matchesSearch = client.toLowerCase().includes(search) || description.includes(search);
+      return matchesSearch;
+    });
+  }, [finalClosedScopeBillings, paymentSearch]);
+
   const filteredByPaymentStatus = useMemo(() => {
     if (paymentStatusDetailFilter.includes("all")) {
-      return finalClosedScopeBillings;
+      return filteredPayments;
     }
     
-    return finalClosedScopeBillings.filter(billing => {
+    return filteredPayments.filter(billing => {
       if (billing.individual_payment) {
         // Para pagamento expandido: filtrar pelo status real
         return paymentStatusDetailFilter.includes(billing.individual_payment.status);
@@ -373,7 +385,7 @@ export const RecurringBilling = () => {
       }
       return true;
     });
-  }, [finalClosedScopeBillings, paymentStatusDetailFilter]);
+  }, [filteredPayments, paymentStatusDetailFilter]);
 
   // Aplicar ordenação
   const sortedClosedScopeBillings = useMemo(() => {
@@ -491,12 +503,20 @@ export const RecurringBilling = () => {
     });
   }, [finalOpenScopeBillings, openScopeBillings, finalClosedScopeBillings, closedScopeBillings, expandChargesAll]);
 
-  // Aplicar filtros de status para a aba "Todos"
+  // Aplicar filtros de busca e status para a aba "Todos"
   const filteredAllCombinedBillings = useMemo(() => {
     if (activeTab !== 'all') return allCombinedBillings;
     
     // Para a aba "Todos", aplicar filtros baseados no estado de expansão
     return allCombinedBillings.filter(billing => {
+      // Aplicar filtro de busca por texto
+      const client = billing.clients?.name || "";
+      const description = (billing.description || "").toLowerCase();
+      const search = paymentSearch.toLowerCase(); // Na aba "Todos", usar o mesmo campo de busca dos payments
+      const matchesSearch = client.toLowerCase().includes(search) || description.includes(search);
+      
+      if (!matchesSearch) return false;
+      
       if (expandChargesAll) {
         // Quando expandido: usar os filtros detalhados de cada escopo
         if (billing.individual_payment) {
@@ -519,16 +539,16 @@ export const RecurringBilling = () => {
         return true;
       }
     });
-  }, [allCombinedBillings, activeTab, expandChargesAll, billingStatusDetailFilter, paymentStatusDetailFilter]);
+  }, [allCombinedBillings, activeTab, expandChargesAll, billingStatusDetailFilter, paymentStatusDetailFilter, paymentSearch]);
 
   // Garante que clients e templates são sempre arrays
   const safeClients = Array.isArray(clients) ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) : [];
   const safeTemplates = Array.isArray(templates) ? templates : [];
   if (isLoading) {
     return (
-      <div className="space-y-8 p-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">Recebimentos</h1>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Recebimentos</h1>
           <Skeleton className="h-10 w-32" />
         </div>
         <div className="space-y-4">
@@ -540,9 +560,9 @@ export const RecurringBilling = () => {
   }
   
   return (
-    <div className="space-y-8 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Recebimentos</h1>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Recebimentos</h1>
       </div>
 
       <Tabs defaultValue="all" className="w-full" onValueChange={value => setActiveTab(value)}>

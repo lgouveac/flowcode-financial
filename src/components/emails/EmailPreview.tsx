@@ -68,7 +68,7 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({
     ? format(new Date(dueDate), 'dd/MM/yyyy')
     : `${dueDay.toString().padStart(2, '0')}/${(new Date().getMonth() + 1).toString().padStart(2, '0')}/${new Date().getFullYear()}`;
 
-  let content = template.content
+  const content = template.content
     .replace(/{nome_cliente}/gi, clientName)
     .replace(/{nome_responsavel}/gi, responsibleName)
     .replace(/{valor_cobranca}/gi, formatCurrency(amount))
@@ -78,7 +78,7 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({
     .replace(/{total_parcelas}/gi, installments.toString())
     .replace(/{forma_pagamento}/gi, formatPaymentMethod(paymentMethod));
 
-  let subject = template.subject
+  const subject = template.subject
     .replace(/{nome_cliente}/gi, clientName)
     .replace(/{nome_responsavel}/gi, responsibleName)
     .replace(/{valor_cobranca}/gi, formatCurrency(amount))

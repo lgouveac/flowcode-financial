@@ -20,20 +20,63 @@ serve(async (req) => {
     }
 
     const requestBody = await req.json();
-    console.log('Received contract webhook request:', requestBody);
+    console.log('🔥 RECEBIDO:', JSON.stringify(requestBody, null, 2));
 
-    // Call the n8n webhook
-    const webhookUrl = "https://n8n.sof.to/webhook-test/e39a39a2-b53d-4cda-b3cb-c526da442158";
+    // Use webhook URL from request - NO FALLBACK
+    const webhookUrl = requestBody.webhook_url;
+    
+    console.log('🎯 WEBHOOK URL EXTRAÍDA:', webhookUrl);
+    
+    if (!webhookUrl) {
+      console.error('❌ WEBHOOK URL NÃO FORNECIDA');
+      throw new Error('Webhook URL not provided in request body');
+    }
+    
+    // Remove webhook_url from data to send (não enviar campo interno)
+    const { webhook_url, ...dataToSend } = requestBody;
     
     console.log('Calling contract webhook:', webhookUrl);
-    console.log('Contract data being sent:', JSON.stringify(requestBody, null, 2));
+    console.log('Contract data being sent:', JSON.stringify(dataToSend, null, 2));
 
-    const webhookResponse = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+    // Preparar parâmetros para GET request - TODOS os dados
+    const contract = dataToSend.contract;
+    const payments = dataToSend.payments;
+    const webhookParams = new URLSearchParams();
+    
+    // Campos básicos obrigatórios
+    webhookParams.append('action', 'sign_contract');
+    webhookParams.append('timestamp', new Date().toISOString());
+    
+    // Todos os campos do contrato
+    if (contract) {
+      Object.entries(contract).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (key === 'clients' && typeof value === 'object') {
+            // Expandir dados do cliente
+            webhookParams.append('client_name', value.name || '');
+            webhookParams.append('client_email', value.email || '');
+            webhookParams.append('client_type', value.type || '');
+          } else {
+            webhookParams.append(`contract_${key}`, value.toString());
+          }
+        }
+      });
+    }
+    
+    // Adicionar dados de pagamento se existirem
+    if (payments && Array.isArray(payments)) {
+      webhookParams.append('payments_count', payments.length.toString());
+      payments.forEach((payment, index) => {
+        Object.entries(payment).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            webhookParams.append(`payment_${index}_${key}`, value.toString());
+          }
+        });
+      });
+    }
+
+    const webhookResponse = await fetch(`${webhookUrl}?${webhookParams}`, {
+      method: 'GET',
     });
 
     console.log('Webhook response status:', webhookResponse.status);

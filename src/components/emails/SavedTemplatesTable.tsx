@@ -71,13 +71,19 @@ export const SavedTemplatesTable = ({ templates, onTemplateUpdate, isLoading }: 
                   onClick={() => setEditingTemplate(template)}
                 >
                   <TableCell>
-                    {template.name}
+                    <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={template.name}>
+                      {template.name}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {getTemplateTypeLabel(template.type, template.subtype)}
+                    <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={getTemplateTypeLabel(template.type, template.subtype)}>
+                      {getTemplateTypeLabel(template.type, template.subtype)}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {template.subject}
+                    <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={template.subject}>
+                      {template.subject}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {template.is_default ? 'Sim' : 'Não'}

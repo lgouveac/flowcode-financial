@@ -37,8 +37,8 @@ export const CashFlowChart = ({
           <p className="text-sm text-muted-foreground">Movimentação de entrada e saída do seu negócio</p>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="mb-6 flex flex-wrap gap-3">
+      <CardContent className="p-6">
+        <div className="mb-4 flex flex-wrap gap-3">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Período" />
@@ -83,7 +83,7 @@ export const CashFlowChart = ({
           )}
         </div>
         
-        <div className="h-[300px] w-full border border-border rounded-lg p-6">
+        <div className="h-[300px] w-full border border-border rounded-lg p-4">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart 

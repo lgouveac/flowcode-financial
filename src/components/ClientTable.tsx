@@ -174,9 +174,9 @@ export const ClientTable = () => {
   const handlePaymentSuccess = () => {
     // Toast is handled by SimplePaymentDialog
   };
-  return <div className="space-y-4 p-4 sm:p-6 md:p-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Clientes</h1>
+  return <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold">Clientes</h1>
         <div className="flex flex-wrap w-full sm:w-auto gap-2">
           <ImportCSV />
           <ShareFormButton />

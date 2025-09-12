@@ -25,7 +25,12 @@ interface Metrics {
   profitDistributionChange: string;
 }
 
-export const useMetrics = (period: string = 'current') => {
+interface UseMetricsOptions {
+  customStartDate?: Date;
+  customEndDate?: Date;
+}
+
+export const useMetrics = (period: string = 'current', options?: UseMetricsOptions) => {
   const [metrics, setMetrics] = useState<Metrics>({
     totalRevenue: 0,
     totalExpenses: 0,
@@ -105,6 +110,45 @@ export const useMetrics = (period: string = 'current') => {
           end: new Date().toISOString().split('T')[0],
           compareStart: new Date(lastYear.setFullYear(lastYear.getFullYear() - 1)).toISOString().split('T')[0],
           compareEnd: lastYear.toISOString().split('T')[0],
+        };
+      case 'current_year':
+        return {
+          start: `${currentYear}-01-01`,
+          end: `${currentYear}-12-31`,
+          compareStart: `${currentYear - 1}-01-01`,
+          compareEnd: `${currentYear - 1}-12-31`,
+        };
+      case 'previous_year':
+        const previousYear = currentYear - 1;
+        return {
+          start: `${previousYear}-01-01`,
+          end: `${previousYear}-12-31`,
+          compareStart: `${previousYear - 1}-01-01`,
+          compareEnd: `${previousYear - 1}-12-31`,
+        };
+      case 'custom':
+        if (options?.customStartDate && options?.customEndDate) {
+          const startDate = options.customStartDate.toISOString().split('T')[0];
+          const endDate = options.customEndDate.toISOString().split('T')[0];
+          
+          // Calculate same period duration for comparison
+          const timeDiff = options.customEndDate.getTime() - options.customStartDate.getTime();
+          const compareEndDate = new Date(options.customStartDate.getTime() - 86400000); // Day before start
+          const compareStartDate = new Date(compareEndDate.getTime() - timeDiff);
+          
+          return {
+            start: startDate,
+            end: endDate,
+            compareStart: compareStartDate.toISOString().split('T')[0],
+            compareEnd: compareEndDate.toISOString().split('T')[0],
+          };
+        }
+        // Fallback to current month if custom dates not provided
+        return {
+          start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
+          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
+          compareStart: `${currentYear}-${String(currentMonth - 1).padStart(2, '0')}-01`,
+          compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
       default:
         return {
@@ -324,7 +368,7 @@ export const useMetrics = (period: string = 'current') => {
     };
 
     fetchMetrics();
-  }, [period]);
+  }, [period, options?.customStartDate, options?.customEndDate]);
 
   return { metrics, isLoading };
 };

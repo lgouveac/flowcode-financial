@@ -11,6 +11,7 @@ import { Contract } from "@/types/contract";
 import { useContracts } from "@/hooks/useContracts";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { CalendarIcon, CheckIcon } from "lucide-react";
+import { useWebhooks } from "@/hooks/useWebhooks";
 
 interface SignContractDialogProps {
   contract: Contract;
@@ -26,6 +27,7 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDay, setDueDay] = useState(5);
   const [pagamentoPorEntrega, setPagamentoPorEntrega] = useState(false);
+  const { getWebhook } = useWebhooks();
   
   // Estados para valores editáveis
   const [singlePaymentAmount, setSinglePaymentAmount] = useState(contract.total_value || 0);
@@ -140,47 +142,90 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
 
       // 3. Enviar dados para o webhook
       try {
-        const webhookData = {
-          contract: {
-            id: contract.id,
-            contract_id: contract.contract_id,
-            scope: contract.scope,
-            total_value: contract.total_value,
-            installments: contract.installments,
+        // Buscar webhook dinâmico de assinatura - DIRETO DO LOCALSTORAGE
+        const webhookUrl = localStorage.getItem('prestacao_servico_assinatura_webhook');
+        
+        console.log('🔍 URL do webhook de assinatura (localStorage):', webhookUrl);
+        
+        if (webhookUrl) {
+          // Estruturar todos os dados do contrato atualizado
+          const contractData = {
+            ...contract,
             status: "completed",
-            signing_date: signingDate,
+            data_de_assinatura: new Date(signingDate).toISOString(),
             payment_type: paymentType,
             payment_method: paymentMethod,
-          },
-          client: {
-            id: contract.client_id,
-            name: contract.clients?.name,
-            email: contract.clients?.email,
-            type: contract.clients?.type,
-          },
-          payment_details: paymentType === "pontual" 
-            ? {
-                amount: singlePaymentAmount,
-                due_date: dueDate,
-                pagamento_por_entrega: pagamentoPorEntrega,
-              }
-            : {
-                installment_count: installmentCount,
-                installments: installmentValues.slice(0, installmentCount).map((amount, index) => ({
-                  number: index + 1,
-                  amount: amount,
-                  due_date: installmentDates[index],
-                })),
-              }
-        };
+          };
 
-        await supabase.functions.invoke('send-contract-webhook', {
-          body: webhookData,
-        });
+          const webhookData = {
+            contract: contractData,
+            client: {
+              id: contract.client_id,
+              name: contract.clients?.name,
+              email: contract.clients?.email,
+              type: contract.clients?.type,
+            },
+            payment_details: paymentType === "pontual" 
+              ? {
+                  amount: singlePaymentAmount,
+                  due_date: dueDate,
+                  pagamento_por_entrega: pagamentoPorEntrega,
+                }
+              : {
+                  installment_count: installmentCount,
+                  installments: installmentValues.slice(0, installmentCount).map((amount, index) => ({
+                    number: index + 1,
+                    amount: amount,
+                    due_date: installmentDates[index],
+                  })),
+                },
+            webhook_url: webhookUrl
+          };
+
+          console.log('Enviando webhook de assinatura:', webhookUrl);
+          
+          // CHAMAR WEBHOOK DIRETAMENTE - SEM EDGE FUNCTION
+          const webhookParams = new URLSearchParams();
+          webhookParams.append('action', 'sign_contract');
+          webhookParams.append('timestamp', new Date().toISOString());
+          webhookParams.append('contract_id', contract.id.toString());
+          webhookParams.append('contract_status', 'completed');
+          webhookParams.append('client_name', contract.clients?.name || '');
+          webhookParams.append('contract_scope', contract.scope || '');
+          webhookParams.append('total_value', contract.total_value?.toString() || '');
+          webhookParams.append('payment_type', paymentType);
+          webhookParams.append('payment_method', paymentMethod);
+          
+          const finalWebhookUrl = `${webhookUrl}?${webhookParams}`;
+          console.log('🎯 URL FINAL DO WEBHOOK:', finalWebhookUrl);
+
+          try {
+            const webhookResponse = await fetch(finalWebhookUrl, {
+              method: 'GET',
+              mode: 'no-cors', // Para evitar problemas de CORS
+            });
+            console.log('✅ Webhook chamado diretamente com sucesso');
+          } catch (webhookError) {
+            console.warn('⚠️ Erro ao chamar webhook, mas continuando:', webhookError);
+            // Não falhar o processo se o webhook falhar
+          }
+        } else {
+          console.warn('Webhook de assinatura não configurado, pulando chamada');
+          toast({
+            title: "Webhook não configurado",
+            description: "Configure o webhook de assinatura nas configurações da página",
+            variant: "destructive",
+          });
+        }
 
         console.log('Contract webhook sent successfully');
       } catch (webhookError) {
         console.error('Error sending contract webhook:', webhookError);
+        toast({
+          title: "Aviso",
+          description: "Contrato assinado, mas houve problema ao chamar o webhook.",
+          variant: "destructive",
+        });
         // Não falhar o processo principal se o webhook falhar
       }
 

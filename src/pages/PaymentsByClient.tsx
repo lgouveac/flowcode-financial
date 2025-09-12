@@ -183,8 +183,8 @@ export default function PaymentsByClient() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Pagamentos por Cliente</h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Pagamentos por Cliente</h1>
           <p className="text-muted-foreground">
             Histórico detalhado de receitas por cliente
           </p>

@@ -33,7 +33,8 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
     contractor_type: "individual" as "individual" | "legal_entity",
     data_de_assinatura: "",
     link_contrato: "",
-    obs: "",
+    obs: "A FlowCode está muito feliz com nossa parceria.\n\nO projeto se inicia imediatamente após a assinatura do contrato e pagamento da primeira parcela no valor de R$ 2.000,00 no PIX: 48493939000161\n\nInfos importantes:\n\n- Nosso horário de atendimento é de 10-18 em dias úteis\n\n- Todos ajustes terão um prazo designado pela equipe\n\n- Nossa comunicação ocorre via grupo de whatsapp\n\n- Esse é um contrato de escopo fechado, cujo suporte acaba ao final da entrega. Para ter suporte ilimitado, confira nossos planos mensais.",
+    info_parcelas_clientes: "",
     Horas: "",
   });
 
@@ -63,6 +64,17 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
       const installments = parseInt(formData.installments);
       const installmentValue = totalValue / installments;
 
+      // Buscar IP atual para assinatura automática FlowCode
+      let flowcodeIP = '';
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        flowcodeIP = ipData.ip;
+      } catch (error) {
+        console.warn('Não foi possível obter IP para assinatura FlowCode:', error);
+        flowcodeIP = 'IP não disponível';
+      }
+
       const contractData = {
         client_id: formData.client_id,
         contract_id: formData.contract_id || undefined,
@@ -78,14 +90,17 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
         data_de_assinatura: formData.data_de_assinatura || undefined,
         link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
+        info_parcelas_clientes: formData.info_parcelas_clientes || undefined,
         Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : undefined,
+        // Assinatura automática da FlowCode na criação
+        data_assinatura_flowcode: new Date().toISOString(),
+        ip_flowcode: flowcodeIP,
+        assinante_flowcode: 'Lucas Gouvea Carmo',
       };
 
-      const createdContract = await addContract(contractData);
-      
-      // Chama o callback para executar o webhook
-      if (onContractCreated && createdContract) {
-        onContractCreated(createdContract);
+      // SÓ chama o webhook - o N8N cria tudo no Supabase
+      if (onContractCreated) {
+        onContractCreated(contractData);
       }
       
       setFormData({
@@ -101,7 +116,8 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
         contractor_type: "individual",
         data_de_assinatura: "",
         link_contrato: "",
-        obs: "",
+        obs: "A FlowCode está muito feliz com nossa parceria.\n\nO projeto se inicia imediatamente após a assinatura do contrato e pagamento da primeira parcela no valor de R$ 2.000,00 no PIX: 48493939000161\n\nInfos importantes:\n\n- Nosso horário de atendimento é de 10-18 em dias úteis\n\n- Todos ajustes terão um prazo designado pela equipe\n\n- Nossa comunicação ocorre via grupo de whatsapp\n\n- Esse é um contrato de escopo fechado, cujo suporte acaba ao final da entrega. Para ter suporte ilimitado, confira nossos planos mensais.",
+        info_parcelas_clientes: "",
         Horas: "",
       });
       onClose();
@@ -307,6 +323,16 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
               value={formData.obs}
               onChange={(e) => setFormData({ ...formData, obs: e.target.value })}
               placeholder="Observações adicionais"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="info_parcelas_clientes">Info de parcelas para os clientes</Label>
+            <Textarea
+              id="info_parcelas_clientes"
+              value={formData.info_parcelas_clientes}
+              onChange={(e) => setFormData({ ...formData, info_parcelas_clientes: e.target.value })}
+              placeholder="Informações sobre as parcelas que serão exibidas para os clientes"
             />
           </div>
 

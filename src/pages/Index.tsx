@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { SimpleChatWidget } from "@/components/ai-chat/SimpleChatWidget";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -52,6 +53,14 @@ export default function Index() {
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Configuração da API Key do OpenRouter
+  const [openAIKey, setOpenAIKey] = useState<string | undefined>(
+    // Primeiro tenta localStorage, depois variável de ambiente, senão usa a sua chave
+    localStorage.getItem('openai_api_key') || 
+    import.meta.env.VITE_OPENROUTER_API_KEY || 
+    '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'
+  );
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -190,6 +199,9 @@ export default function Index() {
           <Outlet />
         </main>
       </div>
+
+      {/* AI Chat Widget */}
+      <SimpleChatWidget />
     </div>
   );
 }

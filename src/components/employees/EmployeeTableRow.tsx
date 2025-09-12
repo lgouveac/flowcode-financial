@@ -63,7 +63,11 @@ export const EmployeeTableRow = ({
         className="border-b border-border/50 cursor-pointer hover:bg-muted/30 transition-colors"
         onClick={handleClick}
       >
-        <td className="py-3 px-4 text-sm">{employee.name}</td>
+        <td className="py-3 px-4 text-sm">
+          <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={employee.name}>
+            {employee.name}
+          </div>
+        </td>
         <td className="py-3 px-4 text-sm hidden sm:table-cell capitalize">
           {employee.type === "fixed" ? "CLT" : "Freelancer"}
         </td>

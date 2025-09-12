@@ -159,7 +159,7 @@ export const CashFlow = ({
       </Card>
     </div>;
 
-  return <div className="space-y-4 sm:space-y-6 md:space-y-8">
+  return <div className="space-y-6">
       {showChart ? <>
           <CashFlowChart chartData={safeChartData} period={selectedPeriod} setPeriod={setSelectedPeriod} year={selectedYear} setYear={setSelectedYear} month={selectedMonth} setMonth={setSelectedMonth} />
           

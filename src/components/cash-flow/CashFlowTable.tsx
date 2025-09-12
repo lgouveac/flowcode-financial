@@ -252,7 +252,7 @@ export const CashFlowTable = ({
       </div>
 
       {/* Search and filter row */}
-      <div className="flex flex-col md:flex-row gap-3 mb-6">
+      <div className="flex flex-col md:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Input 
             placeholder="Pesquisar descrição ou categoria..." 
@@ -349,11 +349,13 @@ export const CashFlowTable = ({
                     <EditableCell value={flow.category} onChange={value => handleUpdateCashFlow(flow.id, 'category', value)} />
                   </td>
                   <td className="py-2 px-4">
-                    <EditableCell value={flow.description} onChange={value => handleUpdateCashFlow(flow.id, 'description', value)} />
+                    <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden">
+                      <EditableCell value={flow.description} onChange={value => handleUpdateCashFlow(flow.id, 'description', value)} />
+                    </div>
                   </td>
                   <td className="py-2 px-4">
                     {flow.clients?.name ? (
-                      <span className="text-sm font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                      <span className="text-sm font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full line-clamp-2 overflow-hidden max-h-10" title={flow.clients.name}>
                         {flow.clients.name}
                       </span>
                     ) : (

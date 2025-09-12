@@ -35,7 +35,6 @@ export const useContracts = () => {
         throw error;
       }
 
-      console.log(`Found ${data?.length || 0} contracts:`, data);
       
       // Transform the data to match the expected type
       return data.map(contract => ({

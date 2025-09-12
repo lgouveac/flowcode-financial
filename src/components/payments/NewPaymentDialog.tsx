@@ -84,7 +84,7 @@ export const NewPaymentDialog = ({
     
     try {
       // Format dates if needed
-      let paymentData = { ...payment };
+      const paymentData = { ...payment };
       
       if (payment.due_date && typeof payment.due_date === 'string') {
         if (!payment.due_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
