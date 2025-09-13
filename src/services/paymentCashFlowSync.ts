@@ -19,6 +19,7 @@ export const syncPaymentToCashFlow = async (
     description: string;
     amount: number;
     payment_date: string | null;
+    client_id?: string | null;
   }
 ): Promise<SyncPaymentResult> => {
   console.log('Syncing payment to cash flow:', {
@@ -80,6 +81,7 @@ export const syncPaymentToCashFlow = async (
         date: paymentData.payment_date,
         category: 'payment',
         payment_id: paymentId,
+        client_id: paymentData.client_id || null,
         status: 'pending'
       });
 

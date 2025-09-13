@@ -128,7 +128,8 @@ export const PaymentDetailsDialog = ({
           {
             description,
             amount: parseFloat(amount),
-            payment_date: payOnDelivery ? null : (paymentDate || null)
+            payment_date: payOnDelivery ? null : (paymentDate || null),
+            client_id: payment.client_id
           }
         );
 

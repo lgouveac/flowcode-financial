@@ -139,6 +139,7 @@ export const useCashFlow = (period: string = 'current') => {
           amount,
           payment_date,
           status,
+          client_id,
           clients!inner(name)
         `)
         .eq('status', 'paid')
@@ -192,7 +193,8 @@ export const useCashFlow = (period: string = 'current') => {
               amount: payment.amount,
               date: payment.payment_date,
               category: 'payment',
-              payment_id: payment.id
+              payment_id: payment.id,
+              client_id: payment.client_id || null
             }, {
               onConflict: 'payment_id'
             });

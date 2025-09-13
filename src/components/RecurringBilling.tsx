@@ -32,6 +32,7 @@ export const RecurringBilling = () => {
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("pending,overdue"); // Pendente e atrasado por padrão
   const [billingSearch, setBillingSearch] = useState("");
+  const [allSearch, setAllSearch] = useState(""); // Campo de busca para a aba "Todos"
   const [billingStatusFilter, setBillingStatusFilter] = useState("pending,overdue"); // Pendente e atrasado por padrão no escopo aberto
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(true); // Filtros expandidos por padrão no escopo fechado
   const [showAdvancedFiltersOpen, setShowAdvancedFiltersOpen] = useState(true); // Filtros expandidos por padrão no escopo aberto
@@ -469,39 +470,30 @@ export const RecurringBilling = () => {
     return filteredByBillingStatus;
   }, [filteredByBillingStatus, sortByOpen]);
 
-  // Combinar dados de ambos os escopos para a aba "Todos"
+  // Combinar dados de ambos os escopos para a aba "Todos" (sempre usar dados não filtrados)
   const allCombinedBillings = useMemo(() => {
-    // Usar dados baseados no estado de expansão da aba Todos
-    const openScopeData = expandChargesAll 
-      ? finalOpenScopeBillings.map(billing => ({
-          ...billing,
-          scope_type: 'open' as const,
-          id: `open-${billing.id}`
-        }))
-      : openScopeBillings.map(billing => ({
-          ...billing,
-          scope_type: 'open' as const,
-          id: `open-${billing.id}`
-        }));
+    // Para a aba "Todos", usar dados processados com formatação adequada baseada no estado de expansão
+    const openScopeSource = expandChargesAll ? finalOpenScopeBillings : openScopeBillings;
+    const closedScopeSource = expandChargesAll ? finalClosedScopeBillings : closedScopeBillings;
     
-    const closedScopeData = expandChargesAll
-      ? finalClosedScopeBillings.map(billing => ({
-          ...billing,
-          scope_type: 'closed' as const,
-          id: `closed-${billing.id}`
-        }))
-      : closedScopeBillings.map(billing => ({
-          ...billing,
-          scope_type: 'closed' as const,
-          id: `closed-${billing.id}`
-        }));
+    const openScopeData = openScopeSource.map(billing => ({
+      ...billing,
+      scope_type: 'open' as const,
+      id: `open-${billing.id}`
+    }));
+    
+    const closedScopeData = closedScopeSource.map(billing => ({
+      ...billing,
+      scope_type: 'closed' as const,
+      id: `closed-${billing.id}`
+    }));
 
     return [...openScopeData, ...closedScopeData].sort((a, b) => {
       const dateA = new Date(a.start_date || '');
       const dateB = new Date(b.start_date || '');
       return dateA.getTime() - dateB.getTime();
     });
-  }, [finalOpenScopeBillings, openScopeBillings, finalClosedScopeBillings, closedScopeBillings, expandChargesAll]);
+  }, [openScopeBillings, closedScopeBillings, finalOpenScopeBillings, finalClosedScopeBillings, expandChargesAll]);
 
   // Aplicar filtros de busca e status para a aba "Todos"
   const filteredAllCombinedBillings = useMemo(() => {
@@ -512,7 +504,7 @@ export const RecurringBilling = () => {
       // Aplicar filtro de busca por texto
       const client = billing.clients?.name || "";
       const description = (billing.description || "").toLowerCase();
-      const search = paymentSearch.toLowerCase(); // Na aba "Todos", usar o mesmo campo de busca dos payments
+      const search = allSearch.toLowerCase(); // Na aba "Todos", usar campo de busca específico
       const matchesSearch = client.toLowerCase().includes(search) || description.includes(search);
       
       if (!matchesSearch) return false;
@@ -539,7 +531,7 @@ export const RecurringBilling = () => {
         return true;
       }
     });
-  }, [allCombinedBillings, activeTab, expandChargesAll, billingStatusDetailFilter, paymentStatusDetailFilter, paymentSearch]);
+  }, [allCombinedBillings, activeTab, expandChargesAll, billingStatusDetailFilter, paymentStatusDetailFilter, allSearch]);
 
   // Garante que clients e templates são sempre arrays
   const safeClients = Array.isArray(clients) ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) : [];
@@ -597,8 +589,16 @@ export const RecurringBilling = () => {
             <div className="relative">
               <Input 
                 placeholder="Buscar por cliente ou descrição..." 
-                value={activeTab === "recurring" ? billingSearch : paymentSearch} 
-                onChange={e => activeTab === "recurring" ? setBillingSearch(e.target.value) : setPaymentSearch(e.target.value)} 
+                value={activeTab === "recurring" ? billingSearch : (activeTab === "all" ? allSearch : paymentSearch)} 
+                onChange={e => {
+                  if (activeTab === "recurring") {
+                    setBillingSearch(e.target.value);
+                  } else if (activeTab === "all") {
+                    setAllSearch(e.target.value);
+                  } else {
+                    setPaymentSearch(e.target.value);
+                  }
+                }} 
                 className="pl-9" 
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
