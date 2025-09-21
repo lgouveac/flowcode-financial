@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bold, Italic, Underline, List, AlignLeft, AlignCenter, AlignRight, Type } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
+import { useWebhooks } from "@/hooks/useWebhooks";
+import { useToast } from "@/hooks/use-toast";
 import { Contract } from "@/types/contract";
 
 interface EditContractDialogProps {
@@ -17,7 +20,58 @@ interface EditContractDialogProps {
 
 export function EditContractDialog({ contract, open, onClose }: EditContractDialogProps) {
   const { updateContract } = useContracts();
+  const { getWebhook } = useWebhooks();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+
+  // Rich text editor functions
+  const applyFormatting = (format: string) => {
+    const textarea = document.getElementById('texto_contrato') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+
+    let formattedText = '';
+
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText}*`;
+        break;
+      case 'underline':
+        formattedText = `<u>${selectedText}</u>`;
+        break;
+      default:
+        formattedText = selectedText;
+    }
+
+    const newText = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+    setFormData({ ...formData, texto_contrato: newText });
+
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+    }, 0);
+  };
+
+  // Font styles
+  const getFontStyle = (fontFamily: string) => {
+    switch (fontFamily) {
+      case 'serif':
+        return { fontFamily: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' };
+      case 'sans':
+        return { fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' };
+      case 'mono':
+        return { fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace' };
+      default:
+        return { fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace' };
+    }
+  };
   const [formData, setFormData] = useState({
     scope: "",
     total_value: "",
@@ -31,6 +85,9 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     link_contrato: "",
     obs: "",
     Horas: "",
+    correcoes_texto: "",
+    texto_contrato: "",
+    fontFamily: "mono",
   });
 
   useEffect(() => {
@@ -48,6 +105,9 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         link_contrato: contract.link_contrato || "",
         obs: contract.obs || "",
         Horas: contract.Horas || "",
+        correcoes_texto: "",
+        texto_contrato: contract.texto_contrato || "",
+        fontFamily: "mono",
       });
     }
   }, [contract]);
@@ -64,7 +124,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
       const installments = parseInt(formData.installments) || 1;
       const installmentValue = totalValue / installments;
 
-      await updateContract(contract.id, {
+      const updatedData = {
         scope: formData.scope,
         total_value: totalValue,
         installments: installments,
@@ -78,8 +138,69 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
         Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : undefined,
-      });
-      
+        // NÃO incluir texto_contrato no update do banco
+      };
+
+      await updateContract(contract.id, updatedData);
+
+      // Disparar webhook de edição se configurado
+      const webhookUrl = getWebhook('prestacao_servico', 'edicao');
+
+      if (webhookUrl && webhookUrl.trim() !== '') {
+        try {
+          console.log('Disparando webhook de edição:', webhookUrl);
+
+          // Preparar parâmetros para GET request
+          const webhookParams = new URLSearchParams();
+
+          // Campos básicos obrigatórios
+          webhookParams.append('action', 'edit_contract');
+          webhookParams.append('timestamp', new Date().toISOString());
+          webhookParams.append('contract_id', contract.id.toString());
+
+          // Todos os campos editados do contrato
+          Object.entries(updatedData).forEach(([key, value]) => {
+            if (value !== null && value !== undefined) {
+              webhookParams.append(key, value.toString());
+            }
+          });
+
+          // Adicionar texto de correções se preenchido
+          if (formData.correcoes_texto && formData.correcoes_texto.trim() !== '') {
+            webhookParams.append('correcoes_texto', formData.correcoes_texto);
+          }
+
+          // Adicionar texto original (do banco) e texto corrigido (editado)
+          webhookParams.append('texto_contrato', contract.texto_contrato || ''); // Versão ATUAL do banco
+
+          if (formData.texto_contrato && formData.texto_contrato.trim() !== '') {
+            webhookParams.append('texto_corrigido', formData.texto_contrato); // Versão NOVA editada
+          }
+
+          const webhookResponse = await fetch(`${webhookUrl}?${webhookParams}`, {
+            method: "GET",
+          });
+
+          if (webhookResponse.ok) {
+            toast({
+              title: "Webhook enviado",
+              description: "O webhook foi chamado com sucesso para a edição do contrato.",
+            });
+          } else {
+            throw new Error(`Webhook failed with status: ${webhookResponse.status}`);
+          }
+        } catch (error) {
+          console.error("Erro ao chamar webhook:", error);
+          toast({
+            title: "Aviso",
+            description: "Contrato editado, mas houve problema ao chamar o webhook.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.log('Nenhum webhook configurado para edição de contrato');
+      }
+
       onClose();
     } catch (error) {
       console.error("Error updating contract:", error);
@@ -97,7 +218,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Contrato</DialogTitle>
         </DialogHeader>
@@ -264,6 +385,98 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
               onChange={(e) => setFormData({ ...formData, obs: e.target.value })}
               placeholder="Observações adicionais"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="texto_contrato">Texto do Contrato (Markdown)</Label>
+
+            {/* Rich Text Toolbar */}
+            <div className="flex items-center justify-between p-3 border rounded-t-md bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => applyFormatting('bold')}
+                  className="h-9 w-9 p-0 bg-white border-blue-300 hover:bg-blue-100 hover:text-blue-900 hover:border-blue-400 transition-all"
+                  title="Negrito"
+                >
+                  <Bold className="h-4 w-4 text-blue-700" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => applyFormatting('italic')}
+                  className="h-9 w-9 p-0 bg-white border-blue-300 hover:bg-blue-100 hover:text-blue-900 hover:border-blue-400 transition-all"
+                  title="Itálico"
+                >
+                  <Italic className="h-4 w-4 text-blue-700" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => applyFormatting('underline')}
+                  className="h-9 w-9 p-0 bg-white border-blue-300 hover:bg-blue-100 hover:text-blue-900 hover:border-blue-400 transition-all"
+                  title="Sublinhado"
+                >
+                  <Underline className="h-4 w-4 text-blue-700" />
+                </Button>
+
+                <div className="mx-3 h-6 w-px bg-blue-300" />
+
+                <div className="flex items-center gap-2">
+                  <Type className="h-4 w-4 text-blue-700" />
+                  <Select
+                    value={formData.fontFamily}
+                    onValueChange={(value) => setFormData({ ...formData, fontFamily: value })}
+                  >
+                    <SelectTrigger className="w-32 h-8 bg-white border-blue-300 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mono">Monospace</SelectItem>
+                      <SelectItem value="serif">Serif</SelectItem>
+                      <SelectItem value="sans">Sans Serif</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <span className="text-sm text-blue-700 font-medium">
+                Selecione texto e use os botões para formatar
+              </span>
+            </div>
+
+            <Textarea
+              id="texto_contrato"
+              value={formData.texto_contrato}
+              onChange={(e) => setFormData({ ...formData, texto_contrato: e.target.value })}
+              placeholder="Texto completo do contrato em Markdown..."
+              rows={15}
+              className="min-h-[400px] rounded-t-none text-sm border-blue-200 focus:border-blue-400 focus:ring-blue-400"
+              style={getFontStyle(formData.fontFamily)}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Use Markdown: **negrito**, *itálico*, # Título, - Lista</span>
+              <span>{formData.texto_contrato.length} caracteres</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="correcoes_texto">Observações sobre Edições</Label>
+            <Textarea
+              id="correcoes_texto"
+              value={formData.correcoes_texto}
+              onChange={(e) => setFormData({ ...formData, correcoes_texto: e.target.value })}
+              placeholder="Descreva as mudanças feitas no contrato..."
+              rows={3}
+              className="min-h-[100px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Este campo será enviado no webhook junto com as alterações.
+            </p>
           </div>
 
           <div className="flex justify-end space-x-2">

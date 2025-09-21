@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { ContractTable } from "@/components/contracts/ContractTable";
 import { NDAContractsTab } from "@/components/contracts/NDAContractsTab";
 import { ColaboradorContractsTab } from "@/components/contracts/ColaboradorContractsTab";
+import { DocumentsTab } from "@/components/contracts/DocumentsTab";
 import { WebhookConfigModal } from "@/components/contracts/WebhookConfigModal";
-import { FileText, Shield, Users, Settings } from "lucide-react";
+import { FileText, Shield, Users, Settings, FileSignature } from "lucide-react";
 
 export default function Contracts() {
   const [activeTab, setActiveTab] = useState("service-contracts");
@@ -25,7 +26,7 @@ export default function Contracts() {
 
       {/* Tabs Container */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
             <TabsTrigger value="service-contracts" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               <span className="hidden sm:inline">Prestação de Serviço</span>
@@ -40,6 +41,11 @@ export default function Contracts() {
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Colaboradores</span>
               <span className="sm:hidden">Colaboradores</span>
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="flex items-center gap-2">
+              <FileSignature className="h-4 w-4" />
+              <span className="hidden sm:inline">Documentos</span>
+              <span className="sm:hidden">Docs</span>
             </TabsTrigger>
           </TabsList>
 
@@ -90,6 +96,22 @@ export default function Contracts() {
               <ColaboradorContractsTab />
             </div>
           </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents" className="space-y-6">
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setWebhookModalOpen(true)}
+                className="absolute -top-2 -right-2 h-8 w-8 p-0 z-10"
+                title="Configurar Webhooks"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+              <DocumentsTab />
+            </div>
+          </TabsContent>
       </Tabs>
 
       {/* Webhook Configuration Modal */}
@@ -98,11 +120,13 @@ export default function Contracts() {
         onClose={() => setWebhookModalOpen(false)}
         contractType={
           activeTab === "service-contracts" ? "prestacao_servico" :
-          activeTab === "nda-contracts" ? "nda" : "profissionais"
+          activeTab === "nda-contracts" ? "nda" :
+          activeTab === "documents" ? "documents" : "profissionais"
         }
         title={
           activeTab === "service-contracts" ? "Prestação de Serviço" :
-          activeTab === "nda-contracts" ? "NDAs" : "Colaboradores"
+          activeTab === "nda-contracts" ? "NDAs" :
+          activeTab === "documents" ? "Documentos" : "Colaboradores"
         }
       />
     </div>

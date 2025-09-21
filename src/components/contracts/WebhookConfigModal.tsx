@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 interface WebhookConfigModalProps {
   open: boolean;
   onClose: () => void;
-  contractType: 'prestacao_servico' | 'nda' | 'profissionais';
+  contractType: 'prestacao_servico' | 'nda' | 'profissionais' | 'documents';
   title: string;
 }
 
@@ -24,20 +24,24 @@ export function WebhookConfigModal({ open, onClose, contractType, title }: Webho
   
   const [webhookCriacao, setWebhookCriacao] = useState('');
   const [webhookAssinatura, setWebhookAssinatura] = useState('');
+  const [webhookEdicao, setWebhookEdicao] = useState('');
   
   // Carregar webhooks quando modal abrir
   useEffect(() => {
     if (open) {
       const criacao = getWebhook(contractType, 'criacao') || '';
       const assinatura = getWebhook(contractType, 'assinatura') || '';
+      const edicao = getWebhook(contractType, 'edicao') || '';
       setWebhookCriacao(criacao);
       setWebhookAssinatura(assinatura);
+      setWebhookEdicao(edicao);
     }
   }, [open, contractType]);
 
   const handleSave = () => {
     updateWebhook(contractType, 'criacao', webhookCriacao);
     updateWebhook(contractType, 'assinatura', webhookAssinatura);
+    updateWebhook(contractType, 'edicao', webhookEdicao);
     
     toast({
       title: "Webhooks Salvos",
@@ -90,6 +94,22 @@ export function WebhookConfigModal({ open, onClose, contractType, title }: Webho
               value={webhookAssinatura}
               onChange={(e) => setWebhookAssinatura(e.target.value)}
               placeholder="https://n8n.exemplo.com/webhook-assinatura"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>
+              Webhook de Edição
+              <span className="text-xs text-muted-foreground ml-2">
+                (chamado quando contrato é editado)
+              </span>
+            </Label>
+            <input
+              type="text"
+              value={webhookEdicao}
+              onChange={(e) => setWebhookEdicao(e.target.value)}
+              placeholder="https://n8n.exemplo.com/webhook-edicao"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>

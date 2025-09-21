@@ -231,12 +231,13 @@ export function ContractTable() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex items-center gap-1 min-w-fit">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewingContract(contract)}
                             title="Ver Detalhes"
+                            className="h-8 w-8 p-0 flex-shrink-0"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -245,6 +246,7 @@ export function ContractTable() {
                             size="sm"
                             onClick={() => handleOpenSigningPage(contract.contract_id)}
                             title="Abrir Página de Assinatura"
+                            className="h-8 w-8 p-0 flex-shrink-0"
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
@@ -254,6 +256,7 @@ export function ContractTable() {
                               size="sm"
                               onClick={() => setSigningContract(contract)}
                               title="Marcar como Assinado"
+                              className="h-8 w-8 p-0 flex-shrink-0"
                             >
                               <CheckIcon className="h-4 w-4" />
                             </Button>
@@ -263,6 +266,7 @@ export function ContractTable() {
                             size="sm"
                             onClick={() => setEditingContract(contract)}
                             title="Editar"
+                            className="h-8 w-8 p-0 flex-shrink-0"
                           >
                             <EditIcon className="h-4 w-4" />
                           </Button>
@@ -271,6 +275,7 @@ export function ContractTable() {
                             size="sm"
                             onClick={() => handleDelete(contract.id)}
                             title="Excluir"
+                            className="h-8 w-8 p-0 flex-shrink-0"
                           >
                             <TrashIcon className="h-4 w-4" />
                           </Button>

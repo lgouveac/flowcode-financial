@@ -1,6 +1,6 @@
 import { Client } from "@/types/client";
 import { EditableCell } from "@/components/EditableCell";
-import { MailIcon, PhoneIcon, Trash2 } from "lucide-react";
+import { MailIcon, PhoneIcon, Trash2, User, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ClientRowProps {
@@ -48,6 +48,25 @@ export const ClientRow = ({ client, onUpdate, onClick, onDelete }: ClientRowProp
               onChange={(value) => onUpdate(client.id, 'phone', value)}
             />
           </div>
+          {client.responsavel_financeiro && (
+            <div className="flex items-center">
+              <User className="h-4 w-4 mr-2 text-blue-500" />
+              <EditableCell
+                value={client.responsavel_financeiro}
+                onChange={(value) => onUpdate(client.id, 'responsavel_financeiro', value)}
+              />
+            </div>
+          )}
+          {client.email_financeiro && (
+            <div className="flex items-center">
+              <UserCheck className="h-4 w-4 mr-2 text-green-500" />
+              <EditableCell
+                value={client.email_financeiro}
+                onChange={(value) => onUpdate(client.id, 'email_financeiro', value)}
+                type="email"
+              />
+            </div>
+          )}
         </div>
       </td>
       <td className="py-2 px-4">

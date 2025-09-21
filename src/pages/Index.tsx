@@ -18,7 +18,8 @@ import {
   Moon,
   Sun,
   Calculator,
-  Shield
+  Shield,
+  Target
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +45,7 @@ const navigation = [
   { name: "Pagamentos", href: "/payments", icon: DollarSign },
   { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp },
   { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator },
+  { name: "Leads", href: "/leads", icon: Target },
   { name: "Usuários", href: "/users", icon: Shield },
 ];
 

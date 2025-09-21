@@ -26,8 +26,31 @@ export const CommonFields = ({ formData, setFormData, clientType }: CommonFields
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
+          <Label htmlFor="responsavel_financeiro" className="text-sm font-medium">Responsável Financeiro</Label>
+          <Input
+            id="responsavel_financeiro"
+            value={formData.responsavel_financeiro || ""}
+            onChange={(e) => setFormData({ ...formData, responsavel_financeiro: e.target.value })}
+            placeholder="Nome do responsável pelo financeiro"
+            className="w-full"
+          />
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="email_financeiro" className="text-sm font-medium">Email Financeiro</Label>
+          <Input
+            id="email_financeiro"
+            type="email"
+            value={formData.email_financeiro || ""}
+            onChange={(e) => setFormData({ ...formData, email_financeiro: e.target.value })}
+            placeholder="email.financeiro@empresa.com"
+            className="w-full"
+          />
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
           <Label htmlFor="due_date" className="text-sm font-medium">
-            {clientType === "pj" 
+            {clientType === "pj"
               ? "Melhor data de vencimento do pagamento"
               : "Melhor data de vencimento do pagamento"
             }
@@ -44,7 +67,7 @@ export const CommonFields = ({ formData, setFormData, clientType }: CommonFields
           <Label className="text-sm font-medium">Qual a melhor maneira de pagamento?</Label>
           <RadioGroup
             value={formData.payment_method}
-            onValueChange={(value: "pix" | "boleto" | "credit_card") => 
+            onValueChange={(value: "pix" | "boleto" | "credit_card") =>
               setFormData({ ...formData, payment_method: value })
             }
             className="grid grid-cols-3 gap-3"

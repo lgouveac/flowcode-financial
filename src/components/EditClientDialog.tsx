@@ -48,7 +48,9 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
           due_date: formData.due_date,
           payment_method: formData.payment_method,
           total_billing: formData.total_billing,
-          responsible_name: formData.responsible_name
+          responsible_name: formData.responsible_name,
+          responsavel_financeiro: formData.responsavel_financeiro,
+          email_financeiro: formData.email_financeiro
         })
         .eq('id', formData.id);
 
@@ -129,6 +131,29 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
                   <SelectItem value="overdue">Inadimplente</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="responsavel_financeiro">Responsável Financeiro</Label>
+              <Input
+                id="responsavel_financeiro"
+                value={formData.responsavel_financeiro || ''}
+                onChange={(e) => setFormData({ ...formData, responsavel_financeiro: e.target.value })}
+                placeholder="Nome do responsável pelo financeiro"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email_financeiro">Email Financeiro</Label>
+              <Input
+                id="email_financeiro"
+                type="email"
+                value={formData.email_financeiro || ''}
+                onChange={(e) => setFormData({ ...formData, email_financeiro: e.target.value })}
+                placeholder="email.financeiro@empresa.com"
+              />
             </div>
           </div>
 

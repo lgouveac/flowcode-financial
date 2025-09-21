@@ -10,6 +10,8 @@ import { ClientSelector } from "@/components/recurring-billing/ClientSelector";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useContracts } from "@/hooks/useContracts";
+import { useWebhooks } from "@/hooks/useWebhooks";
+import { useToast } from "@/hooks/use-toast";
 
 interface NewContractDialogProps {
   open: boolean;
@@ -19,6 +21,8 @@ interface NewContractDialogProps {
 
 export function NewContractDialog({ open, onClose, onContractCreated }: NewContractDialogProps) {
   const { addContract } = useContracts();
+  const { getWebhook } = useWebhooks();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     client_id: "",
@@ -98,7 +102,59 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
         assinante_flowcode: 'Lucas Gouvea Carmo',
       };
 
-      // SÓ chama o webhook - o N8N cria tudo no Supabase
+      // Disparar webhook configurado
+      const webhookUrl = getWebhook('prestacao_servico', 'criacao');
+
+      console.log('🔍 Debug webhook:', {
+        webhookUrl,
+        hasWebhook: !!webhookUrl,
+        webhookTrimmed: webhookUrl?.trim(),
+        isEmpty: webhookUrl?.trim() === ''
+      });
+
+      if (webhookUrl && webhookUrl.trim() !== '') {
+        try {
+          console.log('Disparando webhook de criação:', webhookUrl);
+
+          // Preparar parâmetros para GET request
+          const webhookParams = new URLSearchParams();
+
+          // Campos básicos obrigatórios
+          webhookParams.append('action', 'create_contract');
+          webhookParams.append('timestamp', new Date().toISOString());
+
+          // Todos os campos do contrato
+          Object.entries(contractData).forEach(([key, value]) => {
+            if (value !== null && value !== undefined) {
+              webhookParams.append(key, value.toString());
+            }
+          });
+
+          const webhookResponse = await fetch(`${webhookUrl}?${webhookParams}`, {
+            method: "GET",
+          });
+
+          if (webhookResponse.ok) {
+            toast({
+              title: "Webhook enviado",
+              description: "O webhook foi chamado com sucesso para o novo contrato.",
+            });
+          } else {
+            throw new Error(`Webhook failed with status: ${webhookResponse.status}`);
+          }
+        } catch (error) {
+          console.error("Erro ao chamar webhook:", error);
+          toast({
+            title: "Aviso",
+            description: "Contrato processado, mas houve problema ao chamar o webhook.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.log('Nenhum webhook configurado para criação de contrato');
+      }
+
+      // Callback opcional
       if (onContractCreated) {
         onContractCreated(contractData);
       }

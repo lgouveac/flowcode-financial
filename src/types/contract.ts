@@ -19,6 +19,7 @@ export interface Contract {
   link_contrato?: string;
   obs?: string;
   Horas?: string;
+  texto_contrato?: string;
   // Assinatura Cliente
   ip?: string; // IP da assinatura do cliente
   signature_data?: string; // Dados da assinatura do cliente

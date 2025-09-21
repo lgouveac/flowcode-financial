@@ -31,6 +31,7 @@ import PublicEmployeeForm from "./pages/PublicEmployeeForm";
 import ThankYou from "./pages/ThankYou";
 import EmployeesPage from "./pages/Employees";
 import Users from "./pages/Users";
+import Leads from "./pages/Leads";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +81,7 @@ const App = () => (
                   <Route path="payments" element={<PaymentsByClient />} />
                   <Route path="cashflow" element={<CashFlow showChart={true} />} />
                   <Route path="estimated-expenses" element={<EstimatedExpenses />} />
+                  <Route path="leads" element={<Leads />} />
                   <Route path="users" element={<Users />} />
                 </Route>
                 

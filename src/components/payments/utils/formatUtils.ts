@@ -2,6 +2,14 @@
 import { format } from "date-fns";
 
 export const formatCurrency = (value: number): string => {
+  // Verificar se o valor é válido
+  if (!isFinite(value) || isNaN(value)) {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(0);
+  }
+
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",

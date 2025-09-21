@@ -43,8 +43,9 @@ export const RecurringBilling = () => {
   const [sortByOpen, setSortByOpen] = useState("due_date"); // Vencimento próximo por padrão no escopo aberto
   const [paymentStatusDetailFilter, setPaymentStatusDetailFilter] = useState<string[]>(["pending", "overdue"]); // Pendente e atrasado por padrão
   const [billingStatusDetailFilter, setBillingStatusDetailFilter] = useState<string[]>(["pending", "overdue"]); // Pendente e atrasado por padrão no escopo aberto
+  const [allStatusDetailFilter, setAllStatusDetailFilter] = useState<string[]>(["pending", "overdue"]); // Filtro específico para aba "Todos"
   const [showStatusFilterModal, setShowStatusFilterModal] = useState(false);
-  const [currentFilterType, setCurrentFilterType] = useState<'payment' | 'billing'>('payment');
+  const [currentFilterType, setCurrentFilterType] = useState<'payment' | 'billing' | 'all'>('payment');
 
   // Função helper para toggle de status nos arrays
   const toggleStatusInArray = (statusArray: string[], status: string, setter: (array: string[]) => void) => {
@@ -79,17 +80,21 @@ export const RecurringBilling = () => {
   };
 
   // Funções helper para a modal de filtro de status
-  const openStatusFilterModal = (type: 'payment' | 'billing') => {
+  const openStatusFilterModal = (type: 'payment' | 'billing' | 'all') => {
     setCurrentFilterType(type);
     setShowStatusFilterModal(true);
   };
 
   const getCurrentStatusArray = () => {
-    return currentFilterType === 'payment' ? paymentStatusDetailFilter : billingStatusDetailFilter;
+    return currentFilterType === 'payment' ? paymentStatusDetailFilter :
+           currentFilterType === 'billing' ? billingStatusDetailFilter :
+           allStatusDetailFilter;
   };
 
   const getCurrentStatusSetter = () => {
-    return currentFilterType === 'payment' ? setPaymentStatusDetailFilter : setBillingStatusDetailFilter;
+    return currentFilterType === 'payment' ? setPaymentStatusDetailFilter :
+           currentFilterType === 'billing' ? setBillingStatusDetailFilter :
+           setAllStatusDetailFilter;
   };
 
   const getStatusDisplayText = (statusArray: string[], isExpanded: boolean, filterType: 'payment' | 'billing') => {
@@ -154,13 +159,18 @@ export const RecurringBilling = () => {
   useEffect(() => {
     const adjustedPaymentFilters = adjustFiltersForMode(paymentStatusDetailFilter, expandCharges, 'payment');
     const adjustedBillingFilters = adjustFiltersForMode(billingStatusDetailFilter, expandChargesOpen, 'billing');
-    
+    const adjustedAllFilters = adjustFiltersForMode(allStatusDetailFilter, expandChargesAll, 'payment');
+
     if (JSON.stringify(adjustedPaymentFilters) !== JSON.stringify(paymentStatusDetailFilter)) {
       setPaymentStatusDetailFilter(adjustedPaymentFilters);
     }
-    
+
     if (JSON.stringify(adjustedBillingFilters) !== JSON.stringify(billingStatusDetailFilter)) {
       setBillingStatusDetailFilter(adjustedBillingFilters);
+    }
+
+    if (JSON.stringify(adjustedAllFilters) !== JSON.stringify(allStatusDetailFilter)) {
+      setAllStatusDetailFilter(adjustedAllFilters);
     }
   }, [expandCharges, expandChargesOpen, expandChargesAll]);
 
@@ -510,28 +520,24 @@ export const RecurringBilling = () => {
       if (!matchesSearch) return false;
       
       if (expandChargesAll) {
-        // Quando expandido: usar os filtros detalhados de cada escopo
+        // Quando expandido: usar o filtro específico da aba "Todos"
         if (billing.individual_payment) {
-          if (billing.scope_type === 'open') {
-            return billingStatusDetailFilter.includes("all") || billingStatusDetailFilter.includes(billing.individual_payment.status);
-          } else {
-            return paymentStatusDetailFilter.includes("all") || paymentStatusDetailFilter.includes(billing.individual_payment.status);
-          }
+          return allStatusDetailFilter.includes("all") || allStatusDetailFilter.includes(billing.individual_payment.status);
         } else if (billing.related_payments) {
-          return paymentStatusDetailFilter.includes("all") || billing.related_payments.some(payment => paymentStatusDetailFilter.includes(payment.status));
+          return allStatusDetailFilter.includes("all") || billing.related_payments.some(payment => allStatusDetailFilter.includes(payment.status));
         } else {
-          if (billing.scope_type === 'open') {
-            return billingStatusDetailFilter.includes("all") || billingStatusDetailFilter.includes(billing.status);
-          } else {
-            return paymentStatusDetailFilter.includes("all") || paymentStatusDetailFilter.includes(billing.status);
-          }
+          return allStatusDetailFilter.includes("all") || allStatusDetailFilter.includes(billing.status);
         }
       } else {
-        // Quando agrupado: mostrar todos os dados (sem filtro específico)
-        return true;
+        // Quando agrupado: usar o filtro específico da aba "Todos"
+        if (billing.related_payments) {
+          return allStatusDetailFilter.includes("all") || billing.related_payments.some(payment => allStatusDetailFilter.includes(payment.status));
+        } else {
+          return allStatusDetailFilter.includes("all") || allStatusDetailFilter.includes(billing.status);
+        }
       }
     });
-  }, [allCombinedBillings, activeTab, expandChargesAll, billingStatusDetailFilter, paymentStatusDetailFilter, allSearch]);
+  }, [allCombinedBillings, activeTab, expandChargesAll, allStatusDetailFilter, allSearch]);
 
   // Garante que clients e templates são sempre arrays
   const safeClients = Array.isArray(clients) ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) : [];
@@ -628,10 +634,10 @@ export const RecurringBilling = () => {
                     <Label className="text-sm font-medium">Status Pagamento</Label>
                     <Button
                       variant="outline"
-                      onClick={() => openStatusFilterModal('billing')}
+                      onClick={() => openStatusFilterModal('all')}
                       className="w-full justify-between text-left font-normal"
                     >
-                      <span className="truncate">{getStatusDisplayText(billingStatusDetailFilter, expandChargesAll, 'billing')}</span>
+                      <span className="truncate">{getStatusDisplayText(allStatusDetailFilter, expandChargesAll, 'billing')}</span>
                       <SlidersHorizontal className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </div>
