@@ -1,6 +1,7 @@
 
 import React from "react";
 import { TableRow, TableCell } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Payment } from "@/types/payment";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -16,15 +17,19 @@ interface PaymentRowProps {
   enableDuplicate?: boolean;
   templates?: EmailTemplate[];
   hideClientName?: boolean;
+  isSelected?: boolean;
+  onSelectChange?: (paymentId: number, selected: boolean) => void;
 }
 
-export const PaymentRow = ({ 
-  payment, 
-  onEmailSent, 
-  onPaymentUpdated, 
+export const PaymentRow = ({
+  payment,
+  onEmailSent,
+  onPaymentUpdated,
   enableDuplicate = false,
   templates = [],
-  hideClientName = false
+  hideClientName = false,
+  isSelected = false,
+  onSelectChange
 }: PaymentRowProps) => {
   // Format due date safely without timezone conversion
   const formattedDueDate = payment.due_date 
@@ -33,6 +38,15 @@ export const PaymentRow = ({
     
   return (
     <TableRow className="hover:bg-muted/50">
+      <TableCell>
+        {onSelectChange && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelectChange(payment.id, checked as boolean)}
+            aria-label={`Selecionar recebimento ${payment.id}`}
+          />
+        )}
+      </TableCell>
       <TableCell>
         <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={payment.clients?.name || 'Cliente não encontrado'}>
           {payment.clients?.name || 'Cliente não encontrado'}

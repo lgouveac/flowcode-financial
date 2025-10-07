@@ -3,6 +3,7 @@ import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Edit, Trash2, Copy } from "lucide-react";
 import { formatCurrency } from "@/utils/formatters";
 import { RecurringBilling } from "@/types/billing";
@@ -20,6 +21,8 @@ interface RecurringBillingRowProps {
   templates: EmailTemplate[];
   onOpenDetails?: (billing: RecurringBilling) => void;
   onDuplicate?: (billing: RecurringBilling) => Promise<void>;
+  isSelected?: boolean;
+  onSelectChange?: (billingId: number, selected: boolean) => void;
 }
 
 export const RecurringBillingRowStatus = {
@@ -32,7 +35,7 @@ export const RecurringBillingRowStatus = {
   awaiting_invoice: { label: "Aguardando NF", color: "bg-orange-500" },
 };
 
-export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates, onOpenDetails, onDuplicate }: RecurringBillingRowProps) => {
+export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = false, templates, onOpenDetails, onDuplicate, isSelected = false, onSelectChange }: RecurringBillingRowProps) => {
   // Detectar tipos: billing virtual agrupado, pagamento expandido individual, ou billing normal
   const isVirtualBilling = Boolean(billing.related_payments);
   const isExpandedPayment = Boolean(billing.individual_payment);
@@ -154,10 +157,20 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
   };
 
   return (
-    <TableRow 
+    <TableRow
       className="hover:bg-muted/50"
       onClick={handleViewDetails}
     >
+      <TableCell>
+        {onSelectChange && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelectChange(billing.id, checked as boolean)}
+            aria-label={`Selecionar recebimento ${billing.id}`}
+            onClick={(e) => e.stopPropagation()}
+          />
+        )}
+      </TableCell>
       <TableCell className="font-medium">
         <div className="line-clamp-2 text-sm leading-5 max-h-10 overflow-hidden" title={billing.clients?.name || "Cliente não encontrado"}>
           {billing.clients?.name || "Cliente não encontrado"}

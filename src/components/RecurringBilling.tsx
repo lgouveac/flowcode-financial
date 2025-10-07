@@ -30,10 +30,10 @@ export const RecurringBilling = () => {
   const [showSimplePaymentDialog, setShowSimplePaymentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [paymentSearch, setPaymentSearch] = useState("");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("pending,overdue"); // Pendente e atrasado por padrão
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all"); // Todos por padrão
   const [billingSearch, setBillingSearch] = useState("");
   const [allSearch, setAllSearch] = useState(""); // Campo de busca para a aba "Todos"
-  const [billingStatusFilter, setBillingStatusFilter] = useState("pending,overdue"); // Pendente e atrasado por padrão no escopo aberto
+  const [billingStatusFilter, setBillingStatusFilter] = useState("all"); // Todos por padrão no escopo aberto
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(true); // Filtros expandidos por padrão no escopo fechado
   const [showAdvancedFiltersOpen, setShowAdvancedFiltersOpen] = useState(true); // Filtros expandidos por padrão no escopo aberto
   const [expandCharges, setExpandCharges] = useState(true); // Expandido por padrão
@@ -236,14 +236,14 @@ export const RecurringBilling = () => {
     });
   }, [billings]);
 
-  // Filtragem de cobranças recorrentes
+  // Filtragem de cobranças recorrentes (Escopo Aberto)
   const filteredBillings = useMemo(() => {
     if (!openScopeBillings || !Array.isArray(openScopeBillings)) return [];
     return openScopeBillings.filter(billing => {
       const client = billing.clients?.name || "";
       const description = (billing.description || "").toLowerCase();
       const search = billingSearch.toLowerCase();
-      const matchesSearch = client.toLowerCase().includes(search) || description.includes(search);
+      const matchesSearch = search === "" || client.toLowerCase().includes(search) || description.includes(search);
       const matchesStatus = billingStatusFilter === "all" || billing.status === billingStatusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -422,9 +422,18 @@ export const RecurringBilling = () => {
     const allOpenPayments = billings || [];
 
     return allOpenPayments
+      .filter(payment => {
+        // Aplicar filtro de busca também aos dados expandidos
+        const client = payment.clients?.name || "";
+        const description = (payment.description || "").toLowerCase();
+        const search = billingSearch.toLowerCase();
+        const matchesSearch = search === "" || client.toLowerCase().includes(search) || description.includes(search);
+        const matchesStatus = billingStatusFilter === "all" || payment.status === billingStatusFilter;
+        return matchesSearch && matchesStatus;
+      })
       .map(payment => {
         // Formatar data de vencimento
-        const formattedDueDate = payment.due_date 
+        const formattedDueDate = payment.due_date
           ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
           : 'Dia --';
 
@@ -446,7 +455,7 @@ export const RecurringBilling = () => {
           individual_payment: payment
         };
       });
-  }, [filteredBillings, expandChargesOpen, billings]);
+  }, [filteredBillings, expandChargesOpen, billings, billingSearch, billingStatusFilter]);
 
   // Aplicar filtro por status específico no Escopo Aberto  
   const filteredByBillingStatus = useMemo(() => {

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Link } from "lucide-react";
 import { useWebhooks } from "@/hooks/useWebhooks";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface WebhookConfigModalProps {
   open: boolean;
@@ -38,16 +39,41 @@ export function WebhookConfigModal({ open, onClose, contractType, title }: Webho
     }
   }, [open, contractType]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Salvar no localStorage (comportamento original)
     updateWebhook(contractType, 'criacao', webhookCriacao);
     updateWebhook(contractType, 'assinatura', webhookAssinatura);
     updateWebhook(contractType, 'edicao', webhookEdicao);
-    
-    toast({
-      title: "Webhooks Salvos",
-      description: `Configuração de webhooks para ${title} atualizada com sucesso!`,
-    });
-    
+
+    // Salvar no Supabase
+    try {
+      const { error } = await supabase
+        .from('webhooks')
+        .insert([{
+          criacao_contrato: webhookCriacao || null,
+          edicao_contrato: webhookEdicao || null,
+          assinatura_contrato: webhookAssinatura || null
+        }]);
+
+      if (error) {
+        console.error('Erro ao salvar webhooks:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Webhooks Salvos",
+        description: `Configuração de webhooks para ${title} salva com sucesso!`,
+      });
+
+    } catch (error) {
+      console.error('Erro ao salvar webhooks:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar configuração no banco de dados",
+        variant: "destructive"
+      });
+    }
+
     onClose();
   };
 

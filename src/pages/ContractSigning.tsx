@@ -249,7 +249,7 @@ export default function ContractSigning() {
 
   if (!contract) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="text-center py-12">
             <h2 className="text-2xl font-bold mb-4">Contrato não encontrado</h2>
@@ -268,140 +268,131 @@ export default function ContractSigning() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl space-y-6">
-        <div className="text-center text-white">
-          <h1 className="text-2xl font-bold">Assinatura de Contrato</h1>
-          <p className="text-blue-100">
-            Revise as informações e assine o contrato abaixo
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
+      <div className="w-full max-w-4xl mx-auto space-y-8">
 
         {/* Preview do Contrato */}
         {contract.link_contrato ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Visualizar Contrato</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Revise o contrato antes de assinar
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg overflow-hidden" style={{ height: '600px' }}>
-                <iframe
-                  src={contract.link_contrato}
-                  className="w-full h-full"
-                  title="Preview do Contrato"
-                />
-              </div>
-              <div className="flex justify-end mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => window.open(contract.link_contrato, '_blank')}
-                >
-                  Abrir em Nova Aba
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Visualizar Contrato</h2>
+            <div className="rounded-lg overflow-hidden border border-white/20" style={{ height: '600px' }}>
+              <iframe
+                src={contract.link_contrato}
+                className="w-full h-full"
+                title="Preview do Contrato"
+              />
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button
+                variant="outline"
+                onClick={() => window.open(contract.link_contrato, '_blank')}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                Abrir em Nova Aba
+              </Button>
+            </div>
+          </div>
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Contrato em Preparação</CardTitle>
-            </CardHeader>
-            <CardContent className="text-center py-8">
-              <div className="mb-4 text-amber-600">
-                <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Documento sendo preparado</h3>
-              <p className="text-muted-foreground mb-4">
-                O contrato está sendo gerado e estará disponível para visualização em breve.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Você pode prosseguir com a assinatura baseado nas informações abaixo.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8 text-center">
+            <div className="mb-4 text-amber-400">
+              <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Documento sendo preparado</h3>
+            <p className="text-slate-300 mb-4">
+              O contrato está sendo gerado e estará disponível para visualização em breve.
+            </p>
+            <p className="text-sm text-slate-400">
+              Você pode prosseguir com a assinatura baseado nas informações abaixo.
+            </p>
+          </div>
         )}
 
         {/* Informações do Contrato */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <CardTitle>Detalhes do Contrato</CardTitle>
-              <Badge 
-                className={
-                  contract.status === 'completed' 
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-yellow-100 text-yellow-800"
-                }
-              >
-                {contract.status === 'completed' ? 'Assinado' : 'Aguardando Assinatura'}
-              </Badge>
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-semibold text-white">Detalhes do Contrato</h2>
+            <Badge
+              className={
+                contract.status === 'completed'
+                  ? "bg-green-500/20 text-green-300 border-green-500/30"
+                  : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+              }
+            >
+              {contract.status === 'completed' ? 'Assinado' : 'Aguardando Assinatura'}
+            </Badge>
+          </div>
+
+          <div className="space-y-8">
+            <div>
+              <label className="text-sm font-medium text-slate-400 uppercase tracking-wide">Cliente</label>
+              <p className="text-xl font-medium text-white mt-2">{contract.clients?.name}</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <div>
+              <label className="text-sm font-medium text-slate-400 uppercase tracking-wide">Escopo</label>
+              <div className="text-lg text-slate-200 whitespace-pre-wrap leading-relaxed mt-2">{contract.scope}</div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Cliente</Label>
-                <p className="text-lg font-medium">{contract.clients?.name}</p>
+                <label className="text-sm font-medium text-slate-400 uppercase tracking-wide">Valor Total</label>
+                <p className="text-xl font-medium text-white mt-2">{formatCurrency(contract.total_value)}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Escopo</Label>
-                <p className="text-lg">{contract.scope}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Valor Total</Label>
-                <p className="text-lg font-medium">{formatCurrency(contract.total_value)}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Parcelas</Label>
-                <p className="text-lg">
-                  {contract.installment_value_text 
-                    ? contract.installment_value_text 
-                    : contract.installment_value 
+                <label className="text-sm font-medium text-slate-400 uppercase tracking-wide">Parcelas</label>
+                <p className="text-lg text-slate-200 mt-2">
+                  {contract.installment_value_text
+                    ? contract.installment_value_text
+                    : contract.installment_value
                       ? `${contract.installments}x de ${formatCurrency(contract.installment_value)}`
                       : `${contract.installments}x parcelas`
                   }
                 </p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Data de Início</Label>
-                <p className="text-lg">{formatDate(new Date(contract.start_date), "dd/MM/yyyy")}</p>
+                <label className="text-sm font-medium text-slate-400 uppercase tracking-wide">Data de Início</label>
+                <p className="text-lg text-slate-200 mt-2">{formatDate(new Date(contract.start_date), "dd/MM/yyyy")}</p>
               </div>
               {contract.end_date && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Data de Término</Label>
-                  <p className="text-lg">{formatDate(new Date(contract.end_date), "dd/MM/yyyy")}</p>
+                  <label className="text-sm font-medium text-slate-400 uppercase tracking-wide">Data de Término</label>
+                  <p className="text-lg text-slate-200 mt-2">{formatDate(new Date(contract.end_date), "dd/MM/yyyy")}</p>
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Assinatura do Cliente */}
         {contract.status !== 'completed' && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Assinatura Digital</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Escolha como deseja assinar o contrato
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8">
+            <h2 className="text-2xl font-semibold text-white mb-2">Assinatura Digital</h2>
+            <p className="text-slate-300 mb-8">
+              Escolha como deseja assinar o contrato
+            </p>
+
+            <div className="space-y-8">
               {/* Tipo de Assinatura */}
               <div className="flex space-x-4">
                 <Button
                   variant={signatureType === 'text' ? 'default' : 'outline'}
                   onClick={() => setSignatureType('text')}
+                  className={signatureType === 'text'
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  }
                 >
                   Assinar com Texto
                 </Button>
                 <Button
                   variant={signatureType === 'draw' ? 'default' : 'outline'}
                   onClick={() => setSignatureType('draw')}
+                  className={signatureType === 'draw'
+                    ? "bg-blue-600 hover:bg-blue-700 text-white"
+                    : "bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  }
                 >
                   Desenhar Assinatura
                 </Button>
@@ -410,24 +401,24 @@ export default function ContractSigning() {
               {/* Campo de Assinatura */}
               {signatureType === 'text' ? (
                 <div>
-                  <Label htmlFor="signature">Nome Completo</Label>
+                  <label className="text-sm font-medium text-slate-400 uppercase tracking-wide">Nome Completo</label>
                   <Input
                     id="signature"
                     value={textSignature}
                     onChange={(e) => setTextSignature(e.target.value)}
                     placeholder="Digite seu nome completo"
-                    className="mt-1"
+                    className="mt-2 bg-white/10 border-white/20 text-white placeholder-slate-400 focus:border-blue-500"
                   />
                 </div>
               ) : (
                 <div>
-                  <Label>Desenhe sua Assinatura</Label>
-                  <div className="border rounded-lg p-4 bg-white">
+                  <label className="text-sm font-medium text-slate-400 uppercase tracking-wide">Desenhe sua Assinatura</label>
+                  <div className="border border-white/20 rounded-lg p-4 bg-white/5 mt-2">
                     <canvas
                       ref={canvasRef}
                       width={500}
                       height={200}
-                      className="border rounded cursor-crosshair w-full"
+                      className="border border-white/10 rounded cursor-crosshair w-full bg-white"
                       style={{ maxWidth: '100%' }}
                       onMouseDown={startDrawing}
                       onMouseMove={draw}
@@ -438,7 +429,7 @@ export default function ContractSigning() {
                       variant="outline"
                       size="sm"
                       onClick={clearCanvas}
-                      className="mt-2"
+                      className="mt-3 bg-white/10 border-white/20 text-white hover:bg-white/20"
                     >
                       Limpar Assinatura
                     </Button>
@@ -449,20 +440,20 @@ export default function ContractSigning() {
               <Button
                 onClick={handleSubmit}
                 disabled={signing}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg font-medium"
                 size="lg"
               >
                 {signing ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
                     Assinando Contrato...
                   </>
                 ) : (
                   'Assinar Contrato'
                 )}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
 
