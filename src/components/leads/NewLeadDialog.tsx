@@ -25,14 +25,14 @@ export function NewLeadDialog({ open, onClose }: NewLeadDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.Nome || !formData.Email) {
+    if (!formData.Nome) {
       return;
     }
 
     try {
       const leadData = {
         Nome: formData.Nome,
-        Email: formData.Email,
+        Email: formData.Email || undefined,
         Celular: formData.Celular || undefined,
         Valor: formData.Valor ? parseFloat(formData.Valor) : undefined,
         Status: formData.Status,
@@ -76,11 +76,10 @@ export function NewLeadDialog({ open, onClose }: NewLeadDialogProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="Email">Email *</Label>
+              <Label htmlFor="Email">Email</Label>
               <Input
                 id="Email"
                 type="email"
-                required
                 value={formData.Email}
                 onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
                 placeholder="email@exemplo.com"

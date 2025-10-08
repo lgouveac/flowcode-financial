@@ -15,7 +15,7 @@ export const useLeads = () => {
 
         const { data, error } = await supabase
           .from("leads")
-          .select("id, Nome, Email, Celular, Valor, Status, created_at");
+          .select("id, Nome, Email, Celular, Valor, Status, created_at, won_at");
 
         console.log("Supabase response:", { data, error });
 
@@ -71,6 +71,18 @@ export const useLeads = () => {
   const updateLead = async ({ id, updates }: { id: number; updates: Partial<Lead> }) => {
     try {
       console.log("Updating lead:", id, updates);
+
+      // If status is being changed to "Won", automatically set won_at
+      if (updates.Status === "Won") {
+        updates.won_at = new Date().toISOString();
+      }
+      // If status is being changed from "Won" to something else, clear won_at
+      else if (updates.Status && updates.Status !== "Won") {
+        const currentLead = leads.find(lead => lead.id === id);
+        if (currentLead?.Status === "Won") {
+          updates.won_at = null;
+        }
+      }
 
       const { error } = await supabase
         .from("leads")

@@ -22,6 +22,7 @@ import {
 import { useLeads } from "@/hooks/useLeads";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { Lead } from "@/types/lead";
+import { getLeadMetrics } from "@/utils/leadUtils";
 
 export function LeadsDashboard() {
   const { leads, isLoading } = useLeads();
@@ -40,24 +41,23 @@ export function LeadsDashboard() {
         lostLeadsValue: 0,
         potentialValue: 0,
         statusBreakdown: {},
-        avgClosingTime: 0
+        avgClosingTime: 0,
+        averageClosingTimeFormatted: "N/A",
+        activePipelineLeads: [],
+        leadsWithValue: []
       };
     }
 
-    const totalLeads = leads.length;
-    const wonLeads = leads.filter(lead => lead.Status === "Won").length;
-    const conversionRate = totalLeads > 0 ? (wonLeads / totalLeads) * 100 : 0;
+    const leadMetrics = getLeadMetrics(leads);
 
-    // Calcular valores apenas para leads com valor definido
+    // Calcular valores financeiros
     const leadsWithValue = leads.filter(lead => lead.Valor && lead.Valor > 0);
 
-    // Valor do pipeline ativo (excluindo Lost e Won)
     const activePipelineLeads = leadsWithValue.filter(lead =>
       lead.Status !== "Won" && lead.Status !== "Lost"
     );
     const activePipelineValue = activePipelineLeads.reduce((sum, lead) => sum + (lead.Valor || 0), 0);
 
-    // Valores de leads finalizados
     const wonLeadsValue = leadsWithValue
       .filter(lead => lead.Status === "Won")
       .reduce((sum, lead) => sum + (lead.Valor || 0), 0);
@@ -66,34 +66,25 @@ export function LeadsDashboard() {
       .filter(lead => lead.Status === "Lost")
       .reduce((sum, lead) => sum + (lead.Valor || 0), 0);
 
-    // Valor médio de todos os leads (para referência geral)
     const averageValue = leadsWithValue.length > 0 ?
       leadsWithValue.reduce((sum, lead) => sum + (lead.Valor || 0), 0) / leadsWithValue.length : 0;
 
-    // Calcular potencial de fechamento (valor do pipeline ativo * taxa de conversão)
-    const potentialValue = conversionRate > 0 ? activePipelineValue * (conversionRate / 100) : 0;
+    const potentialValue = leadMetrics.conversionRate > 0 ? activePipelineValue * (leadMetrics.conversionRate / 100) : 0;
 
-    // Breakdown por status
     const statusBreakdown = leads.reduce((acc, lead) => {
       acc[lead.Status] = (acc[lead.Status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Tempo médio de fechamento (ainda em construção)
-    const avgClosingTime = 0; // Placeholder
-
     return {
-      totalLeads,
-      wonLeads,
-      conversionRate,
+      ...leadMetrics,
       averageValue,
       activePipelineValue,
       wonLeadsValue,
       lostLeadsValue,
       potentialValue,
       statusBreakdown,
-      avgClosingTime,
-      // Dados para o modal
+      avgClosingTime: leadMetrics.averageClosingTime,
       activePipelineLeads,
       leadsWithValue
     };
@@ -183,7 +174,7 @@ export function LeadsDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              <span className="text-muted-foreground">Em construção</span>
+              {metrics.averageClosingTimeFormatted}
             </div>
             <p className="text-xs text-muted-foreground">
               tempo médio para fechar
@@ -272,40 +263,6 @@ export function LeadsDashboard() {
         </Card>
       </div>
 
-      {/* Status em Construção */}
-      <Card className="border-dashed border-2 border-muted-foreground/25">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-5 w-5" />
-            Funcionalidades em Desenvolvimento
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <h4 className="font-medium text-muted-foreground">Tempo de Fechamento</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                Análise do tempo médio para converter leads
-              </p>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <TrendingUp className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <h4 className="font-medium text-muted-foreground">Tendências</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                Gráficos de performance ao longo do tempo
-              </p>
-            </div>
-            <div className="p-4 bg-muted/50 rounded-lg">
-              <BarChart3 className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <h4 className="font-medium text-muted-foreground">Relatórios Avançados</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                Análises detalhadas de conversão
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Modal de Detalhamento */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
