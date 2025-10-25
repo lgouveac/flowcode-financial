@@ -15,7 +15,7 @@ export const useLeads = () => {
 
         const { data, error } = await supabase
           .from("leads")
-          .select("id, Nome, Email, Celular, Valor, Status, created_at, won_at");
+          .select("id, Nome, Email, Celular, Valor, Status, created_at, won_at, tempo_fechamento");
 
         console.log("Supabase response:", { data, error });
 

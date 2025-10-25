@@ -9,6 +9,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   TrendingUp,
   DollarSign,
   Users,
@@ -100,6 +106,36 @@ export function LeadsDashboard() {
     setModalOpen(true);
   };
 
+  const getClosingTimeExplanation = () => {
+    const wonLeads = leads.filter(lead => lead.Status === "Won");
+    const leadsWithManualTime = wonLeads.filter(lead => lead.tempo_fechamento && lead.tempo_fechamento > 0);
+    const leadsWithCalculatedTime = wonLeads.filter(lead =>
+      (!lead.tempo_fechamento || lead.tempo_fechamento === 0) &&
+      lead.won_at &&
+      lead.created_at
+    );
+
+    if (wonLeads.length === 0) {
+      return "Nenhum lead foi ganho ainda";
+    }
+
+    let explanation = "Cálculo baseado em:\n";
+
+    if (leadsWithManualTime.length > 0) {
+      explanation += `• ${leadsWithManualTime.length} lead(s) com tempo informado manualmente\n`;
+    }
+
+    if (leadsWithCalculatedTime.length > 0) {
+      explanation += `• ${leadsWithCalculatedTime.length} lead(s) calculado pela diferença entre datas\n`;
+    }
+
+    if (leadsWithManualTime.length === 0 && leadsWithCalculatedTime.length === 0) {
+      explanation = "Leads ganhos não possuem informações suficientes para o cálculo";
+    }
+
+    return explanation.trim();
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-40">
@@ -170,7 +206,18 @@ export function LeadsDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tempo de Fechamento</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Clock className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <div className="whitespace-pre-line text-sm">
+                    {getClosingTimeExplanation()}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

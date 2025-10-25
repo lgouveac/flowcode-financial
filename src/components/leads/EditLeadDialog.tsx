@@ -16,12 +16,24 @@ interface EditLeadDialogProps {
 
 export function EditLeadDialog({ lead, open, onClose }: EditLeadDialogProps) {
   const { updateLead, isUpdatingLead } = useLeads();
+
+  const calculateAutomaticClosingTime = (lead: Lead): number | null => {
+    if (lead.Status !== "Won" || !lead.won_at || !lead.created_at) {
+      return null;
+    }
+
+    const start = new Date(lead.created_at);
+    const end = new Date(lead.won_at);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
   const [formData, setFormData] = useState({
     Nome: "",
     Email: "",
     Celular: "",
     Valor: "",
     Status: "Income" as LeadStatus,
+    tempo_fechamento: "",
   });
 
   useEffect(() => {
@@ -32,6 +44,7 @@ export function EditLeadDialog({ lead, open, onClose }: EditLeadDialogProps) {
         Celular: lead.Celular || "",
         Valor: lead.Valor?.toString() || "",
         Status: lead.Status || "Income",
+        tempo_fechamento: lead.tempo_fechamento?.toString() || "",
       });
     }
   }, [lead]);
@@ -49,6 +62,7 @@ export function EditLeadDialog({ lead, open, onClose }: EditLeadDialogProps) {
         Celular: formData.Celular || undefined,
         Valor: formData.Valor ? parseFloat(formData.Valor) : undefined,
         Status: formData.Status,
+        tempo_fechamento: formData.tempo_fechamento ? parseInt(formData.tempo_fechamento) : undefined,
       };
 
       updateLead({ id: lead.id, updates });
@@ -117,7 +131,12 @@ export function EditLeadDialog({ lead, open, onClose }: EditLeadDialogProps) {
               <Label htmlFor="Status">Status</Label>
               <Select
                 value={formData.Status}
-                onValueChange={(value) => setFormData({ ...formData, Status: value as LeadStatus })}
+                onValueChange={(value) => setFormData({
+                  ...formData,
+                  Status: value as LeadStatus,
+                  // Clear tempo_fechamento if status is not "Won"
+                  tempo_fechamento: value === "Won" ? formData.tempo_fechamento : ""
+                })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -132,6 +151,33 @@ export function EditLeadDialog({ lead, open, onClose }: EditLeadDialogProps) {
               </Select>
             </div>
           </div>
+
+          {formData.Status === "Won" && (
+            <div className="space-y-2">
+              <Label htmlFor="tempo_fechamento">Tempo de Fechamento (dias)</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="tempo_fechamento"
+                  type="number"
+                  min="1"
+                  value={formData.tempo_fechamento}
+                  onChange={(e) => setFormData({ ...formData, tempo_fechamento: e.target.value })}
+                  placeholder={`Automático: ${calculateAutomaticClosingTime(lead) || 'N/A'} dias`}
+                  className="max-w-xs"
+                />
+                <div className="text-sm text-muted-foreground">
+                  {formData.tempo_fechamento ? (
+                    <span className="text-blue-600 font-medium">✓ Manual</span>
+                  ) : (
+                    <span>Automático: {calculateAutomaticClosingTime(lead) || 'N/A'} dias</span>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Deixe vazio para usar o cálculo automático baseado nas datas de criação e fechamento
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={onClose}>

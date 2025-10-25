@@ -2,25 +2,34 @@ import { Lead } from "@/types/lead";
 
 /**
  * Calculate the average closing time for won leads in days
+ * Prioritizes manual tempo_fechamento, falls back to calculated time
  */
 export const calculateAverageClosingTime = (leads: Lead[]): number => {
-  const wonLeads = leads.filter(lead =>
-    lead.Status === "Won" &&
-    lead.won_at &&
-    lead.created_at
-  );
+  const wonLeads = leads.filter(lead => lead.Status === "Won");
 
   if (wonLeads.length === 0) return 0;
 
-  const totalDays = wonLeads.reduce((sum, lead) => {
-    const start = new Date(lead.created_at);
-    const end = new Date(lead.won_at!);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return sum + diffDays;
-  }, 0);
+  const validClosingTimes: number[] = [];
 
-  return totalDays / wonLeads.length;
+  wonLeads.forEach(lead => {
+    // Use manual tempo_fechamento if available
+    if (lead.tempo_fechamento && lead.tempo_fechamento > 0) {
+      validClosingTimes.push(lead.tempo_fechamento);
+    }
+    // Fall back to calculated time if dates are available
+    else if (lead.won_at && lead.created_at) {
+      const start = new Date(lead.created_at);
+      const end = new Date(lead.won_at);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      validClosingTimes.push(diffDays);
+    }
+  });
+
+  if (validClosingTimes.length === 0) return 0;
+
+  const totalDays = validClosingTimes.reduce((sum, days) => sum + days, 0);
+  return totalDays / validClosingTimes.length;
 };
 
 /**

@@ -13,7 +13,8 @@ import {
   Calendar,
   DollarSign,
   Check,
-  X
+  X,
+  Clock
 } from "lucide-react";
 import { useLeads } from "@/hooks/useLeads";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
@@ -69,6 +70,9 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
     if (field === "Valor") {
       const numValue = parseFloat(editingValue.replace(/[^\d.,]/g, '').replace(',', '.'));
       value = isNaN(numValue) ? null : numValue;
+    } else if (field === "tempo_fechamento") {
+      const numValue = parseInt(editingValue);
+      value = isNaN(numValue) || numValue < 1 ? null : numValue;
     }
 
     await updateLead({ id: leadId, updates: { [field]: value } });
@@ -179,6 +183,96 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
     );
   };
 
+  const calculateLeadClosingTime = (lead: Lead): { days: number | null; formatted: string } => {
+    if (lead.Status !== "Won") {
+      return { days: null, formatted: "-" };
+    }
+
+    // Use manual tempo_fechamento if available
+    if (lead.tempo_fechamento && lead.tempo_fechamento > 0) {
+      return {
+        days: lead.tempo_fechamento,
+        formatted: lead.tempo_fechamento === 1 ? "1 dia" : `${lead.tempo_fechamento} dias`
+      };
+    }
+
+    // Fall back to calculated time
+    if (!lead.won_at || !lead.created_at) {
+      return { days: null, formatted: "N/A" };
+    }
+
+    const start = new Date(lead.created_at);
+    const end = new Date(lead.won_at);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return {
+      days: diffDays,
+      formatted: diffDays === 1 ? "1 dia" : `${diffDays} dias`
+    };
+  };
+
+  const renderTempoFechamento = (lead: Lead) => {
+    const { days, formatted } = calculateLeadClosingTime(lead);
+    const isWon = lead.Status === "Won";
+    const isEditing = editingCell?.leadId === lead.id && editingCell?.field === "tempo_fechamento";
+
+    if (!isWon) {
+      return (
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span className="italic">-</span>
+        </div>
+      );
+    }
+
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-2 editing-cell">
+          <Input
+            ref={inputRef}
+            value={editingValue}
+            onChange={(e) => setEditingValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") saveEdit();
+              if (e.key === "Escape") cancelEditing();
+            }}
+            className="h-8"
+            placeholder="Dias para fechar"
+            type="number"
+            min="1"
+          />
+          <div className="flex items-center gap-1">
+            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-6 w-6 p-0 text-green-600">
+              <Check className="h-3 w-3" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEditing} className="h-6 w-6 p-0 text-red-600">
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    const hasManualTime = lead.tempo_fechamento && lead.tempo_fechamento > 0;
+
+    return (
+      <div
+        className="flex items-center gap-1 text-sm cursor-pointer hover:bg-muted/50 p-1 rounded transition-colors"
+        onClick={() => startEditing(lead.id, "tempo_fechamento", lead.tempo_fechamento || days)}
+        title={hasManualTime ? "Tempo informado manualmente (clique para editar)" : "Tempo calculado automaticamente (clique para sobrescrever)"}
+      >
+        <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+        <span className={hasManualTime ? "font-medium" : ""}>
+          {formatted}
+        </span>
+        {hasManualTime && (
+          <span className="text-xs text-blue-600">✓</span>
+        )}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-40">
@@ -208,6 +302,7 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
               <TableHead>Celular</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Tempo de Fechamento</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead className="w-24">Ações</TableHead>
             </TableRow>
@@ -278,6 +373,10 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
                       getStatusBadge(lead.Status)
                     )}
                   </div>
+                </TableCell>
+
+                <TableCell>
+                  {renderTempoFechamento(lead)}
                 </TableCell>
 
                 <TableCell>

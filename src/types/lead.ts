@@ -7,6 +7,7 @@ export interface Lead {
   Status: string; // Status_Lead enum - vou descobrir os valores possíveis
   created_at: string;
   won_at?: string;
+  tempo_fechamento?: number; // Tempo em dias para fechar o lead (editável)
 }
 
 export type NewLead = Omit<Lead, 'id' | 'created_at' | 'won_at'> & {
