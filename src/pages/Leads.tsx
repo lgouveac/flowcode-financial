@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { LeadsTable } from "@/components/leads/LeadsTable";
 import { LeadsKanban } from "@/components/leads/LeadsKanban";
 import { LeadsDashboard } from "@/components/leads/LeadsDashboard";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
-import { List, Grid, Search, Plus, Users, BarChart3, Settings } from "lucide-react";
+import { List, Grid, Search, Plus, Users, BarChart3, Layers } from "lucide-react";
 
 export default function Leads() {
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [newLeadOpen, setNewLeadOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('pipeline');
 
   return (
     <div className="space-y-6">
@@ -27,23 +27,22 @@ export default function Leads() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="leads" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
-          <TabsTrigger value="leads" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Leads
-          </TabsTrigger>
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Dashboard Comercial
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="pipeline" onValueChange={setActiveTab} className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Tabs Navigation */}
+          <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+            <TabsTrigger value="pipeline" className="flex items-center gap-2">
+              <Layers className="h-4 w-4" />
+              Pipeline
+            </TabsTrigger>
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="leads" className="space-y-6">
-          {/* Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 rounded-lg border">
-            <h2 className="text-lg font-semibold">Leads</h2>
-
+          {/* Controls - shown only on pipeline tab */}
+          {activeTab === 'pipeline' && (
             <div className="flex items-center gap-4">
               {/* Search */}
               <div className="relative">
@@ -85,8 +84,10 @@ export default function Leads() {
                 Novo Lead
               </Button>
             </div>
-          </div>
+          )}
+        </div>
 
+        <TabsContent value="pipeline" className="space-y-6">
           {/* Content */}
           {viewMode === 'list' ? (
             <LeadsTable searchTerm={searchTerm} />
