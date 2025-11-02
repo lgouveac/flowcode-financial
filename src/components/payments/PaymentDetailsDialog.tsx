@@ -117,10 +117,10 @@ export const PaymentDetailsDialog = ({
 
       console.log('Payment updated successfully');
 
-      // Sincronizar com cash flow se o pagamento foi marcado como pago
-      if (status === 'paid' && payment.status !== 'paid') {
-        console.log('Payment marked as paid, syncing with cash flow...');
-        
+      // Sincronizar com cash flow se o pagamento está marcado como pago e tem data de pagamento
+      if (status === 'paid' && (paymentDate || payOnDelivery)) {
+        console.log('Payment is paid with payment date, syncing with cash flow...');
+
         const syncResult = await syncPaymentToCashFlow(
           payment.id,
           payment.status,

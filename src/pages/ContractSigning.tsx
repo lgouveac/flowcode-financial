@@ -157,7 +157,60 @@ export default function ContractSigning() {
   const handleSubmit = async () => {
     if (!contract) return;
 
-    // Validar assinatura
+    setSigning(true);
+
+    // Se o contrato já está assinado, apenas chamar o webhook
+    if (contract.status === 'completed') {
+      try {
+        // Buscar webhook dinâmico de assinatura
+        const webhookUrl = localStorage.getItem('prestacao_servico_assinatura_webhook');
+        
+        console.log('🔍 URL do webhook de assinatura (localStorage):', webhookUrl);
+        
+        if (webhookUrl) {
+          const webhookParams = new URLSearchParams();
+          webhookParams.append('action', 'sign_contract');
+          webhookParams.append('timestamp', new Date().toISOString());
+          webhookParams.append('contract_id', contract.id.toString());
+          webhookParams.append('contract_status', 'completed');
+          webhookParams.append('client_name', contract.clients?.name || '');
+          webhookParams.append('contract_scope', contract.scope || '');
+          webhookParams.append('total_value', contract.total_value?.toString() || '');
+          
+          const finalWebhookUrl = `${webhookUrl}?${webhookParams}`;
+          console.log('🎯 URL FINAL DO WEBHOOK:', finalWebhookUrl);
+
+          const webhookResponse = await fetch(finalWebhookUrl, {
+            method: 'GET',
+            mode: 'no-cors',
+          });
+          console.log('✅ Webhook chamado com sucesso');
+
+          toast({
+            title: "Webhook chamado!",
+            description: "Webhook de assinatura foi executado com sucesso.",
+          });
+        } else {
+          toast({
+            title: "Webhook não configurado",
+            description: "Configure o webhook de assinatura nas configurações.",
+            variant: "destructive",
+          });
+        }
+      } catch (webhookError) {
+        console.error('Erro ao chamar webhook:', webhookError);
+        toast({
+          title: "Erro no webhook",
+          description: "Houve problema ao chamar o webhook, mas o contrato está assinado.",
+          variant: "destructive",
+        });
+      } finally {
+        setSigning(false);
+      }
+      return;
+    }
+
+    // Validar assinatura apenas se não estiver assinado
     let signatureData = '';
     if (signatureType === 'text') {
       if (!textSignature.trim()) {
@@ -166,6 +219,7 @@ export default function ContractSigning() {
           description: "Por favor, digite seu nome completo.",
           variant: "destructive",
         });
+        setSigning(false);
         return;
       }
       signatureData = textSignature.trim();
@@ -187,13 +241,12 @@ export default function ContractSigning() {
           description: "Por favor, desenhe sua assinatura.",
           variant: "destructive",
         });
+        setSigning(false);
         return;
       }
 
       signatureData = canvas.toDataURL();
     }
-
-    setSigning(true);
 
     try {
       // Capturar IP do cliente
@@ -268,8 +321,9 @@ export default function ContractSigning() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
-      <div className="w-full max-w-4xl mx-auto space-y-8">
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-6">
+        <div className="w-full max-w-4xl mx-auto space-y-8">
 
         {/* Preview do Contrato */}
         {contract.link_contrato ? (
@@ -366,11 +420,13 @@ export default function ContractSigning() {
         </div>
 
         {/* Assinatura do Cliente */}
-        {contract.status !== 'completed' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8">
             <h2 className="text-2xl font-semibold text-white mb-2">Assinatura Digital</h2>
             <p className="text-slate-300 mb-8">
-              Escolha como deseja assinar o contrato
+              {contract.status === 'completed' 
+                ? 'Contrato já assinado. Use o botão abaixo para chamar webhook ou re-assinar.'
+                : 'Escolha como deseja assinar o contrato'
+              }
             </p>
 
             <div className="space-y-8">
@@ -446,79 +502,97 @@ export default function ContractSigning() {
                 {signing ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                    Assinando Contrato...
+                    {contract.status === 'completed' ? 'Enviando...' : 'Assinando Contrato...'}
                   </>
                 ) : (
-                  'Assinar Contrato'
+                  contract.status === 'completed' ? 'Enviar Contrato Assinado' : 'Assinar Contrato'
                 )}
               </Button>
             </div>
           </div>
-        )}
+        </div>
+      </div>
 
-
-        {contract.status === 'completed' && (
-          <div className="fixed inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 z-50 flex flex-col text-white">
-            {/* Header */}
-            <div className="border-b border-blue-700/30 p-6 text-center">
-              <div className="mb-4 text-white">
-                <svg className="w-12 h-12 mx-auto bg-green-500 rounded-full p-2" fill="white" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <h1 className="text-2xl font-bold text-white">Contrato Assinado com Sucesso!</h1>
-              <p className="text-blue-100">
-                Obrigado por assinar o contrato. Abaixo estão as informações importantes:
-              </p>
+      {/* Modal de Sucesso - Fora da estrutura principal */}
+      {contract.status === 'completed' && (
+        <div 
+          className="fixed top-0 left-0 right-0 bottom-0 h-[100vh] w-[100vw] bg-background z-50 flex flex-col text-foreground" 
+          style={{ 
+            margin: 0, 
+            padding: 0, 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 50,
+            overflow: 'hidden',
+            boxSizing: 'border-box',
+            border: 'none',
+            outline: 'none'
+          }}
+        >
+          {/* Header */}
+          <div className="p-6 text-center">
+            <div className="mb-4">
+              <svg className="w-12 h-12 mx-auto bg-green-500 rounded-full p-2" fill="white" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
             </div>
+            <h1 className="text-2xl font-bold text-foreground">Contrato Assinado com Sucesso!</h1>
+            <p className="text-muted-foreground">
+              Obrigado por assinar o contrato. Abaixo estão as informações importantes:
+            </p>
+          </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="max-w-4xl mx-auto">
-                {contract.obs && (
-                  <Card className="bg-blue-800/50 border-blue-700/30">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-white">
-                        <FileText className="h-5 w-5" />
-                        Observações e Instruções Importantes
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div 
-                        className="prose prose-lg max-w-none text-blue-50 whitespace-pre-wrap [&_p]:text-blue-50 [&_ul]:text-blue-50 [&_ol]:text-blue-50 [&_li]:text-blue-50 [&_strong]:text-white [&_b]:text-white"
-                        dangerouslySetInnerHTML={{ __html: contract.obs }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {!contract.obs && (
-                  <Card className="bg-blue-800/50 border-blue-700/30">
-                    <CardContent className="text-center py-12">
-                      <p className="text-blue-100 text-lg">
-                        Não há observações adicionais para este contrato.
-                      </p>
-                      <p className="text-blue-200 mt-2">
-                        O contrato foi processado com sucesso.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-blue-700/30 p-6 text-center">
-              <p className="text-sm text-blue-200">
-                Em caso de dúvidas, entre em contato conosco através dos canais oficiais.
-              </p>
-              <p className="text-xs text-blue-300 mt-2">
-                FlowCode Financial • Contrato assinado em {new Date().toLocaleDateString('pt-BR')}
-              </p>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-4xl mx-auto">
+              {contract.obs && (
+                <Card className="bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-card-foreground">
+                      <FileText className="h-5 w-5" />
+                      Observações e Instruções Importantes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div 
+                      className="prose prose-lg max-w-none text-muted-foreground whitespace-pre-wrap [&_p]:text-muted-foreground [&_ul]:text-muted-foreground [&_ol]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground [&_b]:text-foreground"
+                      dangerouslySetInnerHTML={{ __html: contract.obs }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+              
+              {!contract.obs && (
+                <Card className="bg-card border-border">
+                  <CardContent className="text-center py-12">
+                    <p className="text-muted-foreground text-lg">
+                      Não há observações adicionais para este contrato.
+                    </p>
+                    <p className="text-muted-foreground/80 mt-2">
+                      O contrato foi processado com sucesso.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
-        )}
-      </div>
-    </div>
+
+          {/* Footer */}
+          <div className="p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Em caso de dúvidas, entre em contato conosco através dos canais oficiais.
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-2">
+              FlowCode Financial • Contrato assinado em {new Date().toLocaleDateString('pt-BR')}
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

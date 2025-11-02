@@ -250,17 +250,15 @@ export function ContractTable() {
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
-                          {contract.status !== "completed" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSigningContract(contract)}
-                              title="Marcar como Assinado"
-                              className="h-8 w-8 p-0 flex-shrink-0"
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSigningContract(contract)}
+                            title={contract.status === "completed" ? "Chamar Webhook / Re-assinar" : "Marcar como Assinado"}
+                            className="h-8 w-8 p-0 flex-shrink-0"
                             >
                               <CheckIcon className="h-4 w-4" />
                             </Button>
-                          )}
                           <Button
                             variant="ghost"
                             size="sm"
@@ -377,17 +375,15 @@ export function ContractTable() {
                         </Button>
                         
                         
-                        {contract.status !== "completed" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSigningContract(contract)}
-                            title="Marcar como Assinado"
-                            className="h-8 px-2"
-                          >
-                            <CheckIcon className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSigningContract(contract)}
+                          title={contract.status === "completed" ? "Chamar Webhook / Re-assinar" : "Marcar como Assinado"}
+                          className="h-8 px-2"
+                        >
+                          <CheckIcon className="h-4 w-4" />
+                        </Button>
                         
                         
                         <Button

@@ -20,6 +20,7 @@ export interface Client {
   responsible_name?: string;
   responsavel_financeiro?: string;
   email_financeiro?: string;
+  send_email?: boolean;
   created_at?: string;
   updated_at?: string;
 }

@@ -50,7 +50,7 @@ export class WebhookLogger {
 
   static async getWebhookLogs(action?: 'criacao_contrato' | 'edicao_contrato' | 'assinatura_contrato'): Promise<WebhookLog[]> {
     try {
-      let query = supabase
+      const query = supabase
         .from('webhooks')
         .select('*')
         .order('created_at', { ascending: false });

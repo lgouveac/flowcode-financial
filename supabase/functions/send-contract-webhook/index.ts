@@ -11,7 +11,7 @@ const supabaseUrl = 'https://itlpvpdwgiwbdpqheemw.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bHB2cGR3Z2l3YmRwcWhlZW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxOTA5NzEsImV4cCI6MjA1NTc2Njk3MX0.gljQ6JAfbMzP-cbA68Iz21vua9YqAqVQgpB-eLk6nAg';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function saveToWebhooksTable(webhookUrl: string, contractData: any, success: boolean, errorMsg?: string) {
+async function saveToWebhooksTable(webhookUrl: string, contractData: unknown, success: boolean, errorMsg?: string) {
   try {
     const data = {
       assinatura_contrato: JSON.stringify({

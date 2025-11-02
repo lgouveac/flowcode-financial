@@ -7,6 +7,7 @@ import type { NewPayment } from "@/types/payment";
 import type { EmailTemplate } from "@/types/email";
 import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { syncPaymentToCashFlow } from "@/services/paymentCashFlowSync";
 
 interface Client {
   id: string;
@@ -148,7 +149,7 @@ export const NewPaymentDialog = ({
       }
       
       // Create payment record
-      const { error } = await supabase
+      const { data: newPayment, error } = await supabase
         .from('payments')
         .insert({
           client_id: paymentData.client_id,
@@ -161,7 +162,9 @@ export const NewPaymentDialog = ({
           email_template: paymentData.email_template,
           paid_amount: paymentData.paid_amount,
           Pagamento_Por_Entrega: paymentData.Pagamento_Por_Entrega
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error("Error creating payment:", error);
@@ -172,6 +175,34 @@ export const NewPaymentDialog = ({
         });
         setIsSubmitting(false);
         return;
+      }
+
+      // Sincronizar com cash flow se o pagamento foi criado como pago e tem data de pagamento
+      if (paymentData.status === 'paid' && (paymentData.payment_date || paymentData.Pagamento_Por_Entrega)) {
+        console.log('New payment created as paid with payment date, syncing with cash flow...');
+
+        const syncResult = await syncPaymentToCashFlow(
+          newPayment.id,
+          null, // oldStatus é null pois é um novo pagamento
+          'paid',
+          {
+            description: paymentData.description,
+            amount: paymentData.amount,
+            payment_date: paymentData.Pagamento_Por_Entrega ? null : paymentData.payment_date,
+            client_id: paymentData.client_id
+          }
+        );
+
+        if (!syncResult.success) {
+          console.error('Failed to sync new payment to cash flow:', syncResult.error);
+          toast({
+            title: "Aviso",
+            description: "Pagamento criado, mas houve um problema ao sincronizar com o fluxo de caixa.",
+            variant: "destructive"
+          });
+        } else {
+          console.log('New payment successfully synced to cash flow');
+        }
       }
 
       toast({

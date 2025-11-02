@@ -102,11 +102,25 @@ export default function PaymentsByClient() {
 
       if (error) throw error;
 
-      // Process data to group by client
+      // Process data to group by client with deduplication
       const clientMap = new Map<string, ClientPaymentSummary>();
+
+      // Track seen payments to avoid duplicates
+      const seenPayments = new Set<string>();
 
       data?.forEach((record: any) => {
         if (!record.clients) return;
+
+        // Create a unique key for this payment to detect duplicates
+        const paymentKey = `${record.client_id}-${record.description}-${record.amount}-${record.date}`;
+
+        // Skip if we've already seen this exact payment
+        if (seenPayments.has(paymentKey)) {
+          console.log('Duplicate payment detected:', record.description, record.amount);
+          return;
+        }
+
+        seenPayments.add(paymentKey);
 
         const clientId = record.client_id;
         const clientName = record.clients.name;
@@ -125,7 +139,7 @@ export default function PaymentsByClient() {
         const summary = clientMap.get(clientId)!;
         summary.total_amount += record.amount;
         summary.payment_count += 1;
-        
+
         // Update last payment date if this one is more recent
         if (record.date > summary.last_payment_date) {
           summary.last_payment_date = record.date;
@@ -139,6 +153,11 @@ export default function PaymentsByClient() {
           category: record.category,
           type: record.type
         });
+      });
+
+      // Sort payments within each client by date (most recent first)
+      clientMap.forEach(summary => {
+        summary.payments.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       });
 
       // Convert to array and sort by total amount (descending)

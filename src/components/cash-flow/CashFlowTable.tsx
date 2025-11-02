@@ -8,11 +8,65 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import type { CashFlow } from "@/types/cashflow";
-import { Trash2, Search } from "lucide-react";
+import { Trash2, Search, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CATEGORIES } from "@/types/cashflow-categories";
+
+// Client Editable Cell Component
+interface ClientEditableCellProps {
+  currentClientId: string | null;
+  currentClientName?: string;
+  clients: {id: string, name: string}[];
+  onClientChange: (clientId: string | null) => void;
+}
+
+const ClientEditableCell = ({ currentClientId, currentClientName, clients, onClientChange }: ClientEditableCellProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleClientSelect = (clientId: string) => {
+    if (clientId === "none") {
+      onClientChange(null);
+    } else {
+      onClientChange(clientId);
+    }
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <Select value={currentClientId || "none"} onValueChange={handleClientSelect}>
+        <SelectTrigger className="w-[200px] h-8">
+          <SelectValue placeholder="Selecionar cliente" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[300px] overflow-y-auto">
+          <SelectItem value="none">Sem cliente</SelectItem>
+          {clients.map(client => (
+            <SelectItem key={client.id} value={client.id}>
+              {client.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
+
+  return (
+    <div onClick={() => setIsEditing(true)} className="cursor-pointer">
+      {currentClientName ? (
+        <span className="text-sm font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] inline-block" title={currentClientName}>
+          {currentClientName}
+        </span>
+      ) : (
+        <span className="text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded-full border border-amber-200 whitespace-nowrap">
+          Sem cliente
+        </span>
+      )}
+    </div>
+  );
+};
+
 interface CashFlowTableProps {
   cashFlow: CashFlow[];
   onNewCashFlow: () => void;
@@ -126,19 +180,22 @@ export const CashFlowTable = ({
   };
 
   // Handle cell updates
-  const handleUpdateCashFlow = async (id: string, field: string, value: string) => {
+  const handleUpdateCashFlow = async (id: string, field: string, value: string | null) => {
     setIsUpdating(true);
     try {
       // Convert amount to number if that's the field being updated
-      const updateData = field === 'amount' ? {
-        [field]: parseFloat(value)
-      } : {
-        [field]: value
-      };
-      const {
-        error
-      } = await supabase.from('cash_flow').update(updateData).eq('id', id);
+      let updateData: any;
+      if (field === 'amount') {
+        updateData = { [field]: parseFloat(value as string) };
+      } else if (field === 'client_id') {
+        updateData = { [field]: value }; // value can be null for "no client"
+      } else {
+        updateData = { [field]: value };
+      }
+
+      const { error } = await supabase.from('cash_flow').update(updateData).eq('id', id);
       if (error) throw error;
+
       toast({
         title: "Atualizado com sucesso",
         description: "A movimentação foi atualizada."
@@ -354,14 +411,17 @@ export const CashFlowTable = ({
                     </div>
                   </td>
                   <td className="py-2 px-4">
-                    {flow.clients?.name ? (
-                      <span className="text-sm font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full line-clamp-2 overflow-hidden max-h-10" title={flow.clients.name}>
-                        {flow.clients.name}
+                    {flow.type === 'expense' ? (
+                      <span className="text-sm text-muted-foreground">
+                        -
                       </span>
                     ) : (
-                      <span className="text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded-full border border-amber-200">
-                        Sem cliente
-                      </span>
+                      <ClientEditableCell
+                        currentClientId={flow.client_id}
+                        currentClientName={flow.clients?.name}
+                        clients={clients}
+                        onClientChange={(clientId) => handleUpdateCashFlow(flow.id, 'client_id', clientId)}
+                      />
                     )}
                   </td>
                   <td className="py-2 px-4 text-right">

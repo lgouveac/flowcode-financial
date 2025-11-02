@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Client } from "@/types/client";
 
 interface EditClientDialogProps {
@@ -50,7 +51,8 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
           total_billing: formData.total_billing,
           responsible_name: formData.responsible_name,
           responsavel_financeiro: formData.responsavel_financeiro,
-          email_financeiro: formData.email_financeiro
+          email_financeiro: formData.email_financeiro,
+          send_email: formData.send_email
         })
         .eq('id', formData.id);
 
@@ -155,6 +157,22 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
                 placeholder="email.financeiro@empresa.com"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="send_email"
+                checked={formData.send_email || false}
+                onCheckedChange={(checked) => setFormData({ ...formData, send_email: Boolean(checked) })}
+              />
+              <Label htmlFor="send_email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Receber emails automáticos
+              </Label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Quando marcado, o cliente receberá emails automáticos de cobrança e notificações.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
