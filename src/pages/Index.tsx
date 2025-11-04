@@ -19,7 +19,8 @@ import {
   Sun,
   Calculator,
   Shield,
-  Target
+  Target,
+  FolderOpen
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +43,7 @@ const navigation = [
   { name: "Funcionários", href: "/employees", icon: UserCheck },
   { name: "Recebimentos", href: "/receivables", icon: Receipt },
   { name: "Contratos", href: "/contracts", icon: FileText },
+  { name: "Projetos", href: "/projects", icon: FolderOpen },
   { name: "Pagamentos", href: "/payments", icon: DollarSign },
   { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp },
   { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator },

@@ -74,6 +74,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
   };
   const [formData, setFormData] = useState({
     scope: "",
+    projeto_relacionado: "",
     total_value: "",
     installments: "",
     start_date: "",
@@ -94,6 +95,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     if (contract) {
       setFormData({
         scope: contract.scope || "",
+        projeto_relacionado: contract.projeto_relacionado || "",
         total_value: contract.total_value?.toString() || "",
         installments: contract.installments?.toString() || "",
         start_date: contract.start_date || "",
@@ -233,6 +235,19 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
               onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
               placeholder="Descreva o escopo do contrato"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="projeto_relacionado">Projeto Relacionado</Label>
+            <Input
+              id="projeto_relacionado"
+              value={formData.projeto_relacionado}
+              onChange={(e) => setFormData({ ...formData, projeto_relacionado: e.target.value })}
+              placeholder="Nome do projeto que será criado automaticamente"
+            />
+            <p className="text-sm text-muted-foreground">
+              Este será o nome do projeto criado automaticamente. Se vazio, será usado o escopo.
+            </p>
           </div>
 
           <div className="grid grid-cols-3 gap-4">

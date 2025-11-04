@@ -5,6 +5,7 @@ export interface Contract {
   employee_id?: string;
   contract_id?: string;
   scope?: string;
+  projeto_relacionado?: string;
   total_value?: number;
   installments?: number;
   installment_value?: number;

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Contract } from "@/types/contract";
+import { createProjectFromContract } from "@/services/contractProjectSync";
 
 export const useContracts = () => {
   const { toast } = useToast();
@@ -14,10 +15,10 @@ export const useContracts = () => {
       console.log("Fetching contracts...");
       
       const { data, error } = await supabase
-        .from("Contratos")
+        .from("contratos")
         .select(`
           *,
-          clients!Contratos_client_id_fkey (
+          clients!fk_contratos_client (
             name,
             email,
             type
@@ -62,18 +63,33 @@ export const useContracts = () => {
       }
       
       const { data, error } = await supabase
-        .from("Contratos")
+        .from("contratos")
         .insert(contract)
         .select()
         .single();
 
       if (error) throw error;
 
+      // Criar projeto automaticamente a partir do contrato
+      try {
+        await createProjectFromContract({
+          id: data.id,
+          scope: data.scope,
+          client_id: data.client_id,
+          status: data.status,
+          clients: data.clients
+        });
+      } catch (projectError) {
+        console.error("Error creating project from contract:", projectError);
+        // Não falha a criação do contrato se houver erro na criação do projeto
+      }
+
       queryClient.invalidateQueries({ queryKey: ["contracts"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
 
       toast({
         title: "Contrato adicionado",
-        description: `Contrato criado com sucesso.`,
+        description: `Contrato e projeto criados com sucesso.`,
       });
 
       return data;
@@ -106,7 +122,7 @@ export const useContracts = () => {
       }
       
       const { error } = await supabase
-        .from("Contratos")
+        .from("contratos")
         .update(updates)
         .eq("id", id);
 
@@ -134,7 +150,7 @@ export const useContracts = () => {
       console.log("Deleting contract:", id);
       
       const { error } = await supabase
-        .from("Contratos")
+        .from("contratos")
         .delete()
         .eq("id", id);
 
