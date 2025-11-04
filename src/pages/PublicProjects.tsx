@@ -52,7 +52,6 @@ export default function PublicProjects() {
 
   // Hour entry form
   const [hourForm, setHourForm] = useState({
-    employee_id: "",
     date_worked: format(new Date(), "yyyy-MM-dd"),
     hours_worked: "",
     description: ""
@@ -60,7 +59,6 @@ export default function PublicProjects() {
 
   // Period entry form
   const [periodForm, setPeriodForm] = useState({
-    employee_id: "",
     start_date: format(new Date(), "yyyy-MM-dd"),
     end_date: format(new Date(), "yyyy-MM-dd"),
     hours_type: "per_day" as "per_day" | "total_period",
@@ -80,7 +78,7 @@ export default function PublicProjects() {
   });
   const [isTimerVisible, setIsTimerVisible] = useState(false);
   const [isTimerMinimized, setIsTimerMinimized] = useState(false);
-  const [selectedTimerEmployee, setSelectedTimerEmployee] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState("");
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -117,11 +115,18 @@ export default function PublicProjects() {
         // Não falha o carregamento se houver erro na sincronização
       }
 
-      // Buscar TODOS os projetos ativos (incluindo os criados manualmente)
+      // Buscar projetos ativos com seus contratos
+      // Usar select específico para evitar duplicação
       const { data: projectsData, error: projectsError } = await supabase
         .from('projetos')
         .select(`
-          *,
+          id,
+          name,
+          description,
+          status,
+          client_id,
+          contract_id,
+          created_at,
           clients (
             id,
             name,
@@ -132,13 +137,60 @@ export default function PublicProjects() {
             scope,
             start_date,
             end_date,
-            status
+            status,
+            contract_type
           )
         `)
-        .eq('status', 'active') // Mostra todos os projetos ativos
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
+
+      // Remover duplicatas por ID do projeto (caso a query retorne múltiplas linhas por causa das relações)
+      const uniqueProjectsMap = new Map<string, typeof projectsData[0]>();
+      (projectsData || []).forEach(project => {
+        // Se já existe, manter o primeiro encontrado
+        if (!uniqueProjectsMap.has(project.id)) {
+          uniqueProjectsMap.set(project.id, project);
+        }
+      });
+      const uniqueProjects = Array.from(uniqueProjectsMap.values());
+
+      // Também garantir que não há projetos duplicados por contract_id (um contrato = um projeto)
+      const projectsByContractId = new Map<number, typeof uniqueProjects[0]>();
+      uniqueProjects.forEach(project => {
+        if (project.contract_id) {
+          // Se já existe um projeto com este contract_id, manter o primeiro
+          if (!projectsByContractId.has(project.contract_id)) {
+            projectsByContractId.set(project.contract_id, project);
+          }
+        }
+      });
+
+      // Se há projetos com contract_id, usar apenas esses (um contrato = um projeto)
+      // Se não, usar todos os projetos únicos
+      const deduplicatedProjects = projectsByContractId.size > 0
+        ? Array.from(projectsByContractId.values())
+        : uniqueProjects;
+
+      // Filtrar apenas projetos com contratos de escopo aberto
+      const filteredProjects = deduplicatedProjects.filter(project => {
+        // Se contratos é um array, verificar o primeiro elemento
+        const contract = Array.isArray(project.contratos) 
+          ? project.contratos[0] 
+          : project.contratos;
+        
+        return contract && contract.contract_type === 'open_scope';
+      }).map(project => {
+        // Garantir que contratos seja um objeto único, não array
+        if (Array.isArray(project.contratos) && project.contratos.length > 0) {
+          return {
+            ...project,
+            contratos: project.contratos[0]
+          };
+        }
+        return project;
+      });
 
       // Fetch employees
       const { data: employeesData, error: employeesError } = await supabase
@@ -148,7 +200,7 @@ export default function PublicProjects() {
 
       if (employeesError) throw employeesError;
 
-      setProjects(projectsData || []);
+      setProjects(filteredProjects);
       setEmployees(employeesData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -165,27 +217,32 @@ export default function PublicProjects() {
   const handleAddHours = (project: Project) => {
     setSelectedProject(project);
     setHourForm({
-      employee_id: "",
       date_worked: format(new Date(), "yyyy-MM-dd"),
       hours_worked: "",
       description: ""
     });
     setPeriodForm({
-      employee_id: "",
       start_date: format(new Date(), "yyyy-MM-dd"),
       end_date: format(new Date(), "yyyy-MM-dd"),
       hours_type: "per_day",
       hours_value: "",
       description: ""
     });
-    setSelectedTimerEmployee(timer.projectId === project.id ? timer.employeeId : "");
+    // Se o timer está rodando para este projeto, usar o funcionário do timer
+    // Caso contrário, manter o funcionário selecionado anteriormente (se houver)
+    if (timer.projectId === project.id && timer.employeeId) {
+      setSelectedEmployee(timer.employeeId);
+    } else if (!selectedEmployee) {
+      // Se não há funcionário selecionado, manter vazio para o usuário escolher
+      setSelectedEmployee("");
+    }
     setHourEntryOpen(true);
   };
 
   const handleSubmitHours = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedProject || !hourForm.employee_id || !hourForm.hours_worked) {
+    if (!selectedProject || !selectedEmployee || !hourForm.hours_worked) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -201,7 +258,7 @@ export default function PublicProjects() {
         .from('project_hours')
         .insert([{
           project_id: selectedProject.id,
-          employee_id: hourForm.employee_id,
+          employee_id: selectedEmployee,
           date_worked: hourForm.date_worked,
           hours_worked: parseFloat(hourForm.hours_worked),
           description: hourForm.description
@@ -277,7 +334,7 @@ export default function PublicProjects() {
   }, [timer]);
 
   const startTimer = (project: Project) => {
-    if (!selectedTimerEmployee) {
+    if (!selectedEmployee) {
       toast({
         title: "Selecione um funcionário",
         description: "Por favor, selecione um funcionário antes de iniciar o timer.",
@@ -286,7 +343,7 @@ export default function PublicProjects() {
       return;
     }
 
-    const employee = employees.find(e => e.id === selectedTimerEmployee);
+    const employee = employees.find(e => e.id === selectedEmployee);
     const startTime = new Date();
     setTimer({
       isRunning: true,
@@ -294,7 +351,7 @@ export default function PublicProjects() {
       elapsedSeconds: 0,
       projectId: project.id,
       projectName: project.name,
-      employeeId: selectedTimerEmployee,
+      employeeId: selectedEmployee,
       employeeName: employee?.name || ""
     });
     setIsTimerVisible(true);
@@ -371,7 +428,7 @@ export default function PublicProjects() {
   const handlePeriodSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedProject || !periodForm.employee_id || !periodForm.hours_value) {
+    if (!selectedProject || !selectedEmployee || !periodForm.hours_value) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -398,7 +455,7 @@ export default function PublicProjects() {
       if (periodForm.hours_type === "per_day") {
         entries = dates.map(date => ({
           project_id: selectedProject.id,
-          employee_id: periodForm.employee_id,
+          employee_id: selectedEmployee,
           date_worked: format(date, 'yyyy-MM-dd'),
           hours_worked: parseFloat(periodForm.hours_value),
           description: periodForm.description
@@ -409,7 +466,7 @@ export default function PublicProjects() {
 
         entries = dates.map(date => ({
           project_id: selectedProject.id,
-          employee_id: periodForm.employee_id,
+          employee_id: selectedEmployee,
           date_worked: format(date, 'yyyy-MM-dd'),
           hours_worked: hoursPerDay,
           description: `${periodForm.description} (${totalHours}h distribuídas em ${dates.length} dias)`
@@ -430,7 +487,6 @@ export default function PublicProjects() {
       });
 
       setPeriodForm({
-        employee_id: "",
         start_date: format(new Date(), "yyyy-MM-dd"),
         end_date: format(new Date(), "yyyy-MM-dd"),
         hours_type: "per_day",
@@ -578,8 +634,11 @@ export default function PublicProjects() {
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedProject(project);
-                        setSelectedTimerEmployee(timer.projectId === project.id ? timer.employeeId : "");
-                        setHourEntryOpen(true);
+                      // Se o timer está rodando para este projeto, usar o funcionário do timer
+                      if (timer.projectId === project.id && timer.employeeId) {
+                        setSelectedEmployee(timer.employeeId);
+                      }
+                      setHourEntryOpen(true);
                       }}
                       className="w-full flex items-center gap-2"
                     >
@@ -682,7 +741,10 @@ export default function PublicProjects() {
                   <Button
                     onClick={() => {
                       setSelectedProject(viewingProject);
-                      setSelectedTimerEmployee(timer.projectId === viewingProject.id ? timer.employeeId : "");
+                      // Se o timer está rodando para este projeto, usar o funcionário do timer
+                      if (timer.projectId === viewingProject.id && timer.employeeId) {
+                        setSelectedEmployee(timer.employeeId);
+                      }
                       setViewingProject(null);
                       setHourEntryOpen(true);
                     }}
@@ -727,10 +789,10 @@ export default function PublicProjects() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="timer-employee">Funcionário para Timer</Label>
+                        <Label htmlFor="timer-employee">Funcionário *</Label>
                         <Select
-                          value={selectedTimerEmployee}
-                          onValueChange={setSelectedTimerEmployee}
+                          value={selectedEmployee}
+                          onValueChange={setSelectedEmployee}
                           disabled={timer.isRunning && timer.projectId === selectedProject.id}
                         >
                           <SelectTrigger>
@@ -761,7 +823,7 @@ export default function PublicProjects() {
                         type="button"
                         variant="outline"
                         onClick={() => selectedProject && startTimer(selectedProject)}
-                        disabled={!selectedTimerEmployee || (timer.isRunning && timer.projectId !== selectedProject.id)}
+                        disabled={!selectedEmployee || (timer.isRunning && timer.projectId === selectedProject.id)}
                         className="w-full"
                       >
                         <Play className="h-4 w-4 mr-2" />
@@ -780,8 +842,8 @@ export default function PublicProjects() {
               <div className="space-y-2">
                 <Label htmlFor="employee">Funcionário *</Label>
                 <Select
-                  value={hourForm.employee_id}
-                  onValueChange={(value) => setHourForm({ ...hourForm, employee_id: value })}
+                  value={selectedEmployee}
+                  onValueChange={setSelectedEmployee}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um funcionário" />
@@ -870,8 +932,8 @@ export default function PublicProjects() {
                       <div className="space-y-2">
                         <Label htmlFor="period-employee">Funcionário *</Label>
                         <Select
-                          value={periodForm.employee_id}
-                          onValueChange={(value) => setPeriodForm({ ...periodForm, employee_id: value })}
+                          value={selectedEmployee}
+                          onValueChange={setSelectedEmployee}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecionar funcionário" />

@@ -18,7 +18,7 @@ export const useContracts = () => {
         .from("contratos")
         .select(`
           *,
-          clients!fk_contratos_client (
+          clients!Contratos_client_id_fkey (
             name,
             email,
             type
@@ -36,12 +36,35 @@ export const useContracts = () => {
         throw error;
       }
 
+      if (!data || data.length === 0) {
+        return [];
+      }
+
+      // Usar Map para garantir unicidade absoluta por ID
+      const contractsMap = new Map<number, typeof data[0]>();
+      
+      data.forEach(contract => {
+        // Se já existe, manter o primeiro (ou pode escolher uma lógica específica)
+        if (!contractsMap.has(contract.id)) {
+          contractsMap.set(contract.id, contract);
+        }
+      });
+      
+      const uniqueContracts = Array.from(contractsMap.values());
       
       // Transform the data to match the expected type
-      return data.map(contract => ({
-        ...contract,
-        clients: contract.clients || null
-      })) as (Contract & { clients: { name: string; email: string; type: string } | null })[];
+      // Garantir que clients seja um objeto único ou null
+      return uniqueContracts.map(contract => {
+        // Se clients for um array, pegar o primeiro elemento
+        const client = Array.isArray(contract.clients) 
+          ? (contract.clients.length > 0 ? contract.clients[0] : null)
+          : contract.clients;
+        
+        return {
+          ...contract,
+          clients: client || null
+        };
+      }) as (Contract & { clients: { name: string; email: string; type: string } | null })[];
     },
   });
 

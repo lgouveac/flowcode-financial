@@ -65,9 +65,17 @@ export const syncContractsToProjects = async (): Promise<void> => {
 
     console.log(`🗂️ Found ${existingProjects?.length || 0} existing projects in database`);
 
+    // Remover projetos duplicados por contract_id (um contrato = um projeto)
+    const uniqueProjectsByContractId = new Map<number, typeof existingProjects[0]>();
+    existingProjects?.forEach(project => {
+      if (project.contract_id && !uniqueProjectsByContractId.has(project.contract_id)) {
+        uniqueProjectsByContractId.set(project.contract_id, project);
+      }
+    });
+
     // 3. Identificar contratos que não possuem projetos
     const existingContractIds = new Set(
-      existingProjects?.map(p => p.contract_id).filter(id => id !== null) || []
+      Array.from(uniqueProjectsByContractId.keys())
     );
 
     console.log(`🔗 Existing contract IDs with projects: [${Array.from(existingContractIds).join(', ')}]`);

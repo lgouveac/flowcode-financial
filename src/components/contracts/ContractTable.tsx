@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import * as React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,8 +48,46 @@ const getStatusLabel = (status?: string) => {
   }
 };
 
+const getContractTypeLabel = (contractType?: string) => {
+  switch (contractType) {
+    case "open_scope":
+      return "Escopo Aberto";
+    case "closed_scope":
+      return "Escopo Fechado";
+    case "NDA":
+      return "NDA";
+    default:
+      return "-";
+  }
+};
+
+const getContractTypeVariant = (contractType?: string): "success" | "info" | "warning" | "neutral" => {
+  switch (contractType) {
+    case "open_scope":
+      return "success";
+    case "closed_scope":
+      return "info";
+    case "NDA":
+      return "warning";
+    default:
+      return "neutral";
+  }
+};
+
 export function ContractTable() {
   const { contracts, isLoading, deleteContract } = useContracts();
+  
+  // Garantir que não há duplicatas na renderização
+  const uniqueContracts = React.useMemo(() => {
+    const seen = new Set<number>();
+    return contracts.filter(contract => {
+      if (seen.has(contract.id)) {
+        return false;
+      }
+      seen.add(contract.id);
+      return true;
+    });
+  }, [contracts]);
   const [newContractOpen, setNewContractOpen] = useState(false);
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
@@ -180,7 +219,7 @@ export function ContractTable() {
           </div>
         </CardHeader>
         <CardContent>
-          {contracts.length === 0 ? (
+          {uniqueContracts.length === 0 ? (
             <div className="flex items-center justify-center h-40">
               <p className="text-muted-foreground">Nenhum contrato encontrado.</p>
             </div>
@@ -192,6 +231,7 @@ export function ContractTable() {
                   <TableRow>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Escopo</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead>Valor Total</TableHead>
                     <TableHead>Parcelas</TableHead>
                     <TableHead>Valor da Parcela</TableHead>
@@ -201,7 +241,7 @@ export function ContractTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {contracts.map((contract) => (
+                  {uniqueContracts.map((contract) => (
                     <TableRow key={contract.id}>
                       <TableCell className="font-medium w-[200px]">
                         <div className="text-sm leading-5" title={contract.clients?.name || "Cliente não vinculado"}>
@@ -214,6 +254,11 @@ export function ContractTable() {
                             {contract.scope || "-"}
                           </div>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getContractTypeVariant(contract.contract_type)}>
+                          {getContractTypeLabel(contract.contract_type)}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {contract.total_value ? formatCurrency(contract.total_value) : "-"}
@@ -288,7 +333,7 @@ export function ContractTable() {
           ) : (
             // Visualização em Grid
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {contracts.map((contract) => (
+              {uniqueContracts.map((contract) => (
                 <Card key={contract.id} className="hover:shadow-lg transition-shadow h-auto min-h-[320px] flex flex-col">
                   <CardHeader className="pb-3 flex-shrink-0">
                     <div className="flex justify-between items-start min-h-0">
@@ -315,8 +360,14 @@ export function ContractTable() {
                   </CardHeader>
                   
                   <CardContent className="flex-1 flex flex-col min-h-0 overflow-hidden p-6">
-                    <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                      <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                       <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground mb-1">Tipo de Contrato</p>
+                          <Badge variant={getContractTypeVariant(contract.contract_type)}>
+                            {getContractTypeLabel(contract.contract_type)}
+                          </Badge>
+                        </div>
                         <div>
                           <p className="text-muted-foreground">Valor Total</p>
                           <p className="font-medium truncate" title={contract.total_value ? formatCurrency(contract.total_value) : "-"}>
