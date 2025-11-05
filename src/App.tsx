@@ -66,7 +66,6 @@ const App = () => {
                     <Route path="/contract-signing/:contractId" element={<ContractSigning />} />
                     <Route path="/project-view/:projectId" element={<PublicProjectView />} />
                     <Route path="/public-projects" element={<PublicProjects />} />
-                    <Route path="/projects" element={<Projects />} />
                     <Route path="/test-sync" element={<TestSync />} />
                     <Route path="/auth/login" element={<Login />} />
                     <Route path="/auth/register" element={<Register />} />
@@ -86,6 +85,7 @@ const App = () => {
                       <Route path="estimated-expenses" element={<EstimatedExpenses />} />
                       <Route path="leads" element={<Leads />} />
                       <Route path="users" element={<Users />} />
+                      <Route path="projects" element={<Projects />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/auth/login" replace />} />
                   </Routes>
