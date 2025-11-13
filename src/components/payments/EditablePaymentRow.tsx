@@ -11,6 +11,7 @@ import { PaymentStatusBadge } from "./PaymentStatusBadge";
 import { formatCurrency } from "@/utils/formatters";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { formatDateForInput } from "@/utils/dateUtils";
 
 interface EditablePaymentRowProps {
   payment: Payment;

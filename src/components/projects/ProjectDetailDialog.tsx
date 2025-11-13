@@ -41,6 +41,12 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
   const [hourlyRate, setHourlyRate] = useState<number>(0);
   const [editingProjectName, setEditingProjectName] = useState(false);
   const [projectName, setProjectName] = useState(project.name);
+  const [editingHourEntry, setEditingHourEntry] = useState<string | null>(null);
+  const [editingForm, setEditingForm] = useState({
+    hours_worked: "",
+    description: "",
+    date_worked: ""
+  });
 
   // Report filters
   const [reportFilters, setReportFilters] = useState({
@@ -381,6 +387,63 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
     }
   };
 
+  const startEditingHourEntry = (entry: ProjectHour) => {
+    setEditingHourEntry(entry.id);
+    setEditingForm({
+      hours_worked: entry.hours_worked.toString(),
+      description: entry.description || "",
+      date_worked: entry.date_worked
+    });
+  };
+
+  const cancelEditingHourEntry = () => {
+    setEditingHourEntry(null);
+    setEditingForm({
+      hours_worked: "",
+      description: "",
+      date_worked: ""
+    });
+  };
+
+  const saveHourEntry = async (id: string) => {
+    if (!editingForm.hours_worked) {
+      toast({
+        title: "Horas obrigatórias",
+        description: "Por favor, informe o número de horas trabalhadas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('project_hours')
+        .update({
+          hours_worked: parseFloat(editingForm.hours_worked),
+          description: editingForm.description,
+          date_worked: editingForm.date_worked
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Entrada atualizada",
+        description: "A entrada de horas foi atualizada com sucesso.",
+      });
+
+      setEditingHourEntry(null);
+      fetchProjectHours();
+    } catch (error) {
+      console.error('Error updating hour entry:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a entrada.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteProject = async () => {
     const confirmed = window.confirm(
       `Tem certeza que deseja excluir o projeto "${project.name}"? Esta ação não pode ser desfeita e todas as horas registradas neste projeto também serão excluídas.`
@@ -490,6 +553,52 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
       `;
     }).join('');
 
+    // Generate detailed activities section
+    const activitiesHTML = Object.values(employeeHours).map((emp: any) => {
+      const entriesHTML = emp.entries
+        .sort((a: any, b: any) => new Date(a.date_worked).getTime() - new Date(b.date_worked).getTime())
+        .map((entry: any) => {
+          const cost = entry.hours_worked * hourlyRate;
+          return `
+            <tr>
+              <td style="padding: 6px; border-bottom: 1px solid #eee; text-align: center;">
+                ${format(parseISO(entry.date_worked), 'dd/MM/yyyy', { locale: ptBR })}
+              </td>
+              <td style="padding: 6px; border-bottom: 1px solid #eee; text-align: center;">
+                ${entry.hours_worked}h
+              </td>
+              <td style="padding: 6px; border-bottom: 1px solid #eee;">
+                ${entry.description || '<em>Sem descrição</em>'}
+              </td>
+              <td style="padding: 6px; border-bottom: 1px solid #eee; text-align: right;">
+                R$ ${cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+      return `
+        <div style="margin-bottom: 25px;">
+          <h4 style="margin: 15px 0 10px 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+            ${emp.name} - ${emp.totalHours.toFixed(2)}h (R$ ${(emp.totalHours * hourlyRate).toLocaleString('pt-BR', { minimumFractionDigits: 2 })})
+          </h4>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+            <thead>
+              <tr style="background-color: #f8f9fa;">
+                <th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center; width: 15%;">Data</th>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center; width: 15%;">Horas</th>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left; width: 50%;">Descrição da Atividade</th>
+                <th style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; width: 20%;">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${entriesHTML}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
+
     const content = `
       <!DOCTYPE html>
       <html>
@@ -536,7 +645,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h2>Horas por Funcionário</h2>
+          <h2>Resumo por Funcionário</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <thead>
               <tr style="background-color: #f8f9fa;">
@@ -551,8 +660,14 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
           </table>
         </div>
 
+        <div style="margin-bottom: 30px;">
+          <h2>Detalhamento das Atividades</h2>
+          ${activitiesHTML}
+        </div>
+
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
           <p>FlowCode Financial - Sistema de Gestão de Projetos</p>
+          <p>Relatório gerado automaticamente com descrição completa das atividades realizadas</p>
         </div>
       </body>
       </html>
@@ -795,23 +910,109 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                 ) : (
                   <div className="space-y-2">
                     {projectHours.map((entry) => (
-                      <div key={entry.id} className="flex justify-between items-center p-3 border rounded">
-                        <div>
-                          <div className="font-medium">{entry.employees?.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {format(parseISO(entry.date_worked), 'dd/MM/yyyy', { locale: ptBR })} - {entry.hours_worked}h
+                      <div key={entry.id} className="p-3 border rounded-lg">
+                        {editingHourEntry === entry.id ? (
+                          // Edit mode
+                          <div className="space-y-3">
+                            <div className="font-medium text-sm text-muted-foreground">
+                              Editando: {entry.employees?.name}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-date-${entry.id}`} className="text-xs">Data</Label>
+                                <Input
+                                  id={`edit-date-${entry.id}`}
+                                  type="date"
+                                  value={editingForm.date_worked}
+                                  onChange={(e) => setEditingForm({ ...editingForm, date_worked: e.target.value })}
+                                  className="text-sm"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-hours-${entry.id}`} className="text-xs">Horas</Label>
+                                <Input
+                                  id={`edit-hours-${entry.id}`}
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  max="24"
+                                  value={editingForm.hours_worked}
+                                  onChange={(e) => setEditingForm({ ...editingForm, hours_worked: e.target.value })}
+                                  className="text-sm"
+                                  placeholder="Ex: 8.5"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-description-${entry.id}`} className="text-xs">Descrição</Label>
+                                <Input
+                                  id={`edit-description-${entry.id}`}
+                                  value={editingForm.description}
+                                  onChange={(e) => setEditingForm({ ...editingForm, description: e.target.value })}
+                                  className="text-sm"
+                                  placeholder="Descrição do trabalho..."
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEditingHourEntry}
+                                className="flex items-center gap-1"
+                              >
+                                <X className="h-3 w-3" />
+                                Cancelar
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => saveHourEntry(entry.id)}
+                                className="flex items-center gap-1"
+                              >
+                                <Check className="h-3 w-3" />
+                                Salvar
+                              </Button>
+                            </div>
                           </div>
-                          {entry.description && (
-                            <div className="text-sm text-muted-foreground">{entry.description}</div>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteHourEntry(entry.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        ) : (
+                          // View mode
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 space-y-1">
+                              <div className="font-medium">{entry.employees?.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                📅 {format(parseISO(entry.date_worked), 'dd/MM/yyyy', { locale: ptBR })} • ⏱️ {entry.hours_worked}h
+                              </div>
+                              {entry.description && (
+                                <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                                  📝 {entry.description}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-1 ml-3">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditingHourEntry(entry)}
+                                className="h-8 w-8 p-0"
+                                title="Editar entrada"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteHourEntry(entry.id)}
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                title="Excluir entrada"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatDateForInput } from "@/utils/dateUtils";
 
 interface Client {
   id: string;
@@ -43,7 +44,7 @@ export function SimplePaymentDialog({
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'boleto' | 'credit_card'>('pix');
   const [installments, setInstallments] = useState("1");
-  const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dueDate, setDueDate] = useState(formatDateForInput(new Date().toISOString()));
   const [status, setStatus] = useState<'pending' | 'paid'>('pending');
   const [paymentDate, setPaymentDate] = useState("");
   const [payOnDelivery, setPayOnDelivery] = useState(false);
@@ -80,7 +81,7 @@ export function SimplePaymentDialog({
     setInstallments("1");
     setInstallmentsForClosed("1");
     setInstallmentValues([""]);
-    setDueDate(new Date().toISOString().split('T')[0]);
+    setDueDate(formatDateForInput(new Date().toISOString()));
     setPaymentType('onetime');
     setStatus('pending');
     setPaymentDate("");

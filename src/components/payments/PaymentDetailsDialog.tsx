@@ -13,6 +13,7 @@ import { format, isValid, parseISO } from "date-fns";
 import { syncPaymentToCashFlow } from "@/services/paymentCashFlowSync";
 import { ArrowRightLeft } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatDateForInput } from "@/utils/dateUtils";
 
 interface PaymentDetailsDialogProps {
   open: boolean;
@@ -40,6 +41,12 @@ export const PaymentDetailsDialog = ({
   const [nfeIssued, setNfeIssued] = useState<boolean>(Boolean(payment.NFe_Emitida));
   const [payOnDelivery, setPayOnDelivery] = useState<boolean>(Boolean(payment.Pagamento_Por_Entrega));
 
+  // Campos para pagamento parcial
+  const [partialPayment, setPartialPayment] = useState(false);
+  const [paidAmount, setPaidAmount] = useState("");
+  const [remainingAmount, setRemainingAmount] = useState("");
+  const [nextPaymentDate, setNextPaymentDate] = useState("");
+
   useEffect(() => {
     if (open) {
       setDescription(payment.description);
@@ -51,53 +58,136 @@ export const PaymentDetailsDialog = ({
       setEmailTemplate(payment.email_template || "none");
       setNfeIssued(Boolean(payment.NFe_Emitida));
       setPayOnDelivery(Boolean(payment.Pagamento_Por_Entrega));
+
+      // Reset partial payment fields
+      setPartialPayment(false);
+      setPaidAmount("");
+      setRemainingAmount("");
+      setNextPaymentDate("");
     }
   }, [open, payment]);
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        console.error("Invalid date:", dateString);
-        return "";
-      }
-      return format(date, 'yyyy-MM-dd');
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "";
+  const formatDate = formatDateForInput;
+
+  // Calcular valor restante automaticamente
+  const handlePaidAmountChange = (value: string) => {
+    setPaidAmount(value);
+
+    if (value && !isNaN(parseFloat(value))) {
+      const totalAmount = parseFloat(amount);
+      const paid = parseFloat(value);
+      const remaining = Math.max(0, totalAmount - paid);
+      setRemainingAmount(remaining.toFixed(2));
+    } else {
+      setRemainingAmount("");
     }
   };
 
   const handleSave = async () => {
     try {
-      // Validar payment_date se status for 'paid' (exceto quando for pagamento por entrega)
-      if (status === 'paid' && !paymentDate && !payOnDelivery) {
-        toast({
-          title: "Erro de validação",
-          description: "Informe a data de pagamento ou marque 'Pagamento por entrega' ao definir como Pago.",
-          variant: "destructive"
-        });
-        return;
+      // Se for pagamento parcial, validar campos específicos
+      if (partialPayment) {
+        if (!paidAmount || parseFloat(paidAmount) <= 0) {
+          toast({
+            title: "Erro de validação",
+            description: "Informe o valor pago agora.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (!remainingAmount || parseFloat(remainingAmount) < 0) {
+          toast({
+            title: "Erro de validação",
+            description: "Informe o valor restante.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (!paymentDate && !payOnDelivery) {
+          toast({
+            title: "Erro de validação",
+            description: "Informe a data de pagamento ou marque 'Pagamento por entrega'.",
+            variant: "destructive"
+          });
+          return;
+        }
+      } else {
+        // Validar payment_date se status for 'paid' (exceto quando for pagamento por entrega)
+        if (status === 'paid' && !paymentDate && !payOnDelivery) {
+          toast({
+            title: "Erro de validação",
+            description: "Informe a data de pagamento ou marque 'Pagamento por entrega' ao definir como Pago.",
+            variant: "destructive"
+          });
+          return;
+        }
       }
 
-      console.log('Updating payment with data:', {
-        id: payment.id,
-        description,
-        amount: parseFloat(amount),
-        due_date: dueDate,
-        payment_date: payOnDelivery ? null : (paymentDate || null),
-        payment_method: paymentMethod,
-        status,
-        email_template: emailTemplate === "none" ? null : emailTemplate,
-        NFe_Emitida: nfeIssued,
-        Pagamento_Por_Entrega: payOnDelivery
-      });
+      if (partialPayment) {
+        // 1. Marcar o atual como pago
+        const { error: updateError } = await supabase
+          .from('payments')
+          .update({
+            description,
+            amount: parseFloat(paidAmount),
+            due_date: dueDate,
+            payment_date: payOnDelivery ? null : (paymentDate || null),
+            payment_method: paymentMethod,
+            status: 'paid',
+            email_template: emailTemplate === "none" ? null : emailTemplate,
+            NFe_Emitida: nfeIssued,
+            Pagamento_Por_Entrega: payOnDelivery
+          })
+          .eq('id', payment.id);
 
-      const { error } = await supabase
-        .from('payments')
-        .update({
+        if (updateError) throw updateError;
+
+        // 2. Criar novo recebimento com valor restante
+        const remainingValue = parseFloat(remainingAmount || "0");
+        if (!isNaN(remainingValue) && remainingValue > 0) {
+          const { error: insertError } = await supabase
+            .from('payments')
+            .insert({
+              client_id: payment.client_id,
+              description: `${description} (Restante)`,
+              amount: remainingValue,
+              due_date: nextPaymentDate || null,
+              payment_method: paymentMethod,
+              status: 'pending',
+              email_template: emailTemplate === "none" ? null : emailTemplate,
+              Pagamento_Por_Entrega: payOnDelivery
+            });
+
+          if (insertError) throw insertError;
+        }
+
+        // Sincronizar com cash flow
+        if (paymentDate || payOnDelivery) {
+          await syncPaymentToCashFlow(
+            payment.id,
+            payment.status,
+            'paid',
+            {
+              description,
+              amount: parseFloat(paidAmount),
+              payment_date: payOnDelivery ? null : (paymentDate || null),
+              client_id: payment.client_id
+            }
+          );
+        }
+
+        toast({
+          title: "Pagamento parcial processado",
+          description: remainingValue > 0
+            ? `Valor pago: R$ ${parseFloat(paidAmount).toFixed(2)}. Novo recebimento criado para o restante: R$ ${remainingValue.toFixed(2)}.`
+            : `Pagamento parcial de R$ ${parseFloat(paidAmount).toFixed(2)} processado com sucesso.`
+        });
+      } else {
+        // Fluxo normal (não parcial)
+        console.log('Updating payment with data:', {
+          id: payment.id,
           description,
           amount: parseFloat(amount),
           due_date: dueDate,
@@ -107,48 +197,63 @@ export const PaymentDetailsDialog = ({
           email_template: emailTemplate === "none" ? null : emailTemplate,
           NFe_Emitida: nfeIssued,
           Pagamento_Por_Entrega: payOnDelivery
-        })
-        .eq('id', payment.id);
+        });
 
-      if (error) {
-        console.error('Error updating payment:', error);
-        throw error;
-      }
-
-      console.log('Payment updated successfully');
-
-      // Sincronizar com cash flow se o pagamento está marcado como pago e tem data de pagamento
-      if (status === 'paid' && (paymentDate || payOnDelivery)) {
-        console.log('Payment is paid with payment date, syncing with cash flow...');
-
-        const syncResult = await syncPaymentToCashFlow(
-          payment.id,
-          payment.status,
-          status,
-          {
+        const { error } = await supabase
+          .from('payments')
+          .update({
             description,
             amount: parseFloat(amount),
+            due_date: dueDate,
             payment_date: payOnDelivery ? null : (paymentDate || null),
-            client_id: payment.client_id
-          }
-        );
+            payment_method: paymentMethod,
+            status,
+            email_template: emailTemplate === "none" ? null : emailTemplate,
+            NFe_Emitida: nfeIssued,
+            Pagamento_Por_Entrega: payOnDelivery
+          })
+          .eq('id', payment.id);
 
-        if (!syncResult.success) {
-          console.error('Failed to sync payment to cash flow:', syncResult.error);
-          toast({
-            title: "Aviso",
-            description: "Pagamento atualizado, mas houve um problema ao sincronizar com o fluxo de caixa.",
-            variant: "destructive"
-          });
-        } else {
-          console.log('Payment successfully synced to cash flow');
+        if (error) {
+          console.error('Error updating payment:', error);
+          throw error;
         }
-      }
 
-      toast({
-        title: "Pagamento atualizado",
-        description: "As alterações foram salvas com sucesso."
-      });
+        console.log('Payment updated successfully');
+
+        // Sincronizar com cash flow se o pagamento está marcado como pago e tem data de pagamento
+        if (status === 'paid' && (paymentDate || payOnDelivery)) {
+          console.log('Payment is paid with payment date, syncing with cash flow...');
+
+          const syncResult = await syncPaymentToCashFlow(
+            payment.id,
+            payment.status,
+            status,
+            {
+              description,
+              amount: parseFloat(amount),
+              payment_date: payOnDelivery ? null : (paymentDate || null),
+              client_id: payment.client_id
+            }
+          );
+
+          if (!syncResult.success) {
+            console.error('Failed to sync payment to cash flow:', syncResult.error);
+            toast({
+              title: "Aviso",
+              description: "Pagamento atualizado, mas houve um problema ao sincronizar com o fluxo de caixa.",
+              variant: "destructive"
+            });
+          } else {
+            console.log('Payment successfully synced to cash flow');
+          }
+        }
+
+        toast({
+          title: "Pagamento atualizado",
+          description: "As alterações foram salvas com sucesso."
+        });
+      }
 
       onUpdate();
     } catch (error) {
@@ -278,6 +383,75 @@ export const PaymentDetailsDialog = ({
             <Checkbox id="nfe_issued" checked={nfeIssued} onCheckedChange={(checked) => setNfeIssued(Boolean(checked))} />
             <label htmlFor="nfe_issued" className="text-sm text-gray-300">NF-e emitida</label>
           </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="partial_payment"
+              checked={partialPayment}
+              onCheckedChange={(checked) => {
+                const value = Boolean(checked);
+                setPartialPayment(value);
+                if (!value) {
+                  // Reset campos quando desmarcar
+                  setPaidAmount("");
+                  setRemainingAmount("");
+                  setNextPaymentDate("");
+                }
+              }}
+            />
+            <label htmlFor="partial_payment" className="text-sm text-gray-300">Pagamento Parcial</label>
+          </div>
+
+          {partialPayment && (
+            <div className="space-y-4 p-4 border border-[#2a2f3d] rounded-md bg-[#0f1115]">
+              <div className="grid gap-2">
+                <label className="text-sm text-gray-300">
+                  Valor pago agora (R$) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={paidAmount}
+                  onChange={(e) => handlePaidAmountChange(e.target.value)}
+                  placeholder="0,00"
+                  className="bg-[#151820] border-[#2a2f3d] text-white"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm text-gray-300">
+                  Valor restante (R$) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={remainingAmount}
+                  onChange={(e) => setRemainingAmount(e.target.value)}
+                  placeholder={
+                    paidAmount && !isNaN(parseFloat(paidAmount))
+                      ? `Sugestão: ${Math.max(0, parseFloat(amount) - parseFloat(paidAmount)).toFixed(2)}`
+                      : "0,00"
+                  }
+                  className="bg-[#151820] border-[#2a2f3d] text-white"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm text-gray-300">Data do próximo pagamento (opcional)</label>
+                <Input
+                  type="date"
+                  value={nextPaymentDate}
+                  onChange={(e) => setNextPaymentDate(e.target.value)}
+                  className="bg-[#151820] border-[#2a2f3d] text-white"
+                />
+                <p className="text-xs text-gray-400">
+                  Se informada, o novo recebimento aparecerá no mês correspondente
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-2">
             <label className="text-sm text-gray-300">Template de Email</label>

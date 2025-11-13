@@ -9,11 +9,14 @@ export const useContracts = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: contracts = [], isLoading } = useQuery({
+  const { data: contracts = [], isLoading, refetch } = useQuery({
     queryKey: ["contracts"],
+    staleTime: 0, // Always refetch on mount
+    cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: true,
     queryFn: async () => {
-      console.log("Fetching contracts...");
-      
+      console.log("Fetching contracts...", new Date().toLocaleTimeString());
+
       const { data, error } = await supabase
         .from("contratos")
         .select(`
@@ -200,6 +203,7 @@ export const useContracts = () => {
     isLoading,
     addContract,
     updateContract,
-    deleteContract
+    deleteContract,
+    refetch
   };
 };

@@ -75,7 +75,7 @@ const getContractTypeVariant = (contractType?: string): "success" | "info" | "wa
 };
 
 export function ContractTable() {
-  const { contracts, isLoading, deleteContract } = useContracts();
+  const { contracts, isLoading, deleteContract, refetch } = useContracts();
   
   // Garantir que não há duplicatas na renderização
   const uniqueContracts = React.useMemo(() => {
@@ -212,10 +212,19 @@ export function ContractTable() {
               </Button>
             </div>
             
-            <Button onClick={() => setNewContractOpen(true)}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Novo Contrato
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                title="Atualizar lista de contratos"
+              >
+                🔄 Atualizar
+              </Button>
+              <Button onClick={() => setNewContractOpen(true)}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Novo Contrato
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
