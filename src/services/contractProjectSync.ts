@@ -85,7 +85,7 @@ export const syncContractsToProjects = async (): Promise<void> => {
     );
 
     console.log(`📝 Found ${contractsNeedingProjects.length} contracts that need projects:`,
-      contractsNeedingProjects.map(c => `#${c.id} (${c.scope})`).join(', '));
+      contractsNeedingProjects.map(c => `#${c.id} (${c.scope?.slice(0, 30)}...)`).join(', '));
 
     if (contractsNeedingProjects.length === 0) {
       console.log("✅ All contracts already have associated projects");

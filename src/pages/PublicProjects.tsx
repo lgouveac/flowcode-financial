@@ -115,81 +115,64 @@ export default function PublicProjects() {
         // Não falha o carregamento se houver erro na sincronização
       }
 
-      // Buscar projetos ativos com seus contratos
-      // Usar select específico para evitar duplicação
+      // Buscar todos os projetos (igual Projects.tsx)
       const { data: projectsData, error: projectsError } = await supabase
         .from('projetos')
-        .select(`
-          id,
-          name,
-          description,
-          status,
-          client_id,
-          contract_id,
-          created_at,
-          clients (
-            id,
-            name,
-            email
-          ),
-          contratos!projetos_contract_id_fkey (
-            id,
-            scope,
-            start_date,
-            end_date,
-            status,
-            contract_type
-          )
-        `)
-        .eq('status', 'active')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
 
-      // Remover duplicatas por ID do projeto (caso a query retorne múltiplas linhas por causa das relações)
-      const uniqueProjectsMap = new Map<string, typeof projectsData[0]>();
-      (projectsData || []).forEach(project => {
-        // Se já existe, manter o primeiro encontrado
-        if (!uniqueProjectsMap.has(project.id)) {
-          uniqueProjectsMap.set(project.id, project);
-        }
-      });
-      const uniqueProjects = Array.from(uniqueProjectsMap.values());
+      // Buscar dados relacionados separadamente para evitar duplicatas (igual Projects.tsx)
+      const projectIds = (projectsData || []).map(p => p.id);
 
-      // Também garantir que não há projetos duplicados por contract_id (um contrato = um projeto)
-      const projectsByContractId = new Map<number, typeof uniqueProjects[0]>();
-      uniqueProjects.forEach(project => {
+      // Buscar clientes
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('id, name, email');
+
+      // Buscar contratos
+      const { data: contractsData } = await supabase
+        .from('contratos')
+        .select('id, scope, start_date, end_date, status, contract_type');
+
+      // Combinar dados manualmente para evitar duplicatas (igual Projects.tsx)
+      const processedProjects = (projectsData || []).map(project => {
+        const client = clientsData?.find(c => c.id === project.client_id);
+        const contract = contractsData?.find(c => c.id === project.contract_id);
+
+        return {
+          ...project,
+          clients: client || null,
+          contratos: contract || null
+        };
+      });
+
+      // Remover projetos duplicados por contract_id (igual Projects.tsx)
+      const finalProjects = [];
+      const seenContractIds = new Set();
+      const seenProjectIds = new Set();
+
+      for (const project of processedProjects) {
+        // Se tem contract_id, verificar se já foi processado
         if (project.contract_id) {
-          // Se já existe um projeto com este contract_id, manter o primeiro
-          if (!projectsByContractId.has(project.contract_id)) {
-            projectsByContractId.set(project.contract_id, project);
+          if (!seenContractIds.has(project.contract_id)) {
+            seenContractIds.add(project.contract_id);
+            finalProjects.push(project);
+          }
+        } else {
+          // Se não tem contract_id, verificar por project ID
+          if (!seenProjectIds.has(project.id)) {
+            seenProjectIds.add(project.id);
+            finalProjects.push(project);
           }
         }
-      });
-
-      // Se há projetos com contract_id, usar apenas esses (um contrato = um projeto)
-      // Se não, usar todos os projetos únicos
-      const deduplicatedProjects = projectsByContractId.size > 0
-        ? Array.from(projectsByContractId.values())
-        : uniqueProjects;
+      }
 
       // Filtrar apenas projetos com contratos de escopo aberto
-      const filteredProjects = deduplicatedProjects.filter(project => {
-        // Se contratos é um array, verificar o primeiro elemento
-        const contract = Array.isArray(project.contratos) 
-          ? project.contratos[0] 
-          : project.contratos;
-        
+      const filteredProjects = finalProjects.filter(project => {
+        const contract = project.contratos;
         return contract && contract.contract_type === 'open_scope';
-      }).map(project => {
-        // Garantir que contratos seja um objeto único, não array
-        if (Array.isArray(project.contratos) && project.contratos.length > 0) {
-          return {
-            ...project,
-            contratos: project.contratos[0]
-          };
-        }
-        return project;
       });
 
       // Fetch employees
