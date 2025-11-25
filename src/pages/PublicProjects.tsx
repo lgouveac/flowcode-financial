@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, FileText, Clock, Plus, Calendar, Play, Pause, Square, X, Minimize2, Maximize2, Moon, Sun, Eye } from "lucide-react";
+import { Loader2, FileText, Clock, Plus, Calendar, Play, Pause, Square, X, Minimize2, Maximize2, Moon, Sun, Eye, BarChart3, Edit, Trash2, Check } from "lucide-react";
 import { format, parseISO, eachDayOfInterval, differenceInDays } from "date-fns";
 import { syncContractsToProjects } from "@/services/contractProjectSync";
+import { ProjectHoursPeriodView } from "@/components/projects/ProjectHoursPeriodView";
 
 interface Project {
   id: string;
@@ -39,6 +40,20 @@ interface Project {
 interface Employee {
   id: string;
   name: string;
+}
+
+interface ProjectHour {
+  id: string;
+  project_id: string;
+  employee_id: string;
+  date_worked: string;
+  hours_worked: number;
+  description?: string;
+  created_at: string;
+  employees?: {
+    id: string;
+    name: string;
+  };
 }
 
 export default function PublicProjects() {
@@ -80,6 +95,15 @@ export default function PublicProjects() {
   const [isTimerMinimized, setIsTimerMinimized] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
+  const [periodViewProject, setPeriodViewProject] = useState<Project | null>(null);
+  const [hoursViewOpen, setHoursViewOpen] = useState(false);
+  const [projectHours, setProjectHours] = useState<ProjectHour[]>([]);
+  const [editingHourEntry, setEditingHourEntry] = useState<string | null>(null);
+  const [editingForm, setEditingForm] = useState({
+    hours_worked: "",
+    description: "",
+    date_worked: ""
+  });
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('publicProjectsDarkMode');
@@ -194,6 +218,118 @@ export default function PublicProjects() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProjectHours = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('project_hours')
+        .select(`
+          *,
+          employees (
+            id,
+            name
+          )
+        `)
+        .eq('project_id', projectId)
+        .order('date_worked', { ascending: false });
+
+      if (error) throw error;
+      setProjectHours(data || []);
+    } catch (error) {
+      console.error('Error fetching project hours:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as horas do projeto.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startEditingHourEntry = (entry: ProjectHour) => {
+    setEditingHourEntry(entry.id);
+    setEditingForm({
+      hours_worked: entry.hours_worked.toString(),
+      description: entry.description || "",
+      date_worked: entry.date_worked
+    });
+  };
+
+  const cancelEditingHourEntry = () => {
+    setEditingHourEntry(null);
+    setEditingForm({
+      hours_worked: "",
+      description: "",
+      date_worked: ""
+    });
+  };
+
+  const saveHourEntry = async (id: string) => {
+    if (!editingForm.hours_worked) {
+      toast({
+        title: "Horas obrigatórias",
+        description: "Por favor, informe o número de horas trabalhadas.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('project_hours')
+        .update({
+          hours_worked: parseFloat(editingForm.hours_worked),
+          description: editingForm.description,
+          date_worked: editingForm.date_worked
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Entrada atualizada",
+        description: "A entrada de horas foi atualizada com sucesso.",
+      });
+
+      setEditingHourEntry(null);
+      if (viewingProject) {
+        await fetchProjectHours(viewingProject.id);
+      }
+    } catch (error) {
+      console.error('Error updating hour entry:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a entrada.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteHourEntry = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('project_hours')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Entrada removida",
+        description: "A entrada de horas foi removida com sucesso.",
+      });
+
+      if (viewingProject) {
+        await fetchProjectHours(viewingProject.id);
+      }
+    } catch (error) {
+      console.error('Error deleting hour entry:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover a entrada.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -613,21 +749,54 @@ export default function PublicProjects() {
                         Timer ativo para {timer.employeeName}
                       </div>
                     )}
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedProject(project);
-                      // Se o timer está rodando para este projeto, usar o funcionário do timer
-                      if (timer.projectId === project.id && timer.employeeId) {
-                        setSelectedEmployee(timer.employeeId);
-                      }
-                      setHourEntryOpen(true);
-                      }}
-                      className="w-full flex items-center gap-2"
-                    >
-                      <Clock className="h-4 w-4" />
-                      Registrar Horas
-                    </Button>
+                    <div className="space-y-2">
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProject(project);
+                        // Se o timer está rodando para este projeto, usar o funcionário do timer
+                        if (timer.projectId === project.id && timer.employeeId) {
+                          setSelectedEmployee(timer.employeeId);
+                        }
+                        setHourEntryOpen(true);
+                        }}
+                        className="w-full flex items-center gap-2"
+                      >
+                        <Clock className="h-4 w-4" />
+                        Registrar Horas
+                      </Button>
+
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingProject(project);
+                            setHoursViewOpen(true);
+                            fetchProjectHours(project.id);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 flex items-center gap-2"
+                          title="Ver e editar horas"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Editar Horas
+                        </Button>
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPeriodViewProject(project);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 flex items-center gap-2"
+                          title="Análise por período"
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                          Período
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1045,6 +1214,166 @@ export default function PublicProjects() {
                 </Card>
               </TabsContent>
             </Tabs>
+          </DialogContent>
+        </Dialog>
+
+        {/* Hours View & Edit Dialog */}
+        <Dialog open={hoursViewOpen} onOpenChange={setHoursViewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Horas Registradas - {viewingProject?.name}
+              </DialogTitle>
+            </DialogHeader>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Horas Registradas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {projectHours.length === 0 ? (
+                  <div className="text-center py-4 text-muted-foreground">
+                    Nenhuma hora registrada ainda
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {projectHours.map((entry) => (
+                      <div key={entry.id} className="p-3 border rounded-lg">
+                        {editingHourEntry === entry.id ? (
+                          // Edit mode
+                          <div className="space-y-3">
+                            <div className="font-medium text-sm text-muted-foreground">
+                              Editando: {entry.employees?.name}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-date-${entry.id}`} className="text-xs">Data</Label>
+                                <Input
+                                  id={`edit-date-${entry.id}`}
+                                  type="date"
+                                  value={editingForm.date_worked}
+                                  onChange={(e) => setEditingForm({ ...editingForm, date_worked: e.target.value })}
+                                  className="text-sm"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-hours-${entry.id}`} className="text-xs">Horas</Label>
+                                <Input
+                                  id={`edit-hours-${entry.id}`}
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  max="24"
+                                  value={editingForm.hours_worked}
+                                  onChange={(e) => setEditingForm({ ...editingForm, hours_worked: e.target.value })}
+                                  className="text-sm"
+                                  placeholder="Ex: 8.5"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-description-${entry.id}`} className="text-xs">Descrição</Label>
+                                <Input
+                                  id={`edit-description-${entry.id}`}
+                                  value={editingForm.description}
+                                  onChange={(e) => setEditingForm({ ...editingForm, description: e.target.value })}
+                                  className="text-sm"
+                                  placeholder="Descrição do trabalho..."
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2 justify-end">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={cancelEditingHourEntry}
+                                className="flex items-center gap-1"
+                              >
+                                <X className="h-3 w-3" />
+                                Cancelar
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => saveHourEntry(entry.id)}
+                                className="flex items-center gap-1"
+                              >
+                                <Check className="h-3 w-3" />
+                                Salvar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          // View mode
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 space-y-1">
+                              <div className="font-medium">{entry.employees?.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                📅 {format(parseISO(entry.date_worked), 'dd/MM/yyyy')} • ⏱️ {entry.hours_worked}h
+                              </div>
+                              {entry.description && (
+                                <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                                  📝 {entry.description}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-1 ml-3">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditingHourEntry(entry)}
+                                className="h-8 w-8 p-0"
+                                title="Editar entrada"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteHourEntry(entry.id)}
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                                title="Excluir entrada"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setHoursViewOpen(false)}
+              >
+                Fechar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Period View Dialog */}
+        <Dialog open={!!periodViewProject} onOpenChange={(open) => !open && setPeriodViewProject(null)}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>Análise de Horas por Período</DialogTitle>
+            </DialogHeader>
+            {periodViewProject && (
+              <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+                <ProjectHoursPeriodView
+                  project={periodViewProject}
+                  open={!!periodViewProject}
+                  onClose={() => setPeriodViewProject(null)}
+                />
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 

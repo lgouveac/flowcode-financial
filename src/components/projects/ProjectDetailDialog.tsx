@@ -621,6 +621,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
           <h1 style="margin: 0; color: #333;">Relatório do Projeto</h1>
           <h2 style="margin: 10px 0; color: #666;">${project.name}</h2>
           ${project.clients ? `<p style="margin: 5px 0; color: #666;">Cliente: ${project.clients.name}</p>` : ''}
+          ${project.data_inicio_ciclo ? `<p style="margin: 5px 0; color: #666;">Data de Início do Ciclo: ${new Date(project.data_inicio_ciclo).toLocaleDateString('pt-BR')}</p>` : ''}
           <p style="margin: 5px 0; color: #666;">
             Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
           </p>

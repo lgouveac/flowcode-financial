@@ -40,6 +40,7 @@ export const NewProjectDialog = ({ open, onClose, onSuccess }: NewProjectDialogP
     client_id: undefined,
     contract_id: undefined,
     status: "active",
+    data_inicio_ciclo: undefined,
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
@@ -57,6 +58,7 @@ export const NewProjectDialog = ({ open, onClose, onSuccess }: NewProjectDialogP
         client_id: undefined,
         contract_id: undefined,
         status: "active",
+        data_inicio_ciclo: undefined,
       });
     }
   }, [open]);
@@ -279,6 +281,16 @@ export const NewProjectDialog = ({ open, onClose, onSuccess }: NewProjectDialogP
 
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="data_inicio_ciclo">Data de Início do Ciclo</Label>
+            <Input
+              id="data_inicio_ciclo"
+              type="date"
+              value={formData.data_inicio_ciclo || ""}
+              onChange={(e) => setFormData({ ...formData, data_inicio_ciclo: e.target.value || undefined })}
+            />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>

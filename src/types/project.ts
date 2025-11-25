@@ -5,6 +5,7 @@ export interface Project {
   client_id?: string;
   contract_id?: number;
   status: 'active' | 'paused' | 'completed';
+  data_inicio_ciclo?: string;
   created_at: string;
 
   // Relations

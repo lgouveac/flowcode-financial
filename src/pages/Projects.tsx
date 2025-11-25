@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, FileText, RefreshCw, Search, Filter, X, Clock, Play, Pause, Square, Minimize2, Maximize2, Calendar, Loader2, Eye } from "lucide-react";
+import { Plus, FileText, RefreshCw, Search, Filter, X, Clock, Play, Pause, Square, Minimize2, Maximize2, Calendar, Loader2, Eye, BarChart3 } from "lucide-react";
 import { NewProjectDialog } from "@/components/projects/NewProjectDialog";
 import { ProjectDetailDialog } from "@/components/projects/ProjectDetailDialog";
+import { ProjectHoursPeriodView } from "@/components/projects/ProjectHoursPeriodView";
 import { syncContractsToProjects } from "@/services/contractProjectSync";
 import type { Project } from "@/types/project";
 import { format, parseISO, eachDayOfInterval, differenceInDays } from "date-fns";
@@ -35,6 +36,7 @@ export default function Projects() {
   const [selectedProjectForHours, setSelectedProjectForHours] = useState<Project | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState("");
   const [viewingProject, setViewingProject] = useState<Project | null>(null);
+  const [periodViewProject, setPeriodViewProject] = useState<Project | null>(null);
   const { toast } = useToast();
 
   // Hour entry form
@@ -808,11 +810,24 @@ export default function Projects() {
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
+                        setPeriodViewProject(project);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      title="Análise por período"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setViewingProject(project);
                       }}
                       variant="outline"
                       size="sm"
                       className="flex items-center gap-2"
+                      title="Visualizar projeto"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -1400,6 +1415,24 @@ export default function Projects() {
           </Card>
         </div>
       )}
+
+      {/* Period View Dialog */}
+      <Dialog open={!!periodViewProject} onOpenChange={(open) => !open && setPeriodViewProject(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Análise de Horas por Período</DialogTitle>
+          </DialogHeader>
+          {periodViewProject && (
+            <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
+              <ProjectHoursPeriodView
+                project={periodViewProject}
+                open={!!periodViewProject}
+                onClose={() => setPeriodViewProject(null)}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
