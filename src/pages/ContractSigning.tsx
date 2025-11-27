@@ -67,42 +67,97 @@ export default function ContractSigning() {
     console.log('Fetching contract with contract_id:', contractId);
 
     try {
-      // Buscar contrato apenas pelo contract_id
+      // Primeiro, buscar TODOS os contratos para debug
+      console.log('🔍 [DEBUG] Buscando todos os contratos para verificar...');
+      const { data: allContracts, error: allError } = await supabase
+        .from('contratos')
+        .select('id, contract_id, scope, status')
+        .limit(5);
+
+      if (allError) {
+        console.error('❌ [DEBUG] Erro ao buscar todos os contratos:', allError);
+      } else {
+        console.log('✅ [DEBUG] Total de contratos encontrados:', allContracts?.length || 0);
+        allContracts?.forEach((contract, index) => {
+          console.log(`   ${index + 1}. ID: ${contract.id} | Contract_ID: "${contract.contract_id}" | Match: ${contract.contract_id === contractId}`);
+        });
+      }
+
+      // Segundo, buscar contrato específico sem o JOIN problemático
+      console.log('🔍 [DEBUG] Buscando contrato específico...');
       const { data, error } = await supabase
-        .from('Contratos')
-        .select(`
-          *,
-          clients!Contratos_client_id_fkey (
-            name,
-            email
-          )
-        `)
+        .from('contratos')
+        .select('*')
         .eq('contract_id', contractId)
         .single();
 
-      console.log('Supabase response:', { data, error });
+      console.log('📊 [DEBUG] Supabase response:', { data, error });
+      console.log('📊 [DEBUG] Error details:', {
+        code: error?.code,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint
+      });
+
+      // Terceiro, buscar sem .single() para ver se existe mas está duplicado
+      console.log('🔍 [DEBUG] Buscando sem single() para verificar duplicatas...');
+      const { data: multipleData, error: multipleError } = await supabase
+        .from('contratos')
+        .select('id, contract_id, scope, status')
+        .eq('contract_id', contractId);
+
+      console.log('📊 [DEBUG] Multiple search result:', {
+        count: multipleData?.length || 0,
+        data: multipleData,
+        error: multipleError
+      });
 
       if (error) {
-        console.error('Supabase error details:', error);
+        console.error('❌ Supabase error details:', error);
         throw error;
       }
 
       if (!data) {
-        console.log('No contract found with contract_id:', contractId);
-        console.log('This might mean:');
-        console.log('1. Contract_id does not exist in database');  
-        console.log('2. Contract exists but contract_id field is empty');
-        console.log('3. URL parameter is incorrect');
+        console.log('❌ No contract found with contract_id:', contractId);
+        console.log('💡 Possible causes:');
+        console.log('1. RLS (Row Level Security) blocking access');
+        console.log('2. Contract_id case sensitivity issue');
+        console.log('3. Contract exists but has different permissions');
+        console.log('4. Contract_id field contains extra characters');
         return;
       }
-      
-      console.log('Contract loaded successfully:', data);
-      setContract(data);
+
+      // Buscar dados do cliente separadamente se client_id existir
+      let clientData = null;
+      if (data.client_id) {
+        console.log('🔍 [DEBUG] Buscando dados do cliente...');
+        const { data: client, error: clientError } = await supabase
+          .from('clients')
+          .select('name, email')
+          .eq('id', data.client_id)
+          .single();
+
+        if (!clientError && client) {
+          clientData = client;
+          console.log('✅ [DEBUG] Cliente encontrado:', client);
+        } else {
+          console.log('❌ [DEBUG] Erro ao buscar cliente:', clientError);
+        }
+      }
+
+      const contractWithClient = {
+        ...data,
+        clients: clientData
+      };
+
+      console.log('✅ Contract loaded successfully:', contractWithClient);
+      setContract(contractWithClient);
     } catch (error) {
-      console.error('Error fetching contract - full error:', error);
-      console.error('Error message:', error?.message);
-      console.error('Error code:', error?.code);
-      
+      console.error('💥 Error fetching contract - full error:', error);
+      console.error('📄 Error message:', error?.message);
+      console.error('🔢 Error code:', error?.code);
+      console.error('📋 Error details:', error?.details);
+
       toast({
         title: "Erro",
         description: `Não foi possível carregar o contrato. ${error?.message || 'Erro desconhecido'}`,
@@ -255,7 +310,7 @@ export default function ContractSigning() {
 
       // Atualizar contrato como assinado pelo cliente
       const { error } = await supabase
-        .from('Contratos')
+        .from('contratos')
         .update({
           status: 'completed',
           data_de_assinatura: new Date().toISOString(),
