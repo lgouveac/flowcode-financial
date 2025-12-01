@@ -69,10 +69,14 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
 
     switch (selectedPeriod) {
       case 'current':
+        const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+        const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+        const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
-          compareStart: `${currentYear}-${String(currentMonth - 1).padStart(2, '0')}-01`,
+          end: `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`,
+          compareStart: `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`,
           compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
       case 'last_month':
@@ -144,17 +148,25 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           };
         }
         // Fallback to current month if custom dates not provided
+        const fallbackNextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        const fallbackNextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+        const fallbackPrevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+        const fallbackPrevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
-          compareStart: `${currentYear}-${String(currentMonth - 1).padStart(2, '0')}-01`,
+          end: `${fallbackNextYear}-${String(fallbackNextMonth).padStart(2, '0')}-01`,
+          compareStart: `${fallbackPrevYear}-${String(fallbackPrevMonth).padStart(2, '0')}-01`,
           compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
       default:
+        const defaultNextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        const defaultNextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+        const defaultPrevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+        const defaultPrevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
-          compareStart: `${currentYear}-${String(currentMonth - 1).padStart(2, '0')}-01`,
+          end: `${defaultNextYear}-${String(defaultNextMonth).padStart(2, '0')}-01`,
+          compareStart: `${defaultPrevYear}-${String(defaultPrevMonth).padStart(2, '0')}-01`,
           compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
     }

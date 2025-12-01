@@ -69,9 +69,11 @@ export const useCashFlow = (period: string = 'current') => {
         // Return null to fetch all data without date filtering
         return null;
       case 'current':
+        const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentMonth === 12 ? currentYear + 1 : currentYear}-${String(currentMonth === 12 ? 1 : currentMonth + 1).padStart(2, '0')}-01`,
+          end: `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`,
         };
       case 'last_month':
         const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
@@ -103,9 +105,11 @@ export const useCashFlow = (period: string = 'current') => {
         };
       default:
         console.log(`Unknown period format "${selectedPeriod}", defaulting to current month`);
+        const defaultNextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        const defaultNextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentMonth === 12 ? currentYear + 1 : currentYear}-${String(currentMonth === 12 ? 1 : currentMonth + 1).padStart(2, '0')}-01`,
+          end: `${defaultNextYear}-${String(defaultNextMonth).padStart(2, '0')}-01`,
         };
     }
   };

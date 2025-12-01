@@ -35,10 +35,14 @@ export const useEstimatedExpenses = (period: string = 'current'): UseEstimatedEx
 
     switch (selectedPeriod) {
       case 'current':
+        const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+        const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+        const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
-          compareStart: `${currentYear}-${String(currentMonth - 1).padStart(2, '0')}-01`,
+          end: `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`,
+          compareStart: `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`,
           compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
       case 'last_month':
@@ -78,10 +82,14 @@ export const useEstimatedExpenses = (period: string = 'current'): UseEstimatedEx
           compareEnd: lastYear.toISOString().split('T')[0],
         };
       default:
+        const defaultNextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+        const defaultNextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+        const defaultPrevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+        const defaultPrevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
-          end: `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`,
-          compareStart: `${currentYear}-${String(currentMonth - 1).padStart(2, '0')}-01`,
+          end: `${defaultNextYear}-${String(defaultNextMonth).padStart(2, '0')}-01`,
+          compareStart: `${defaultPrevYear}-${String(defaultPrevMonth).padStart(2, '0')}-01`,
           compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
     }
@@ -102,9 +110,7 @@ export const useEstimatedExpenses = (period: string = 'current'): UseEstimatedEx
       const { data: currentFixedExpenses, error: currentFixedError } = await supabase
         .from('estimated_expenses')
         .select('*')
-        .eq('is_recurring', true)
-        .or(`start_date.lte.${dates.end},start_date.is.null`)
-        .or(`end_date.gte.${dates.start},end_date.is.null`);
+        .eq('is_recurring', true);
 
       if (currentFixedError) throw currentFixedError;
 
@@ -112,9 +118,7 @@ export const useEstimatedExpenses = (period: string = 'current'): UseEstimatedEx
       const { data: previousFixedExpenses, error: previousFixedError } = await supabase
         .from('estimated_expenses')
         .select('*')
-        .eq('is_recurring', true)
-        .or(`start_date.lte.${dates.compareEnd},start_date.is.null`)
-        .or(`end_date.gte.${dates.compareStart},end_date.is.null`);
+        .eq('is_recurring', true);
 
       if (previousFixedError) throw previousFixedError;
 
