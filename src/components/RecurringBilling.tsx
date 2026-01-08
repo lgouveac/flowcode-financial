@@ -34,6 +34,9 @@ export const RecurringBilling = () => {
   const [billingSearch, setBillingSearch] = useState("");
   const [allSearch, setAllSearch] = useState(""); // Campo de busca para a aba "Todos"
   const [billingStatusFilter, setBillingStatusFilter] = useState("all"); // Todos por padrão no escopo aberto
+  const [paymentDeliveryFilter, setPaymentDeliveryFilter] = useState("all"); // Filtro de pagamento por entrega - escopo fechado
+  const [billingDeliveryFilter, setBillingDeliveryFilter] = useState("all"); // Filtro de pagamento por entrega - escopo aberto
+  const [allDeliveryFilter, setAllDeliveryFilter] = useState("all"); // Filtro de pagamento por entrega - aba todos
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(true); // Filtros expandidos por padrão no escopo fechado
   const [showAdvancedFiltersOpen, setShowAdvancedFiltersOpen] = useState(true); // Filtros expandidos por padrão no escopo aberto
   const [expandCharges, setExpandCharges] = useState(true); // Expandido por padrão
@@ -382,21 +385,37 @@ export const RecurringBilling = () => {
   }, [finalClosedScopeBillings, paymentSearch]);
 
   const filteredByPaymentStatus = useMemo(() => {
-    if (paymentStatusDetailFilter.includes("all")) {
-      return filteredPayments;
+    let result = filteredPayments;
+    
+    // Aplicar filtro de status
+    if (!paymentStatusDetailFilter.includes("all")) {
+      result = result.filter(billing => {
+        if (billing.individual_payment) {
+          // Para pagamento expandido: filtrar pelo status real
+          return paymentStatusDetailFilter.includes(billing.individual_payment.status);
+        } else if (billing.related_payments) {
+          // Para billing agrupado: verificar se algum pagamento tem o status
+          return billing.related_payments.some(payment => paymentStatusDetailFilter.includes(payment.status));
+        }
+        return true;
+      });
     }
     
-    return filteredPayments.filter(billing => {
-      if (billing.individual_payment) {
-        // Para pagamento expandido: filtrar pelo status real
-        return paymentStatusDetailFilter.includes(billing.individual_payment.status);
-      } else if (billing.related_payments) {
-        // Para billing agrupado: verificar se algum pagamento tem o status
-        return billing.related_payments.some(payment => paymentStatusDetailFilter.includes(payment.status));
-      }
-      return true;
-    });
-  }, [filteredPayments, paymentStatusDetailFilter]);
+    // Aplicar filtro de pagamento por entrega
+    if (paymentDeliveryFilter !== "all") {
+      const filterValue = paymentDeliveryFilter === "yes";
+      result = result.filter(billing => {
+        if (billing.individual_payment) {
+          return Boolean(billing.individual_payment.Pagamento_Por_Entrega) === filterValue;
+        } else if (billing.related_payments) {
+          return billing.related_payments.some(payment => Boolean(payment.Pagamento_Por_Entrega) === filterValue);
+        }
+        return true;
+      });
+    }
+    
+    return result;
+  }, [filteredPayments, paymentStatusDetailFilter, paymentDeliveryFilter]);
 
   // Aplicar ordenação
   const sortedClosedScopeBillings = useMemo(() => {
@@ -429,7 +448,9 @@ export const RecurringBilling = () => {
         const search = billingSearch.toLowerCase();
         const matchesSearch = search === "" || client.toLowerCase().includes(search) || description.includes(search);
         const matchesStatus = billingStatusFilter === "all" || payment.status === billingStatusFilter;
-        return matchesSearch && matchesStatus;
+        const matchesDelivery = billingDeliveryFilter === "all" || 
+          (billingDeliveryFilter === "yes" ? Boolean(payment.Pagamento_Por_Entrega) : !Boolean(payment.Pagamento_Por_Entrega));
+        return matchesSearch && matchesStatus && matchesDelivery;
       })
       .map(payment => {
         // Formatar data de vencimento
@@ -455,19 +476,19 @@ export const RecurringBilling = () => {
           individual_payment: payment
         };
       });
-  }, [filteredBillings, expandChargesOpen, billings, billingSearch, billingStatusFilter]);
+  }, [filteredBillings, expandChargesOpen, billings, billingSearch, billingStatusFilter, billingDeliveryFilter]);
 
   // Aplicar filtro por status específico no Escopo Aberto  
   const filteredByBillingStatus = useMemo(() => {
-    if (billingStatusDetailFilter.includes("all")) {
-      return finalOpenScopeBillings;
-    }
+    let result = finalOpenScopeBillings;
     
-    return finalOpenScopeBillings.filter(billing => {
-      if (billing.individual_payment) {
-        // Para pagamento expandido: filtrar pelo status real do pagamento
-        return billingStatusDetailFilter.includes(billing.individual_payment.status);
-      } else if (billing.is_virtual) {
+    // Aplicar filtro de status
+    if (!billingStatusDetailFilter.includes("all")) {
+      result = result.filter(billing => {
+        if (billing.individual_payment) {
+          // Para pagamento expandido: filtrar pelo status real do pagamento
+          return billingStatusDetailFilter.includes(billing.individual_payment.status);
+        } else if (billing.is_virtual) {
         // Para parcelas virtuais: filtrar pelo status da parcela virtual
         return billingStatusDetailFilter.includes(billing.status);
       } else {
@@ -475,7 +496,21 @@ export const RecurringBilling = () => {
         return billingStatusDetailFilter.includes(billing.status);
       }
     });
-  }, [finalOpenScopeBillings, billingStatusDetailFilter]);
+    }
+    
+    // Aplicar filtro de pagamento por entrega
+    if (billingDeliveryFilter !== "all") {
+      const filterValue = billingDeliveryFilter === "yes";
+      result = result.filter(billing => {
+        if (billing.individual_payment) {
+          return Boolean(billing.individual_payment.Pagamento_Por_Entrega) === filterValue;
+        }
+        return true;
+      });
+    }
+    
+    return result;
+  }, [finalOpenScopeBillings, billingStatusDetailFilter, billingDeliveryFilter]);
 
   // Aplicar ordenação no Escopo Aberto
   const sortedOpenScopeBillings = useMemo(() => {
@@ -519,7 +554,7 @@ export const RecurringBilling = () => {
     if (activeTab !== 'all') return allCombinedBillings;
     
     // Para a aba "Todos", aplicar filtros baseados no estado de expansão
-    return allCombinedBillings.filter(billing => {
+    let result = allCombinedBillings.filter(billing => {
       // Aplicar filtro de busca por texto
       const client = billing.clients?.name || "";
       const description = (billing.description || "").toLowerCase();
@@ -546,7 +581,22 @@ export const RecurringBilling = () => {
         }
       }
     });
-  }, [allCombinedBillings, activeTab, expandChargesAll, allStatusDetailFilter, allSearch]);
+    
+    // Aplicar filtro de pagamento por entrega
+    if (allDeliveryFilter !== "all") {
+      const filterValue = allDeliveryFilter === "yes";
+      result = result.filter(billing => {
+        if (billing.individual_payment) {
+          return Boolean(billing.individual_payment.Pagamento_Por_Entrega) === filterValue;
+        } else if (billing.related_payments) {
+          return billing.related_payments.some(payment => Boolean(payment.Pagamento_Por_Entrega) === filterValue);
+        }
+        return true;
+      });
+    }
+    
+    return result;
+  }, [allCombinedBillings, activeTab, expandChargesAll, allStatusDetailFilter, allSearch, allDeliveryFilter]);
 
   // Garante que clients e templates são sempre arrays
   const safeClients = Array.isArray(clients) ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) : [];
@@ -621,7 +671,7 @@ export const RecurringBilling = () => {
 
             {/* Filtros específicos para cada tab */}
             {activeTab === "all" ? (
-              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${expandChargesAll ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${expandChargesAll ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
                 {/* Filtros para aba Todos - iguais aos outros */}
                 <div>
                   <Label className="text-sm font-medium">Status Geral</Label>
@@ -653,6 +703,20 @@ export const RecurringBilling = () => {
                 )}
 
                 <div>
+                  <Label className="text-sm font-medium">Pagamento por Entrega</Label>
+                  <Select value={allDeliveryFilter} onValueChange={setAllDeliveryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="yes">Sim</SelectItem>
+                      <SelectItem value="no">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
                   <Label className="text-sm font-medium">Visualização</Label>
                   <div className="flex items-center space-x-2 mt-2">
                     <Checkbox 
@@ -680,7 +744,7 @@ export const RecurringBilling = () => {
                 </div>
               </div>
             ) : activeTab === "recurring" ? (
-              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${expandChargesOpen ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${expandChargesOpen ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
                 {/* Filtros do Escopo Aberto */}
                 <div>
                   <Label className="text-sm font-medium">Status Geral</Label>
@@ -712,6 +776,20 @@ export const RecurringBilling = () => {
                 )}
 
                 <div>
+                  <Label className="text-sm font-medium">Pagamento por Entrega</Label>
+                  <Select value={billingDeliveryFilter} onValueChange={setBillingDeliveryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="yes">Sim</SelectItem>
+                      <SelectItem value="no">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
                   <Label className="text-sm font-medium">Visualização</Label>
                   <div className="flex items-center space-x-2 mt-2">
                     <Checkbox 
@@ -739,7 +817,7 @@ export const RecurringBilling = () => {
                 </div>
               </div>
             ) : (
-              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${expandCharges ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${expandCharges ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
                 {/* Filtros do Escopo Fechado */}
                 <div>
                   <Label className="text-sm font-medium">Status Geral</Label>
@@ -769,6 +847,20 @@ export const RecurringBilling = () => {
                     </Button>
                   </div>
                 )}
+
+                <div>
+                  <Label className="text-sm font-medium">Pagamento por Entrega</Label>
+                  <Select value={paymentDeliveryFilter} onValueChange={setPaymentDeliveryFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="yes">Sim</SelectItem>
+                      <SelectItem value="no">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 <div>
                   <Label className="text-sm font-medium">Visualização</Label>
