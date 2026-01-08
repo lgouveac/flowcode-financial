@@ -45,11 +45,14 @@ interface FutureProjection {
   profit: number;
 }
 
-interface MonthlyRevenue {
+interface MonthlyRevenuePayment {
+  id: number;
+  description: string;
+  amount: number;
+  due_date: string;
+  status: string;
+  client_name?: string;
   month: string;
-  monthKey: string;
-  total: number;
-  count: number;
 }
 
 export const Overview = () => {
@@ -61,7 +64,7 @@ export const Overview = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [isCustomPeriod, setIsCustomPeriod] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenuePayment[]>([]);
   const [loadingMonthlyRevenue, setLoadingMonthlyRevenue] = useState(false);
   const [monthsToShow, setMonthsToShow] = useState(6);
 
@@ -115,61 +118,42 @@ export const Overview = () => {
       // Calcular data final baseada em quantos meses mostrar
       const endDate = new Date(currentYear, currentMonth + monthsToShow, 0);
       
-      // Buscar todos os pagamentos futuros (pendentes, aguardando fatura, faturados, parcialmente pagos, atrasados)
-      // Excluir pagamentos por entrega que não têm data de vencimento
+      // Buscar todos os pagamentos futuros com dados do cliente
+      // Excluir apenas pagamentos sem data de vencimento (mesmo que sejam pagamento por entrega)
       const { data: payments, error } = await supabase
         .from('payments')
-        .select('id, amount, due_date, status, paid_amount, Pagamento_Por_Entrega')
+        .select('id, description, amount, due_date, status, paid_amount, clients(name)')
         .not('due_date', 'is', null) // Excluir pagamentos sem data de vencimento
         .gte('due_date', new Date(currentYear, currentMonth, 1).toISOString().split('T')[0])
         .lte('due_date', endDate.toISOString().split('T')[0])
-        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid', 'overdue']);
+        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid', 'overdue'])
+        .order('due_date', { ascending: true });
 
       if (error) throw error;
 
-      // Agrupar por mês
-      const monthlyData: Record<string, {total: number, count: number}> = {};
-      
-      // Inicializar todos os meses
-      for (let i = 0; i < monthsToShow; i++) {
-        const monthDate = new Date(currentYear, currentMonth + i, 1);
-        const monthKey = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
-        monthlyData[monthKey] = { total: 0, count: 0 };
-      }
-
-      // Calcular totais por mês
-      (payments || []).forEach(payment => {
-        if (payment.Pagamento_Por_Entrega) return; // Pular pagamentos por entrega
-        
+      // Processar pagamentos e adicionar mês formatado
+      const paymentsWithMonth = (payments || []).map(payment => {
         const dueDate = new Date(payment.due_date);
-        const monthKey = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}`;
-        
-        if (monthlyData[monthKey]) {
-          // Para pagamentos parcialmente pagos, contar apenas o valor restante
-          const amount = payment.status === 'partially_paid' && payment.paid_amount
-            ? Number(payment.amount) - Number(payment.paid_amount)
-            : Number(payment.amount);
-          
-          monthlyData[monthKey].total += amount;
-          monthlyData[monthKey].count += 1;
-        }
-      });
-
-      // Converter para array e formatar
-      const monthlyArray = Object.entries(monthlyData).map(([monthKey, data]) => {
-        const [year, month] = monthKey.split('-');
-        const monthDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const monthDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1);
         const monthName = monthDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
         
+        // Para pagamentos parcialmente pagos, usar apenas o valor restante
+        const amount = payment.status === 'partially_paid' && payment.paid_amount
+          ? Number(payment.amount) - Number(payment.paid_amount)
+          : Number(payment.amount);
+        
         return {
-          month: monthName.charAt(0).toUpperCase() + monthName.slice(1),
-          monthKey,
-          total: data.total,
-          count: data.count
+          id: payment.id,
+          description: payment.description || '',
+          amount,
+          due_date: payment.due_date,
+          status: payment.status,
+          client_name: (payment.clients as any)?.name || 'Cliente não informado',
+          month: monthName.charAt(0).toUpperCase() + monthName.slice(1)
         };
       });
 
-      setMonthlyRevenue(monthlyArray);
+      setMonthlyRevenue(paymentsWithMonth);
     } catch (error) {
       console.error("Erro ao buscar faturamento mensal:", error);
     } finally {
@@ -477,6 +461,7 @@ export const Overview = () => {
       const dates = getPeriodDates(period);
       
       // Fetch one-time payments first (now including overdue)
+      // Excluir pagamentos sem data de vencimento
       const { data: oneTimePayments, error: oneTimeError } = await supabase
         .from('payments')
         .select(`
@@ -488,6 +473,7 @@ export const Overview = () => {
           )
         `)
         .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid', 'overdue'])
+        .not('due_date', 'is', null)
         .gte('due_date', dates.start)
         .lte('due_date', dates.end)
         .order('due_date', { ascending: true });
@@ -858,82 +844,66 @@ export const Overview = () => {
               <CardContent>
                 {loadingMonthlyRevenue ? (
                   <div className="space-y-4">
-                    {Array(monthsToShow).fill(0).map((_, i) => (
+                    {Array(5).fill(0).map((_, i) => (
                       <Skeleton key={i} className="h-16 w-full" />
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     {monthlyRevenue.length > 0 ? (
                       <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {monthlyRevenue.map((month, index) => (
-                            <motion.div
-                              key={month.monthKey}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.05 }}
-                            >
-                              <Card className="hover:border-primary/50 transition-colors">
-                                <CardHeader className="pb-2">
-                                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                                    {month.month}
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="space-y-1">
-                                    <p className="text-2xl font-semibold tracking-tight">
-                                      {formatCurrency(month.total)}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                      {month.count} {month.count === 1 ? 'recebimento' : 'recebimentos'}
-                                    </p>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            </motion.div>
-                          ))}
-                        </div>
-                        
-                        {/* Gráfico de barras simples */}
-                        <div className="mt-6">
-                          <h3 className="text-lg font-semibold mb-4">Visão Gráfica</h3>
-                          <div className="space-y-3">
-                            {monthlyRevenue.map((month) => {
-                              const maxValue = Math.max(...monthlyRevenue.map(m => m.total), 1);
-                              const percentage = (month.total / maxValue) * 100;
-                              
-                              return (
-                                <div key={month.monthKey} className="space-y-1">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="font-medium">{month.month}</span>
-                                    <span className="text-muted-foreground">{formatCurrency(month.total)}</span>
-                                  </div>
-                                  <div className="w-full bg-muted rounded-full h-6 overflow-hidden">
-                                    <div
-                                      className="h-full bg-primary transition-all duration-500 flex items-center justify-end pr-2"
-                                      style={{ width: `${percentage}%` }}
-                                    >
-                                      {percentage > 10 && (
-                                        <span className="text-xs text-primary-foreground font-medium">
-                                          {formatCurrency(month.total)}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Total geral */}
-                        <div className="mt-6 pt-4 border-t">
-                          <div className="flex justify-between items-center">
-                            <span className="text-lg font-semibold">Total nos próximos {monthsToShow} meses:</span>
-                            <span className="text-2xl font-bold text-primary">
-                              {formatCurrency(monthlyRevenue.reduce((sum, month) => sum + month.total, 0))}
-                            </span>
+                        <div className="rounded-md border">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b bg-muted/50">
+                                  <th className="p-3 text-left font-medium">Cliente</th>
+                                  <th className="p-3 text-left font-medium">Descrição</th>
+                                  <th className="p-3 text-left font-medium">Vencimento</th>
+                                  <th className="p-3 text-right font-medium">Valor</th>
+                                  <th className="p-3 text-left font-medium">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {monthlyRevenue.map((payment) => (
+                                  <tr key={payment.id} className="border-b hover:bg-muted/30">
+                                    <td className="p-3 font-medium">{payment.client_name}</td>
+                                    <td className="p-3 text-muted-foreground">{payment.description}</td>
+                                    <td className="p-3">
+                                      {format(new Date(payment.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                                    </td>
+                                    <td className="p-3 text-right font-semibold">
+                                      {formatCurrency(payment.amount)}
+                                    </td>
+                                    <td className="p-3">
+                                      <span className={`px-2 py-1 rounded text-xs ${
+                                        payment.status === 'paid' ? 'bg-green-100 text-green-800' :
+                                        payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                        payment.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                                        'bg-gray-100 text-gray-800'
+                                      }`}>
+                                        {payment.status === 'paid' ? 'Pago' :
+                                         payment.status === 'pending' ? 'Pendente' :
+                                         payment.status === 'overdue' ? 'Atrasado' :
+                                         payment.status === 'billed' ? 'Faturado' :
+                                         payment.status === 'awaiting_invoice' ? 'Aguardando Fatura' :
+                                         payment.status === 'partially_paid' ? 'Parcialmente Pago' :
+                                         payment.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr className="border-t bg-muted/50">
+                                  <td colSpan={3} className="p-3 text-right font-semibold">Total:</td>
+                                  <td className="p-3 text-right font-bold text-lg">
+                                    {formatCurrency(monthlyRevenue.reduce((sum, p) => sum + p.amount, 0))}
+                                  </td>
+                                  <td></td>
+                                </tr>
+                              </tfoot>
+                            </table>
                           </div>
                         </div>
                       </>

@@ -36,6 +36,11 @@ export const PaymentTable = ({
 
   const filteredPayments = useMemo(() => {
     return payments.filter(payment => {
+      // Filtrar pagamentos sem data de vencimento
+      if (!payment.due_date) {
+        return false;
+      }
+      
       const clientName = payment.clients?.name || '';
       const description = payment.description?.toLowerCase() || '';
       const searchLower = searchTerm.toLowerCase();

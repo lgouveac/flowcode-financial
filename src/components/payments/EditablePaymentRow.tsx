@@ -148,18 +148,13 @@ export const EditablePaymentRow = ({
       </TableCell>
       <TableCell>
         {isEditing ? (
-          payOnDelivery ? (
-            <div className="text-xs text-gray-600 w-32">
-              A definir na entrega
-            </div>
-          ) : (
-            <Input
-              type="date"
-              value={editDueDate || ""}
-              onChange={(e) => setEditDueDate(e.target.value || null)}
-              className="w-32"
-            />
-          )
+          <Input
+            type="date"
+            value={editDueDate || ""}
+            onChange={(e) => setEditDueDate(e.target.value || null)}
+            className="w-32"
+            placeholder={payOnDelivery ? "Opcional" : ""}
+          />
         ) : (
           formattedDueDate
         )}

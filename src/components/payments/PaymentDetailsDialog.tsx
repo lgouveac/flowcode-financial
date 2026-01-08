@@ -301,24 +301,16 @@ export const PaymentDetailsDialog = ({
 
           <div className="grid gap-2">
             <label className="text-sm text-gray-300">Data de Vencimento</label>
-            {payOnDelivery ? (
-              <Input
-                value="A definir na entrega"
-                readOnly
-                disabled
-                className="bg-[#151820] border-[#2a2f3d] text-white"
-              />
-            ) : (
-              <Input
-                type="date"
-                value={dueDate ? formatDate(dueDate) : ""}
-                onChange={(e) => setDueDate(e.target.value || null)}
-                className="bg-[#151820] border-[#2a2f3d] text-white"
-              />
-            )}
+            <Input
+              type="date"
+              value={dueDate ? formatDate(dueDate) : ""}
+              onChange={(e) => setDueDate(e.target.value || null)}
+              className="bg-[#151820] border-[#2a2f3d] text-white"
+              placeholder={payOnDelivery ? "Opcional para pagamento por entrega" : ""}
+            />
             {payOnDelivery && (
               <p className="text-xs text-gray-400">
-                Data de vencimento será definida no momento da entrega
+                Data de vencimento é opcional para pagamento por entrega. Se não informada, não aparecerá nas listagens.
               </p>
             )}
           </div>
