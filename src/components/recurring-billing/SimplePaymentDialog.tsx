@@ -93,7 +93,8 @@ export function SimplePaymentDialog({
     e.preventDefault();
     
     // Validação: não exigir valor quando "valor medido mensalmente" estiver ativo
-    if (!clientId || !description || (!isMeasuredMonthly && !amount) || !dueDate) {
+    // Não exigir data de vencimento quando for "pagamento por entrega"
+    if (!clientId || !description || (!isMeasuredMonthly && !amount) || (!payOnDelivery && !dueDate)) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -154,7 +155,7 @@ export function SimplePaymentDialog({
               client_id: clientId,
               description,
               amount: amountValue,
-              due_date: dueDate,
+              due_date: payOnDelivery ? null : (dueDate || null),
               payment_method: paymentMethod,
               status: status,
               payment_date: payOnDelivery ? null : (paymentDate || null),
@@ -167,8 +168,8 @@ export function SimplePaymentDialog({
           }
         } else {
           // Múltiplas parcelas de escopo fechado com valores individuais
-          const baseDate = new Date(dueDate);
-          
+          const baseDate = payOnDelivery ? new Date() : new Date(dueDate);
+
           // Validar se todos os valores foram preenchidos
           const hasEmptyValues = installmentValues.some(value => !value || parseFloat(value) <= 0);
           if (hasEmptyValues) {
@@ -180,19 +181,21 @@ export function SimplePaymentDialog({
             setIsSubmitting(false);
             return;
           }
-          
+
           const paymentsToInsert = [];
-          
+
           for (let i = 1; i <= installmentsClosedValue; i++) {
-            const installmentDueDate = new Date(baseDate);
-            installmentDueDate.setMonth(installmentDueDate.getMonth() + (i - 1));
+            const installmentDueDate = payOnDelivery ? null : new Date(baseDate);
+            if (installmentDueDate) {
+              installmentDueDate.setMonth(installmentDueDate.getMonth() + (i - 1));
+            }
             const installmentAmount = parseFloat(installmentValues[i - 1]);
             
             paymentsToInsert.push({
               client_id: clientId,
               description: `${description} (${i}/${installmentsClosedValue})`,
               amount: installmentAmount,
-              due_date: installmentDueDate.toISOString().split('T')[0],
+              due_date: payOnDelivery ? null : (installmentDueDate?.toISOString().split('T')[0] || null),
               payment_method: paymentMethod,
               status: 'pending',
               installment_number: i,
@@ -233,8 +236,9 @@ export function SimplePaymentDialog({
               description,
               amount: amountValue,
               payment_method: paymentMethod,
-              due_date: dueDate,
+              due_date: payOnDelivery ? null : (dueDate || null),
               status: 'pending',
+              Pagamento_Por_Entrega: payOnDelivery,
               scope_type: 'open'
             });
 
@@ -243,20 +247,22 @@ export function SimplePaymentDialog({
           }
         } else {
           // Multiple installments for open scope
-          const baseDate = new Date(dueDate);
+          const baseDate = payOnDelivery ? new Date() : new Date(dueDate);
           const installmentAmount = amountValue / installmentsValue;
-          
+
           const paymentsToInsert = [];
-          
+
           for (let i = 1; i <= installmentsValue; i++) {
-            const installmentDueDate = new Date(baseDate);
-            installmentDueDate.setMonth(installmentDueDate.getMonth() + (i - 1));
+            const installmentDueDate = payOnDelivery ? null : new Date(baseDate);
+            if (installmentDueDate) {
+              installmentDueDate.setMonth(installmentDueDate.getMonth() + (i - 1));
+            }
             
             paymentsToInsert.push({
               client_id: clientId,
               description: `${description} (${i}/${installmentsValue})`,
               amount: installmentAmount,
-              due_date: installmentDueDate.toISOString().split('T')[0],
+              due_date: payOnDelivery ? null : (installmentDueDate?.toISOString().split('T')[0] || null),
               payment_method: paymentMethod,
               status: 'pending',
               installment_number: i,
@@ -460,15 +466,29 @@ export function SimplePaymentDialog({
               <div className="grid gap-2">
                 <Label htmlFor="due_date">
                   {paymentType === 'recurring' ? 'Data de início' : (installmentsForClosed === "1" ? 'Data de vencimento' : 'Data da primeira parcela')}
+                  {!payOnDelivery && <span className="text-red-500 ml-1">*</span>}
                 </Label>
-                <Input
-                  id="due_date"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  disabled={isSubmitting}
-                  required
-                />
+                {payOnDelivery ? (
+                  <Input
+                    value="A definir na entrega"
+                    readOnly
+                    disabled
+                  />
+                ) : (
+                  <Input
+                    id="due_date"
+                    type="date"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    disabled={isSubmitting}
+                    required={!payOnDelivery}
+                  />
+                )}
+                {payOnDelivery && (
+                  <p className="text-sm text-muted-foreground">
+                    Data de vencimento será definida no momento da entrega
+                  </p>
+                )}
               </div>
 
               <PaymentMethodSelector

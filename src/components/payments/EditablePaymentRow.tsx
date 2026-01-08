@@ -3,6 +3,8 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Check, X, Edit2, Trash2 } from "lucide-react";
 import type { Payment } from "@/types/payment";
 import { format, parseISO } from "date-fns";
@@ -18,26 +20,46 @@ interface EditablePaymentRowProps {
   onPaymentUpdated: () => void;
 }
 
-export const EditablePaymentRow = ({ 
-  payment, 
+export const EditablePaymentRow = ({
+  payment,
   onPaymentUpdated
 }: EditablePaymentRowProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editAmount, setEditAmount] = useState(payment.amount.toString());
   const [editDueDate, setEditDueDate] = useState(payment.due_date);
   const [editStatus, setEditStatus] = useState(payment.status);
+  const [editPaymentDate, setEditPaymentDate] = useState(payment.payment_date || "");
+  const [payOnDelivery, setPayOnDelivery] = useState(Boolean(payment.Pagamento_Por_Entrega));
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Validar payment_date se status for 'paid' (exceto quando for Pagamento por entrega)
+      if (editStatus === 'paid' && !editPaymentDate && !payOnDelivery) {
+        toast({
+          title: "Erro de validação",
+          description: "Informe a data de pagamento ou marque 'Pagamento por entrega' ao definir como Pago.",
+          variant: "destructive"
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      // Garantir que strings vazias sejam convertidas para null
+      const normalizedDueDate = payOnDelivery 
+        ? null 
+        : (editDueDate && typeof editDueDate === 'string' && editDueDate.trim() !== "" ? editDueDate : null);
+
       const { error } = await supabase
         .from('payments')
         .update({
           amount: parseFloat(editAmount),
-          due_date: editDueDate,
-          status: editStatus
+          due_date: normalizedDueDate,
+          status: editStatus,
+          payment_date: payOnDelivery ? null : (editPaymentDate || null),
+          Pagamento_Por_Entrega: payOnDelivery
         })
         .eq('id', payment.id);
 
@@ -45,7 +67,7 @@ export const EditablePaymentRow = ({
 
       toast({
         title: "Parcela atualizada",
-        description: "Valor, data de vencimento e status atualizados com sucesso."
+        description: "Informações atualizadas com sucesso."
       });
 
       setIsEditing(false);
@@ -98,6 +120,8 @@ export const EditablePaymentRow = ({
     setEditAmount(payment.amount.toString());
     setEditDueDate(payment.due_date);
     setEditStatus(payment.status);
+    setEditPaymentDate(payment.payment_date || "");
+    setPayOnDelivery(Boolean(payment.Pagamento_Por_Entrega));
     setIsEditing(false);
   };
 
@@ -124,12 +148,18 @@ export const EditablePaymentRow = ({
       </TableCell>
       <TableCell>
         {isEditing ? (
-          <Input
-            type="date"
-            value={editDueDate}
-            onChange={(e) => setEditDueDate(e.target.value)}
-            className="w-32"
-          />
+          payOnDelivery ? (
+            <div className="text-xs text-gray-600 w-32">
+              A definir na entrega
+            </div>
+          ) : (
+            <Input
+              type="date"
+              value={editDueDate || ""}
+              onChange={(e) => setEditDueDate(e.target.value || null)}
+              className="w-32"
+            />
+          )
         ) : (
           formattedDueDate
         )}
@@ -153,6 +183,57 @@ export const EditablePaymentRow = ({
           </Select>
         ) : (
           <PaymentStatusBadge status={payment.status} />
+        )}
+      </TableCell>
+      <TableCell>
+        {isEditing ? (
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id={`pay_on_delivery_${payment.id}`}
+                checked={payOnDelivery}
+                onCheckedChange={(checked) => {
+                  const value = Boolean(checked);
+                  setPayOnDelivery(value);
+                  if (value) {
+                    setEditPaymentDate("");
+                    setEditDueDate(null);
+                  }
+                }}
+              />
+              <Label htmlFor={`pay_on_delivery_${payment.id}`} className="text-xs">
+                Entrega
+              </Label>
+            </div>
+            {payOnDelivery ? (
+              <div className="text-xs text-gray-600">
+                Na entrega
+              </div>
+            ) : (
+              <Input
+                type="date"
+                value={editPaymentDate}
+                onChange={(e) => setEditPaymentDate(e.target.value)}
+                className="w-32 h-8"
+                placeholder="Data pgto"
+              />
+            )}
+            {editStatus === 'paid' && !payOnDelivery && !editPaymentDate && (
+              <div className="text-xs text-red-500">
+                Obrigatória
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-sm">
+            {payment.Pagamento_Por_Entrega ? (
+              <span className="text-blue-600">Na entrega</span>
+            ) : payment.payment_date ? (
+              format(parseISO(payment.payment_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
+            ) : (
+              <span className="text-gray-400">-</span>
+            )}
+          </div>
         )}
       </TableCell>
       <TableCell>

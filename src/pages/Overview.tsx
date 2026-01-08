@@ -16,7 +16,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { PaymentTable } from "@/components/payments/PaymentTable";
 import { EstimatedExpensesDialog } from "@/components/cash-flow/EstimatedExpensesDialog";
 import type { Payment } from "@/types/payment";
@@ -45,8 +45,15 @@ interface FutureProjection {
   profit: number;
 }
 
+interface MonthlyRevenue {
+  month: string;
+  monthKey: string;
+  total: number;
+  count: number;
+}
+
 export const Overview = () => {
-  const [period, setPeriod] = useState("current");
+  const [period, setPeriod] = useState("monthly"); // Mudado para "monthly" como padrão
   const [futureProjections, setFutureProjections] = useState<FutureProjection[]>([]);
   const [projectionsLoading, setProjectionsLoading] = useState(false);
   const [projectionDialogOpen, setProjectionDialogOpen] = useState(false);
@@ -54,6 +61,9 @@ export const Overview = () => {
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [isCustomPeriod, setIsCustomPeriod] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
+  const [loadingMonthlyRevenue, setLoadingMonthlyRevenue] = useState(false);
+  const [monthsToShow, setMonthsToShow] = useState(6);
 
   const {
     metrics,
@@ -93,6 +103,86 @@ export const Overview = () => {
   useEffect(() => {
     console.log('Overview metrics before display:', metrics);
   }, [metrics]);
+
+  // Função para buscar faturamento mensal baseado em vencimentos
+  const fetchMonthlyRevenue = async () => {
+    setLoadingMonthlyRevenue(true);
+    try {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      
+      // Calcular data final baseada em quantos meses mostrar
+      const endDate = new Date(currentYear, currentMonth + monthsToShow, 0);
+      
+      // Buscar todos os pagamentos futuros (pendentes, aguardando fatura, faturados, parcialmente pagos, atrasados)
+      // Excluir pagamentos por entrega que não têm data de vencimento
+      const { data: payments, error } = await supabase
+        .from('payments')
+        .select('id, amount, due_date, status, paid_amount, Pagamento_Por_Entrega')
+        .not('due_date', 'is', null) // Excluir pagamentos sem data de vencimento
+        .gte('due_date', new Date(currentYear, currentMonth, 1).toISOString().split('T')[0])
+        .lte('due_date', endDate.toISOString().split('T')[0])
+        .in('status', ['pending', 'awaiting_invoice', 'billed', 'partially_paid', 'overdue']);
+
+      if (error) throw error;
+
+      // Agrupar por mês
+      const monthlyData: Record<string, {total: number, count: number}> = {};
+      
+      // Inicializar todos os meses
+      for (let i = 0; i < monthsToShow; i++) {
+        const monthDate = new Date(currentYear, currentMonth + i, 1);
+        const monthKey = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
+        monthlyData[monthKey] = { total: 0, count: 0 };
+      }
+
+      // Calcular totais por mês
+      (payments || []).forEach(payment => {
+        if (payment.Pagamento_Por_Entrega) return; // Pular pagamentos por entrega
+        
+        const dueDate = new Date(payment.due_date);
+        const monthKey = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (monthlyData[monthKey]) {
+          // Para pagamentos parcialmente pagos, contar apenas o valor restante
+          const amount = payment.status === 'partially_paid' && payment.paid_amount
+            ? Number(payment.amount) - Number(payment.paid_amount)
+            : Number(payment.amount);
+          
+          monthlyData[monthKey].total += amount;
+          monthlyData[monthKey].count += 1;
+        }
+      });
+
+      // Converter para array e formatar
+      const monthlyArray = Object.entries(monthlyData).map(([monthKey, data]) => {
+        const [year, month] = monthKey.split('-');
+        const monthDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+        const monthName = monthDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        
+        return {
+          month: monthName.charAt(0).toUpperCase() + monthName.slice(1),
+          monthKey,
+          total: data.total,
+          count: data.count
+        };
+      });
+
+      setMonthlyRevenue(monthlyArray);
+    } catch (error) {
+      console.error("Erro ao buscar faturamento mensal:", error);
+    } finally {
+      setLoadingMonthlyRevenue(false);
+    }
+  };
+
+  useEffect(() => {
+    if (period === 'monthly') {
+      fetchMonthlyRevenue();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthsToShow, period]);
   
   // Helper function to get period date ranges
   const getPeriodDates = (selectedPeriod: string) => {
@@ -197,11 +287,15 @@ export const Overview = () => {
   const handlePeriodChange = (newPeriod: string) => {
     setPeriod(newPeriod);
     setIsCustomPeriod(newPeriod === 'custom');
+    if (newPeriod === 'monthly') {
+      fetchMonthlyRevenue();
+    }
   };
 
   // Get period label for display
   const getPeriodLabel = () => {
     switch (period) {
+      case 'monthly': return `Faturamento por Vencimento - ${monthsToShow} meses`;
       case 'current': return 'Mês Atual';
       case 'last_month': return 'Mês Anterior';
       case 'next_month': return 'Próximo Mês';
@@ -630,9 +724,10 @@ export const Overview = () => {
         <div className="flex flex-col sm:flex-row gap-2">
           <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Selecione o período" />
+              <SelectValue placeholder="Selecione a visualização" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="monthly">Faturamento por Vencimento</SelectItem>
               <SelectItem value="current">Mês Atual</SelectItem>
               <SelectItem value="last_month">Mês Anterior</SelectItem>
               <SelectItem value="next_month">Próximo Mês</SelectItem>
@@ -647,6 +742,20 @@ export const Overview = () => {
               <SelectItem value="custom">Período Personalizado</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Seletor de meses quando visualização mensal estiver ativa */}
+          {period === 'monthly' && (
+            <Select value={monthsToShow.toString()} onValueChange={(value) => setMonthsToShow(parseInt(value))}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3">Próximos 3 meses</SelectItem>
+                <SelectItem value="6">Próximos 6 meses</SelectItem>
+                <SelectItem value="12">Próximos 12 meses</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Custom Date Range Picker */}
           {isCustomPeriod && (
@@ -737,9 +846,114 @@ export const Overview = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Primary stats */}
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {primaryStats.map((stat, i) => (
+          {/* Visualização de Faturamento Mensal */}
+          {period === 'monthly' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Faturamento por Vencimento - Próximos {monthsToShow} Meses
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingMonthlyRevenue ? (
+                  <div className="space-y-4">
+                    {Array(monthsToShow).fill(0).map((_, i) => (
+                      <Skeleton key={i} className="h-16 w-full" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {monthlyRevenue.length > 0 ? (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {monthlyRevenue.map((month, index) => (
+                            <motion.div
+                              key={month.monthKey}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                            >
+                              <Card className="hover:border-primary/50 transition-colors">
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    {month.month}
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-1">
+                                    <p className="text-2xl font-semibold tracking-tight">
+                                      {formatCurrency(month.total)}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {month.count} {month.count === 1 ? 'recebimento' : 'recebimentos'}
+                                    </p>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          ))}
+                        </div>
+                        
+                        {/* Gráfico de barras simples */}
+                        <div className="mt-6">
+                          <h3 className="text-lg font-semibold mb-4">Visão Gráfica</h3>
+                          <div className="space-y-3">
+                            {monthlyRevenue.map((month) => {
+                              const maxValue = Math.max(...monthlyRevenue.map(m => m.total), 1);
+                              const percentage = (month.total / maxValue) * 100;
+                              
+                              return (
+                                <div key={month.monthKey} className="space-y-1">
+                                  <div className="flex justify-between text-sm">
+                                    <span className="font-medium">{month.month}</span>
+                                    <span className="text-muted-foreground">{formatCurrency(month.total)}</span>
+                                  </div>
+                                  <div className="w-full bg-muted rounded-full h-6 overflow-hidden">
+                                    <div
+                                      className="h-full bg-primary transition-all duration-500 flex items-center justify-end pr-2"
+                                      style={{ width: `${percentage}%` }}
+                                    >
+                                      {percentage > 10 && (
+                                        <span className="text-xs text-primary-foreground font-medium">
+                                          {formatCurrency(month.total)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Total geral */}
+                        <div className="mt-6 pt-4 border-t">
+                          <div className="flex justify-between items-center">
+                            <span className="text-lg font-semibold">Total nos próximos {monthsToShow} meses:</span>
+                            <span className="text-2xl font-bold text-primary">
+                              {formatCurrency(monthlyRevenue.reduce((sum, month) => sum + month.total, 0))}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">
+                          Nenhum recebimento agendado para os próximos {monthsToShow} meses.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Primary stats - não mostrar quando for visualização mensal */}
+          {period !== 'monthly' && (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {primaryStats.map((stat, i) => (
               <motion.div key={stat.title} initial={{
                 opacity: 0,
                 y: 20
@@ -775,11 +989,13 @@ export const Overview = () => {
                   </CardContent>
                 </Card>
               </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {/* Estimates section */}
-          <div className="space-y-4">
+          {/* Estimates section - não mostrar quando for visualização mensal */}
+          {period !== 'monthly' && (
+            <div className="space-y-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-muted-foreground" />
               <h2 className="text-xl font-semibold">Estimativas</h2>
@@ -828,6 +1044,7 @@ export const Overview = () => {
               ))}
             </div>
           </div>
+          )}
         </TabsContent>
 
         <TabsContent value="profitability" className="space-y-6">

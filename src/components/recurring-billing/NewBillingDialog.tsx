@@ -141,7 +141,7 @@ export const NewBillingDialog = ({ clients = [], onSuccess, templates = [] }: Ne
               client_id: billingRecordData.client_id,
               description: `${baseDescription} (${i}/${numInstallments})`,
               amount: billingRecordData.amount,
-              due_date: installmentDueDate.toISOString().split('T')[0],
+              due_date: pay_on_delivery ? null : installmentDueDate.toISOString().split('T')[0],
               payment_method: billingRecordData.payment_method,
               status: 'pending',
               installment_number: i,

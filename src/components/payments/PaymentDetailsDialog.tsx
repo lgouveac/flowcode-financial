@@ -132,7 +132,7 @@ export const PaymentDetailsDialog = ({
           .update({
             description,
             amount: parseFloat(paidAmount),
-            due_date: dueDate,
+            due_date: payOnDelivery ? null : (dueDate || null),
             payment_date: payOnDelivery ? null : (paymentDate || null),
             payment_method: paymentMethod,
             status: 'paid',
@@ -186,11 +186,16 @@ export const PaymentDetailsDialog = ({
         });
       } else {
         // Fluxo normal (não parcial)
+        // Garantir que strings vazias sejam convertidas para null
+        const normalizedDueDate = payOnDelivery 
+          ? null 
+          : (dueDate && typeof dueDate === 'string' && dueDate.trim() !== "" ? dueDate : null);
+
         console.log('Updating payment with data:', {
           id: payment.id,
           description,
           amount: parseFloat(amount),
-          due_date: dueDate,
+          due_date: normalizedDueDate,
           payment_date: payOnDelivery ? null : (paymentDate || null),
           payment_method: paymentMethod,
           status,
@@ -204,7 +209,7 @@ export const PaymentDetailsDialog = ({
           .update({
             description,
             amount: parseFloat(amount),
-            due_date: dueDate,
+            due_date: normalizedDueDate,
             payment_date: payOnDelivery ? null : (paymentDate || null),
             payment_method: paymentMethod,
             status,
@@ -296,12 +301,26 @@ export const PaymentDetailsDialog = ({
 
           <div className="grid gap-2">
             <label className="text-sm text-gray-300">Data de Vencimento</label>
-            <Input
-              type="date"
-              value={formatDate(dueDate)}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="bg-[#151820] border-[#2a2f3d] text-white"
-            />
+            {payOnDelivery ? (
+              <Input
+                value="A definir na entrega"
+                readOnly
+                disabled
+                className="bg-[#151820] border-[#2a2f3d] text-white"
+              />
+            ) : (
+              <Input
+                type="date"
+                value={dueDate ? formatDate(dueDate) : ""}
+                onChange={(e) => setDueDate(e.target.value || null)}
+                className="bg-[#151820] border-[#2a2f3d] text-white"
+              />
+            )}
+            {payOnDelivery && (
+              <p className="text-xs text-gray-400">
+                Data de vencimento será definida no momento da entrega
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -316,7 +335,10 @@ export const PaymentDetailsDialog = ({
                 onCheckedChange={(checked) => {
                   const value = Boolean(checked);
                   setPayOnDelivery(value);
-                  if (value) setPaymentDate("");
+                  if (value) {
+                    setPaymentDate("");
+                    setDueDate(null);
+                  }
                 }}
               />
               <label htmlFor="pay_on_delivery" className="text-sm text-gray-300">Pagamento por entrega</label>

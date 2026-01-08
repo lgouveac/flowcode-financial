@@ -149,13 +149,20 @@ export const NewPaymentDialog = ({
       }
       
       // Create payment record
+      // Garantir que due_date seja null quando for pagamento por entrega
+      const normalizedDueDate = paymentData.Pagamento_Por_Entrega 
+        ? null 
+        : (paymentData.due_date && typeof paymentData.due_date === 'string' && paymentData.due_date.trim() !== "" 
+          ? paymentData.due_date 
+          : null);
+
       const { data: newPayment, error } = await supabase
         .from('payments')
         .insert({
           client_id: paymentData.client_id,
           description: paymentData.description,
           amount: paymentData.amount,
-          due_date: paymentData.due_date,
+          due_date: normalizedDueDate,
           payment_date: paymentData.payment_date || null,
           payment_method: paymentData.payment_method,
           status: paymentData.status,
