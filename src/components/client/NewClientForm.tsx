@@ -25,7 +25,6 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
     partner_name: "",
     partner_cpf: "",
     address: "",
-    due_date: "",
     payment_method: "pix",
   });
 

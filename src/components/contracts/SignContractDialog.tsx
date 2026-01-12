@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
   const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDay, setDueDay] = useState(5);
   const [pagamentoPorEntrega, setPagamentoPorEntrega] = useState(false);
+  const [linkContratoExterno, setLinkContratoExterno] = useState(contract.link_contrato_externo || "");
   const { getWebhook } = useWebhooks();
   
   // Estados para valores editáveis
@@ -44,9 +45,32 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
       return date.toISOString().split('T')[0];
     });
   });
+  // Array para controlar pagamento por entrega de cada parcela individualmente
+  const [pagamentoPorEntregaParcelas, setPagamentoPorEntregaParcelas] = useState<boolean[]>(() => {
+    return Array(contract.installments || 1).fill(false);
+  });
   
   const { toast } = useToast();
   const { updateContract } = useContracts();
+
+  // Resetar estados quando o dialog abrir ou o contrato mudar
+  useEffect(() => {
+    if (open && contract) {
+      setLinkContratoExterno(contract.link_contrato_externo || "");
+      setInstallmentCount(contract.installments || 1);
+      const defaultValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
+      setInstallmentValues(Array(contract.installments || 1).fill(defaultValue));
+      const today = new Date();
+      setInstallmentDates(Array(contract.installments || 1).fill(0).map((_, index) => {
+        const date = new Date(today);
+        date.setMonth(date.getMonth() + index);
+        return date.toISOString().split('T')[0];
+      }));
+      setPagamentoPorEntregaParcelas(Array(contract.installments || 1).fill(false));
+      setSinglePaymentAmount(contract.total_value || 0);
+      setPagamentoPorEntrega(false);
+    }
+  }, [open, contract]);
 
   // Funções auxiliares
   const updateInstallmentValue = (index: number, value: number) => {
@@ -78,10 +102,28 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
         newDates.push(date.toISOString().split('T')[0]);
       }
       setInstallmentDates(newDates);
+      
+      // Adicionar novos estados de pagamento por entrega (false por padrão)
+      const newPagamentoPorEntrega = [...pagamentoPorEntregaParcelas, ...Array(newCount - pagamentoPorEntregaParcelas.length).fill(false)];
+      setPagamentoPorEntregaParcelas(newPagamentoPorEntrega);
     } else {
       // Remover parcelas e datas extras
       setInstallmentValues(installmentValues.slice(0, newCount));
       setInstallmentDates(installmentDates.slice(0, newCount));
+      setPagamentoPorEntregaParcelas(pagamentoPorEntregaParcelas.slice(0, newCount));
+    }
+  };
+
+  const updatePagamentoPorEntregaParcela = (index: number, checked: boolean) => {
+    const newPagamentoPorEntrega = [...pagamentoPorEntregaParcelas];
+    newPagamentoPorEntrega[index] = checked;
+    setPagamentoPorEntregaParcelas(newPagamentoPorEntrega);
+    
+    // Se marcar como pagamento por entrega, limpar a data dessa parcela
+    if (checked) {
+      const newDates = [...installmentDates];
+      newDates[index] = "";
+      setInstallmentDates(newDates);
     }
   };
 
@@ -98,10 +140,11 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
     setIsSubmitting(true);
 
     try {
-      // 1. Atualizar o status do contrato para "completed" e data de assinatura
+      // 1. Atualizar o status do contrato para "completed", data de assinatura e link externo
       await updateContract(contract.id, {
         status: "completed",
         data_de_assinatura: new Date(signingDate).toISOString(),
+        link_contrato_externo: linkContratoExterno || null,
       });
 
       // 2. Criar os recebimentos
@@ -113,7 +156,7 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
             client_id: contract.client_id,
             description: `Contrato: ${contract.scope || `Contrato #${contract.id}`}`,
             amount: singlePaymentAmount,
-            due_date: dueDate,
+            due_date: pagamentoPorEntrega ? null : (dueDate || null), // null se for pagamento por entrega
             payment_method: paymentMethod,
             status: "pending",
             Pagamento_Por_Entrega: pagamentoPorEntrega,
@@ -126,11 +169,12 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
           client_id: contract.client_id,
           description: `Contrato: ${contract.scope || `Contrato #${contract.id}`} (${index + 1}/${installmentCount})`,
           amount: amount,
-          due_date: installmentDates[index],
+          due_date: pagamentoPorEntregaParcelas[index] ? null : (installmentDates[index] || null), // null se essa parcela for pagamento por entrega
           payment_method: paymentMethod,
           status: "pending" as const,
           installment_number: index + 1,
           total_installments: installmentCount,
+          Pagamento_Por_Entrega: pagamentoPorEntregaParcelas[index] || false, // Cada parcela tem sua própria opção
         }));
 
         const { error: paymentsError } = await supabase
@@ -298,6 +342,21 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
             />
           </div>
 
+          {/* Link do contrato externo */}
+          <div className="space-y-2">
+            <Label htmlFor="linkContratoExterno">Link do Contrato Externo (Opcional)</Label>
+            <Input
+              id="linkContratoExterno"
+              type="url"
+              value={linkContratoExterno}
+              onChange={(e) => setLinkContratoExterno(e.target.value)}
+              placeholder="https://..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Link para um contrato externo (ex: DocuSign, Adobe Sign, etc.)
+            </p>
+          </div>
+
           {/* Tipo de recebimento */}
           <div className="space-y-3">
             <Label>Tipo de Recebimento</Label>
@@ -334,6 +393,7 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
+                    disabled={pagamentoPorEntrega}
                   />
                 </div>
                 
@@ -341,10 +401,20 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
                   <Checkbox
                     id="pagamentoPorEntrega"
                     checked={pagamentoPorEntrega}
-                    onCheckedChange={(checked) => setPagamentoPorEntrega(!!checked)}
+                    onCheckedChange={(checked) => {
+                      setPagamentoPorEntrega(!!checked);
+                      if (checked) {
+                        setDueDate("");
+                      }
+                    }}
                   />
                   <Label htmlFor="pagamentoPorEntrega">Pagamento por entrega</Label>
                 </div>
+                {pagamentoPorEntrega && (
+                  <p className="text-xs text-muted-foreground">
+                    Data de vencimento será definida no momento da entrega.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -383,9 +453,27 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
                               type="date"
                               value={installmentDates[index] || new Date().toISOString().split('T')[0]}
                               onChange={(e) => updateInstallmentDate(index, e.target.value)}
+                              disabled={pagamentoPorEntregaParcelas[index]} // Desabilitar apenas se essa parcela específica for pagamento por entrega
                             />
                           </div>
                         </div>
+                        
+                        {/* Checkbox individual para cada parcela */}
+                        <div className="flex items-center space-x-2 mt-2">
+                          <Checkbox
+                            id={`pagamentoPorEntrega-${index}`}
+                            checked={pagamentoPorEntregaParcelas[index] || false}
+                            onCheckedChange={(checked) => updatePagamentoPorEntregaParcela(index, !!checked)}
+                          />
+                          <Label htmlFor={`pagamentoPorEntrega-${index}`} className="text-xs">
+                            Pagamento por entrega
+                          </Label>
+                        </div>
+                        {pagamentoPorEntregaParcelas[index] && (
+                          <p className="text-xs text-muted-foreground">
+                            Data de vencimento será definida no momento da entrega.
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>

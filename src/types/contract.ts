@@ -10,6 +10,7 @@ export interface Contract {
   installments?: number;
   installment_value?: number;
   installment_value_text?: string;
+  installment_details?: string; // JSON string com detalhes das parcelas
   start_date?: string;
   end_date?: string;
   status?: "active" | "completed" | "cancelled" | "suspended";
@@ -18,6 +19,7 @@ export interface Contract {
   data_de_assinatura?: string;
   signing_date_legacy?: string;
   link_contrato?: string;
+  link_contrato_externo?: string;
   obs?: string;
   Horas?: string;
   texto_contrato?: string;
@@ -50,4 +52,4 @@ export type NewContract = Omit<Contract, 'id' | 'created_at' | 'updated_at'> & {
   scope: string;
 };
 
-export type EditableContractFields = Pick<Contract, 'scope' | 'total_value' | 'installments' | 'start_date' | 'end_date' | 'status' | 'contract_type' | 'contractor_type' | 'data_de_assinatura' | 'link_contrato' | 'obs' | 'Horas'>;
+export type EditableContractFields = Pick<Contract, 'scope' | 'total_value' | 'installments' | 'installment_value_text' | 'installment_details' | 'start_date' | 'end_date' | 'status' | 'contract_type' | 'contractor_type' | 'data_de_assinatura' | 'link_contrato' | 'link_contrato_externo' | 'obs' | 'Horas'>;
