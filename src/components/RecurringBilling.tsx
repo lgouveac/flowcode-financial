@@ -474,7 +474,7 @@ export const RecurringBilling = () => {
           individual_payment: payment
         };
       });
-  }, [filteredBillings, expandChargesOpen, billings, billingSearch, billingStatusFilter, billingDeliveryFilter]);
+  }, [filteredBillings, expandChargesOpen, billings, billingSearch, billingStatusFilter, showBillingDelivery]);
 
   // Aplicar filtro por status específico no Escopo Aberto  
   const filteredByBillingStatus = useMemo(() => {
