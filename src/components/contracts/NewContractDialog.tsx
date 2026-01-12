@@ -102,61 +102,16 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
         assinante_flowcode: 'Lucas Gouvea Carmo',
       };
 
-      // Disparar webhook configurado
-      const webhookUrl = getWebhook('prestacao_servico', 'criacao');
-
-      console.log('🔍 Debug webhook:', {
-        webhookUrl,
-        hasWebhook: !!webhookUrl,
-        webhookTrimmed: webhookUrl?.trim(),
-        isEmpty: webhookUrl?.trim() === ''
-      });
-
-      if (webhookUrl && webhookUrl.trim() !== '') {
-        try {
-          console.log('Disparando webhook de criação:', webhookUrl);
-
-          // Preparar parâmetros para GET request
-          const webhookParams = new URLSearchParams();
-
-          // Campos básicos obrigatórios
-          webhookParams.append('action', 'create_contract');
-          webhookParams.append('timestamp', new Date().toISOString());
-
-          // Todos os campos do contrato
-          Object.entries(contractData).forEach(([key, value]) => {
-            if (value !== null && value !== undefined) {
-              webhookParams.append(key, value.toString());
-            }
-          });
-
-          const webhookResponse = await fetch(`${webhookUrl}?${webhookParams}`, {
-            method: "GET",
-          });
-
-          if (webhookResponse.ok) {
-            toast({
-              title: "Webhook enviado",
-              description: "O webhook foi chamado com sucesso para o novo contrato.",
-            });
-          } else {
-            throw new Error(`Webhook failed with status: ${webhookResponse.status}`);
-          }
-        } catch (error) {
-          console.error("Erro ao chamar webhook:", error);
-          toast({
-            title: "Aviso",
-            description: "Contrato processado, mas houve problema ao chamar o webhook.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        console.log('Nenhum webhook configurado para criação de contrato');
+      // Criar o contrato no banco de dados primeiro
+      const createdContract = await addContract(contractData);
+      
+      if (!createdContract) {
+        throw new Error("Erro ao criar contrato");
       }
-
-      // Callback opcional
+      
+      // Callback opcional (após criar no banco) - apenas para webhook, não cria outro contrato
       if (onContractCreated) {
-        onContractCreated(contractData);
+        onContractCreated(createdContract);
       }
       
       setFormData({
