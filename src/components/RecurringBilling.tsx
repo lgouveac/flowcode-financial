@@ -256,20 +256,8 @@ export const RecurringBilling = () => {
   const closedScopeBillings = useMemo(() => {
     if (!payments || !Array.isArray(payments)) return [];
 
-    // Criar set de clientes que têm cobrança no escopo aberto
-    const openScopeClients = new Set(
-      billings
-        ?.filter(billing => billing.status !== 'cancelled') // Apenas cobranças ativas do escopo aberto
-        .map(billing => billing.client_id) || []
-    );
-
-    // Filtrar pagamentos de escopo fechado, EXCLUINDO clientes com cobrança do escopo aberto ativa
-    const closedPayments = payments.filter(payment => {
-      // E o cliente NÃO deve ter cobrança do escopo aberto ativa
-      const clientNotInOpenScope = !openScopeClients.has(payment.client_id);
-      
-      return clientNotInOpenScope;
-    });
+    // Usar todos os recebimentos de escopo fechado, independente de ter escopo aberto ou não
+    const closedPayments = payments;
 
     // Agrupar apenas por cliente
     const groups: { [key: string]: any[] } = {};
@@ -286,9 +274,14 @@ export const RecurringBilling = () => {
     // Converter grupos em "billings virtuais"
     return Object.values(groups).map(groupPayments => {
       const firstPayment = groupPayments[0];
-      const sortedPayments = groupPayments.sort((a, b) => 
-        new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-      );
+      
+      // Ordenar pagamentos, tratando null/undefined em due_date
+      const sortedPayments = groupPayments.sort((a, b) => {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1; // null vai para o final
+        if (!b.due_date) return -1;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      });
       
       // Calcular valor total de todos os recebimentos do cliente
       const totalAmount = groupPayments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -307,15 +300,18 @@ export const RecurringBilling = () => {
       
       const description = `Recebimentos - ${clientName}`;
 
+      // Encontrar primeiro pagamento com due_date para usar no due_day
+      const firstPaymentWithDate = sortedPayments.find(p => p.due_date) || sortedPayments[0];
+
       return {
         id: `closed-${firstPayment.client_id}-${Date.now()}-${Math.random()}`,
         client_id: firstPayment.client_id,
         clients: firstPayment.clients,
         description: description, // Descrição genérica do cliente
         amount: totalAmount, // Valor total de todos os recebimentos do cliente
-        due_day: new Date(sortedPayments[0].due_date).getDate(),
+        due_day: firstPaymentWithDate?.due_date ? new Date(firstPaymentWithDate.due_date).getDate() : null,
         payment_method: firstPayment.payment_method,
-        start_date: sortedPayments[0].due_date,
+        start_date: firstPaymentWithDate?.due_date || null,
         end_date: sortedPayments[sortedPayments.length - 1]?.due_date || null,
         status: generalStatus,
         installments: groupPayments.length,
@@ -338,14 +334,8 @@ export const RecurringBilling = () => {
       return typeof payment.id === 'string' && !payment.id.startsWith('recurring-');
     }) || [];
 
-    // Filtrar clientes que não têm cobrança recorrente ativa
-    const activeRecurringClients = new Set(
-      billings?.filter(billing => billing.status !== 'cancelled').map(billing => billing.client_id) || []
-    );
-
-    return allPayments
-      .filter(payment => !activeRecurringClients.has(payment.client_id))
-      .map(payment => {
+    // Mostrar todos os recebimentos, independente de ter escopo aberto ou não
+    return allPayments.map(payment => {
         // Formatar data de vencimento
         const formattedDueDate = payment.due_date 
           ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
