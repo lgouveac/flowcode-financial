@@ -6,16 +6,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bold, Italic, Underline, List, AlignLeft, AlignCenter, AlignRight, Type } from "lucide-react";
+import { Bold, Italic, Underline, List, AlignLeft, AlignCenter, AlignRight, Type, Plus, Trash2, Calendar, DollarSign } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useWebhooks } from "@/hooks/useWebhooks";
 import { useToast } from "@/hooks/use-toast";
 import { Contract } from "@/types/contract";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface EditContractDialogProps {
   contract: Contract;
   open: boolean;
   onClose: () => void;
+}
+
+interface InstallmentDetail {
+  number: number;
+  amount: number;
+  dueDate: string;
+  description?: string;
+  paid?: boolean;
 }
 
 export function EditContractDialog({ contract, open, onClose }: EditContractDialogProps) {
@@ -77,6 +87,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     projeto_relacionado: "",
     total_value: "",
     installments: "",
+    installment_value_text: "",
     start_date: "",
     end_date: "",
     status: "active" as "active" | "completed" | "cancelled" | "suspended",
@@ -91,6 +102,9 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     fontFamily: "mono",
   });
 
+  const [installmentDetails, setInstallmentDetails] = useState<InstallmentDetail[]>([]);
+  const [showAdvancedInstallments, setShowAdvancedInstallments] = useState(false);
+
   useEffect(() => {
     if (contract) {
       setFormData({
@@ -98,6 +112,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         projeto_relacionado: contract.projeto_relacionado || "",
         total_value: contract.total_value?.toString() || "",
         installments: contract.installments?.toString() || "",
+        installment_value_text: contract.installment_value_text || "",
         start_date: contract.start_date || "",
         end_date: contract.end_date || "",
         status: contract.status || "active",
@@ -111,6 +126,22 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         texto_contrato: contract.texto_contrato || "",
         fontFamily: "mono",
       });
+
+      // Carregar parcelas detalhadas se existirem
+      if (contract.installment_details) {
+        try {
+          const details: InstallmentDetail[] = JSON.parse(contract.installment_details);
+          setInstallmentDetails(details);
+          if (details.length > 0) {
+            setShowAdvancedInstallments(true);
+          }
+        } catch (error) {
+          console.error("Erro ao parsear installment_details:", error);
+          setInstallmentDetails([]);
+        }
+      } else {
+        setInstallmentDetails([]);
+      }
     }
   }, [contract]);
 
@@ -131,6 +162,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         total_value: totalValue,
         installments: installments,
         installment_value: installmentValue,
+        installment_value_text: formData.installment_value_text || undefined,
         start_date: formData.start_date || undefined,
         end_date: formData.end_date || undefined,
         status: formData.status,
@@ -140,6 +172,8 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
         Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : undefined,
+        // Adicionar informações detalhadas das parcelas se disponíveis
+        installment_details: installmentDetails.length > 0 ? JSON.stringify(installmentDetails) : undefined,
         // NÃO incluir texto_contrato no update do banco
       };
 
@@ -218,6 +252,70 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
     return total / installments;
   };
 
+  // Gera parcelas detalhadas baseadas no valor total e número de parcelas
+  const generateInstallmentDetails = () => {
+    const totalValue = parseFloat(formData.total_value) || 0;
+    const installments = parseInt(formData.installments) || 1;
+    const installmentValue = totalValue / installments;
+    const startDate = formData.start_date ? new Date(formData.start_date) : new Date();
+
+    const details: InstallmentDetail[] = [];
+
+    for (let i = 1; i <= installments; i++) {
+      const dueDate = new Date(startDate);
+      dueDate.setMonth(startDate.getMonth() + (i - 1));
+
+      details.push({
+        number: i,
+        amount: installmentValue,
+        dueDate: dueDate.toISOString().split('T')[0],
+        description: `Parcela ${i}/${installments}`,
+        paid: false
+      });
+    }
+
+    setInstallmentDetails(details);
+  };
+
+  // Atualiza uma parcela específica
+  const updateInstallmentDetail = (index: number, field: keyof InstallmentDetail, value: any) => {
+    const updated = [...installmentDetails];
+    updated[index] = { ...updated[index], [field]: value };
+    setInstallmentDetails(updated);
+  };
+
+  // Adiciona uma nova parcela
+  const addInstallment = () => {
+    const newInstallment: InstallmentDetail = {
+      number: installmentDetails.length + 1,
+      amount: 0,
+      dueDate: new Date().toISOString().split('T')[0],
+      description: `Parcela ${installmentDetails.length + 1}`,
+      paid: false
+    };
+    setInstallmentDetails([...installmentDetails, newInstallment]);
+    setFormData({ ...formData, installments: (installmentDetails.length + 1).toString() });
+  };
+
+  // Remove uma parcela
+  const removeInstallment = (index: number) => {
+    const updated = installmentDetails.filter((_, i) => i !== index);
+    // Renumera as parcelas
+    const renumbered = updated.map((inst, i) => ({
+      ...inst,
+      number: i + 1,
+      description: inst.description?.includes('Parcela') ? `Parcela ${i + 1}` : inst.description
+    }));
+    setInstallmentDetails(renumbered);
+    setFormData({ ...formData, installments: renumbered.length.toString() });
+  };
+
+  // Recalcula o valor total baseado nas parcelas detalhadas
+  const recalculateTotalFromInstallments = () => {
+    const total = installmentDetails.reduce((sum, inst) => sum + inst.amount, 0);
+    setFormData({ ...formData, total_value: total.toString() });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -277,17 +375,148 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="installment_value">Valor da Parcela</Label>
+              <Label htmlFor="installment_value_text">Descrição das Parcelas</Label>
               <Input
-                id="installment_value"
-                type="number"
-                step="0.01"
-                value={calculateInstallmentValue().toFixed(2)}
-                disabled
-                className="bg-gray-100"
+                id="installment_value_text"
+                value={formData.installment_value_text}
+                onChange={(e) => setFormData({ ...formData, installment_value_text: e.target.value })}
+                placeholder="Ex: 3x de R$ 1.000,00 ou 12x de R$ 500,00"
               />
+              <div className="text-sm text-muted-foreground">
+                Valor calculado: R$ {calculateInstallmentValue().toFixed(2)}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdvancedInstallments(!showAdvancedInstallments)}
+                className="w-full"
+              >
+                {showAdvancedInstallments ? "Ocultar" : "Editar"} Parcelas Detalhadamente
+              </Button>
             </div>
           </div>
+
+          <Collapsible open={showAdvancedInstallments}>
+            <CollapsibleContent className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-lg">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      Gestão Detalhada de Parcelas
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={generateInstallmentDetails}
+                      >
+                        Gerar Parcelas Automaticamente
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addInstallment}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Adicionar Parcela
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {installmentDetails.length > 0 ? (
+                    <>
+                      {installmentDetails.map((installment, index) => (
+                        <div key={index} className="border rounded-lg p-4 space-y-3 bg-gray-50">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">Parcela {installment.number}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeInstallment(index)}
+                              disabled={installmentDetails.length <= 1}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="space-y-2">
+                              <Label>Valor</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={installment.amount}
+                                onChange={(e) => updateInstallmentDetail(index, 'amount', parseFloat(e.target.value) || 0)}
+                                placeholder="0,00"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Data de Vencimento</Label>
+                              <Input
+                                type="date"
+                                value={installment.dueDate}
+                                onChange={(e) => updateInstallmentDetail(index, 'dueDate', e.target.value)}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Descrição</Label>
+                              <Input
+                                value={installment.description || ''}
+                                onChange={(e) => updateInstallmentDetail(index, 'description', e.target.value)}
+                                placeholder="Descrição da parcela"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Status</Label>
+                              <Select
+                                value={installment.paid ? "paid" : "pending"}
+                                onValueChange={(value) => updateInstallmentDetail(index, 'paid', value === "paid")}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pendente</SelectItem>
+                                  <SelectItem value="paid">Paga</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                        <span className="font-medium">Total das Parcelas: R$ {installmentDetails.reduce((sum, inst) => sum + inst.amount, 0).toFixed(2)}</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={recalculateTotalFromInstallments}
+                        >
+                          Atualizar Valor Total do Contrato
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Calendar className="h-8 w-8 mx-auto mb-2" />
+                      <p>Nenhuma parcela configurada.</p>
+                      <p className="text-sm">Use "Gerar Parcelas Automaticamente" ou "Adicionar Parcela" para começar.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </CollapsibleContent>
+          </Collapsible>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

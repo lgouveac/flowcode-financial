@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, FileText, Calendar, DollarSign, Clock, Filter } from "lucide-react";
+import { Download, FileText, Calendar, DollarSign, Clock, Filter, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Project, ProjectHourReport } from "@/types/project";
@@ -134,11 +134,11 @@ export const ProjectReport = ({ projects }: ProjectReportProps) => {
     }));
   };
 
-  const exportToPDF = () => {
+  const approveHoursAndExport = async () => {
     if (reportData.length === 0) {
       toast({
         title: "Nenhum dado",
-        description: "Não há dados para exportar.",
+        description: "Não há dados para aprovar.",
         variant: "destructive",
       });
       return;
@@ -153,24 +153,116 @@ export const ProjectReport = ({ projects }: ProjectReportProps) => {
       return;
     }
 
-    // Create PDF content
-    const content = generatePDFContent();
+    try {
+      setLoading(true);
 
-    // Create and download
-    const blob = new Blob([content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `relatorio-projetos-${selectedMonth || 'todos'}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      // Create HTML content
+      const htmlContent = generatePDFContent();
 
-    toast({
-      title: "Relatório exportado",
-      description: "O relatório foi baixado com sucesso.",
-    });
+      // 1. Download do relatório (como antes)
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio-projetos-${selectedMonth || 'todos'}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // 2. Salvar no Supabase
+      for (const project of reportData) {
+        // Buscar todas as horas detalhadas do projeto para salvar no JSON
+        const projectHours = await fetchDetailedProjectHours(project.project_id);
+
+        const { error } = await supabase
+          .from('projects_approved_hours')
+          .insert({
+            project_id: parseInt(project.project_id),
+            approved: true,
+            link_relatorio: htmlContent,
+            project_hours: projectHours,
+            date_approval: new Date().toISOString().split('T')[0]
+          });
+
+        if (error) {
+          console.error('Erro ao salvar no Supabase:', error);
+          throw error;
+        }
+
+        // 3. Disparar webhook N8N
+        try {
+          await fetch('https://n8n.sof.to/webhook/53146107-4078-4120-8856-69e4d00f330e', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              project_id: project.project_id,
+              project_name: project.project_name,
+              client_name: project.client_name,
+              period: selectedMonth,
+              total_hours: project.total_hours,
+              hourly_rate: hourlyRate,
+              total_cost: project.total_hours * hourlyRate,
+              employees: project.employees,
+              project_hours: projectHours,
+              html_content: htmlContent,
+              approval_date: new Date().toISOString()
+            })
+          });
+        } catch (webhookError) {
+          console.error('Erro ao chamar webhook N8N:', webhookError);
+          // Não falha a operação se o webhook der erro
+        }
+      }
+
+      toast({
+        title: "Horas aprovadas com sucesso!",
+        description: "Relatório baixado, dados salvos e financeiro notificado.",
+      });
+
+    } catch (error) {
+      console.error('Erro ao aprovar horas:', error);
+      toast({
+        title: "Erro ao aprovar horas",
+        description: "Não foi possível concluir a aprovação.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDetailedProjectHours = async (projectId: string) => {
+    try {
+      // Buscar todas as horas do projeto no período
+      let query = supabase
+        .from('project_hours')
+        .select(`
+          id,
+          hours_worked,
+          date_worked,
+          description,
+          employees!inner(name)
+        `)
+        .eq('project_id', projectId);
+
+      if (selectedMonth) {
+        const [year, month] = selectedMonth.split('-');
+        const startDate = `${year}-${month}-01`;
+        const endDate = `${year}-${month}-31`;
+        query = query.gte('date_worked', startDate).lte('date_worked', endDate);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar horas detalhadas:', error);
+      return [];
+    }
   };
 
   const generatePDFContent = () => {
@@ -374,12 +466,12 @@ export const ProjectReport = ({ projects }: ProjectReportProps) => {
         </div>
       )}
 
-      {/* Export Button */}
+      {/* Approve Hours and Export Button */}
       {reportData.length > 0 && (
-        <div className="flex justify-end">
-          <Button onClick={exportToPDF} className="gap-2">
-            <Download className="h-4 w-4" />
-            Exportar Relatório (PDF)
+        <div className="flex justify-end gap-2">
+          <Button onClick={approveHoursAndExport} disabled={loading} className="gap-2">
+            <CheckCircle className="h-4 w-4" />
+            {loading ? "Processando..." : "Aprovar Horas e Gerar Relatório"}
           </Button>
         </div>
       )}

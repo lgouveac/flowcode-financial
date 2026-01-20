@@ -106,8 +106,9 @@ export const NewPaymentForm = ({
       return false;
     }
     
-    if (!formData.due_date) {
-      setValidationError("Por favor, selecione uma data de vencimento");
+    // Não exigir data de vencimento quando for "pagamento por entrega"
+    if (!formData.Pagamento_Por_Entrega && !formData.due_date) {
+      setValidationError("Por favor, selecione uma data de vencimento ou marque 'Pagamento por entrega'");
       return false;
     }
 

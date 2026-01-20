@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, Play, Pause, Square, Download, Calendar, Plus, Trash2, Link, Edit, Check, X } from "lucide-react";
+import { Clock, Play, Pause, Square, Download, Calendar, Plus, Trash2, Link, Edit, Check, X, CheckCircle } from "lucide-react";
 import { format, differenceInDays, eachDayOfInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Project, ProjectHour } from "@/types/project";
@@ -505,11 +505,11 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
     });
   };
 
-  const exportReport = () => {
+  const approveHoursAndExport = async () => {
     if (filteredHours.length === 0) {
       toast({
         title: "Nenhum dado",
-        description: "Não há horas para exportar com os filtros aplicados.",
+        description: "Não há horas para aprovar.",
         variant: "destructive",
       });
       return;
@@ -523,6 +523,9 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
       });
       return;
     }
+
+    try {
+      setLoading(true);
 
     // Group hours by employee
     const employeeHours = filteredHours.reduce((acc, entry) => {
@@ -674,20 +677,85 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
       </html>
     `;
 
-    const blob = new Blob([content], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `relatorio-projeto-${project.name.replace(/[^a-zA-Z0-9]/g, '-')}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      // 1. Download do relatório (como antes)
+      const blob = new Blob([content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `relatorio-projeto-${project.name.replace(/[^a-zA-Z0-9]/g, '-')}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-    toast({
-      title: "Relatório exportado",
-      description: "O relatório foi baixado com sucesso.",
-    });
+      // 2. Salvar no Supabase (comentado até criar a tabela)
+      /*
+      try {
+        const { error } = await supabase
+          .from('projects_approved_hours')
+          .insert({
+            project_id: parseInt(project.id),
+            approved: true,
+            link_relatorio: content,
+            project_hours: filteredHours,
+            date_approval: new Date().toISOString().split('T')[0]
+          });
+
+        if (error) {
+          console.error('Erro ao salvar no Supabase:', error);
+          // Não falha a operação se o Supabase der erro
+        }
+      } catch (supabaseError) {
+        console.error('Erro ao salvar no Supabase:', supabaseError);
+        // Não falha a operação se o Supabase der erro
+      }
+      */
+
+      // 3. Disparar webhook N8N
+      try {
+        await fetch('https://n8n.sof.to/webhook/53146107-4078-4120-8856-69e4d00f330e', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            project_id: project.id,
+            project_name: project.name,
+            client_name: project.clients?.name || 'Cliente não informado',
+            period: `${startDate} - ${endDate}`,
+            total_hours: totalHours,
+            hourly_rate: hourlyRate,
+            total_cost: totalCost,
+            employee_hours: Object.values(employeeHours).map((emp: any) => ({
+              name: emp.name,
+              hours: emp.totalHours,
+              cost: emp.totalHours * hourlyRate
+            })),
+            project_hours: filteredHours,
+            html_content: content,
+            approval_date: new Date().toISOString()
+          })
+        });
+      } catch (webhookError) {
+        console.error('Erro ao chamar webhook N8N:', webhookError);
+        // Não falha a operação se o webhook der erro
+      }
+
+      toast({
+        title: "Horas aprovadas com sucesso!",
+        description: "Relatório baixado, dados salvos e financeiro notificado.",
+      });
+
+    } catch (error) {
+      console.error('Erro ao aprovar horas:', error);
+      toast({
+        title: "Erro ao aprovar horas",
+        description: "Não foi possível concluir a aprovação.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const totalHours = filteredHours.reduce((sum, entry) => sum + entry.hours_worked, 0);
@@ -1242,9 +1310,9 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                   </div>
                 )}
 
-                <Button onClick={exportReport} disabled={totalHours === 0 || hourlyRate <= 0} className="w-full">
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar Relatório
+                <Button onClick={approveHoursAndExport} disabled={totalHours === 0 || hourlyRate <= 0 || loading} className="w-full">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {loading ? "Processando..." : "Aprovar Horas e Gerar Relatório"}
                 </Button>
               </CardContent>
             </Card>

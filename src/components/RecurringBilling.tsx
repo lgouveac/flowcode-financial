@@ -34,9 +34,6 @@ export const RecurringBilling = () => {
   const [billingSearch, setBillingSearch] = useState("");
   const [allSearch, setAllSearch] = useState(""); // Campo de busca para a aba "Todos"
   const [billingStatusFilter, setBillingStatusFilter] = useState("all"); // Todos por padrão no escopo aberto
-  const [showPaymentDelivery, setShowPaymentDelivery] = useState(false); // Mostrar pagamentos por entrega - escopo fechado
-  const [showBillingDelivery, setShowBillingDelivery] = useState(false); // Mostrar pagamentos por entrega - escopo aberto
-  const [showAllDelivery, setShowAllDelivery] = useState(false); // Mostrar pagamentos por entrega - aba todos
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(true); // Filtros expandidos por padrão no escopo fechado
   const [showAdvancedFiltersOpen, setShowAdvancedFiltersOpen] = useState(true); // Filtros expandidos por padrão no escopo aberto
   const [expandCharges, setExpandCharges] = useState(true); // Expandido por padrão
@@ -256,8 +253,20 @@ export const RecurringBilling = () => {
   const closedScopeBillings = useMemo(() => {
     if (!payments || !Array.isArray(payments)) return [];
 
-    // Usar todos os recebimentos de escopo fechado, independente de ter escopo aberto ou não
-    const closedPayments = payments;
+    // Criar set de clientes que têm cobrança no escopo aberto
+    const openScopeClients = new Set(
+      billings
+        ?.filter(billing => billing.status !== 'cancelled') // Apenas cobranças ativas do escopo aberto
+        .map(billing => billing.client_id) || []
+    );
+
+    // Filtrar pagamentos de escopo fechado, EXCLUINDO clientes com cobrança do escopo aberto ativa
+    const closedPayments = payments.filter(payment => {
+      // E o cliente NÃO deve ter cobrança do escopo aberto ativa
+      const clientNotInOpenScope = !openScopeClients.has(payment.client_id);
+      
+      return clientNotInOpenScope;
+    });
 
     // Agrupar apenas por cliente
     const groups: { [key: string]: any[] } = {};
@@ -274,14 +283,9 @@ export const RecurringBilling = () => {
     // Converter grupos em "billings virtuais"
     return Object.values(groups).map(groupPayments => {
       const firstPayment = groupPayments[0];
-      
-      // Ordenar pagamentos, tratando null/undefined em due_date
-      const sortedPayments = groupPayments.sort((a, b) => {
-        if (!a.due_date && !b.due_date) return 0;
-        if (!a.due_date) return 1; // null vai para o final
-        if (!b.due_date) return -1;
-        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-      });
+      const sortedPayments = groupPayments.sort((a, b) => 
+        new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+      );
       
       // Calcular valor total de todos os recebimentos do cliente
       const totalAmount = groupPayments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -300,18 +304,15 @@ export const RecurringBilling = () => {
       
       const description = `Recebimentos - ${clientName}`;
 
-      // Encontrar primeiro pagamento com due_date para usar no due_day
-      const firstPaymentWithDate = sortedPayments.find(p => p.due_date) || sortedPayments[0];
-
       return {
         id: `closed-${firstPayment.client_id}-${Date.now()}-${Math.random()}`,
         client_id: firstPayment.client_id,
         clients: firstPayment.clients,
         description: description, // Descrição genérica do cliente
         amount: totalAmount, // Valor total de todos os recebimentos do cliente
-        due_day: firstPaymentWithDate?.due_date ? new Date(firstPaymentWithDate.due_date).getDate() : null,
+        due_day: new Date(sortedPayments[0].due_date).getDate(),
         payment_method: firstPayment.payment_method,
-        start_date: firstPaymentWithDate?.due_date || null,
+        start_date: sortedPayments[0].due_date,
         end_date: sortedPayments[sortedPayments.length - 1]?.due_date || null,
         status: generalStatus,
         installments: groupPayments.length,
@@ -334,8 +335,14 @@ export const RecurringBilling = () => {
       return typeof payment.id === 'string' && !payment.id.startsWith('recurring-');
     }) || [];
 
-    // Mostrar todos os recebimentos, independente de ter escopo aberto ou não
-    return allPayments.map(payment => {
+    // Filtrar clientes que não têm cobrança recorrente ativa
+    const activeRecurringClients = new Set(
+      billings?.filter(billing => billing.status !== 'cancelled').map(billing => billing.client_id) || []
+    );
+
+    return allPayments
+      .filter(payment => !activeRecurringClients.has(payment.client_id))
+      .map(payment => {
         // Formatar data de vencimento
         const formattedDueDate = payment.due_date 
           ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
@@ -375,36 +382,21 @@ export const RecurringBilling = () => {
   }, [finalClosedScopeBillings, paymentSearch]);
 
   const filteredByPaymentStatus = useMemo(() => {
-    let result = filteredPayments;
-    
-    // Aplicar filtro de status
-    if (!paymentStatusDetailFilter.includes("all")) {
-      result = result.filter(billing => {
-        if (billing.individual_payment) {
-          // Para pagamento expandido: filtrar pelo status real
-          return paymentStatusDetailFilter.includes(billing.individual_payment.status);
-        } else if (billing.related_payments) {
-          // Para billing agrupado: verificar se algum pagamento tem o status
-          return billing.related_payments.some(payment => paymentStatusDetailFilter.includes(payment.status));
-        }
-        return true;
-      });
+    if (paymentStatusDetailFilter.includes("all")) {
+      return filteredPayments;
     }
     
-    // Aplicar filtro de pagamento por entrega
-    if (showPaymentDelivery) {
-      result = result.filter(billing => {
-        if (billing.individual_payment) {
-          return Boolean(billing.individual_payment.Pagamento_Por_Entrega);
-        } else if (billing.related_payments) {
-          return billing.related_payments.some(payment => Boolean(payment.Pagamento_Por_Entrega));
-        }
-        return false;
-      });
-    }
-    
-    return result;
-  }, [filteredPayments, paymentStatusDetailFilter, showPaymentDelivery]);
+    return filteredPayments.filter(billing => {
+      if (billing.individual_payment) {
+        // Para pagamento expandido: filtrar pelo status real
+        return paymentStatusDetailFilter.includes(billing.individual_payment.status);
+      } else if (billing.related_payments) {
+        // Para billing agrupado: verificar se algum pagamento tem o status
+        return billing.related_payments.some(payment => paymentStatusDetailFilter.includes(payment.status));
+      }
+      return true;
+    });
+  }, [filteredPayments, paymentStatusDetailFilter]);
 
   // Aplicar ordenação
   const sortedClosedScopeBillings = useMemo(() => {
@@ -437,8 +429,7 @@ export const RecurringBilling = () => {
         const search = billingSearch.toLowerCase();
         const matchesSearch = search === "" || client.toLowerCase().includes(search) || description.includes(search);
         const matchesStatus = billingStatusFilter === "all" || payment.status === billingStatusFilter;
-        const matchesDelivery = !showBillingDelivery || Boolean(payment.Pagamento_Por_Entrega);
-        return matchesSearch && matchesStatus && matchesDelivery;
+        return matchesSearch && matchesStatus;
       })
       .map(payment => {
         // Formatar data de vencimento
@@ -464,19 +455,19 @@ export const RecurringBilling = () => {
           individual_payment: payment
         };
       });
-  }, [filteredBillings, expandChargesOpen, billings, billingSearch, billingStatusFilter, showBillingDelivery]);
+  }, [filteredBillings, expandChargesOpen, billings, billingSearch, billingStatusFilter]);
 
   // Aplicar filtro por status específico no Escopo Aberto  
   const filteredByBillingStatus = useMemo(() => {
-    let result = finalOpenScopeBillings;
+    if (billingStatusDetailFilter.includes("all")) {
+      return finalOpenScopeBillings;
+    }
     
-    // Aplicar filtro de status
-    if (!billingStatusDetailFilter.includes("all")) {
-      result = result.filter(billing => {
-        if (billing.individual_payment) {
-          // Para pagamento expandido: filtrar pelo status real do pagamento
-          return billingStatusDetailFilter.includes(billing.individual_payment.status);
-        } else if (billing.is_virtual) {
+    return finalOpenScopeBillings.filter(billing => {
+      if (billing.individual_payment) {
+        // Para pagamento expandido: filtrar pelo status real do pagamento
+        return billingStatusDetailFilter.includes(billing.individual_payment.status);
+      } else if (billing.is_virtual) {
         // Para parcelas virtuais: filtrar pelo status da parcela virtual
         return billingStatusDetailFilter.includes(billing.status);
       } else {
@@ -484,20 +475,7 @@ export const RecurringBilling = () => {
         return billingStatusDetailFilter.includes(billing.status);
       }
     });
-    }
-    
-    // Aplicar filtro de pagamento por entrega
-    if (showBillingDelivery) {
-      result = result.filter(billing => {
-        if (billing.individual_payment) {
-          return Boolean(billing.individual_payment.Pagamento_Por_Entrega);
-        }
-        return false;
-      });
-    }
-    
-    return result;
-  }, [finalOpenScopeBillings, billingStatusDetailFilter, showBillingDelivery]);
+  }, [finalOpenScopeBillings, billingStatusDetailFilter]);
 
   // Aplicar ordenação no Escopo Aberto
   const sortedOpenScopeBillings = useMemo(() => {
@@ -541,7 +519,7 @@ export const RecurringBilling = () => {
     if (activeTab !== 'all') return allCombinedBillings;
     
     // Para a aba "Todos", aplicar filtros baseados no estado de expansão
-    let result = allCombinedBillings.filter(billing => {
+    return allCombinedBillings.filter(billing => {
       // Aplicar filtro de busca por texto
       const client = billing.clients?.name || "";
       const description = (billing.description || "").toLowerCase();
@@ -568,21 +546,7 @@ export const RecurringBilling = () => {
         }
       }
     });
-    
-    // Aplicar filtro de pagamento por entrega
-    if (showAllDelivery) {
-      result = result.filter(billing => {
-        if (billing.individual_payment) {
-          return Boolean(billing.individual_payment.Pagamento_Por_Entrega);
-        } else if (billing.related_payments) {
-          return billing.related_payments.some(payment => Boolean(payment.Pagamento_Por_Entrega));
-        }
-        return false;
-      });
-    }
-    
-    return result;
-  }, [allCombinedBillings, activeTab, expandChargesAll, allStatusDetailFilter, allSearch, showAllDelivery]);
+  }, [allCombinedBillings, activeTab, expandChargesAll, allStatusDetailFilter, allSearch]);
 
   // Garante que clients e templates são sempre arrays
   const safeClients = Array.isArray(clients) ? clients.filter(client => client && typeof client === 'object' && client.id && client.name) : [];
@@ -700,16 +664,6 @@ export const RecurringBilling = () => {
                       Expandir cobranças
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox 
-                      id="show-delivery-all" 
-                      checked={showAllDelivery}
-                      onCheckedChange={setShowAllDelivery}
-                    />
-                    <Label htmlFor="show-delivery-all" className="text-sm">
-                      Mostrar pagamentos por entrega
-                    </Label>
-                  </div>
                 </div>
 
                 <div>
@@ -769,16 +723,6 @@ export const RecurringBilling = () => {
                       Expandir cobranças
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox 
-                      id="show-delivery-open" 
-                      checked={showBillingDelivery}
-                      onCheckedChange={setShowBillingDelivery}
-                    />
-                    <Label htmlFor="show-delivery-open" className="text-sm">
-                      Mostrar pagamentos por entrega
-                    </Label>
-                  </div>
                 </div>
 
                 <div>
@@ -836,16 +780,6 @@ export const RecurringBilling = () => {
                     />
                     <Label htmlFor="expand-charges" className="text-sm">
                       Expandir cobranças
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox 
-                      id="show-delivery" 
-                      checked={showPaymentDelivery}
-                      onCheckedChange={setShowPaymentDelivery}
-                    />
-                    <Label htmlFor="show-delivery" className="text-sm">
-                      Mostrar pagamentos por entrega
                     </Label>
                   </div>
                 </div>
