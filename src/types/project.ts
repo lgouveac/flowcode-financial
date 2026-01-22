@@ -7,6 +7,12 @@ export interface Project {
   status: 'active' | 'paused' | 'completed';
   data_inicio_ciclo?: string;
   created_at: string;
+  
+  // GitHub fields
+  github_repo_full_name?: string;
+  github_repo_url?: string;
+  github_sync_enabled?: boolean;
+  github_last_sync_at?: string;
 
   // Relations
   clients?: {

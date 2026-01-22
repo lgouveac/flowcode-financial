@@ -7,6 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useGithubToken } from "@/hooks/useGithubToken";
+import { GithubConnectionButton } from "./GithubConnectionButton";
+import { Github } from "lucide-react";
 import type { NewProject } from "@/types/project";
 
 interface Client {
@@ -46,7 +49,9 @@ export const NewProjectDialog = ({ open, onClose, onSuccess }: NewProjectDialogP
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [selectedGithubRepo, setSelectedGithubRepo] = useState<string>("none");
   const { toast } = useToast();
+  const { isAuthenticated, repos, loading: reposLoading } = useGithubToken();
 
   useEffect(() => {
     if (open) {
@@ -60,6 +65,7 @@ export const NewProjectDialog = ({ open, onClose, onSuccess }: NewProjectDialogP
         status: "active",
         data_inicio_ciclo: undefined,
       });
+      setSelectedGithubRepo("none");
     }
   }, [open]);
 
@@ -124,11 +130,21 @@ export const NewProjectDialog = ({ open, onClose, onSuccess }: NewProjectDialogP
       setLoading(true);
 
       // If a contract is selected, set the client_id from the contract
-      const finalData = { ...formData };
+      const finalData: NewProject = { ...formData };
       if (formData.contract_id) {
         const selectedContract = contracts.find(c => c.id === formData.contract_id);
         if (selectedContract) {
           finalData.client_id = selectedContract.client_id;
+        }
+      }
+
+      // Adicionar dados do GitHub se um repositório foi selecionado
+      if (selectedGithubRepo && selectedGithubRepo !== "none") {
+        const selectedRepo = repos.find(r => r.full_name === selectedGithubRepo);
+        if (selectedRepo) {
+          finalData.github_repo_full_name = selectedRepo.full_name;
+          finalData.github_repo_url = selectedRepo.html_url;
+          finalData.github_sync_enabled = true;
         }
       }
 
@@ -309,6 +325,45 @@ export const NewProjectDialog = ({ open, onClose, onSuccess }: NewProjectDialogP
                 <SelectItem value="completed">Concluído</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="col-span-4 border-t pt-4 mt-4">
+            <div className="flex items-center justify-between mb-4">
+              <Label htmlFor="github-repo" className="flex items-center gap-2">
+                <Github className="h-4 w-4" />
+                Repositório GitHub
+              </Label>
+              <GithubConnectionButton />
+            </div>
+            {isAuthenticated ? (
+              <Select 
+                value={selectedGithubRepo} 
+                onValueChange={setSelectedGithubRepo}
+                disabled={reposLoading}
+              >
+                <SelectTrigger id="github-repo">
+                  <SelectValue placeholder="Selecione um repositório (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum repositório</SelectItem>
+                  {repos.map((repo) => (
+                    <SelectItem key={repo.id} value={repo.full_name}>
+                      <div className="flex items-center gap-2">
+                        <Github className="h-3 w-3" />
+                        <span>{repo.full_name}</span>
+                        {repo.private && (
+                          <span className="text-xs text-muted-foreground">(privado)</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="text-sm text-muted-foreground p-4 border rounded-md text-center">
+                Conecte o GitHub para selecionar um repositório
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
