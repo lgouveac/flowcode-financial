@@ -189,22 +189,38 @@ export async function fetchRepositoryStats(
 ): Promise<RepositoryStats> {
   const [owner, repo] = repoFullName.split('/');
   
+  if (!owner || !repo) {
+    throw new Error(`Formato de repositório inválido: ${repoFullName}. Use o formato "owner/repo"`);
+  }
+  
+  console.log(`📊 Buscando estatísticas para ${owner}/${repo}...`);
+  
   // Buscar informações básicas do repositório
   const repoResponse = await fetch(
     `https://api.github.com/repos/${owner}/${repo}`,
     {
       headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
       }
     }
   );
 
   if (!repoResponse.ok) {
-    throw new Error(`Erro ao buscar repositório: ${repoResponse.statusText}`);
+    const errorText = await repoResponse.text();
+    console.error(`❌ Erro ao buscar repositório (${repoResponse.status}):`, errorText);
+    if (repoResponse.status === 404) {
+      throw new Error(`Repositório não encontrado: ${repoFullName}`);
+    }
+    if (repoResponse.status === 403) {
+      throw new Error(`Sem permissão para acessar o repositório: ${repoFullName}. Verifique se o token tem o scope "repo"`);
+    }
+    throw new Error(`Erro ao buscar repositório (${repoResponse.status}): ${repoResponse.statusText}`);
   }
 
   const repoData = await repoResponse.json();
+  console.log(`✅ Informações do repositório carregadas:`, repoData.name);
 
   // Buscar commits recentes (últimos 30 dias)
   const sinceDate = new Date();
@@ -216,32 +232,58 @@ export async function fetchRepositoryStats(
     `https://api.github.com/repos/${owner}/${repo}/commits?since=${since}&per_page=100`,
     {
       headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
       }
     }
   );
 
   if (!commitsResponse.ok) {
-    throw new Error(`Erro ao buscar commits: ${commitsResponse.statusText}`);
+    const errorText = await commitsResponse.text();
+    console.error(`❌ Erro ao buscar commits (${commitsResponse.status}):`, errorText);
+    throw new Error(`Erro ao buscar commits (${commitsResponse.status}): ${commitsResponse.statusText}`);
   }
 
   const commits: GitHubCommit[] = await commitsResponse.json();
+  console.log(`✅ ${commits.length} commits encontrados`);
 
   // Buscar estatísticas de contribuidores
-  const contributorsResponse = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/stats/contributors`,
-    {
-      headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    }
-  );
-
+  // A API pode retornar 202 (processando) ou um objeto vazio, então precisamos tratar isso
   let contributors: GitHubContributor[] = [];
-  if (contributorsResponse.ok) {
-    contributors = await contributorsResponse.json();
+  try {
+    const contributorsResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/stats/contributors`,
+      {
+        headers: {
+          'Authorization': `Bearer ${githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      }
+    );
+
+    if (contributorsResponse.ok) {
+      const contributorsData = await contributorsResponse.json();
+      // Verificar se é um array válido
+      if (Array.isArray(contributorsData)) {
+        contributors = contributorsData;
+        console.log(`✅ ${contributors.length} contribuidores encontrados`);
+      } else {
+        console.warn('⚠️ API de contribuidores retornou dados inválidos (não é array):', contributorsData);
+        contributors = [];
+      }
+    } else if (contributorsResponse.status === 202) {
+      // API está processando, retornar array vazio
+      console.warn('⚠️ API de contribuidores está processando (202), retornando array vazio');
+      contributors = [];
+    } else {
+      console.warn(`⚠️ Erro ao buscar contribuidores (${contributorsResponse.status}), continuando sem eles`);
+      contributors = [];
+    }
+  } catch (error) {
+    console.warn('⚠️ Erro ao buscar contribuidores, continuando sem eles:', error);
+    contributors = [];
   }
 
   // Buscar Pull Requests
@@ -249,8 +291,9 @@ export async function fetchRepositoryStats(
     `https://api.github.com/repos/${owner}/${repo}/pulls?state=all&per_page=100&sort=updated`,
     {
       headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
       }
     }
   );
@@ -265,8 +308,9 @@ export async function fetchRepositoryStats(
     `https://api.github.com/repos/${owner}/${repo}/issues?state=all&per_page=100&sort=updated`,
     {
       headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
       }
     }
   );
@@ -281,8 +325,9 @@ export async function fetchRepositoryStats(
     `https://api.github.com/repos/${owner}/${repo}/releases?per_page=20`,
     {
       headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
       }
     }
   );
@@ -297,8 +342,9 @@ export async function fetchRepositoryStats(
     `https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`,
     {
       headers: {
-        'Authorization': `token ${githubToken}`,
-        'Accept': 'application/vnd.github.v3+json'
+        'Authorization': `Bearer ${githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'X-GitHub-Api-Version': '2022-11-28'
       }
     }
   );
@@ -317,7 +363,9 @@ export async function fetchRepositoryStats(
     deletions: number;
   }>();
 
-  contributors.forEach((contributor) => {
+  // Garantir que contributors é um array antes de processar
+  if (Array.isArray(contributors)) {
+    contributors.forEach((contributor) => {
     const login = contributor.author.login;
     const avatar_url = contributor.author.avatar_url;
     let totalAdditions = 0;
@@ -328,14 +376,17 @@ export async function fetchRepositoryStats(
       totalDeletions += week.d;
     });
 
-    contributorMap.set(login, {
-      login,
-      avatar_url,
-      commits: contributor.total,
-      additions: totalAdditions,
-      deletions: totalDeletions,
+      contributorMap.set(login, {
+        login,
+        avatar_url,
+        commits: contributor.total,
+        additions: totalAdditions,
+        deletions: totalDeletions,
+      });
     });
-  });
+  } else {
+    console.warn('⚠️ Contributors não é um array, pulando processamento');
+  }
 
   // Processar commits recentes
   const recentCommits = [];

@@ -26,7 +26,7 @@ interface ProjectDetailDialogProps {
   project: Project;
   open: boolean;
   onClose: () => void;
-  onRefresh: () => void;
+  onRefresh: (updatedProject?: Project) => void;
 }
 
 interface TimerState {
@@ -103,39 +103,75 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
 
   // Carregar estatísticas quando o projeto tem repositório
   useEffect(() => {
-    // Sempre resetar estatísticas quando o projeto ou repositório muda
-    setGithubStats(null);
-    
-    // Carregar estatísticas para o projeto atual
-    if (open && project.github_repo_full_name && token) {
-      const currentProjectId = project.id;
-      const currentRepo = project.github_repo_full_name;
-      
-      // Pequeno delay para garantir que o estado foi resetado
-      const timeoutId = setTimeout(() => {
-        setLoadingStats(true);
-        fetchRepositoryStats(currentRepo, token)
-          .then(stats => {
-            // Verificar se ainda é o mesmo projeto antes de atualizar
-            if (project.id === currentProjectId && project.github_repo_full_name === currentRepo) {
-              setGithubStats(stats);
-            }
-          })
-          .catch(err => {
-            console.error('Erro ao carregar estatísticas:', err);
-          })
-          .finally(() => {
-            // Só atualizar loading se ainda for o mesmo projeto
-            if (project.id === currentProjectId) {
-              setLoadingStats(false);
-            }
-          });
-      }, 150);
-      
-      return () => clearTimeout(timeoutId);
-    } else {
+    // Não executar se o dialog não estiver aberto
+    if (!open) {
+      setGithubStats(null);
       setLoadingStats(false);
+      return;
     }
+
+    // Não executar se não houver repositório ou token
+    if (!project.github_repo_full_name || !token) {
+      setGithubStats(null);
+      setLoadingStats(false);
+      if (project.github_repo_full_name && !token) {
+        console.warn('⚠️ Projeto tem repositório mas não há token do GitHub');
+      }
+      return;
+    }
+
+    // Resetar estatísticas quando o projeto ou repositório muda
+    setGithubStats(null);
+    setLoadingStats(false);
+    
+    const currentProjectId = project.id;
+    const currentRepo = project.github_repo_full_name;
+    
+    console.log('🔄 Carregando estatísticas para:', currentRepo, 'projeto:', currentProjectId);
+    
+    // Flag para evitar múltiplas execuções simultâneas
+    let cancelled = false;
+    
+    // Pequeno delay para garantir que o estado foi resetado
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return;
+      
+      setLoadingStats(true);
+      fetchRepositoryStats(currentRepo, token)
+        .then(stats => {
+          if (cancelled) return;
+          
+          // Verificar se ainda é o mesmo projeto antes de atualizar
+          if (project.id === currentProjectId && project.github_repo_full_name === currentRepo) {
+            console.log('✅ Estatísticas carregadas com sucesso:', stats);
+            setGithubStats(stats);
+          } else {
+            console.log('⚠️ Projeto mudou durante o carregamento, descartando estatísticas');
+          }
+        })
+        .catch(err => {
+          if (cancelled) return;
+          
+          console.error('❌ Erro ao carregar estatísticas:', err);
+          if (project.id === currentProjectId) {
+            toast({
+              title: "Erro ao carregar estatísticas",
+              description: err.message || "Não foi possível buscar as estatísticas do repositório.",
+              variant: "destructive",
+            });
+          }
+        })
+        .finally(() => {
+          if (!cancelled && project.id === currentProjectId) {
+            setLoadingStats(false);
+          }
+        });
+    }, 150);
+    
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [project.id, project.github_repo_full_name, token, open]);
 
   // Listen for timer stopped events to refresh data
@@ -824,15 +860,24 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
           if (token) {
             try {
               setLoadingStats(true);
+              console.log('🔄 Buscando estatísticas do repositório:', selectedRepo.full_name);
               const stats = await fetchRepositoryStats(selectedRepo.full_name, token);
+              console.log('✅ Estatísticas carregadas:', stats);
               setGithubStats(stats);
               updateData.github_last_sync_at = stats.lastSyncAt;
             } catch (statsError: any) {
-              console.error('Erro ao buscar estatísticas:', statsError);
+              console.error('❌ Erro ao buscar estatísticas:', statsError);
+              toast({
+                title: "Aviso",
+                description: `Repositório vinculado, mas não foi possível carregar as estatísticas: ${statsError.message || 'Erro desconhecido'}`,
+                variant: "default",
+              });
               // Não falhar a operação se as estatísticas derem erro
             } finally {
               setLoadingStats(false);
             }
+          } else {
+            console.warn('⚠️ Token do GitHub não disponível para buscar estatísticas');
           }
         }
       } else {
@@ -842,12 +887,18 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
         setGithubStats(null);
       }
 
-      const { error } = await supabase
+      const { data: updatedProject, error } = await supabase
         .from('projetos')
         .update(updateData)
-        .eq('id', project.id);
+        .eq('id', project.id)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      if (!updatedProject) {
+        throw new Error('Projeto não encontrado após atualização');
+      }
 
       toast({
         title: "Repositório atualizado",
@@ -856,7 +907,8 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
           : "Repositório removido do projeto",
       });
 
-      onRefresh();
+      // Passar o projeto atualizado para o refresh
+      onRefresh(updatedProject);
     } catch (error: any) {
       console.error('Erro ao salvar repositório:', error);
       toast({

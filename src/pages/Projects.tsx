@@ -122,10 +122,10 @@ export default function Projects() {
     }
   }, [timer]);
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (updatedProject?: Project) => {
     try {
       setLoading(true);
-      console.log("🏗️ Starting projects fetch...");
+      console.log("🏗️ Starting projects fetch...", updatedProject ? "with updated project" : "");
 
       // Sincronização de contratos desabilitada temporariamente para evitar duplicatas
       // try {
@@ -197,6 +197,12 @@ export default function Projects() {
 
       console.log(`📋 Found ${data?.length || 0} total projects in database`);
       setProjects(data || []);
+      
+      // Se um projeto atualizado foi passado, atualizar o selectedProject se for o mesmo
+      if (updatedProject && selectedProject?.id === updatedProject.id) {
+        console.log('🔄 Atualizando projeto selecionado com dados atualizados');
+        setSelectedProject(updatedProject);
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast({
