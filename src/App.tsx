@@ -37,6 +37,7 @@ import Projects from "./pages/Projects";
 import PublicProjectView from "./pages/PublicProjectView";
 import PublicProjects from "./pages/PublicProjects";
 import TestSync from "./pages/TestSync";
+import MeetingMinutes from "./pages/MeetingMinutes";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,7 @@ const App = () => {
                       <Route path="leads" element={<Leads />} />
                       <Route path="users" element={<Users />} />
                       <Route path="projects" element={<Projects />} />
+                      <Route path="meeting-minutes" element={<MeetingMinutes />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/auth/login" replace />} />
                   </Routes>

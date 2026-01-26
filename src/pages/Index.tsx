@@ -20,7 +20,8 @@ import {
   Calculator,
   Shield,
   Target,
-  FolderOpen
+  FolderOpen,
+  ClipboardList
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +45,7 @@ const navigation = [
   { name: "Recebimentos", href: "/receivables", icon: Receipt },
   { name: "Contratos", href: "/contracts", icon: FileText },
   { name: "Projetos", href: "/projects", icon: FolderOpen },
+  { name: "Atas de Reunião", href: "/meeting-minutes", icon: ClipboardList },
   { name: "Pagamentos", href: "/payments", icon: DollarSign },
   { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp },
   { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator },

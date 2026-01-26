@@ -42,9 +42,17 @@ export default function Projects() {
   // Hour entry form
   const [hourForm, setHourForm] = useState({
     date_worked: format(new Date(), "yyyy-MM-dd"),
-    hours_worked: "",
+    hours: "",
+    minutes: "",
     description: ""
   });
+
+  // Função auxiliar para converter horas + minutos em decimal
+  const convertToDecimalHours = (hours: string, minutes: string): number => {
+    const h = parseFloat(hours) || 0;
+    const m = parseFloat(minutes) || 0;
+    return h + (m / 60);
+  };
 
   // Period entry form
   const [periodForm, setPeriodForm] = useState({
@@ -373,7 +381,7 @@ export default function Projects() {
   const handleSubmitHours = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedProjectForHours || !selectedEmployee || !hourForm.hours_worked) {
+    if (!selectedProjectForHours || !selectedEmployee || (!hourForm.hours && !hourForm.minutes)) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -384,6 +392,7 @@ export default function Projects() {
 
     try {
       setSubmitting(true);
+      const hoursWorked = convertToDecimalHours(hourForm.hours, hourForm.minutes);
 
       const { error } = await supabase
         .from('project_hours')
@@ -391,7 +400,7 @@ export default function Projects() {
           project_id: selectedProjectForHours.id,
           employee_id: selectedEmployee,
           date_worked: hourForm.date_worked,
-          hours_worked: parseFloat(hourForm.hours_worked),
+          hours_worked: hoursWorked,
           description: hourForm.description
         }]);
 
@@ -1078,20 +1087,55 @@ export default function Projects() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="hours">Horas Trabalhadas *</Label>
-                      <Input
-                        id="hours"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="24"
-                        value={hourForm.hours_worked}
-                        onChange={(e) => setHourForm({ ...hourForm, hours_worked: e.target.value })}
-                        placeholder="Ex: 8.5"
-                        required
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="hours">Horas *</Label>
+                        <Input
+                          id="hours"
+                          type="number"
+                          step="1"
+                          min="0"
+                          max="24"
+                          value={hourForm.hours}
+                          onChange={(e) => setHourForm({ ...hourForm, hours: e.target.value })}
+                          placeholder="Ex: 1"
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Horas inteiras (0-24)
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="minutes">Minutos *</Label>
+                        <Input
+                          id="minutes"
+                          type="number"
+                          step="1"
+                          min="0"
+                          max="59"
+                          value={hourForm.minutes}
+                          onChange={(e) => setHourForm({ ...hourForm, minutes: e.target.value })}
+                          placeholder="Ex: 20"
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Minutos (0-59)
+                        </p>
+                      </div>
                     </div>
+
+                    {/* Mostrar total convertido */}
+                    {(hourForm.hours || hourForm.minutes) && (
+                      <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
+                        Total: <strong>{convertToDecimalHours(hourForm.hours, hourForm.minutes).toFixed(2)}h</strong>
+                        {hourForm.hours && hourForm.minutes && (
+                          <span className="ml-2">
+                            ({hourForm.hours}h {hourForm.minutes}min)
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label htmlFor="description">Descrição</Label>

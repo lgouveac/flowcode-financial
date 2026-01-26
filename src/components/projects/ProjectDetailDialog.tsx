@@ -46,7 +46,8 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
   const [projectName, setProjectName] = useState(project.name);
   const [editingHourEntry, setEditingHourEntry] = useState<string | null>(null);
   const [editingForm, setEditingForm] = useState({
-    hours_worked: "",
+    hours: "",
+    minutes: "",
     description: "",
     date_worked: ""
   });
@@ -62,7 +63,8 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
   const [singleHourForm, setSingleHourForm] = useState({
     employee_id: "",
     date_worked: format(new Date(), "yyyy-MM-dd"),
-    hours_worked: "",
+    hours: "",
+    minutes: "",
     description: ""
   });
 
@@ -72,7 +74,8 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
     start_date: format(new Date(), "yyyy-MM-dd"),
     end_date: format(new Date(), "yyyy-MM-dd"),
     hours_type: "per_day", // "per_day" or "total_period"
-    hours_value: "",
+    hours: "",
+    minutes: "",
     description: ""
   });
 
@@ -259,7 +262,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
   const handleSingleHourSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!singleHourForm.employee_id || !singleHourForm.hours_worked) {
+    if (!singleHourForm.employee_id || (!singleHourForm.hours && !singleHourForm.minutes)) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, selecione um funcionário e informe as horas.",
@@ -270,13 +273,15 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
 
     try {
       setLoading(true);
+      const hoursWorked = convertToDecimalHours(singleHourForm.hours, singleHourForm.minutes);
+      
       const { error } = await supabase
         .from('project_hours')
         .insert([{
           project_id: project.id,
           employee_id: singleHourForm.employee_id,
           date_worked: singleHourForm.date_worked,
-          hours_worked: parseFloat(singleHourForm.hours_worked),
+          hours_worked: hoursWorked,
           description: singleHourForm.description
         }]);
 
@@ -290,7 +295,8 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
       setSingleHourForm({
         employee_id: "",
         date_worked: format(new Date(), "yyyy-MM-dd"),
-        hours_worked: "",
+        hours: "",
+        minutes: "",
         description: ""
       });
 
@@ -310,7 +316,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
   const handlePeriodSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!periodForm.employee_id || !periodForm.hours_value) {
+    if (!periodForm.employee_id || (!periodForm.hours && !periodForm.minutes)) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, selecione um funcionário e informe as horas.",
@@ -331,16 +337,17 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
 
       if (periodForm.hours_type === "per_day") {
         // Hours per day - create entry for each day with the specified hours
+        const hoursPerDay = convertToDecimalHours(periodForm.hours, periodForm.minutes);
         entries = dates.map(date => ({
           project_id: project.id,
           employee_id: periodForm.employee_id,
           date_worked: format(date, 'yyyy-MM-dd'),
-          hours_worked: parseFloat(periodForm.hours_value),
+          hours_worked: hoursPerDay,
           description: periodForm.description
         }));
       } else {
         // Total hours for the period - distribute equally across days
-        const totalHours = parseFloat(periodForm.hours_value);
+        const totalHours = convertToDecimalHours(periodForm.hours, periodForm.minutes);
         const hoursPerDay = totalHours / dates.length;
 
         entries = dates.map(date => ({
@@ -348,7 +355,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
           employee_id: periodForm.employee_id,
           date_worked: format(date, 'yyyy-MM-dd'),
           hours_worked: hoursPerDay,
-          description: `${periodForm.description} (${totalHours}h distribuídas em ${dates.length} dias)`
+          description: `${periodForm.description} (${totalHours.toFixed(2)}h distribuídas em ${dates.length} dias)`
         }));
       }
 
@@ -370,7 +377,8 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
         start_date: format(new Date(), "yyyy-MM-dd"),
         end_date: format(new Date(), "yyyy-MM-dd"),
         hours_type: "per_day",
-        hours_value: "",
+        hours: "",
+        minutes: "",
         description: ""
       });
 
@@ -474,8 +482,10 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
 
   const startEditingHourEntry = (entry: ProjectHour) => {
     setEditingHourEntry(entry.id);
+    const { hours, minutes } = convertDecimalToHoursMinutes(entry.hours_worked);
     setEditingForm({
-      hours_worked: entry.hours_worked.toString(),
+      hours: hours.toString(),
+      minutes: minutes.toString(),
       description: entry.description || "",
       date_worked: entry.date_worked
     });
@@ -484,14 +494,15 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
   const cancelEditingHourEntry = () => {
     setEditingHourEntry(null);
     setEditingForm({
-      hours_worked: "",
+      hours: "",
+      minutes: "",
       description: "",
       date_worked: ""
     });
   };
 
   const saveHourEntry = async (id: string) => {
-    if (!editingForm.hours_worked) {
+    if (!editingForm.hours && !editingForm.minutes) {
       toast({
         title: "Horas obrigatórias",
         description: "Por favor, informe o número de horas trabalhadas.",
@@ -501,10 +512,11 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
     }
 
     try {
+      const hoursWorked = convertToDecimalHours(editingForm.hours, editingForm.minutes);
       const { error } = await supabase
         .from('project_hours')
         .update({
-          hours_worked: parseFloat(editingForm.hours_worked),
+          hours_worked: hoursWorked,
           description: editingForm.description,
           date_worked: editingForm.date_worked
         })
@@ -1520,28 +1532,62 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="hours">Horas Trabalhadas *</Label>
+                      <Label htmlFor="hours">Horas *</Label>
                       <Input
                         id="hours"
                         type="number"
-                        step="0.5"
+                        step="1"
                         min="0"
-                        value={singleHourForm.hours_worked}
-                        onChange={(e) => setSingleHourForm({ ...singleHourForm, hours_worked: e.target.value })}
-                        placeholder="Ex: 8.5"
+                        max="24"
+                        value={singleHourForm.hours}
+                        onChange={(e) => setSingleHourForm({ ...singleHourForm, hours: e.target.value })}
+                        placeholder="Ex: 1"
                         required
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Horas inteiras (0-24)
+                      </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="description">Descrição</Label>
+                      <Label htmlFor="minutes">Minutos *</Label>
                       <Input
-                        id="description"
-                        value={singleHourForm.description}
-                        onChange={(e) => setSingleHourForm({ ...singleHourForm, description: e.target.value })}
-                        placeholder="Descrição do trabalho"
+                        id="minutes"
+                        type="number"
+                        step="1"
+                        min="0"
+                        max="59"
+                        value={singleHourForm.minutes}
+                        onChange={(e) => setSingleHourForm({ ...singleHourForm, minutes: e.target.value })}
+                        placeholder="Ex: 20"
+                        required
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Minutos (0-59)
+                      </p>
                     </div>
+                  </div>
+
+                  {/* Mostrar total convertido */}
+                  {(singleHourForm.hours || singleHourForm.minutes) && (
+                    <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
+                      Total: <strong>{convertToDecimalHours(singleHourForm.hours, singleHourForm.minutes).toFixed(2)}h</strong>
+                      {singleHourForm.hours && singleHourForm.minutes && (
+                        <span className="ml-2">
+                          ({singleHourForm.hours}h {singleHourForm.minutes}min)
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Descrição</Label>
+                    <Input
+                      id="description"
+                      value={singleHourForm.description}
+                      onChange={(e) => setSingleHourForm({ ...singleHourForm, description: e.target.value })}
+                      placeholder="Descrição do trabalho"
+                    />
                   </div>
 
                   <Button type="submit" disabled={loading}>
@@ -1592,13 +1638,28 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                                 <Input
                                   id={`edit-hours-${entry.id}`}
                                   type="number"
-                                  step="0.5"
+                                  step="1"
                                   min="0"
                                   max="24"
-                                  value={editingForm.hours_worked}
-                                  onChange={(e) => setEditingForm({ ...editingForm, hours_worked: e.target.value })}
+                                  value={editingForm.hours}
+                                  onChange={(e) => setEditingForm({ ...editingForm, hours: e.target.value })}
                                   className="text-sm"
-                                  placeholder="Ex: 8.5"
+                                  placeholder="Ex: 1"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <Label htmlFor={`edit-minutes-${entry.id}`} className="text-xs">Minutos</Label>
+                                <Input
+                                  id={`edit-minutes-${entry.id}`}
+                                  type="number"
+                                  step="1"
+                                  min="0"
+                                  max="59"
+                                  value={editingForm.minutes}
+                                  onChange={(e) => setEditingForm({ ...editingForm, minutes: e.target.value })}
+                                  className="text-sm"
+                                  placeholder="Ex: 20"
                                 />
                               </div>
 
@@ -1747,21 +1808,66 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                       </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="hours-value">
+                        <Label>
                           {periodForm.hours_type === "per_day" ? "Horas por Dia *" : "Total de Horas *"}
                         </Label>
-                        <Input
-                          id="hours-value"
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          value={periodForm.hours_value}
-                          onChange={(e) => setPeriodForm({ ...periodForm, hours_value: e.target.value })}
-                          placeholder={periodForm.hours_type === "per_day" ? "Ex: 8" : "Ex: 40"}
-                          required
-                        />
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="period-hours" className="text-xs">Horas</Label>
+                            <Input
+                              id="period-hours"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="24"
+                              value={periodForm.hours}
+                              onChange={(e) => setPeriodForm({ ...periodForm, hours: e.target.value })}
+                              placeholder="Ex: 1"
+                              required
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Horas inteiras (0-24)
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="period-minutes" className="text-xs">Minutos</Label>
+                            <Input
+                              id="period-minutes"
+                              type="number"
+                              step="1"
+                              min="0"
+                              max="59"
+                              value={periodForm.minutes}
+                              onChange={(e) => setPeriodForm({ ...periodForm, minutes: e.target.value })}
+                              placeholder="Ex: 20"
+                              required
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Minutos (0-59)
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Mostrar total convertido */}
+                        {(periodForm.hours || periodForm.minutes) && (
+                          <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
+                            Total: <strong>{convertToDecimalHours(periodForm.hours, periodForm.minutes).toFixed(2)}h</strong>
+                            {periodForm.hours && periodForm.minutes && (
+                              <span className="ml-2">
+                                ({periodForm.hours}h {periodForm.minutes}min)
+                              </span>
+                            )}
+                            {periodForm.hours_type === "total_period" && periodForm.start_date && periodForm.end_date && (
+                              <span className="ml-2 block mt-1">
+                                Distribuído em {differenceInDays(parseISO(periodForm.end_date), parseISO(periodForm.start_date)) + 1} dias: 
+                                <strong> {(convertToDecimalHours(periodForm.hours, periodForm.minutes) / (differenceInDays(parseISO(periodForm.end_date), parseISO(periodForm.start_date)) + 1)).toFixed(2)}h/dia</strong>
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -1776,20 +1882,20 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                     </div>
                   </div>
 
-                  {periodForm.start_date && periodForm.end_date && (
-                    <div className="text-sm text-muted-foreground">
-                      Total de dias: {differenceInDays(parseISO(periodForm.end_date), parseISO(periodForm.start_date)) + 1}
-                      {periodForm.hours_value && (
-                        <span>
-                          {periodForm.hours_type === "per_day" ? (
-                            <> | Total de horas: {((differenceInDays(parseISO(periodForm.end_date), parseISO(periodForm.start_date)) + 1) * parseFloat(periodForm.hours_value || "0")).toFixed(1)}h</>
-                          ) : (
-                            <> | {parseFloat(periodForm.hours_value).toFixed(1)}h distribuídas ({(parseFloat(periodForm.hours_value) / (differenceInDays(parseISO(periodForm.end_date), parseISO(periodForm.start_date)) + 1)).toFixed(1)}h por dia)</>
+                      {periodForm.start_date && periodForm.end_date && (
+                        <div className="text-sm text-muted-foreground">
+                          Total de dias: {differenceInDays(parseISO(periodForm.end_date), parseISO(periodForm.start_date)) + 1}
+                          {(periodForm.hours || periodForm.minutes) && (
+                            <span>
+                              {periodForm.hours_type === "per_day" ? (
+                                <> | Total de horas: {((differenceInDays(parseISO(periodForm.end_date), parseISO(periodForm.start_date)) + 1) * convertToDecimalHours(periodForm.hours, periodForm.minutes)).toFixed(2)}h</>
+                              ) : (
+                                <> | {convertToDecimalHours(periodForm.hours, periodForm.minutes).toFixed(2)}h distribuídas ({(convertToDecimalHours(periodForm.hours, periodForm.minutes) / (differenceInDays(parseISO(periodForm.end_date), parseISO(periodForm.start_date)) + 1)).toFixed(2)}h por dia)</>
+                              )}
+                            </span>
                           )}
-                        </span>
+                        </div>
                       )}
-                    </div>
-                  )}
 
                   <Button type="submit" disabled={loading}>
                     <Calendar className="h-4 w-4 mr-2" />

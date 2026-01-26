@@ -28,13 +28,21 @@ interface ProjectTimesheetProps {
 export const ProjectTimesheet = ({ projects, onRefresh }: ProjectTimesheetProps) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [timeEntries, setTimeEntries] = useState<ProjectHour[]>([]);
-  const [newEntry, setNewEntry] = useState<NewProjectHour>({
+  const [newEntry, setNewEntry] = useState({
     project_id: "",
     employee_id: "",
     date_worked: "",
-    hours_worked: 0,
+    hours: "",
+    minutes: "",
     description: "",
   });
+
+  // Função auxiliar para converter horas + minutos em decimal
+  const convertToDecimalHours = (hours: string, minutes: string): number => {
+    const h = parseFloat(hours) || 0;
+    const m = parseFloat(minutes) || 0;
+    return h + (m / 60);
+  };
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [loading, setLoading] = useState(false);
   const [loadingEntries, setLoadingEntries] = useState(true);
@@ -95,7 +103,7 @@ export const ProjectTimesheet = ({ projects, onRefresh }: ProjectTimesheetProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newEntry.project_id || !newEntry.employee_id || !newEntry.date_worked || newEntry.hours_worked <= 0) {
+    if (!newEntry.project_id || !newEntry.employee_id || !newEntry.date_worked || (!newEntry.hours && !newEntry.minutes)) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -106,10 +114,17 @@ export const ProjectTimesheet = ({ projects, onRefresh }: ProjectTimesheetProps)
 
     try {
       setLoading(true);
+      const hoursWorked = convertToDecimalHours(newEntry.hours, newEntry.minutes);
 
       const { error } = await supabase
         .from('project_hours')
-        .insert([newEntry]);
+        .insert([{
+          project_id: newEntry.project_id,
+          employee_id: newEntry.employee_id,
+          date_worked: newEntry.date_worked,
+          hours_worked: hoursWorked,
+          description: newEntry.description
+        }]);
 
       if (error) throw error;
 
@@ -123,7 +138,8 @@ export const ProjectTimesheet = ({ projects, onRefresh }: ProjectTimesheetProps)
         project_id: "",
         employee_id: "",
         date_worked: "",
-        hours_worked: 0,
+        hours: "",
+        minutes: "",
         description: "",
       });
       setSelectedDate(undefined);
@@ -257,20 +273,55 @@ export const ProjectTimesheet = ({ projects, onRefresh }: ProjectTimesheetProps)
                 </Popover>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="hours">Horas *</Label>
-                <Input
-                  id="hours"
-                  type="number"
-                  step="0.25"
-                  min="0.25"
-                  max="24"
-                  value={newEntry.hours_worked}
-                  onChange={(e) => setNewEntry({ ...newEntry, hours_worked: parseFloat(e.target.value) || 0 })}
-                  placeholder="0.00"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hours">Horas *</Label>
+                  <Input
+                    id="hours"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="24"
+                    value={newEntry.hours}
+                    onChange={(e) => setNewEntry({ ...newEntry, hours: e.target.value })}
+                    placeholder="Ex: 1"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Horas inteiras (0-24)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="minutes">Minutos *</Label>
+                  <Input
+                    id="minutes"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="59"
+                    value={newEntry.minutes}
+                    onChange={(e) => setNewEntry({ ...newEntry, minutes: e.target.value })}
+                    placeholder="Ex: 20"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Minutos (0-59)
+                  </p>
+                </div>
               </div>
+
+              {/* Mostrar total convertido */}
+              {(newEntry.hours || newEntry.minutes) && (
+                <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
+                  Total: <strong>{convertToDecimalHours(newEntry.hours, newEntry.minutes).toFixed(2)}h</strong>
+                  {newEntry.hours && newEntry.minutes && (
+                    <span className="ml-2">
+                      ({newEntry.hours}h {newEntry.minutes}min)
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
