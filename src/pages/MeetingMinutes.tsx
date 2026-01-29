@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, FileText, Search, Edit, Trash2, ChevronDown, ChevronUp, Calendar, User } from "lucide-react";
+import { Plus, FileText, Search, Edit, Trash2, ChevronDown, ChevronUp, Calendar, User, FolderKanban } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -17,9 +17,14 @@ interface AtaCall {
   title: string;
   content: string;
   client_id: string | null;
+  project_id: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
+    id: string;
+    name: string;
+  } | null;
+  projetos?: {
     id: string;
     name: string;
   } | null;
@@ -30,9 +35,15 @@ interface Client {
   name: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 export default function MeetingMinutes() {
   const [atas, setAtas] = useState<AtaCall[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClientFilter, setSelectedClientFilter] = useState<string>("all");
@@ -45,30 +56,87 @@ export default function MeetingMinutes() {
   const [formData, setFormData] = useState({
     title: "",
     content: "",
-    client_id: ""
+    client_id: "",
+    project_id: ""
   });
 
   useEffect(() => {
     fetchAtas();
     fetchClients();
+    fetchProjects();
   }, []);
 
   const fetchAtas = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('ata_calls')
-        .select(`
-          *,
-          clients (
-            id,
-            name
-          )
-        `)
+      // Primeiro, buscar as atas
+      const { data: atasData, error: atasError } = await supabase
+        .from('atas_calls')
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setAtas(data || []);
+      if (atasError) throw atasError;
+
+      // Se não houver atas, retornar array vazio
+      if (!atasData || atasData.length === 0) {
+        setAtas([]);
+        return;
+      }
+
+      // Buscar os client_ids únicos
+      const clientIds = atasData
+        .map(ata => ata.client_id)
+        .filter((id): id is string => id !== null);
+
+      // Buscar os project_ids únicos
+      const projectIds = atasData
+        .map(ata => ata.project_id)
+        .filter((id): id is string => id !== null);
+
+      // Se houver client_ids, buscar os clientes
+      let clientsMap: Record<string, { id: string; name: string }> = {};
+      if (clientIds.length > 0) {
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('clients')
+          .select('id, name')
+          .in('id', clientIds);
+
+        if (!clientsError && clientsData) {
+          clientsMap = clientsData.reduce((acc, client) => {
+            acc[client.id] = client;
+            return acc;
+          }, {} as Record<string, { id: string; name: string }>);
+        }
+      }
+
+      // Se houver project_ids, buscar os projetos
+      let projectsMap: Record<string, { id: string; name: string }> = {};
+      if (projectIds.length > 0) {
+        const { data: projectsData, error: projectsError } = await supabase
+          .from('projetos')
+          .select('id, name')
+          .in('id', projectIds);
+
+        if (!projectsError && projectsData) {
+          projectsMap = projectsData.reduce((acc, project) => {
+            acc[project.id] = project;
+            return acc;
+          }, {} as Record<string, { id: string; name: string }>);
+        }
+      }
+
+      // Combinar os dados
+      const atasWithRelations = atasData.map(ata => ({
+        ...ata,
+        clients: ata.client_id && clientsMap[ata.client_id] 
+          ? clientsMap[ata.client_id] 
+          : null,
+        projetos: ata.project_id && projectsMap[ata.project_id] 
+          ? projectsMap[ata.project_id] 
+          : null
+      }));
+
+      setAtas(atasWithRelations);
     } catch (error: any) {
       console.error('Erro ao buscar atas:', error);
       toast({
@@ -95,6 +163,52 @@ export default function MeetingMinutes() {
     }
   };
 
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projetos')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        setProjects([]);
+        return;
+      }
+      
+      // Remover duplicatas: primeiro por ID (garantir IDs únicos)
+      const uniqueById = Array.from(
+        new Map(data.map(project => [project.id, project])).values()
+      );
+      
+      // Remover duplicatas por nome (manter apenas o primeiro com cada nome)
+      const seenNames = new Set<string>();
+      const seenIds = new Set<string>();
+      const uniqueProjects = uniqueById.filter(project => {
+        // Verificar duplicata por ID
+        if (seenIds.has(project.id)) {
+          return false;
+        }
+        seenIds.add(project.id);
+        
+        // Verificar duplicata por nome
+        if (seenNames.has(project.name)) {
+          return false;
+        }
+        seenNames.add(project.name);
+        return true;
+      });
+      
+      // Ordenar novamente após remover duplicatas
+      uniqueProjects.sort((a, b) => a.name.localeCompare(b.name));
+      
+      setProjects(uniqueProjects);
+    } catch (error: any) {
+      console.error('Erro ao buscar projetos:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -113,12 +227,13 @@ export default function MeetingMinutes() {
         title: formData.title.trim(),
         content: formData.content.trim(),
         client_id: formData.client_id && formData.client_id !== "none" ? formData.client_id : null,
+        project_id: formData.project_id && formData.project_id !== "none" ? formData.project_id : null,
       };
 
       if (editingAta) {
         // Atualizar ata existente
         const { error } = await supabase
-          .from('ata_calls')
+          .from('atas_calls')
           .update(ataData)
           .eq('id', editingAta.id);
 
@@ -131,7 +246,7 @@ export default function MeetingMinutes() {
       } else {
         // Criar nova ata
         const { error } = await supabase
-          .from('ata_calls')
+          .from('atas_calls')
           .insert([ataData]);
 
         if (error) throw error;
@@ -144,7 +259,7 @@ export default function MeetingMinutes() {
 
       setNewAtaOpen(false);
       setEditingAta(null);
-      setFormData({ title: "", content: "", client_id: "" });
+      setFormData({ title: "", content: "", client_id: "", project_id: "" });
       fetchAtas();
     } catch (error: any) {
       console.error('Erro ao salvar ata:', error);
@@ -166,7 +281,7 @@ export default function MeetingMinutes() {
     try {
       setLoading(true);
       const { error } = await supabase
-        .from('ata_calls')
+        .from('atas_calls')
         .delete()
         .eq('id', id);
 
@@ -195,7 +310,8 @@ export default function MeetingMinutes() {
     setFormData({
       title: ata.title,
       content: ata.content,
-      client_id: ata.client_id || "none"
+      client_id: ata.client_id || "none",
+      project_id: ata.project_id || "none"
     });
     setNewAtaOpen(true);
   };
@@ -236,7 +352,7 @@ export default function MeetingMinutes() {
         </div>
         <Button onClick={() => {
           setEditingAta(null);
-          setFormData({ title: "", content: "", client_id: "" });
+          setFormData({ title: "", content: "", client_id: "", project_id: "" });
           setNewAtaOpen(true);
         }}>
           <Plus className="h-4 w-4 mr-2" />
@@ -320,6 +436,12 @@ export default function MeetingMinutes() {
                             {ata.clients.name}
                           </div>
                         )}
+                        {ata.projetos && (
+                          <div className="flex items-center gap-1">
+                            <FolderKanban className="h-4 w-4" />
+                            {ata.projetos.name}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -372,7 +494,7 @@ export default function MeetingMinutes() {
         setNewAtaOpen(open);
         if (!open) {
           setEditingAta(null);
-          setFormData({ title: "", content: "", client_id: "" });
+          setFormData({ title: "", content: "", client_id: "", project_id: "" });
         }
       }}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -381,7 +503,7 @@ export default function MeetingMinutes() {
               {editingAta ? "Editar Ata de Reunião" : "Nova Ata de Reunião"}
             </DialogTitle>
             <DialogDescription>
-              Preencha os dados da ata de reunião. Você pode vincular a um cliente opcionalmente.
+              Preencha os dados da ata de reunião. Você pode vincular a um cliente e/ou projeto opcionalmente.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -432,6 +554,28 @@ export default function MeetingMinutes() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="project_id">Projeto (Opcional)</Label>
+              <Select
+                value={formData.project_id}
+                onValueChange={(value) => setFormData({ ...formData, project_id: value })}
+              >
+                <SelectTrigger id="project_id">
+                  <SelectValue placeholder="Selecione um projeto (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum projeto</SelectItem>
+                  {projects.filter((project, index, self) => 
+                    index === self.findIndex(p => p.id === project.id)
+                  ).map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -439,7 +583,7 @@ export default function MeetingMinutes() {
                 onClick={() => {
                   setNewAtaOpen(false);
                   setEditingAta(null);
-                  setFormData({ title: "", content: "", client_id: "" });
+                  setFormData({ title: "", content: "", client_id: "", project_id: "" });
                 }}
               >
                 Cancelar
