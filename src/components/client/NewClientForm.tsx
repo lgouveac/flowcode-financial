@@ -44,8 +44,8 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 py-4">
-      <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-section py-4">
+      <div className="space-section-compact">
         <ClientTypeSelector clientType={clientType} onTypeChange={handleTypeChange} />
         {clientType === "pj" ? (
           <CompanyForm formData={formData} setFormData={setFormData} />
@@ -59,11 +59,19 @@ export const NewClientForm = ({ onSubmit, onClose }: NewClientFormProps) => {
         />
       </div>
 
-      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onClose}>
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onClose}
+          className="w-full sm:w-auto touch-button"
+        >
           Cancelar
         </Button>
-        <Button type="submit">
+        <Button 
+          type="submit"
+          className="w-full sm:w-auto touch-button"
+        >
           Salvar
         </Button>
       </div>

@@ -242,7 +242,7 @@ export const SimpleChatWidget = () => {
   });
   
   return (
-    <div className="fixed bottom-6 right-6 z-[9999]">
+    <div className="fixed bottom-6 right-6 z-[9999] safe-area-bottom safe-area-right">
       {/* Always visible button */}
       <Button
         onClick={() => {
@@ -250,7 +250,7 @@ export const SimpleChatWidget = () => {
           setIsOpen(!isOpen);
         }}
         size="icon"
-        className="w-14 h-14 rounded-full shadow-lg"
+        className="w-14 h-14 rounded-full shadow-lg touch-target"
         style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999 }}
       >
         <MessageCircle size={24} />
@@ -259,16 +259,21 @@ export const SimpleChatWidget = () => {
       {/* Chat window - Regular mode */}
       {isOpen && !isFullscreen && (
         <div 
-          className="bg-card border border-border rounded-lg shadow-xl w-80 h-96 animate-slide-up"
+          className="bg-card border border-border shadow-xl flex flex-col animate-slide-up
+            w-full h-[70vh] max-h-[600px] fixed bottom-0 left-0 right-0 z-[9998]
+            sm:w-80 sm:h-96 sm:rounded-lg sm:bottom-24 sm:right-6 sm:left-auto
+            safe-area-bottom"
           style={{ 
-            position: 'fixed', 
-            bottom: '90px', 
-            right: '24px', 
             zIndex: 9998
           }}
         >
-          <div className="bg-primary text-primary-foreground p-4 rounded-t-lg flex justify-between items-center">
-            <h3 className="font-medium">Mensageiro</h3>
+          {/* Drag handle para mobile */}
+          <div className="w-full flex justify-center pt-2 pb-1 sm:hidden">
+            <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+          </div>
+          
+          <div className="bg-primary text-primary-foreground p-4 sm:rounded-t-lg flex justify-between items-center">
+            <h3 className="font-medium text-base sm:text-sm">Mensageiro</h3>
             <div className="flex gap-1">
               <Button
                 onClick={() => setIsSettingsOpen(true)}
@@ -327,7 +332,7 @@ export const SimpleChatWidget = () => {
           </ScrollArea>
 
           {/* Input */}
-          <div className="border-t border-border p-3">
+          <div className="border-t border-border p-3 sm:p-3 safe-area-bottom">
             <div className="flex gap-2">
               <Input
                 type="text"
@@ -336,15 +341,15 @@ export const SimpleChatWidget = () => {
                 onKeyDown={handleKeyPress}
                 placeholder="Digite sua pergunta..."
                 disabled={isLoading}
-                className="flex-1"
+                className="flex-1 min-h-[48px] text-base sm:text-sm"
               />
               <Button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isLoading}
-                size="sm"
-                className="px-3"
+                size="default"
+                className="min-h-[48px] min-w-[48px] px-4 sm:min-h-[40px] sm:min-w-[40px] sm:px-3"
               >
-                <Send size={16} />
+                <Send size={20} className="sm:w-4 sm:h-4" />
               </Button>
             </div>
             

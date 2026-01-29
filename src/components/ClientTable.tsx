@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TableBody } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { TableMobileCard } from "@/components/ui/table-mobile-card";
+import { MailIcon, PhoneIcon } from "lucide-react";
 
 export const ClientTable = () => {
   const [clients, setClients] = useState<Client[]>([]);
@@ -174,15 +176,15 @@ export const ClientTable = () => {
   const handlePaymentSuccess = () => {
     // Toast is handled by SimplePaymentDialog
   };
-  return <div className="space-y-6">
+  return <div className="space-section">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold">Clientes</h1>
+        <h1>Clientes</h1>
         <div className="flex flex-wrap w-full sm:w-auto gap-2">
           <ImportCSV />
           <ShareFormButton />
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto gap-2">
+              <Button className="w-full sm:w-auto gap-2 touch-button">
                 <PlusIcon className="h-4 w-4" />
                 Novo Cliente
               </Button>
@@ -200,16 +202,16 @@ export const ClientTable = () => {
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 sm:left-3" />
           <Input 
             placeholder="Buscar clientes..." 
-            className="pl-9" 
+            className="pl-9 sm:pl-9" 
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px] min-h-[48px] sm:min-h-[40px]">
             <SelectValue placeholder="Filtrar por status" />
           </SelectTrigger>
           <SelectContent>
@@ -221,15 +223,81 @@ export const ClientTable = () => {
         </Select>
       </div>
       
-      <div className="rounded-lg border bg-card">
-        <div className="w-full overflow-auto">
+      {/* Mobile Card View */}
+      <div className="block md:hidden">
+        <TableMobileCard
+          data={filteredClients}
+          columns={[
+            {
+              key: 'name',
+              label: 'Nome',
+              render: (value) => <span className="font-semibold">{value}</span>
+            },
+            {
+              key: 'email',
+              label: 'Email',
+              render: (value) => (
+                <div className="flex items-center gap-1.5">
+                  <MailIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs">{value || '-'}</span>
+                </div>
+              )
+            },
+            {
+              key: 'phone',
+              label: 'Telefone',
+              render: (value) => (
+                <div className="flex items-center gap-1.5">
+                  <PhoneIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs">{value || '-'}</span>
+                </div>
+              )
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: (value) => (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  value === "active" 
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
+                    : value === "overdue"
+                    ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+                }`}>
+                  {value === "active" ? "Ativo" 
+                    : value === "overdue" ? "Inadimplente"
+                    : "Inativo"}
+                </span>
+              )
+            },
+            {
+              key: 'total_billing',
+              label: 'Faturamento',
+              render: (value) => (
+                <span className="font-semibold">
+                  {new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                  }).format(value || 0)}
+                </span>
+              )
+            }
+          ]}
+          onRowClick={handleClientClick}
+          emptyMessage="Nenhum cliente encontrado"
+        />
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block rounded-lg border bg-card">
+        <div className="w-full overflow-auto scroll-smooth-mobile">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr className="border-b">
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:!pr-0">Nome</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden md:table-cell">Contato</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Contato</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">Faturamento Total</th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Faturamento Total</th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden lg:table-cell">Último Pagamento</th>
                 <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">Ações</th>
               </tr>

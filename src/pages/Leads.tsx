@@ -6,6 +6,7 @@ import { LeadsKanban } from "@/components/leads/LeadsKanban";
 import { LeadsDashboard } from "@/components/leads/LeadsDashboard";
 import { NewLeadDialog } from "@/components/leads/NewLeadDialog";
 import { List, Grid, Search, Plus, Users, BarChart3, Layers } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export default function Leads() {
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
@@ -14,20 +15,20 @@ export default function Leads() {
   const [activeTab, setActiveTab] = useState('pipeline');
 
   return (
-    <div className="space-y-6">
+    <div className="space-section">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Users className="h-6 w-6" />
+        <h1 className="flex items-center gap-2">
+          <Users className="h-6 w-6 sm:h-5 sm:w-5" />
           Gestão de Leads
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-responsive mt-2">
           Gerencie seus leads e acompanhe o pipeline de vendas
         </p>
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="pipeline" onValueChange={setActiveTab} className="space-y-6">
+      <Tabs defaultValue="pipeline" onValueChange={setActiveTab} className="space-section">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Tabs Navigation */}
           <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
@@ -43,26 +44,26 @@ export default function Leads() {
 
           {/* Controls - shown only on pipeline tab */}
           {activeTab === 'pipeline' && (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500 dark:text-gray-400 z-10 pointer-events-none" />
-                <input
+              <div className="relative flex-1 sm:flex-initial">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none" />
+                <Input
                   type="text"
                   placeholder="Buscar leads..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-10 w-64 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 pl-9 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-9 w-full sm:w-64"
                 />
               </div>
 
               {/* View Toggle */}
-              <div className="flex bg-muted rounded-lg p-1">
+              <div className="flex bg-muted rounded-lg p-1 gap-1">
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('list')}
-                  className="px-3 py-1"
+                  className="min-h-[44px] sm:min-h-[36px] px-3"
                   title="Visualização em Lista"
                 >
                   <List className="h-4 w-4" />
@@ -71,7 +72,7 @@ export default function Leads() {
                   variant={viewMode === 'kanban' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('kanban')}
-                  className="px-3 py-1"
+                  className="min-h-[44px] sm:min-h-[36px] px-3"
                   title="Visualização em Kanban"
                 >
                   <Grid className="h-4 w-4" />
@@ -79,7 +80,10 @@ export default function Leads() {
               </div>
 
               {/* Add Lead */}
-              <Button onClick={() => setNewLeadOpen(true)}>
+              <Button 
+                onClick={() => setNewLeadOpen(true)}
+                className="w-full sm:w-auto touch-button"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Lead
               </Button>

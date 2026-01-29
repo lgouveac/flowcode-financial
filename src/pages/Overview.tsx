@@ -704,9 +704,9 @@ export const Overview = () => {
   }];
 
   return (
-    <div className="space-y-6">
+    <div className="space-section">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1>Dashboard</h1>
         <div className="flex flex-col sm:flex-row gap-2">
           <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-full sm:w-[200px]">
@@ -922,7 +922,7 @@ export const Overview = () => {
 
           {/* Primary stats - não mostrar quando for visualização mensal */}
           {period !== 'monthly' && (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="responsive-grid gap-section">
               {primaryStats.map((stat, i) => (
               <motion.div key={stat.title} initial={{
                 opacity: 0,
@@ -970,7 +970,7 @@ export const Overview = () => {
               <BarChart3 className="h-5 w-5 text-muted-foreground" />
               <h2 className="text-xl font-semibold">Estimativas</h2>
             </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="responsive-grid gap-section">
               {estimateStats.map((stat, i) => (
                 <motion.div key={stat.title} initial={{
                   opacity: 0,
@@ -1021,7 +1021,7 @@ export const Overview = () => {
           {/* Financial Category Breakdown */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Detalhamento Financeiro por Categoria</h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="responsive-grid gap-section">
               {isLoading ?
                 Array(3).fill(0).map((_, i) => (
                   <Card key={i}>
@@ -1112,7 +1112,7 @@ export const Overview = () => {
           {/* Scope Metrics Section */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Análise por Escopo - {getPeriodLabel()}</h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="responsive-grid gap-section">
               <motion.div initial={{
                 opacity: 0,
                 y: 20
