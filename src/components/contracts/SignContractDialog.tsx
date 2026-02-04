@@ -31,10 +31,20 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
   const { getWebhook } = useWebhooks();
   
   // Estados para valores editáveis
-  const [singlePaymentAmount, setSinglePaymentAmount] = useState(contract.total_value || 0);
+  const getNumericValue = (value: number | string | undefined): number => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const num = parseFloat(value);
+      return isNaN(num) ? 0 : num;
+    }
+    return 0;
+  };
+
+  const [singlePaymentAmount, setSinglePaymentAmount] = useState(getNumericValue(contract.total_value));
   const [installmentCount, setInstallmentCount] = useState(contract.installments || 1);
   const [installmentValues, setInstallmentValues] = useState<number[]>(() => {
-    const defaultValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
+    const totalValueNum = getNumericValue(contract.total_value);
+    const defaultValue = contract.installment_value || (totalValueNum && contract.installments ? totalValueNum / contract.installments : 0);
     return Array(contract.installments || 1).fill(defaultValue);
   });
   const [installmentDates, setInstallmentDates] = useState<string[]>(() => {
@@ -58,7 +68,8 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
     if (open && contract) {
       setLinkContratoExterno(contract.link_contrato_externo || "");
       setInstallmentCount(contract.installments || 1);
-      const defaultValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
+      const totalValueNum = getNumericValue(contract.total_value);
+      const defaultValue = contract.installment_value || (totalValueNum && contract.installments ? totalValueNum / contract.installments : 0);
       setInstallmentValues(Array(contract.installments || 1).fill(defaultValue));
       const today = new Date();
       setInstallmentDates(Array(contract.installments || 1).fill(0).map((_, index) => {
@@ -67,7 +78,7 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
         return date.toISOString().split('T')[0];
       }));
       setPagamentoPorEntregaParcelas(Array(contract.installments || 1).fill(false));
-      setSinglePaymentAmount(contract.total_value || 0);
+      setSinglePaymentAmount(getNumericValue(contract.total_value));
       setPagamentoPorEntrega(false);
     }
   }, [open, contract]);
@@ -89,7 +100,8 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
     setInstallmentCount(newCount);
     if (newCount > installmentValues.length) {
       // Adicionar novas parcelas com valor padrão
-      const defaultValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
+      const totalValueNum = getNumericValue(contract.total_value);
+      const defaultValue = contract.installment_value || (totalValueNum && contract.installments ? totalValueNum / contract.installments : 0);
       const newValues = [...installmentValues, ...Array(newCount - installmentValues.length).fill(defaultValue)];
       setInstallmentValues(newValues);
       
@@ -291,7 +303,8 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
     }
   };
 
-  const installmentValue = contract.installment_value || (contract.total_value && contract.installments ? contract.total_value / contract.installments : 0);
+  const totalValueNum = getNumericValue(contract.total_value);
+  const installmentValue = contract.installment_value || (totalValueNum && contract.installments ? totalValueNum / contract.installments : 0);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

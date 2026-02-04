@@ -2,7 +2,12 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export const formatCurrency = (value: number) => {
+export const formatCurrency = (value: number | string) => {
+  // Se for string, retornar como está
+  if (typeof value === 'string') {
+    return value;
+  }
+  // Se for número, formatar como moeda
   return new Intl.NumberFormat('pt-BR', { 
     style: 'currency', 
     currency: 'BRL' 

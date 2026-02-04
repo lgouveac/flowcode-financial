@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
   const { getWebhook } = useWebhooks();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [formData, setFormData] = useState({
     client_id: "",
     contract_id: "",
@@ -58,15 +59,27 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Proteção contra duplicação - verificar se já está processando
+    if (isSubmittingRef.current || loading) {
+      console.warn("Tentativa de submit duplicado bloqueada");
+      return;
+    }
+    
     if (!formData.client_id || !formData.scope || !formData.total_value) {
       return;
     }
 
+    // Marcar como processando
+    isSubmittingRef.current = true;
     setLoading(true);
     try {
-      const totalValue = parseFloat(formData.total_value);
+      // Tentar converter para número, se não for possível, manter como texto
+      const totalValueNum = parseFloat(formData.total_value);
+      const isNumeric = !isNaN(totalValueNum) && isFinite(totalValueNum);
+      const totalValue = isNumeric ? totalValueNum : formData.total_value;
       const installments = parseInt(formData.installments);
-      const installmentValue = totalValue / installments;
+      const installmentValue = isNumeric ? totalValueNum / installments : undefined;
 
       // Buscar IP atual para assinatura automática FlowCode
       let flowcodeIP = '';
@@ -134,14 +147,23 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
       onClose();
     } catch (error) {
       console.error("Error adding contract:", error);
+      toast({
+        title: "Erro ao criar contrato",
+        description: error instanceof Error ? error.message : "Não foi possível criar o contrato.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
   // Calcula automaticamente o valor da parcela quando o valor total ou número de parcelas muda
   const calculateInstallmentValue = () => {
-    const total = parseFloat(formData.total_value) || 0;
+    const total = parseFloat(formData.total_value);
+    if (isNaN(total) || !isFinite(total)) {
+      return 0; // Se não for número, retorna 0
+    }
     const installments = parseInt(formData.installments) || 1;
     return total / installments;
   };
@@ -191,13 +213,11 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
               <Label htmlFor="total_value">Valor Total *</Label>
               <Input
                 id="total_value"
-                type="number"
+                type="text"
                 required
-                step="0.01"
-                min="0"
                 value={formData.total_value}
                 onChange={(e) => setFormData({ ...formData, total_value: e.target.value })}
-                placeholder="0,00"
+                placeholder="Ex: 10000 ou 'A combinar'"
               />
             </div>
 

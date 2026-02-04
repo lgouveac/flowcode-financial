@@ -8,6 +8,7 @@ import { ExternalLink, Copy, Calendar, User, DollarSign, FileText, MapPin, Clock
 import { Contract } from "@/types/contract";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useToast } from "@/hooks/use-toast";
+import { useContracts } from "@/hooks/useContracts";
 
 interface ContractDetailsDialogProps {
   contract: Contract | null;
@@ -48,8 +49,12 @@ const getStatusLabel = (status?: string) => {
 export function ContractDetailsDialog({ contract, open, onClose }: ContractDetailsDialogProps) {
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const { toast } = useToast();
+  const { contracts } = useContracts();
 
-  if (!contract) return null;
+  // Buscar o contrato atualizado da lista para garantir que está sincronizado
+  const currentContract = contracts.find(c => c.id === contract?.id) || contract;
+
+  if (!currentContract) return null;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -82,7 +87,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <FileText className="h-5 w-5" />
-            Detalhes do Contrato #{contract.id}
+            Detalhes do Contrato #{currentContract.id}
           </DialogTitle>
         </DialogHeader>
 
@@ -92,8 +97,8 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg">Informações Gerais</CardTitle>
-                <Badge className={getStatusColor(contract.status)}>
-                  {getStatusLabel(contract.status)}
+                <Badge className={getStatusColor(currentContract.status)}>
+                  {getStatusLabel(currentContract.status)}
                 </Badge>
               </div>
             </CardHeader>
@@ -104,32 +109,32 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                     <User className="h-4 w-4" />
                     Cliente
                   </Label>
-                  <p className="text-lg font-medium">{contract.clients?.name || "Não vinculado"}</p>
-                  {contract.clients?.email && (
-                    <p className="text-sm text-muted-foreground">{contract.clients.email}</p>
+                  <p className="text-lg font-medium">{currentContract.clients?.name || "Não vinculado"}</p>
+                  {currentContract.clients?.email && (
+                    <p className="text-sm text-muted-foreground">{currentContract.clients.email}</p>
                   )}
                 </div>
                 
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Escopo</Label>
-                  <p className="text-lg line-clamp-2 leading-6 max-h-12 overflow-hidden">{contract.scope || "-"}</p>
+                  <p className="text-lg line-clamp-2 leading-6 max-h-12 overflow-hidden">{currentContract.scope || "-"}</p>
                 </div>
                 
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Tipo de Contrato</Label>
                   <p className="text-lg capitalize">
-                    {contract.contract_type === 'open_scope' ? 'Escopo Aberto' : 
-                     contract.contract_type === 'closed_scope' ? 'Escopo Fechado' : 
-                     contract.contract_type || "-"}
+                    {currentContract.contract_type === 'open_scope' ? 'Escopo Aberto' : 
+                     currentContract.contract_type === 'closed_scope' ? 'Escopo Fechado' : 
+                     currentContract.contract_type || "-"}
                   </p>
                 </div>
                 
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Tipo de Contratante</Label>
                   <p className="text-lg capitalize">
-                    {contract.contractor_type === 'individual' ? 'Pessoa Física' : 
-                     contract.contractor_type === 'legal_entity' ? 'Pessoa Jurídica' : 
-                     contract.contractor_type || "-"}
+                    {currentContract.contractor_type === 'individual' ? 'Pessoa Física' : 
+                     currentContract.contractor_type === 'legal_entity' ? 'Pessoa Jurídica' : 
+                     currentContract.contractor_type || "-"}
                   </p>
                 </div>
                 
@@ -138,17 +143,17 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                     <DollarSign className="h-4 w-4" />
                     Valor Total
                   </Label>
-                  <p className="text-lg font-medium">{contract.total_value ? formatCurrency(contract.total_value) : "-"}</p>
+                  <p className="text-lg font-medium">{currentContract.total_value ? formatCurrency(currentContract.total_value) : "-"}</p>
                 </div>
                 
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Parcelas</Label>
                   <p className="text-lg">
-                    {contract.installment_value_text 
-                      ? contract.installment_value_text 
-                      : contract.installment_value 
-                        ? `${contract.installments || 1}x de ${formatCurrency(contract.installment_value)}`
-                        : `${contract.installments || 1}x parcelas`
+                    {currentContract.installment_value_text 
+                      ? currentContract.installment_value_text 
+                      : currentContract.installment_value 
+                        ? `${currentContract.installments || 1}x de ${formatCurrency(currentContract.installment_value)}`
+                        : `${currentContract.installments || 1}x parcelas`
                     }
                   </p>
                 </div>
@@ -159,22 +164,22 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                     Período
                   </Label>
                   <p className="text-lg">
-                    {contract.start_date ? formatDate(new Date(contract.start_date), "dd/MM/yyyy") : "-"}
+                    {currentContract.start_date ? formatDate(new Date(currentContract.start_date), "dd/MM/yyyy") : "-"}
                   </p>
-                  {contract.end_date && (
+                  {currentContract.end_date && (
                     <p className="text-sm text-muted-foreground">
-                      até {formatDate(new Date(contract.end_date), "dd/MM/yyyy")}
+                      até {formatDate(new Date(currentContract.end_date), "dd/MM/yyyy")}
                     </p>
                   )}
                 </div>
                 
-                {contract.Horas && (
+                {currentContract.Horas && (
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                       <Clock className="h-4 w-4" />
                       Horas
                     </Label>
-                    <p className="text-lg">{contract.Horas}</p>
+                    <p className="text-lg">{currentContract.Horas}</p>
                   </div>
                 )}
               </div>
@@ -182,7 +187,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
           </Card>
 
           {/* Preview do Contrato */}
-          {contract.link_contrato && (
+          {currentContract.link_contrato && (
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-center">
@@ -191,7 +196,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyToClipboard(contract.link_contrato!, "Link do contrato")}
+                      onClick={() => copyToClipboard(currentContract.link_contrato!, "Link do contrato")}
                     >
                       <Copy className="h-4 w-4 mr-2" />
                       Copiar Link
@@ -199,7 +204,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(contract.link_contrato, '_blank')}
+                      onClick={() => window.open(currentContract.link_contrato, '_blank')}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Abrir
@@ -220,7 +225,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                   style={{ height: previewExpanded ? '800px' : '400px' }}
                 >
                   <iframe
-                    src={contract.link_contrato}
+                    src={currentContract.link_contrato}
                     className="w-full h-full"
                     title="Preview do Contrato"
                   />
@@ -230,7 +235,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
           )}
 
           {/* Informações de Assinatura */}
-          {(contract.signed_at || contract.data_de_assinatura || contract.signature_data || contract.flowcode_signature_data) && (
+          {(currentContract.signed_at || currentContract.data_de_assinatura || currentContract.signature_data || currentContract.flowcode_signature_data) && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -241,7 +246,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
               <CardContent>
                 <div className="space-y-8">
                   {/* Assinatura do Cliente */}
-                  {(contract.signed_at || contract.data_de_assinatura || contract.signature_data) && (
+                  {(currentContract.signed_at || currentContract.data_de_assinatura || currentContract.signature_data) && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b border-blue-200 pb-2">
                         👤 Assinatura do Cliente
@@ -250,22 +255,22 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                         <div>
                           <Label className="text-sm font-medium text-muted-foreground">Data de Assinatura</Label>
                           <p className="text-lg">
-                            {formatDateTime(contract.signed_at || contract.data_de_assinatura)}
+                            {formatDateTime(currentContract.signed_at || currentContract.data_de_assinatura)}
                           </p>
                         </div>
                         
-                        {contract.ip && (
+                        {currentContract.ip && (
                           <div>
                             <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                               <MapPin className="h-4 w-4" />
                               IP do Cliente
                             </Label>
                             <div className="flex items-center gap-2">
-                              <p className="text-lg font-mono">{contract.ip}</p>
+                              <p className="text-lg font-mono">{currentContract.ip}</p>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => copyToClipboard(contract.ip!, "IP do cliente")}
+                                onClick={() => copyToClipboard(currentContract.ip!, "IP do cliente")}
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
@@ -273,11 +278,11 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                           </div>
                         )}
                         
-                        {contract.signature_data && (
+                        {currentContract.signature_data && (
                           <div className="md:col-span-2">
                             <Label className="text-sm font-medium text-muted-foreground">Dados da Assinatura</Label>
                             <div className="mt-2 p-4 border rounded-lg bg-muted/30">
-                              <p className="text-sm font-mono break-all">{contract.signature_data}</p>
+                              <p className="text-sm font-mono break-all">{currentContract.signature_data}</p>
                             </div>
                           </div>
                         )}
@@ -286,43 +291,43 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                   )}
 
                   {/* Assinatura da FlowCode */}
-                  {(contract.data_de_assinatura_flowcode || contract.flowcode_signature_data || contract.assinante_flowcode || contract.ip_flowcode) && (
+                  {(currentContract.data_de_assinatura_flowcode || currentContract.flowcode_signature_data || currentContract.assinante_flowcode || currentContract.ip_flowcode) && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-purple-700 border-b border-purple-200 pb-2">
                         🏢 Assinatura FlowCode
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {contract.data_de_assinatura_flowcode && (
+                        {currentContract.data_de_assinatura_flowcode && (
                           <div>
                             <Label className="text-sm font-medium text-muted-foreground">Data de Assinatura FlowCode</Label>
                             <p className="text-lg">
-                              {formatDateTime(contract.data_de_assinatura_flowcode)}
+                              {formatDateTime(currentContract.data_de_assinatura_flowcode)}
                             </p>
                           </div>
                         )}
                         
-                        {contract.assinante_flowcode && (
+                        {currentContract.assinante_flowcode && (
                           <div>
                             <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                               <User className="h-4 w-4" />
                               Assinante FlowCode
                             </Label>
-                            <p className="text-lg">{contract.assinante_flowcode}</p>
+                            <p className="text-lg">{currentContract.assinante_flowcode}</p>
                           </div>
                         )}
                         
-                        {contract.ip_flowcode && (
+                        {currentContract.ip_flowcode && (
                           <div>
                             <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                               <MapPin className="h-4 w-4" />
                               IP FlowCode
                             </Label>
                             <div className="flex items-center gap-2">
-                              <p className="text-lg font-mono">{contract.ip_flowcode}</p>
+                              <p className="text-lg font-mono">{currentContract.ip_flowcode}</p>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => copyToClipboard(contract.ip_flowcode!, "IP da FlowCode")}
+                                onClick={() => copyToClipboard(currentContract.ip_flowcode!, "IP da FlowCode")}
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
@@ -330,11 +335,11 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                           </div>
                         )}
                         
-                        {contract.flowcode_signature_data && (
+                        {currentContract.flowcode_signature_data && (
                           <div className="md:col-span-2">
                             <Label className="text-sm font-medium text-muted-foreground">Dados da Assinatura FlowCode</Label>
                             <div className="mt-2 p-4 border rounded-lg bg-muted/30">
-                              <p className="text-sm font-mono break-all">{contract.flowcode_signature_data}</p>
+                              <p className="text-sm font-mono break-all">{currentContract.flowcode_signature_data}</p>
                             </div>
                           </div>
                         )}
@@ -355,34 +360,34 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Data de Criação</Label>
-                  <p className="text-lg">{formatDateTime(contract.created_at)}</p>
+                  <p className="text-lg">{formatDateTime(currentContract.created_at)}</p>
                 </div>
                 
-                {contract.updated_at && (
+                {currentContract.updated_at && (
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Última Atualização</Label>
-                    <p className="text-lg">{formatDateTime(contract.updated_at)}</p>
+                    <p className="text-lg">{formatDateTime(currentContract.updated_at)}</p>
                   </div>
                 )}
                 
-                {contract.ip && (
+                {currentContract.ip && (
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">IP de Criação</Label>
-                    <p className="text-lg font-mono">{contract.ip}</p>
+                    <p className="text-lg font-mono">{currentContract.ip}</p>
                   </div>
                 )}
                 
-                {contract.contract_id && (
+                {currentContract.contract_id && (
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">ID do Contrato</Label>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 overflow-x-auto">
-                        <p className="text-lg font-mono whitespace-nowrap">{contract.contract_id}</p>
+                        <p className="text-lg font-mono whitespace-nowrap">{currentContract.contract_id}</p>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copyToClipboard(contract.contract_id!, "ID do contrato")}
+                        onClick={() => copyToClipboard(currentContract.contract_id!, "ID do contrato")}
                         className="flex-shrink-0"
                       >
                         <Copy className="h-4 w-4" />
@@ -395,7 +400,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
           </Card>
 
           {/* Observações */}
-          {contract.obs && (
+          {currentContract.obs && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">Observações</CardTitle>
@@ -403,7 +408,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
               <CardContent>
                 <div className="p-4 border rounded-lg bg-muted/30">
                   <div className="max-h-32 overflow-y-auto">
-                    <p className="whitespace-pre-wrap">{contract.obs}</p>
+                    <p className="whitespace-pre-wrap">{currentContract.obs}</p>
                   </div>
                 </div>
               </CardContent>

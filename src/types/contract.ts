@@ -6,7 +6,7 @@ export interface Contract {
   contract_id?: string;
   scope?: string;
   projeto_relacionado?: string;
-  total_value?: number;
+  total_value?: number | string;
   installments?: number;
   installment_value?: number;
   installment_value_text?: string;

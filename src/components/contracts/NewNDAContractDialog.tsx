@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ export function NewNDAContractDialog({ open, onClose, onContractCreated }: NewND
   const [selectedPersonType, setSelectedPersonType] = useState<"client" | "employee" | "">("");
   const [selectedPersonId, setSelectedPersonId] = useState("");
   const { toast } = useToast();
+  const isSubmittingRef = useRef(false);
 
   // Buscar clientes
   const { data: clients = [] } = useQuery({
@@ -54,6 +55,13 @@ export function NewNDAContractDialog({ open, onClose, onContractCreated }: NewND
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Proteção contra duplicação - verificar se já está processando
+    if (isSubmittingRef.current || loading) {
+      console.warn("Tentativa de submit duplicado bloqueada");
+      return;
+    }
+    
     if (!selectedPersonType || !selectedPersonId) {
       toast({
         title: "Erro",
@@ -63,6 +71,8 @@ export function NewNDAContractDialog({ open, onClose, onContractCreated }: NewND
       return;
     }
 
+    // Marcar como processando
+    isSubmittingRef.current = true;
     setLoading(true);
     try {
       // Buscar IP atual para assinatura automática FlowCode
@@ -123,6 +133,7 @@ export function NewNDAContractDialog({ open, onClose, onContractCreated }: NewND
       });
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 

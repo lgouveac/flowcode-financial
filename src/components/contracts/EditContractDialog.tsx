@@ -153,9 +153,12 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
     setLoading(true);
     try {
-      const totalValue = parseFloat(formData.total_value);
+      // Tentar converter para número, se não for possível, manter como texto
+      const totalValueNum = parseFloat(formData.total_value);
+      const isNumeric = !isNaN(totalValueNum) && isFinite(totalValueNum);
+      const totalValue = isNumeric ? totalValueNum : formData.total_value;
       const installments = parseInt(formData.installments) || 1;
-      const installmentValue = totalValue / installments;
+      const installmentValue = isNumeric ? totalValueNum / installments : undefined;
 
       const updatedData = {
         scope: formData.scope,
@@ -247,14 +250,25 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
   // Calcula automaticamente o valor da parcela quando o valor total ou número de parcelas muda
   const calculateInstallmentValue = () => {
-    const total = parseFloat(formData.total_value) || 0;
+    const total = parseFloat(formData.total_value);
+    if (isNaN(total) || !isFinite(total)) {
+      return 0; // Se não for número, retorna 0
+    }
     const installments = parseInt(formData.installments) || 1;
     return total / installments;
   };
 
   // Gera parcelas detalhadas baseadas no valor total e número de parcelas
   const generateInstallmentDetails = () => {
-    const totalValue = parseFloat(formData.total_value) || 0;
+    const totalValue = parseFloat(formData.total_value);
+    if (isNaN(totalValue) || !isFinite(totalValue)) {
+      toast({
+        title: "Erro",
+        description: "Valor total deve ser um número para gerar parcelas automaticamente.",
+        variant: "destructive",
+      });
+      return;
+    }
     const installments = parseInt(formData.installments) || 1;
     const installmentValue = totalValue / installments;
     const startDate = formData.start_date ? new Date(formData.start_date) : new Date();
@@ -353,13 +367,11 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
               <Label htmlFor="total_value">Valor Total *</Label>
               <Input
                 id="total_value"
-                type="number"
+                type="text"
                 required
-                step="0.01"
-                min="0"
                 value={formData.total_value}
                 onChange={(e) => setFormData({ ...formData, total_value: e.target.value })}
-                placeholder="0,00"
+                placeholder="Ex: 10000 ou 'A combinar'"
               />
             </div>
 
