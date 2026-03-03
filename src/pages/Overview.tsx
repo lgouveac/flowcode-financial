@@ -56,7 +56,7 @@ interface MonthlyRevenuePayment {
 }
 
 export const Overview = () => {
-  const [period, setPeriod] = useState("monthly"); // Mudado para "monthly" como padrão
+  const [period, setPeriod] = useState("current"); // Mês atual como padrão
   const [futureProjections, setFutureProjections] = useState<FutureProjection[]>([]);
   const [projectionsLoading, setProjectionsLoading] = useState(false);
   const [projectionDialogOpen, setProjectionDialogOpen] = useState(false);
