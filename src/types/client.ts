@@ -15,7 +15,6 @@ export interface Client {
   partner_cpf?: string;
   cpf?: string;
   address: string;
-  due_date: string;
   payment_method: "pix" | "boleto" | "credit_card";
   responsible_name?: string;
   responsavel_financeiro?: string;
@@ -31,4 +30,4 @@ export type NewClient = Omit<Client, 'id' | 'total_billing' | 'status'> & {
   status?: "active" | "inactive" | "overdue";
 };
 
-export type EditablePaymentFields = Pick<Client, 'name' | 'email' | 'phone' | 'status' | 'address' | 'due_date' | 'payment_method'>;
+export type EditablePaymentFields = Pick<Client, 'name' | 'email' | 'phone' | 'status' | 'address' | 'payment_method'>;

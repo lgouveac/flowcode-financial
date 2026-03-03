@@ -32,7 +32,6 @@ export const ImportCSV = () => {
     const phoneIndex = headers.indexOf("telefone");
     const typeIndex = headers.indexOf("tipo");
     const addressIndex = headers.indexOf("endereco");
-    const dueDateIndex = headers.indexOf("vencimento");
     const paymentMethodIndex = headers.indexOf("metodo_pagamento");
     const companyNameIndex = headers.indexOf("empresa");
     const cnpjIndex = headers.indexOf("cnpj");
@@ -65,19 +64,6 @@ export const ImportCSV = () => {
         
         if (phoneIndex !== -1 && values[phoneIndex]) client.phone = values[phoneIndex];
         if (addressIndex !== -1 && values[addressIndex]) client.address = values[addressIndex];
-        
-        if (dueDateIndex !== -1 && values[dueDateIndex]) {
-          // Formato esperado: DD
-          const dueDay = parseInt(values[dueDateIndex]);
-          if (isNaN(dueDay) || dueDay < 1 || dueDay > 31) {
-            throw new Error(`Data de vencimento inválida na linha ${i}: ${values[dueDateIndex]}`);
-          }
-          
-          // Converter para data completa (1º dia do mês seguinte)
-          const today = new Date();
-          const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, dueDay);
-          client.due_date = nextMonth.toISOString().split('T')[0];
-        }
         
         if (paymentMethodIndex !== -1 && values[paymentMethodIndex]) {
           const method = values[paymentMethodIndex].toLowerCase();

@@ -28,7 +28,6 @@ export default function PublicClientForm() {
     partner_name: "",
     partner_cpf: "",
     address: "",
-    due_date: "",
     payment_method: "pix",
   });
 
@@ -43,7 +42,7 @@ export default function PublicClientForm() {
         type: clientType,
         name: clientType === 'pj' ? formData.company_name : formData.name,
         status: 'active' as "active" | "inactive" | "overdue",
-        total_billing: 0
+        total_billing: 0,
       };
 
       // Create a public client without requiring authentication

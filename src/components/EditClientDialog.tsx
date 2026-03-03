@@ -46,7 +46,6 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
           partner_cpf: formData.partner_cpf,
           cpf: formData.cpf,
           address: formData.address,
-          due_date: formData.due_date,
           payment_method: formData.payment_method,
           total_billing: formData.total_billing,
           responsible_name: formData.responsible_name,
@@ -299,15 +298,6 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
                 type="number"
                 value={formData.total_billing}
                 onChange={(e) => setFormData({ ...formData, total_billing: parseFloat(e.target.value) })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="due_date">Dia do Vencimento</Label>
-              <Input
-                id="due_date"
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
               />
             </div>
           </div>

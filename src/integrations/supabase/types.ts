@@ -71,7 +71,6 @@ export type Database = {
           company_name: string | null
           cpf: string | null
           created_at: string | null
-          due_date: string | null
           email: string
           id: string
           last_payment: string | null
@@ -94,7 +93,6 @@ export type Database = {
           company_name?: string | null
           cpf?: string | null
           created_at?: string | null
-          due_date?: string | null
           email: string
           id?: string
           last_payment?: string | null
@@ -117,7 +115,6 @@ export type Database = {
           company_name?: string | null
           cpf?: string | null
           created_at?: string | null
-          due_date?: string | null
           email?: string
           id?: string
           last_payment?: string | null
