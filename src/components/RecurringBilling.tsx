@@ -812,7 +812,7 @@ export const RecurringBilling = () => {
         </TabsContent>
 
         <TabsContent value="onetime" className="border border-0 mt-4">
-          <BillingTable billings={sortedClosedScopeBillings} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
+          <BillingTable billings={sortedClosedScopeBillings as any} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
         </TabsContent>
       </Tabs>
 
