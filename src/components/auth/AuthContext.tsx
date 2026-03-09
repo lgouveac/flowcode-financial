@@ -1,9 +1,10 @@
 import { 
-  createContext, 
-  useContext, 
-  useState, 
-  useEffect, 
-  ReactNode 
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  ReactNode
 } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const isPasswordRecoveryRef = useRef(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -59,9 +61,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (event === 'PASSWORD_RECOVERY') {
           console.log('Password recovery event - redirecting to reset password');
+          isPasswordRecoveryRef.current = true;
           setLoading(false);
           navigate('/auth/reset-password', { replace: true });
+          return;
         } else if (event === 'SIGNED_IN' && newSession) {
+          // Skip redirect if we're in password recovery flow
+          if (isPasswordRecoveryRef.current) {
+            console.log('SIGNED_IN during password recovery - skipping redirect');
+            setLoading(false);
+            return;
+          }
           // Use setTimeout to avoid potential deadlocks with Supabase client
           setTimeout(() => {
             // Fetch user profile
@@ -86,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               });
           }, 0);
         } else if (event === 'SIGNED_OUT') {
+          isPasswordRecoveryRef.current = false;
           setProfile(null);
           setLoading(false);
           console.log('User signed out - explicit sign out');
