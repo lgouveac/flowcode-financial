@@ -307,11 +307,11 @@ export function ContractTable() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {contract.total_value ? formatCurrency(contract.total_value) : "-"}
+                        {contract.total_value ? formatCurrency(Number(contract.total_value)) : "-"}
                       </TableCell>
                       <TableCell>{contract.installments || "1"}</TableCell>
                       <TableCell>
-                        {contract.installment_value ? formatCurrency(contract.installment_value) : "-"}
+                        {contract.installment_value ? formatCurrency(Number(contract.installment_value)) : "-"}
                       </TableCell>
                       <TableCell>
                         {contract.start_date ? formatDate(new Date(contract.start_date), "dd/MM/yyyy") : "-"}
