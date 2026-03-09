@@ -465,10 +465,11 @@ export const RecurringBilling = () => {
     }
     
     return finalOpenScopeBillings.filter(billing => {
-      if (billing.individual_payment) {
+      const b = billing as any;
+      if (b.individual_payment) {
         // Para pagamento expandido: filtrar pelo status real do pagamento
-        return billingStatusDetailFilter.includes(billing.individual_payment.status);
-      } else if (billing.is_virtual) {
+        return billingStatusDetailFilter.includes(b.individual_payment.status);
+      } else if (b.is_virtual) {
         // Para parcelas virtuais: filtrar pelo status da parcela virtual
         return billingStatusDetailFilter.includes(billing.status);
       } else {
