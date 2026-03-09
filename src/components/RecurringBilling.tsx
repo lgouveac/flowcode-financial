@@ -714,10 +714,10 @@ export const RecurringBilling = () => {
                 <div>
                   <Label className="text-sm font-medium">Visualização</Label>
                   <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox 
+    <Checkbox 
                       id="expand-charges-open" 
                       checked={expandChargesOpen}
-                      onCheckedChange={setExpandChargesOpen}
+                      onCheckedChange={(v) => setExpandChargesOpen(v === true)}
                     />
                     <Label htmlFor="expand-charges-open" className="text-sm">
                       Expandir cobranças
