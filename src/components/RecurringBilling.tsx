@@ -387,12 +387,13 @@ export const RecurringBilling = () => {
     }
     
     return filteredPayments.filter(billing => {
-      if (billing.individual_payment) {
+      const b = billing as any;
+      if (b.individual_payment) {
         // Para pagamento expandido: filtrar pelo status real
-        return paymentStatusDetailFilter.includes(billing.individual_payment.status);
-      } else if (billing.related_payments) {
+        return paymentStatusDetailFilter.includes(b.individual_payment.status);
+      } else if (b.related_payments) {
         // Para billing agrupado: verificar se algum pagamento tem o status
-        return billing.related_payments.some(payment => paymentStatusDetailFilter.includes(payment.status));
+        return b.related_payments.some((payment: any) => paymentStatusDetailFilter.includes(payment.status));
       }
       return true;
     });
