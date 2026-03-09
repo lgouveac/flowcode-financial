@@ -189,11 +189,11 @@ export function ContractTable() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
           <CardTitle>Contratos</CardTitle>
-          <div className="flex items-center gap-6">
-            {/* Toggle de visualização */}
-            <div className="flex bg-muted rounded-lg p-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Toggle de visualização - oculto no mobile */}
+            <div className="hidden sm:flex bg-muted rounded-lg p-1">
               <Button
                 variant={viewMode === 'table' ? 'default' : 'ghost'}
                 size="sm"
@@ -215,26 +215,63 @@ export function ContractTable() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => refetch()}
                 title="Atualizar lista de contratos"
               >
-                🔄 Atualizar
+                🔄 <span className="hidden sm:inline ml-1">Atualizar</span>
               </Button>
-              <Button onClick={() => setNewContractOpen(true)}>
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Novo Contrato
+              <Button size="sm" onClick={() => setNewContractOpen(true)}>
+                <PlusIcon className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Novo Contrato</span>
+                <span className="sm:hidden">Novo</span>
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6">
           {uniqueContracts.length === 0 ? (
             <div className="flex items-center justify-center h-40">
               <p className="text-muted-foreground">Nenhum contrato encontrado.</p>
             </div>
           ) : viewMode === 'table' ? (
-            <div className="overflow-x-auto">
-              <div className="w-full">
+            <>
+              {/* Mobile: cards */}
+              <div className="flex flex-col gap-3 sm:hidden">
+                {uniqueContracts.map((contract) => (
+                  <Card key={contract.id} className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm truncate">
+                          {contract.clients?.name || "Cliente não vinculado"}
+                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                          {contract.scope || "-"}
+                        </p>
+                      </div>
+                      <Badge variant={getStatusVariant(contract.status)} className="flex-shrink-0 text-xs">
+                        {getStatusLabel(contract.status)}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
+                      <span><Badge variant={getContractTypeVariant(contract.contract_type)} className="text-xs">{getContractTypeLabel(contract.contract_type)}</Badge></span>
+                      <span>Valor: <strong className="text-foreground">{contract.total_value ? formatCurrency(contract.total_value) : "-"}</strong></span>
+                      <span>{contract.installments || "1"}x {contract.installment_value ? formatCurrency(contract.installment_value) : ""}</span>
+                      {contract.start_date && <span>Início: {formatDate(new Date(contract.start_date), "dd/MM/yyyy")}</span>}
+                    </div>
+                    <div className="flex items-center gap-1 border-t pt-2">
+                      <Button variant="ghost" size="sm" onClick={() => setViewingContract(contract)} className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleOpenSigningPage(contract.contract_id)} className="h-8 w-8 p-0"><ExternalLink className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => setSigningContract(contract)} className="h-8 w-8 p-0"><CheckIcon className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingContract(contract)} className="h-8 w-8 p-0"><EditIcon className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(contract.id)} className="h-8 w-8 p-0"><TrashIcon className="h-4 w-4" /></Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden sm:block overflow-x-auto">
                 <Table>
                 <TableHeader>
                   <TableRow>
@@ -286,51 +323,11 @@ export function ContractTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 min-w-fit">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setViewingContract(contract)}
-                            title="Ver Detalhes"
-                            className="h-8 w-8 p-0 flex-shrink-0"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenSigningPage(contract.contract_id)}
-                            title="Abrir Página de Assinatura"
-                            className="h-8 w-8 p-0 flex-shrink-0"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSigningContract(contract)}
-                            title={contract.status === "completed" ? "Chamar Webhook / Re-assinar" : "Marcar como Assinado"}
-                            className="h-8 w-8 p-0 flex-shrink-0"
-                            >
-                              <CheckIcon className="h-4 w-4" />
-                            </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingContract(contract)}
-                            title="Editar"
-                            className="h-8 w-8 p-0 flex-shrink-0"
-                          >
-                            <EditIcon className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(contract.id)}
-                            title="Excluir"
-                            className="h-8 w-8 p-0 flex-shrink-0"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setViewingContract(contract)} title="Ver Detalhes" className="h-8 w-8 p-0 flex-shrink-0"><Eye className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleOpenSigningPage(contract.contract_id)} title="Abrir Página de Assinatura" className="h-8 w-8 p-0 flex-shrink-0"><ExternalLink className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => setSigningContract(contract)} title={contract.status === "completed" ? "Chamar Webhook / Re-assinar" : "Marcar como Assinado"} className="h-8 w-8 p-0 flex-shrink-0"><CheckIcon className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => setEditingContract(contract)} title="Editar" className="h-8 w-8 p-0 flex-shrink-0"><EditIcon className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(contract.id)} title="Excluir" className="h-8 w-8 p-0 flex-shrink-0"><TrashIcon className="h-4 w-4" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -338,7 +335,7 @@ export function ContractTable() {
                 </TableBody>
               </Table>
               </div>
-            </div>
+            
           ) : (
             // Visualização em Grid
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

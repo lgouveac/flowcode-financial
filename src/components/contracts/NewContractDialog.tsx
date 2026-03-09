@@ -170,20 +170,30 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Novo Contrato</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="client">Cliente *</Label>
-              <ClientSelector
-                clients={clients}
-                onSelect={(clientId) => setFormData({ ...formData, client_id: clientId })}
-                initialValue={formData.client_id}
-              />
+              <Select
+                value={formData.client_id}
+                onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o cliente" />
+                </SelectTrigger>
+                <SelectContent position="popper" className="max-h-[200px] overflow-y-auto z-[200]">
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -208,7 +218,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="total_value">Valor Total *</Label>
               <Input
@@ -222,7 +232,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="installments">Número de Parcelas *</Label>
+              <Label htmlFor="installments">Nº de Parcelas *</Label>
               <Input
                 id="installments"
                 type="number"
@@ -241,19 +251,19 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
                 step="0.01"
                 value={calculateInstallmentValue().toFixed(2)}
                 disabled
-                className="bg-gray-100"
+                className="bg-muted"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contract_type">Tipo de Contrato</Label>
               <Select value={formData.contract_type} onValueChange={(value) => setFormData({ ...formData, contract_type: value as "open_scope" | "closed_scope" })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper">
                   <SelectItem value="closed_scope">Escopo Fechado</SelectItem>
                   <SelectItem value="open_scope">Escopo Aberto</SelectItem>
                 </SelectContent>
@@ -266,7 +276,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper">
                   <SelectItem value="individual">Pessoa Física</SelectItem>
                   <SelectItem value="legal_entity">Pessoa Jurídica</SelectItem>
                 </SelectContent>
@@ -289,7 +299,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start_date">Data de Início</Label>
               <Input
@@ -327,7 +337,7 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper">
                 <SelectItem value="active">Ativo</SelectItem>
                 <SelectItem value="completed">Concluído</SelectItem>
                 <SelectItem value="cancelled">Cancelado</SelectItem>
