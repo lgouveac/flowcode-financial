@@ -255,8 +255,8 @@ export function ContractTable() {
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
                       <span><Badge variant={getContractTypeVariant(contract.contract_type)} className="text-xs">{getContractTypeLabel(contract.contract_type)}</Badge></span>
-                      <span>Valor: <strong className="text-foreground">{contract.total_value ? formatCurrency(contract.total_value) : "-"}</strong></span>
-                      <span>{contract.installments || "1"}x {contract.installment_value ? formatCurrency(contract.installment_value) : ""}</span>
+                      <span>Valor: <strong className="text-foreground">{contract.total_value ? formatCurrency(Number(contract.total_value)) : "-"}</strong></span>
+                      <span>{contract.installments || "1"}x {contract.installment_value ? formatCurrency(Number(contract.installment_value)) : ""}</span>
                       {contract.start_date && <span>Início: {formatDate(new Date(contract.start_date), "dd/MM/yyyy")}</span>}
                     </div>
                     <div className="flex items-center gap-1 border-t pt-2">
