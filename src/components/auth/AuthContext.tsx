@@ -57,7 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(newSession);
         setUser(newSession?.user ?? null);
 
-        if (event === 'SIGNED_IN' && newSession) {
+        if (event === 'PASSWORD_RECOVERY') {
+          console.log('Password recovery event - redirecting to reset password');
+          setLoading(false);
+          navigate('/auth/reset-password', { replace: true });
+        } else if (event === 'SIGNED_IN' && newSession) {
           // Use setTimeout to avoid potential deadlocks with Supabase client
           setTimeout(() => {
             // Fetch user profile
@@ -74,9 +78,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   setProfile(data);
                 }
                 setLoading(false);
-                
-                // Only navigate if we're on an auth page
-                if (isAuthPage()) {
+
+                // Only navigate if we're on an auth page and NOT on reset-password
+                if (isAuthPage() && location.pathname !== '/auth/reset-password') {
                   navigate('/', { replace: true });
                 }
               });

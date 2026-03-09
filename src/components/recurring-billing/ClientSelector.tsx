@@ -1,14 +1,14 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Client {
@@ -24,29 +24,47 @@ interface ClientSelectorProps {
   loading?: boolean;
 }
 
-export function ClientSelector({ 
-  clients, 
-  onSelect, 
-  initialValue = "", 
+export function ClientSelector({
+  clients,
+  onSelect,
+  initialValue = "",
   disabled = false,
   loading = false
 }: ClientSelectorProps) {
   const [selectedClientId, setSelectedClientId] = useState(initialValue);
-  
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
   // Ensure clients is always a valid array
-  const safeClients = Array.isArray(clients) ? clients.filter(client => 
+  const safeClients = Array.isArray(clients) ? clients.filter(client =>
     client && typeof client === 'object' && client.id && client.name
   ) : [];
-  
+
+  const filteredClients = safeClients.filter(client =>
+    client.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedClient = safeClients.find(c => c.id === selectedClientId);
+
   useEffect(() => {
     if (initialValue) {
       setSelectedClientId(initialValue);
     }
   }, [initialValue]);
 
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    } else {
+      setSearch("");
+    }
+  }, [open]);
+
   const handleSelect = (clientId: string) => {
     setSelectedClientId(clientId);
     onSelect(clientId);
+    setOpen(false);
   };
 
   if (loading) {
@@ -58,27 +76,59 @@ export function ClientSelector({
   }
 
   return (
-    <Select 
-      value={selectedClientId} 
-      onValueChange={handleSelect}
-      disabled={disabled}
-    >
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Selecione o cliente" />
-      </SelectTrigger>
-      <SelectContent className="max-h-[300px]">
-        {safeClients.length > 0 ? (
-          safeClients.map((client) => (
-            <SelectItem key={client.id} value={client.id}>
-              {client.name}
-            </SelectItem>
-          ))
-        ) : (
-          <div className="p-2 text-center text-sm text-muted-foreground">
-            Nenhum cliente disponível
-          </div>
-        )}
-      </SelectContent>
-    </Select>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className="w-full justify-between font-normal"
+        >
+          <span className="truncate">
+            {selectedClient ? selectedClient.name : "Selecione o cliente"}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <div className="flex items-center border-b px-3 py-2">
+          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+          <Input
+            ref={inputRef}
+            placeholder="Buscar cliente..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border-0 p-0 h-8 focus-visible:ring-0 focus-visible:ring-offset-0"
+          />
+        </div>
+        <div className="max-h-[250px] overflow-y-auto p-1">
+          {filteredClients.length > 0 ? (
+            filteredClients.map((client) => (
+              <button
+                key={client.id}
+                onClick={() => handleSelect(client.id)}
+                className={cn(
+                  "flex w-full items-center rounded-sm px-2 py-2 text-sm cursor-pointer hover:bg-accent",
+                  selectedClientId === client.id && "bg-accent"
+                )}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4 shrink-0",
+                    selectedClientId === client.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                <span className="truncate">{client.name}</span>
+              </button>
+            ))
+          ) : (
+            <div className="p-2 text-center text-sm text-muted-foreground">
+              Nenhum cliente encontrado
+            </div>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

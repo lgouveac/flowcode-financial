@@ -332,7 +332,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-auto">
         <DialogHeader>
           <DialogTitle>Editar Contrato</DialogTitle>
         </DialogHeader>
@@ -362,7 +362,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="total_value">Valor Total *</Label>
               <Input
@@ -413,19 +413,19 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
             <CollapsibleContent className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-lg">
+                  <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-lg">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-5 w-5" />
-                      Gestão Detalhada de Parcelas
+                      <span className="text-base sm:text-lg">Parcelas Detalhadas</span>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={generateInstallmentDetails}
                       >
-                        Gerar Parcelas Automaticamente
+                        Gerar Automaticamente
                       </Button>
                       <Button
                         type="button"
@@ -434,7 +434,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
                         onClick={addInstallment}
                       >
                         <Plus className="h-4 w-4 mr-1" />
-                        Adicionar Parcela
+                        Adicionar
                       </Button>
                     </div>
                   </CardTitle>
@@ -530,7 +530,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
             </CollapsibleContent>
           </Collapsible>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contract_type">Tipo de Contrato</Label>
               <Select value={formData.contract_type} onValueChange={(value) => setFormData({ ...formData, contract_type: value as "open_scope" | "closed_scope" | "NDA" })}>
@@ -546,7 +546,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
              </div>
            </div>
 
-           <div className="grid grid-cols-2 gap-4">
+           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
              <div className="space-y-2">
                <Label htmlFor="contractor_type">Tipo de Contratante</Label>
                <Select value={formData.contractor_type} onValueChange={(value) => setFormData({ ...formData, contractor_type: value as "individual" | "legal_entity" })}>
@@ -576,7 +576,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
              )}
            </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start_date">Data de Início</Label>
               <Input
@@ -648,7 +648,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
             <Label htmlFor="texto_contrato">Texto do Contrato (Markdown)</Label>
 
             {/* Rich Text Toolbar */}
-            <div className="flex items-center justify-between p-3 border rounded-t-md bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2 sm:p-3 border rounded-t-md bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -701,7 +701,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
                 </div>
               </div>
 
-              <span className="text-sm text-blue-700 font-medium">
+              <span className="hidden sm:inline text-sm text-blue-700 font-medium">
                 Selecione texto e use os botões para formatar
               </span>
             </div>

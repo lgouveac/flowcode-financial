@@ -18,7 +18,7 @@ export default function Contracts() {
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Gestão de Contratos</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">Gestão de Contratos</h1>
         <p className="text-muted-foreground">
           Gerencie diferentes tipos de contratos e documentos legais
         </p>
@@ -26,24 +26,23 @@ export default function Contracts() {
 
       {/* Tabs Container */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
-            <TabsTrigger value="service-contracts" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-4 h-auto">
+            <TabsTrigger value="service-contracts" className="flex items-center gap-1 sm:gap-2 px-2 py-2 text-xs sm:text-sm">
+              <FileText className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Prestação de Serviço</span>
               <span className="sm:hidden">Serviços</span>
             </TabsTrigger>
-            <TabsTrigger value="nda-contracts" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">NDAs</span>
-              <span className="sm:hidden">NDA</span>
+            <TabsTrigger value="nda-contracts" className="flex items-center gap-1 sm:gap-2 px-2 py-2 text-xs sm:text-sm">
+              <Shield className="h-4 w-4 shrink-0" />
+              <span>NDA</span>
             </TabsTrigger>
-            <TabsTrigger value="collaborator-contracts" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
+            <TabsTrigger value="collaborator-contracts" className="flex items-center gap-1 sm:gap-2 px-2 py-2 text-xs sm:text-sm">
+              <Users className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Colaboradores</span>
-              <span className="sm:hidden">Colaboradores</span>
+              <span className="sm:hidden">Colab.</span>
             </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FileSignature className="h-4 w-4" />
+            <TabsTrigger value="documents" className="flex items-center gap-1 sm:gap-2 px-2 py-2 text-xs sm:text-sm">
+              <FileSignature className="h-4 w-4 shrink-0" />
               <span className="hidden sm:inline">Documentos</span>
               <span className="sm:hidden">Docs</span>
             </TabsTrigger>

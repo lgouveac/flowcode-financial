@@ -19,16 +19,17 @@ export default function ResetPassword() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verificar se há um hash de recuperação na URL
-    const hash = window.location.hash.substring(1);
-    if (!hash) {
-      toast({
-        title: 'Link inválido',
-        description: 'O link de recuperação de senha é inválido ou expirou.',
-        variant: 'destructive',
-      });
-      navigate('/auth/login');
-    }
+    // Verificar se existe uma sessão ativa (o Supabase autentica o usuário via recovery link antes de redirecionar)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        toast({
+          title: 'Link inválido',
+          description: 'O link de recuperação de senha é inválido ou expirou.',
+          variant: 'destructive',
+        });
+        navigate('/auth/login');
+      }
+    });
   }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
