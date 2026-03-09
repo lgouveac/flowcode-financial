@@ -854,7 +854,7 @@ export const RecurringBilling = () => {
             <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
               {getStatusOptions(
                 currentFilterType === 'billing' ? expandChargesOpen : expandCharges,
-                currentFilterType
+                currentFilterType as 'billing' | 'payment'
               ).map((status) => (
                 <div key={status.value} className="flex items-center space-x-3">
                   <Checkbox
