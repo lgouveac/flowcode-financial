@@ -387,12 +387,13 @@ export const RecurringBilling = () => {
     }
     
     return filteredPayments.filter(billing => {
-      if (billing.individual_payment) {
+      const b = billing as any;
+      if (b.individual_payment) {
         // Para pagamento expandido: filtrar pelo status real
-        return paymentStatusDetailFilter.includes(billing.individual_payment.status);
-      } else if (billing.related_payments) {
+        return paymentStatusDetailFilter.includes(b.individual_payment.status);
+      } else if (b.related_payments) {
         // Para billing agrupado: verificar se algum pagamento tem o status
-        return billing.related_payments.some(payment => paymentStatusDetailFilter.includes(payment.status));
+        return b.related_payments.some((payment: any) => paymentStatusDetailFilter.includes(payment.status));
       }
       return true;
     });
@@ -433,8 +434,8 @@ export const RecurringBilling = () => {
       })
       .map(payment => {
         // Formatar data de vencimento
-        const formattedDueDate = payment.due_date
-          ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
+        const formattedDueDate = (payment as any).due_date
+          ? format(parseISO((payment as any).due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
           : 'Dia --';
 
         return {
@@ -445,8 +446,8 @@ export const RecurringBilling = () => {
           amount: payment.amount,
           due_day: formattedDueDate,
           payment_method: payment.payment_method,
-          start_date: payment.due_date,
-          end_date: payment.due_date,
+          start_date: (payment as any).due_date,
+          end_date: (payment as any).due_date,
           status: payment.status,
           installments: 1,
           current_installment: payment.status === 'paid' ? 1 : 0,
@@ -464,10 +465,11 @@ export const RecurringBilling = () => {
     }
     
     return finalOpenScopeBillings.filter(billing => {
-      if (billing.individual_payment) {
+      const b = billing as any;
+      if (b.individual_payment) {
         // Para pagamento expandido: filtrar pelo status real do pagamento
-        return billingStatusDetailFilter.includes(billing.individual_payment.status);
-      } else if (billing.is_virtual) {
+        return billingStatusDetailFilter.includes(b.individual_payment.status);
+      } else if (b.is_virtual) {
         // Para parcelas virtuais: filtrar pelo status da parcela virtual
         return billingStatusDetailFilter.includes(billing.status);
       } else {
@@ -655,10 +657,10 @@ export const RecurringBilling = () => {
                 <div>
                   <Label className="text-sm font-medium">Visualização</Label>
                   <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox 
+    <Checkbox 
                       id="expand-charges-all" 
                       checked={expandChargesAll}
-                      onCheckedChange={setExpandChargesAll}
+                      onCheckedChange={(v) => setExpandChargesAll(v === true)}
                     />
                     <Label htmlFor="expand-charges-all" className="text-sm">
                       Expandir cobranças
@@ -714,10 +716,10 @@ export const RecurringBilling = () => {
                 <div>
                   <Label className="text-sm font-medium">Visualização</Label>
                   <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox 
+    <Checkbox 
                       id="expand-charges-open" 
                       checked={expandChargesOpen}
-                      onCheckedChange={setExpandChargesOpen}
+                      onCheckedChange={(v) => setExpandChargesOpen(v === true)}
                     />
                     <Label htmlFor="expand-charges-open" className="text-sm">
                       Expandir cobranças
@@ -773,10 +775,10 @@ export const RecurringBilling = () => {
                 <div>
                   <Label className="text-sm font-medium">Visualização</Label>
                   <div className="flex items-center space-x-2 mt-2">
-                    <Checkbox 
+    <Checkbox 
                       id="expand-charges" 
                       checked={expandCharges}
-                      onCheckedChange={setExpandCharges}
+                      onCheckedChange={(v) => setExpandCharges(v === true)}
                     />
                     <Label htmlFor="expand-charges" className="text-sm">
                       Expandir cobranças
@@ -806,11 +808,11 @@ export const RecurringBilling = () => {
         </TabsContent>
 
         <TabsContent value="recurring" className="border border-0 mt-4">
-          <BillingTable billings={sortedOpenScopeBillings} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
+          <BillingTable billings={sortedOpenScopeBillings as any} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
         </TabsContent>
 
         <TabsContent value="onetime" className="border border-0 mt-4">
-          <BillingTable billings={sortedClosedScopeBillings} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
+          <BillingTable billings={sortedClosedScopeBillings as any} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
         </TabsContent>
       </Tabs>
 
@@ -852,7 +854,7 @@ export const RecurringBilling = () => {
             <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
               {getStatusOptions(
                 currentFilterType === 'billing' ? expandChargesOpen : expandCharges,
-                currentFilterType
+                currentFilterType as 'billing' | 'payment'
               ).map((status) => (
                 <div key={status.value} className="flex items-center space-x-3">
                   <Checkbox
