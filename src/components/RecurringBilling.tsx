@@ -434,8 +434,8 @@ export const RecurringBilling = () => {
       })
       .map(payment => {
         // Formatar data de vencimento
-        const formattedDueDate = payment.due_date
-          ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
+        const formattedDueDate = (payment as any).due_date
+          ? format(parseISO((payment as any).due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
           : 'Dia --';
 
         return {
@@ -446,8 +446,8 @@ export const RecurringBilling = () => {
           amount: payment.amount,
           due_day: formattedDueDate,
           payment_method: payment.payment_method,
-          start_date: payment.due_date,
-          end_date: payment.due_date,
+          start_date: (payment as any).due_date,
+          end_date: (payment as any).due_date,
           status: payment.status,
           installments: 1,
           current_installment: payment.status === 'paid' ? 1 : 0,
