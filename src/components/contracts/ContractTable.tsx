@@ -376,8 +376,8 @@ export function ContractTable() {
                         </div>
                         <div>
                           <p className="text-muted-foreground">Valor Total</p>
-                          <p className="font-medium truncate" title={contract.total_value ? formatCurrency(contract.total_value) : "-"}>
-                            {contract.total_value ? formatCurrency(contract.total_value) : "-"}
+                          <p className="font-medium truncate" title={contract.total_value ? formatCurrency(Number(contract.total_value)) : "-"}>
+                            {contract.total_value ? formatCurrency(Number(contract.total_value)) : "-"}
                           </p>
                         </div>
                         <div>
