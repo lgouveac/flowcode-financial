@@ -183,10 +183,10 @@ export default function PublicEmployeeForm() {
             </div>
             
             <div className="flex justify-end">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isSubmitting}
-                className="bg-primary"
+                className="w-full sm:w-auto bg-primary"
               >
                 {isSubmitting ? "Enviando..." : "Enviar Cadastro"}
               </Button>

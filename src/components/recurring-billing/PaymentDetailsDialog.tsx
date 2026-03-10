@@ -388,7 +388,7 @@ export const PaymentDetailsDialog = ({
       onClose();
     }
   }}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Detalhes do Escopo Aberto</DialogTitle>
         </DialogHeader>
@@ -507,7 +507,7 @@ export const PaymentDetailsDialog = ({
             <div className="border-t pt-4">
               <h4 className="text-md font-medium mb-3">Adicionar Parcelas</h4>
               <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
                   <div>
                     <label className="text-sm font-medium">Qtd. de Parcelas</label>
                     <Input type="number" min="1" value={additionalInstallments} onChange={e => setAdditionalInstallments(e.target.value)} placeholder="Número de parcelas" />

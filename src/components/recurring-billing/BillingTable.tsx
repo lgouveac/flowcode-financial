@@ -12,6 +12,7 @@ import { EmailTemplate } from "@/types/email";
 import { EmptyState } from "../payments/EmptyState";
 import { Payment } from "@/types/payment";
 import { Trash2 } from "lucide-react";
+import { TableMobileCard } from "@/components/ui/table-mobile-card";
 
 interface BillingTableProps {
   billings: Array<RecurringBilling & { clients?: { name: string; responsible_name?: string } }>;
@@ -245,7 +246,60 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
         </div>
       )}
 
-      <div className="rounded-md border">
+      {/* Mobile Card View */}
+      <div className="md:hidden">
+        <TableMobileCard
+          data={billings as any[]}
+          columns={[
+            {
+              key: 'clients',
+              label: 'Cliente',
+              render: (value: any) => <span className="font-semibold">{value?.name || '-'}</span>
+            },
+            {
+              key: 'description',
+              label: 'Descrição',
+              render: (value: any) => <span className="text-sm">{value || '-'}</span>
+            },
+            {
+              key: 'amount',
+              label: 'Valor',
+              render: (value: any) => (
+                <span className="font-semibold">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0)}
+                </span>
+              )
+            },
+            {
+              key: 'due_day',
+              label: 'Vencimento',
+              render: (value: any) => <span className="text-sm">{value || '-'}</span>
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: (value: any) => (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  value === "paid" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                  : value === "overdue" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                  : value === "cancelled" ? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                }`}>
+                  {value === "paid" ? "Pago"
+                    : value === "overdue" ? "Atrasado"
+                    : value === "cancelled" ? "Cancelado"
+                    : "Pendente"}
+                </span>
+              )
+            }
+          ]}
+          onRowClick={(row) => handleOpenDetails(row as any)}
+          emptyMessage="Nenhum recebimento encontrado"
+        />
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>

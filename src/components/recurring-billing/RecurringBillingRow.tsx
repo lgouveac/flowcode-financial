@@ -193,6 +193,7 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
           <Button
             variant="ghost"
             size="icon"
+            className="min-h-[44px] min-w-[44px]"
             title="Editar"
             onClick={e => {
               e.stopPropagation();
@@ -206,6 +207,7 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
             <Button
               variant="ghost"
               size="icon"
+              className="min-h-[44px] min-w-[44px]"
               title="Duplicar"
               onClick={handleDuplicateClick}
               disabled={duplicating}
@@ -216,10 +218,10 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
           
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button 
+              <Button
                 variant="ghost"
                 size="icon"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="min-h-[44px] min-w-[44px] text-destructive hover:text-destructive hover:bg-destructive/10"
                 title="Excluir"
                 onClick={e => e.stopPropagation()}
               >

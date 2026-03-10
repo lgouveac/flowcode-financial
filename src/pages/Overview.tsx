@@ -825,7 +825,7 @@ export const Overview = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="profitability">Lucro Detalhado</TabsTrigger>
           <TabsTrigger value="scopes">Escopos</TabsTrigger>

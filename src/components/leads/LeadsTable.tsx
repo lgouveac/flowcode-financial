@@ -16,6 +16,7 @@ import {
   X,
   Clock
 } from "lucide-react";
+import { TableMobileCard } from "@/components/ui/table-mobile-card";
 import { useLeads } from "@/hooks/useLeads";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { formatDate } from "@/utils/formatters";
@@ -293,7 +294,70 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
 
   return (
     <>
-      <div className="overflow-x-auto">
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {filteredLeads.map((lead) => (
+          <div key={lead.id} className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-semibold text-sm">{lead.Nome}</p>
+                {lead.Email && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{lead.Email}</span>
+                  </div>
+                )}
+                {lead.Celular && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{lead.Celular}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setEditingLead(lead)}
+                  className="min-h-[44px] min-w-[44px] p-0"
+                  title="Editar tudo"
+                >
+                  <EditIcon className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleDelete(lead.id)}
+                  className="min-h-[44px] min-w-[44px] p-0 text-destructive hover:text-destructive"
+                  title="Excluir lead"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {getStatusBadge(lead.Status)}
+              {lead.Valor && (
+                <span className="text-sm font-medium">
+                  {formatCurrency(lead.Valor)}
+                </span>
+              )}
+              {lead.Status === "Won" && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {calculateLeadClosingTime(lead).formatted}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Criado em {formatDate(lead.created_at)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

@@ -332,7 +332,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-auto">
+      <DialogContent className="max-w-[95vw] sm:max-w-6xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-auto">
         <DialogHeader>
           <DialogTitle>Editar Contrato</DialogTitle>
         </DialogHeader>
@@ -649,7 +649,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
             {/* Rich Text Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-2 p-2 sm:p-3 border rounded-t-md bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   size="sm"
@@ -689,7 +689,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
                     value={formData.fontFamily}
                     onValueChange={(value) => setFormData({ ...formData, fontFamily: value })}
                   >
-                    <SelectTrigger className="w-32 h-8 bg-white border-blue-300 text-sm">
+                    <SelectTrigger className="w-full sm:w-32 h-8 bg-white border-blue-300 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

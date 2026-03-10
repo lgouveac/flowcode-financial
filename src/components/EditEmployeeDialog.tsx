@@ -121,19 +121,19 @@ export const EditEmployeeDialog = ({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="name" className="sm:text-right">
               Nome
             </Label>
             <Input
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-1 lg:col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="email" className="sm:text-right">
               Email
             </Label>
             <Input
@@ -141,81 +141,81 @@ export const EditEmployeeDialog = ({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-1 lg:col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="phone" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="phone" className="sm:text-right">
               Telefone
             </Label>
             <Input
               id="phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-1 lg:col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="address" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="address" className="sm:text-right">
               Endereço
             </Label>
             <Input
               id="address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-1 lg:col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="position" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="position" className="sm:text-right">
               Cargo
             </Label>
             <Input
               id="position"
               value={position}
               onChange={(e) => setPosition(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-1 lg:col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="pix" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="pix" className="sm:text-right">
               PIX
             </Label>
             <Input
               id="pix"
               value={pix}
               onChange={(e) => setPix(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-1 lg:col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="cnpj" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="cnpj" className="sm:text-right">
               CNPJ
             </Label>
             <Input
               id="cnpj"
               value={cnpj}
               onChange={(e) => setCnpj(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-1 lg:col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="paymentMethod" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="paymentMethod" className="sm:text-right">
               Método de Pagamento
             </Label>
             <Input
               id="paymentMethod"
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-1 lg:col-span-3"
             />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="preferredTemplate" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4">
+            <Label htmlFor="preferredTemplate" className="sm:text-right">
               Template Preferido
             </Label>
             <Select onValueChange={value => setPreferredTemplate(value as "invoice" | "hours" | "novo_subtipo")}>
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger className="sm:col-span-1 lg:col-span-3">
                 <SelectValue placeholder="Selecione um template" defaultValue={preferredTemplate} />
               </SelectTrigger>
               <SelectContent>

@@ -575,14 +575,14 @@ export const RecurringBilling = () => {
       </div>
 
       <Tabs defaultValue="all" className="w-full" onValueChange={value => setActiveTab(value)}>
-        {/* Header com Tabs + Filtros + Novo Recebimento na mesma linha */}
-        <div className="flex items-center justify-between">
-          <TabsList className="grid w-auto grid-cols-3">
+        {/* Header com Tabs + Filtros + Novo Recebimento */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <TabsList className="grid w-full sm:w-auto grid-cols-3">
             <TabsTrigger value="all">Todos</TabsTrigger>
             <TabsTrigger value="recurring">Escopo Aberto</TabsTrigger>
             <TabsTrigger value="onetime">Escopo Fechado</TabsTrigger>
           </TabsList>
-          
+
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
@@ -593,7 +593,7 @@ export const RecurringBilling = () => {
               Filtros
               {showAdvancedFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
-            
+
             <Button onClick={() => setShowSimplePaymentDialog(true)}>
               Novo Recebimento
             </Button>

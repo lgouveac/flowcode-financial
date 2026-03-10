@@ -76,13 +76,13 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-[95vw] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar Cliente</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">{formData.type === "pj" ? "Nome Fantasia" : "Nome"}</Label>
               <Input
@@ -105,7 +105,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
               <Input
@@ -135,7 +135,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="responsavel_financeiro">Responsável Financeiro</Label>
               <Input
@@ -174,7 +174,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="type">Tipo</Label>
               <Select
@@ -249,7 +249,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
                   onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="partner_name">Nome do Sócio</Label>
                   <Input
@@ -290,7 +290,7 @@ export const EditClientDialog = ({ client, open, onClose, onSuccess }: EditClien
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="total_billing">Faturamento Total</Label>
               <Input

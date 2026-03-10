@@ -320,7 +320,7 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
           {/* Informações do contrato */}
           <div className="bg-muted/50 p-4 rounded-lg space-y-2">
             <h3 className="font-medium">Informações do Contrato</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-muted-foreground">Cliente:</span>
                 <p className="font-medium">{contract.clients?.name || "N/A"}</p>

@@ -97,9 +97,10 @@ export default function PublicClientForm() {
             />
             
             <div className="flex justify-end">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isSubmitting}
+                className="w-full sm:w-auto"
               >
                 {isSubmitting ? "Enviando..." : "Enviar Cadastro"}
               </Button>

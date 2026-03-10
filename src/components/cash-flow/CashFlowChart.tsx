@@ -40,7 +40,7 @@ export const CashFlowChart = ({
       <CardContent className="p-6">
         <div className="mb-4 flex flex-wrap gap-3">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-full sm:w-[140px]">
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>

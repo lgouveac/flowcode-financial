@@ -486,7 +486,7 @@ export default function ContractSigning() {
 
             <div className="space-y-8">
               {/* Tipo de Assinatura */}
-              <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                 <Button
                   variant={signatureType === 'text' ? 'default' : 'outline'}
                   onClick={() => setSignatureType('text')}
@@ -529,8 +529,8 @@ export default function ContractSigning() {
                       ref={canvasRef}
                       width={500}
                       height={200}
-                      className="border border-white/10 rounded cursor-crosshair w-full bg-white"
-                      style={{ maxWidth: '100%' }}
+                      className="border border-white/10 rounded cursor-crosshair bg-white"
+                      style={{ width: '100%', height: 'auto', maxWidth: '500px' }}
                       onMouseDown={startDrawing}
                       onMouseMove={draw}
                       onMouseUp={stopDrawing}

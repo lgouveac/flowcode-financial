@@ -151,7 +151,7 @@ export const EstimatedExpensesDialog = ({ open, onClose, onSuccess }: EstimatedE
           {/* Add new expense form */}
           <div className="space-y-4 p-4 border rounded-lg">
             <h3 className="text-lg font-medium">Adicionar Nova Despesa</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="expense-name">Nome da despesa</Label>
                 <Input 
