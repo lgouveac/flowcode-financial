@@ -68,7 +68,7 @@ export const ImportCashFlow = ({ onSuccess }: ImportCashFlowProps) => {
     setDragging(false);
   };
 
-  const validateRow = (row: any, rowIndex: number): CashFlowPreviewItem => {
+  const validateRow = (row: Record<string, string>, rowIndex: number): CashFlowPreviewItem => {
     // Criar item de preview com valores padrão
     const previewItem: CashFlowPreviewItem = {
       date: row.date || "",
@@ -157,7 +157,7 @@ export const ImportCashFlow = ({ onSuccess }: ImportCashFlowProps) => {
             continue;
           }
 
-          const row: any = {};
+          const row: Record<string, string> = {};
           headers.forEach((header, index) => {
             row[header.trim()] = values[index].trim();
           });
@@ -206,7 +206,7 @@ export const ImportCashFlow = ({ onSuccess }: ImportCashFlowProps) => {
     }
   };
 
-  const handleUpdatePreviewItem = (index: number, field: keyof CashFlowPreviewItem, value: any) => {
+  const handleUpdatePreviewItem = (index: number, field: keyof CashFlowPreviewItem, value: string | number | boolean) => {
     const updatedData = [...previewData];
     updatedData[index] = {
       ...updatedData[index],

@@ -95,40 +95,52 @@ export const ProjectReport = ({ projects }: ProjectReportProps) => {
     }
   };
 
-  const processReportData = (data: any[]): ReportData[] => {
-    const groupedByProject = data.reduce((acc, entry) => {
-      const projectId = entry.project_id;
+  const processReportData = (data: Record<string, unknown>[]): ReportData[] => {
+    interface ProjectAccumulator {
+      project_id: string;
+      project_name: string;
+      client_name?: string;
+      total_hours: number;
+      entries_count: number;
+      employees: Record<string, { employee_id: string; employee_name: string; hours: number }>;
+    }
+
+    const groupedByProject = data.reduce<Record<string, ProjectAccumulator>>((acc, entry) => {
+      const projectId = (entry as Record<string, unknown>).project_id as string;
+      const projetos = (entry as Record<string, unknown>).projetos as Record<string, unknown> | undefined;
+      const employees = (entry as Record<string, unknown>).employees as Record<string, unknown> | undefined;
+      const hoursWorked = (entry as Record<string, unknown>).hours_worked as number;
+      const employeeId = (entry as Record<string, unknown>).employee_id as string;
 
       if (!acc[projectId]) {
         acc[projectId] = {
           project_id: projectId,
-          project_name: entry.projetos?.name || 'Projeto sem nome',
-          client_name: entry.projetos?.clients?.name,
+          project_name: (projetos?.name as string) || 'Projeto sem nome',
+          client_name: (projetos?.clients as Record<string, unknown>)?.name as string | undefined,
           total_hours: 0,
           entries_count: 0,
           employees: {}
         };
       }
 
-      acc[projectId].total_hours += entry.hours_worked;
+      acc[projectId].total_hours += hoursWorked;
       acc[projectId].entries_count += 1;
 
       // Group by employee
-      const employeeId = entry.employee_id;
       if (!acc[projectId].employees[employeeId]) {
         acc[projectId].employees[employeeId] = {
           employee_id: employeeId,
-          employee_name: entry.employees?.name || 'Colaborador',
+          employee_name: (employees?.name as string) || 'Colaborador',
           hours: 0
         };
       }
-      acc[projectId].employees[employeeId].hours += entry.hours_worked;
+      acc[projectId].employees[employeeId].hours += hoursWorked;
 
       return acc;
     }, {});
 
     // Convert to array and format employees
-    return Object.values(groupedByProject).map((project: any) => ({
+    return Object.values(groupedByProject).map((project) => ({
       ...project,
       employees: Object.values(project.employees)
     }));

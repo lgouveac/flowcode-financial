@@ -202,10 +202,14 @@ export function NDADialog({ open, onClose }: NDADialogProps) {
       }
 
       // Get the complete person object with ALL data
-      const completePerson = selectedType === 'client' ? client : employee;
-      
+      const completePerson = selectedType === 'client'
+        ? clients.find(c => c.id === selectedPersonId)
+        : employees.find(e => e.id === selectedPersonId);
+
+      if (!completePerson) throw new Error('Pessoa não encontrada');
+
       // Prepare webhook payload with ALL person data
-      const webhookData = {
+      const webhookData: Record<string, string> = {
         // Dados básicos
         action: 'send_nda',
         person_id: completePerson.id,
@@ -214,9 +218,6 @@ export function NDADialog({ open, onClose }: NDADialogProps) {
         person_type: selectedType,
         timestamp: new Date().toISOString(),
         requested_by: 'FlowCode Financial System',
-        
-        // ALL person data (spread all properties)
-        ...completePerson
       };
 
       console.log('Enviando NDA via webhook:', webhookData);
@@ -231,7 +232,7 @@ export function NDADialog({ open, onClose }: NDADialogProps) {
 
       try {
         // Converter dados para query parameters
-        const params = new URLSearchParams(webhookData as any);
+        const params = new URLSearchParams(webhookData);
         const getUrl = `${fullWebhookUrl}?${params.toString()}`;
         
         console.log('Enviando GET para:', getUrl);
@@ -261,10 +262,11 @@ export function NDADialog({ open, onClose }: NDADialogProps) {
           console.log('Resposta do n8n:', responseData);
         }
         
-      } catch (fetchError) {
+      } catch (fetchError: unknown) {
         console.error('Erro no fetch:', fetchError);
         // Mostrar mais detalhes do erro
-        if (fetchError.message.includes('404')) {
+        const fetchErrMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+        if (fetchErrMsg.includes('404')) {
           throw new Error(`Webhook não encontrado (404). Verifique se:\n1. A URL está correta\n2. O workflow n8n está ativo\n3. O webhook está configurado corretamente`);
         }
         throw fetchError;
@@ -280,11 +282,11 @@ export function NDADialog({ open, onClose }: NDADialogProps) {
       setSelectedType('client');
       onClose();
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao enviar NDA:', error);
       toast({
         title: "Erro",
-        description: `Erro ao enviar NDA: ${error.message}`,
+        description: `Erro ao enviar NDA: ${error instanceof Error ? error.message : String(error)}`,
         variant: "destructive",
       });
     } finally {

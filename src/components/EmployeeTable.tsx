@@ -75,7 +75,7 @@ export const EmployeeTable = () => {
   });
 
   const updateEmployeeMutation = useMutation({
-    mutationFn: async ({ id, field, value }: { id: string; field: keyof Employee; value: any }) => {
+    mutationFn: async ({ id, field, value }: { id: string; field: keyof Employee; value: string | number | boolean }) => {
       const { error } = await supabase
         .from("employees")
         .update({ [field]: value })
@@ -181,7 +181,7 @@ export const EmployeeTable = () => {
     },
   });
 
-  const handleEmployeeChange = (id: string, field: keyof Employee, value: any) => {
+  const handleEmployeeChange = (id: string, field: keyof Employee, value: string | number | boolean) => {
     updateEmployeeMutation.mutate({ id, field, value });
   };
 

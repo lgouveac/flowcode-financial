@@ -76,7 +76,7 @@ export const ClientTable = () => {
   };
   const handleNewClient = async (client: NewClient) => {
     // Explicitly type the object being inserted to match the database schema and fixed types
-    const newClient: any = {
+    const newClient: Record<string, unknown> = {
       ...client,
       status: client.status || 'active',
       total_billing: client.total_billing || 0,

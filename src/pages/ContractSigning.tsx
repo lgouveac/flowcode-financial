@@ -154,13 +154,14 @@ export default function ContractSigning() {
       setContract(contractWithClient);
     } catch (error) {
       console.error('💥 Error fetching contract - full error:', error);
-      console.error('📄 Error message:', error?.message);
-      console.error('🔢 Error code:', error?.code);
-      console.error('📋 Error details:', error?.details);
+      const errObj = error as Record<string, unknown>;
+      console.error('📄 Error message:', errObj?.message);
+      console.error('🔢 Error code:', errObj?.code);
+      console.error('📋 Error details:', errObj?.details);
 
       toast({
         title: "Erro",
-        description: `Não foi possível carregar o contrato. ${error?.message || 'Erro desconhecido'}`,
+        description: `Não foi possível carregar o contrato. ${errObj?.message || 'Erro desconhecido'}`,
         variant: "destructive",
       });
     } finally {

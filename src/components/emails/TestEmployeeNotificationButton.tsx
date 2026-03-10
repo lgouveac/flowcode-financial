@@ -5,12 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+interface NotificationResult {
+  message?: string;
+  executionId?: string;
+  totalSent?: number;
+  totalErrors?: number;
+  [key: string]: unknown;
+}
+
 export const TestEmployeeNotificationButton = () => {
   const {
     toast
   } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<NotificationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const handleTestNotification = async () => {
@@ -47,12 +56,13 @@ export const TestEmployeeNotificationButton = () => {
         title: "Ação concluída",
         description: "A função de notificação foi executada com sucesso."
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao executar função:", error);
-      setError(error.message || "Erro desconhecido");
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      setError(errorMessage);
       toast({
         title: "Erro ao executar função",
-        description: error.message || "Ocorreu um erro. Verifique o console para mais detalhes.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

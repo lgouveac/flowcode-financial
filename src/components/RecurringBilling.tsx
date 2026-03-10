@@ -185,8 +185,8 @@ export const RecurringBilling = () => {
     if (!billings || !Array.isArray(billings)) return [];
 
     // Agrupar por cliente e descrição base
-    const groups: { [key: string]: any[] } = {};
-    
+    const groups: { [key: string]: typeof billings[number][] } = {};
+
     billings.forEach(payment => {
       // Criar chave única por cliente e descrição base (sem número de parcela)
       const baseDescription = payment.description?.replace(/\s*\(\d+\/\d+\).*$/, '') || payment.description;
@@ -269,8 +269,8 @@ export const RecurringBilling = () => {
     });
 
     // Agrupar apenas por cliente
-    const groups: { [key: string]: any[] } = {};
-    
+    const groups: { [key: string]: typeof closedPayments[number][] } = {};
+
     closedPayments.forEach(payment => {
       const groupKey = payment.client_id;
       
@@ -387,13 +387,13 @@ export const RecurringBilling = () => {
     }
     
     return filteredPayments.filter(billing => {
-      const b = billing as any;
+      const b = billing as Record<string, unknown>;
       if (b.individual_payment) {
         // Para pagamento expandido: filtrar pelo status real
-        return paymentStatusDetailFilter.includes(b.individual_payment.status);
+        return paymentStatusDetailFilter.includes((b.individual_payment as Record<string, unknown>).status as string);
       } else if (b.related_payments) {
         // Para billing agrupado: verificar se algum pagamento tem o status
-        return b.related_payments.some((payment: any) => paymentStatusDetailFilter.includes(payment.status));
+        return (b.related_payments as Record<string, unknown>[]).some((payment) => paymentStatusDetailFilter.includes(payment.status as string));
       }
       return true;
     });
@@ -434,8 +434,9 @@ export const RecurringBilling = () => {
       })
       .map(payment => {
         // Formatar data de vencimento
-        const formattedDueDate = (payment as any).due_date
-          ? format(parseISO((payment as any).due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
+        const paymentRecord = payment as Record<string, unknown>;
+        const formattedDueDate = paymentRecord.due_date
+          ? format(parseISO(paymentRecord.due_date as string + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
           : 'Dia --';
 
         return {
@@ -446,8 +447,8 @@ export const RecurringBilling = () => {
           amount: payment.amount,
           due_day: formattedDueDate,
           payment_method: payment.payment_method,
-          start_date: (payment as any).due_date,
-          end_date: (payment as any).due_date,
+          start_date: paymentRecord.due_date as string,
+          end_date: paymentRecord.due_date as string,
           status: payment.status,
           installments: 1,
           current_installment: payment.status === 'paid' ? 1 : 0,
@@ -465,10 +466,10 @@ export const RecurringBilling = () => {
     }
     
     return finalOpenScopeBillings.filter(billing => {
-      const b = billing as any;
+      const b = billing as Record<string, unknown>;
       if (b.individual_payment) {
         // Para pagamento expandido: filtrar pelo status real do pagamento
-        return billingStatusDetailFilter.includes(b.individual_payment.status);
+        return billingStatusDetailFilter.includes((b.individual_payment as Record<string, unknown>).status as string);
       } else if (b.is_virtual) {
         // Para parcelas virtuais: filtrar pelo status da parcela virtual
         return billingStatusDetailFilter.includes(billing.status);
@@ -808,11 +809,11 @@ export const RecurringBilling = () => {
         </TabsContent>
 
         <TabsContent value="recurring" className="border border-0 mt-4">
-          <BillingTable billings={sortedOpenScopeBillings as any} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
+          <BillingTable billings={sortedOpenScopeBillings as typeof filteredAllCombinedBillings} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
         </TabsContent>
 
         <TabsContent value="onetime" className="border border-0 mt-4">
-          <BillingTable billings={sortedClosedScopeBillings as any} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
+          <BillingTable billings={sortedClosedScopeBillings as typeof filteredAllCombinedBillings} onRefresh={handleSuccess} enableDuplicate templates={safeTemplates} />
         </TabsContent>
       </Tabs>
 

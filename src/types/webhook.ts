@@ -16,6 +16,6 @@ export interface WebhookLogData {
   status?: string;
   timestamp: string;
   webhookUrl: string;
-  response?: any;
+  response?: Record<string, unknown>;
   error?: string;
 }

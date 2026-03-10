@@ -12,7 +12,7 @@ import { Shield } from "lucide-react";
 interface NewNDAContractDialogProps {
   open: boolean;
   onClose: () => void;
-  onContractCreated?: (contract: any) => void;
+  onContractCreated?: (contract: Record<string, unknown>) => void;
 }
 
 export function NewNDAContractDialog({ open, onClose, onContractCreated }: NewNDAContractDialogProps) {

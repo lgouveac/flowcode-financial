@@ -159,7 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const client of clients) {
       // Find overdue payments
       const overduePayments = client.payments.filter(
-        (p: any) => p.status === 'pending' && new Date(p.due_date) < new Date()
+        (p: { status: string; due_date: string }) => p.status === 'pending' && new Date(p.due_date) < new Date()
       );
       
       if (overduePayments.length === 0) {
@@ -173,7 +173,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Get the oldest overdue payment
-      const oldestOverdue = overduePayments.reduce((oldest: any, current: any) => {
+      const oldestOverdue = overduePayments.reduce((oldest: { due_date: string }, current: { due_date: string }) => {
         return new Date(oldest.due_date) < new Date(current.due_date) ? oldest : current;
       }, overduePayments[0]);
       
@@ -260,13 +260,14 @@ const handler = async (req: Request): Promise<Response> => {
           client: client.name,
           status: "success"
         });
-      } catch (error: any) {
-        console.error(`Error sending email to ${client.name}: ${error.message}`);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Error sending email to ${client.name}: ${errorMessage}`);
         results.failed++;
         results.details.push({
           client: client.name,
           status: "failed",
-          message: error.message
+          message: errorMessage
         });
       }
     }
@@ -275,10 +276,10 @@ const handler = async (req: Request): Promise<Response> => {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Error in payment reminder function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

@@ -19,7 +19,13 @@ interface EmailPreviewProps {
   installments?: number;
   currentInstallment?: number;
   paymentMethod?: 'pix' | 'boleto' | 'credit_card';
-  client?: any;
+  client?: {
+    responsible_name?: string;
+    cnpj?: string;
+    cpf?: string;
+    address?: string;
+    partner_name?: string;
+  };
 }
 
 export const EmailPreview: React.FC<EmailPreviewProps> = ({

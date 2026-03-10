@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 interface NewContractDialogProps {
   open: boolean;
   onClose: () => void;
-  onContractCreated?: (contract: any) => void;
+  onContractCreated?: (contract: Record<string, unknown>) => void;
 }
 
 export function NewContractDialog({ open, onClose, onContractCreated }: NewContractDialogProps) {

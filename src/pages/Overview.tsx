@@ -88,8 +88,8 @@ export const Overview = () => {
   const [loadingTopClients, setLoadingTopClients] = useState(false);
   const [openScopeDetailOpen, setOpenScopeDetailOpen] = useState(false);
   const [closedScopeDetailOpen, setClosedScopeDetailOpen] = useState(false);
-  const [openScopeDetails, setOpenScopeDetails] = useState<any[]>([]);
-  const [closedScopeDetails, setClosedScopeDetails] = useState<any[]>([]);
+  const [openScopeDetails, setOpenScopeDetails] = useState<Record<string, unknown>[]>([]);
+  const [closedScopeDetails, setClosedScopeDetails] = useState<Record<string, unknown>[]>([]);
   const [loadingScopeDetails, setLoadingScopeDetails] = useState(false);
 
   // Format currency with consistent decimal places
@@ -148,7 +148,7 @@ export const Overview = () => {
           amount,
           due_date: payment.due_date,
           status: payment.status,
-          client_name: (payment.clients as any)?.name || 'Cliente não informado',
+          client_name: (payment.clients as Record<string, unknown>)?.name as string || 'Cliente não informado',
           month: monthName.charAt(0).toUpperCase() + monthName.slice(1)
         };
       });
@@ -180,73 +180,82 @@ export const Overview = () => {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
           end: new Date(currentYear, currentMonth, 0).toISOString().split('T')[0], // Last day of current month
         };
-      case 'last_month':
+      case 'last_month': {
         const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
         const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
           start: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`,
           end: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
-      case 'next_month':
+      }
+      case 'next_month': {
         const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
         return {
           start: `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`,
           end: new Date(nextMonthYear, nextMonth, 0).toISOString().split('T')[0],
         };
-      case 'last_3_months':
+      }
+      case 'last_3_months': {
         const threeMonthsAgo = new Date(now);
         threeMonthsAgo.setMonth(now.getMonth() - 3);
         return {
           start: threeMonthsAgo.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0],
         };
-      case 'next_3_months':
+      }
+      case 'next_3_months': {
         const threeMonthsFromNow = new Date(now);
         threeMonthsFromNow.setMonth(now.getMonth() + 3);
         return {
           start: now.toISOString().split('T')[0],
           end: threeMonthsFromNow.toISOString().split('T')[0],
         };
-      case 'last_6_months':
+      }
+      case 'last_6_months': {
         const sixMonthsAgo = new Date(now);
         sixMonthsAgo.setMonth(now.getMonth() - 6);
         return {
           start: sixMonthsAgo.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0],
         };
-      case 'next_6_months':
+      }
+      case 'next_6_months': {
         const sixMonthsFromNow = new Date(now);
         sixMonthsFromNow.setMonth(now.getMonth() + 6);
         return {
           start: now.toISOString().split('T')[0],
           end: sixMonthsFromNow.toISOString().split('T')[0],
         };
-      case 'last_year':
+      }
+      case 'last_year': {
         const lastYear = new Date(now);
         lastYear.setFullYear(now.getFullYear() - 1);
         return {
           start: lastYear.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0],
         };
-      case 'next_year':
+      }
+      case 'next_year': {
         const nextYear = new Date(now);
         nextYear.setFullYear(now.getFullYear() + 1);
         return {
           start: now.toISOString().split('T')[0],
           end: nextYear.toISOString().split('T')[0],
         };
+      }
       case 'current_year':
         return {
           start: `${currentYear}-01-01`,
           end: `${currentYear}-12-31`,
         };
-      case 'previous_year':
+      case 'previous_year': {
         const previousYear = currentYear - 1;
         return {
           start: `${previousYear}-01-01`,
           end: `${previousYear}-12-31`,
         };
+      }
       case 'custom':
         if (customStartDate && customEndDate) {
           return {
@@ -418,12 +427,12 @@ export const Overview = () => {
       
       // Use a more cautious approach to process the data with correct types
       if (paymentsData) {
-        paymentsData.forEach((payment: any) => {
-          const clientId = payment.client_id;
+        paymentsData.forEach((payment: Record<string, unknown>) => {
+          const clientId = payment.client_id as string;
           // Access the name correctly - clients has the name directly
-          const clientName = payment.clients?.name || 'Cliente';
-          const amount = payment.amount || 0;
-          
+          const clientName = (payment.clients as Record<string, unknown>)?.name as string || 'Cliente';
+          const amount = (payment.amount as number) || 0;
+
           if (clientTotals[clientId]) {
             clientTotals[clientId].total_amount += amount;
           } else {

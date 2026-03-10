@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface SyncPaymentResult {
   success: boolean;
   message: string;
-  error?: any;
+  error?: unknown;
 }
 
 /**

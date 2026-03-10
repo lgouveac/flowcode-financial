@@ -20,7 +20,7 @@ serve(async (req) => {
 
   try {
     // Parse request body safely
-    let requestBody = {};
+    let requestBody: Record<string, unknown> = {};
     let bypass = false;
     let test = false;
     let forceDay = false;
@@ -34,12 +34,12 @@ serve(async (req) => {
         logMessage(`Request body raw: ${bodyText}`, "🔍");
         
         if (bodyText && bodyText.trim() !== "") {
-          requestBody = JSON.parse(bodyText);
+          requestBody = JSON.parse(bodyText) as Record<string, unknown>;
           bypass = !!requestBody.bypass;
           test = !!requestBody.test;
           forceDay = !!requestBody.forceDay;
           ignoreTime = !!requestBody.ignoreTime;
-          executionId = requestBody.execution_id || executionId;
+          executionId = (requestBody.execution_id as string) || executionId;
           
           logMessage(`Request parameters: bypass=${bypass}, test=${test}, forceDay=${forceDay}, ignoreTime=${ignoreTime}, executionId=${executionId}`, "🔧");
         }
@@ -197,16 +197,16 @@ serve(async (req) => {
       throw new Error("No email templates found");
     }
 
-    const templateMap = {};
+    const templateMap: Record<string, Record<string, unknown>> = {};
     if (Array.isArray(emailTemplates)) {
       // Organize templates by subtype for easy access
-      emailTemplates.forEach(template => {
-        templateMap[template.subtype] = template;
+      emailTemplates.forEach((template: Record<string, unknown>) => {
+        templateMap[template.subtype as string] = template;
       });
       logMessage(`Loaded ${emailTemplates.length} templates: ${Object.keys(templateMap).join(", ")}`, "📝");
     } else {
       // If single template was returned
-      templateMap[emailTemplates.subtype] = emailTemplates;
+      templateMap[(emailTemplates as Record<string, unknown>).subtype as string] = emailTemplates as Record<string, unknown>;
       logMessage(`Loaded single template: ${emailTemplates.subtype}`, "📝");
     }
     
@@ -286,9 +286,9 @@ serve(async (req) => {
           response: emailResponse
         });
         logMessage(`Successfully sent email to ${employee.name} (${employee.email}) using template: ${template.subtype}`, "✅");
-      } catch (error: any) {
-        logError(`Error processing employee ${employee.name}`, error);
-        emailErrors.push({ employee: employee.name, error: error.message });
+      } catch (error: unknown) {
+        logError(`Error processing employee ${employee.name}`, error instanceof Error ? error : new Error(String(error)));
+        emailErrors.push({ employee: employee.name, error: error instanceof Error ? error.message : String(error) });
       }
     }
 
@@ -311,12 +311,12 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error: any) {
-    logError("Fatal error in employee notification process", error);
+  } catch (error: unknown) {
+    logError("Fatal error in employee notification process", error instanceof Error ? error : new Error(String(error)));
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message,
+      JSON.stringify({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString()
       }),
       {

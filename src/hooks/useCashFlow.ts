@@ -6,7 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 export const useCashFlow = (period: string = 'current') => {
   const [cashFlow, setCashFlow] = useState<CashFlow[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<Record<string, unknown>[]>([]);
   const { toast } = useToast();
   
   // Concurrency control and state management
@@ -68,42 +68,47 @@ export const useCashFlow = (period: string = 'current') => {
       case 'all':
         // Return null to fetch all data without date filtering
         return null;
-      case 'current':
+      case 'current': {
         const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
         return {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
           end: `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`,
         };
-      case 'last_month':
+      }
+      case 'last_month': {
         const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
         const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
           start: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`,
           end: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
-      case 'last_3_months':
+      }
+      case 'last_3_months': {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
         return {
           start: threeMonthsAgo.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
         };
-      case 'last_6_months':
+      }
+      case 'last_6_months': {
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
         return {
           start: sixMonthsAgo.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
         };
-      case 'last_year':
+      }
+      case 'last_year': {
         const lastYear = new Date();
         lastYear.setFullYear(lastYear.getFullYear() - 1);
         return {
           start: lastYear.toISOString().split('T')[0],
           end: new Date().toISOString().split('T')[0],
         };
-      default:
+      }
+      default: {
         console.log(`Unknown period format "${selectedPeriod}", defaulting to current month`);
         const defaultNextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         const defaultNextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
@@ -111,6 +116,7 @@ export const useCashFlow = (period: string = 'current') => {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
           end: `${defaultNextYear}-${String(defaultNextMonth).padStart(2, '0')}-01`,
         };
+      }
     }
   };
 

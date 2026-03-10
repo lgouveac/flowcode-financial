@@ -144,11 +144,11 @@ export const RecurringBillingRow = ({ billing, onRefresh, enableDuplicate = fals
       }
       
       onRefresh();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Erro ao excluir:", error);
       toast({
         title: "Erro ao excluir",
-        description: error.message || "Não foi possível excluir.",
+        description: error instanceof Error ? error.message : "Não foi possível excluir.",
         variant: "destructive"
       });
     } finally {

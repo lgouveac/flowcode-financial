@@ -270,3 +270,6 @@ Este documento descreve todas as melhorias de UX/UI mobile e padronização de t
 **Data de Implementação**: Dezembro 2024
 **Versão**: 1.0.0
 
+
+
+

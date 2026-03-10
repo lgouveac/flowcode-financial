@@ -31,11 +31,11 @@ const Emails = () => {
         description: "O template foi criado com sucesso!"
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating template:", error);
       toast({
         title: "Erro ao criar template",
-        description: error.message || "Ocorreu um erro ao criar o template",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao criar o template",
         variant: "destructive"
       });
       return false;

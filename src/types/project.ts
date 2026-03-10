@@ -2,6 +2,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
+  prd?: string; // Product Requirements Document (rich text)
   client_id?: string;
   contract_id?: number;
   status: 'active' | 'paused' | 'completed';
@@ -25,6 +26,35 @@ export interface Project {
     total_value?: number;
   };
 }
+
+export interface ProjectAccess {
+  id: string;
+  project_id: number;
+  user_id?: string;
+  employee_id?: string;
+  access_level: 'view' | 'edit' | 'admin';
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+  
+  // Relations
+  user?: {
+    id: string;
+    full_name?: string;
+    email?: string;
+  };
+  employee?: {
+    id: string;
+    name: string;
+    email?: string;
+  };
+  created_by_user?: {
+    id: string;
+    full_name?: string;
+  };
+}
+
+export type NewProjectAccess = Omit<ProjectAccess, 'id' | 'created_at' | 'updated_at' | 'user' | 'employee' | 'created_by_user'>;
 
 export interface ProjectHour {
   id: string;

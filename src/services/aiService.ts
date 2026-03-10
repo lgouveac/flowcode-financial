@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface AIServiceOptions {
   userMessage: string;
   context?: 'dashboard' | 'payments' | 'clients' | 'expenses' | 'general';
+  refreshData?: boolean;
 }
 
 interface FinancialData {
@@ -10,9 +11,9 @@ interface FinancialData {
   totalExpenses: number;
   netProfit: number;
   activeClients: number;
-  recentPayments: any[];
-  topClients: any[];
-  historicalData: any[];
+  recentPayments: Record<string, unknown>[];
+  topClients: Record<string, unknown>[];
+  historicalData: Record<string, unknown>[];
 }
 
 export class AIService {

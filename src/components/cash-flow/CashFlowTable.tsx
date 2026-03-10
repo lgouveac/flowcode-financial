@@ -184,7 +184,7 @@ export const CashFlowTable = ({
     setIsUpdating(true);
     try {
       // Convert amount to number if that's the field being updated
-      let updateData: any;
+      let updateData: Record<string, string | number | null>;
       if (field === 'amount') {
         updateData = { [field]: parseFloat(value as string) };
       } else if (field === 'client_id') {

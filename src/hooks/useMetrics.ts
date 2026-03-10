@@ -68,7 +68,7 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
     const currentMonth = now.getMonth() + 1;
 
     switch (selectedPeriod) {
-      case 'current':
+      case 'current': {
         const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         const nextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
         const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
@@ -79,7 +79,8 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`,
           compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
-      case 'last_month':
+      }
+      case 'last_month': {
         const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
         const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
@@ -88,7 +89,8 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: `${lastMonthYear}-${String(lastMonth - 1).padStart(2, '0')}-01`,
           compareEnd: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`,
         };
-      case 'last_3_months':
+      }
+      case 'last_3_months': {
         const threeMonthsAgo = new Date(now);
         threeMonthsAgo.setMonth(now.getMonth() - 3);
         return {
@@ -97,7 +99,8 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: new Date(threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)).toISOString().split('T')[0],
           compareEnd: threeMonthsAgo.toISOString().split('T')[0],
         };
-      case 'last_6_months':
+      }
+      case 'last_6_months': {
         const sixMonthsAgo = new Date(now);
         sixMonthsAgo.setMonth(now.getMonth() - 6);
         return {
@@ -106,7 +109,8 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: new Date(sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)).toISOString().split('T')[0],
           compareEnd: sixMonthsAgo.toISOString().split('T')[0],
         };
-      case 'last_year':
+      }
+      case 'last_year': {
         const lastYear = new Date(now);
         lastYear.setFullYear(now.getFullYear() - 1);
         return {
@@ -115,6 +119,7 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: new Date(lastYear.setFullYear(lastYear.getFullYear() - 1)).toISOString().split('T')[0],
           compareEnd: lastYear.toISOString().split('T')[0],
         };
+      }
       case 'current_year':
         return {
           start: `${currentYear}-01-01`,
@@ -122,7 +127,7 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: `${currentYear - 1}-01-01`,
           compareEnd: `${currentYear - 1}-12-31`,
         };
-      case 'previous_year':
+      case 'previous_year': {
         const previousYear = currentYear - 1;
         return {
           start: `${previousYear}-01-01`,
@@ -130,16 +135,17 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: `${previousYear - 1}-01-01`,
           compareEnd: `${previousYear - 1}-12-31`,
         };
-      case 'custom':
+      }
+      case 'custom': {
         if (options?.customStartDate && options?.customEndDate) {
           const startDate = options.customStartDate.toISOString().split('T')[0];
           const endDate = options.customEndDate.toISOString().split('T')[0];
-          
+
           // Calculate same period duration for comparison
           const timeDiff = options.customEndDate.getTime() - options.customStartDate.getTime();
           const compareEndDate = new Date(options.customStartDate.getTime() - 86400000); // Day before start
           const compareStartDate = new Date(compareEndDate.getTime() - timeDiff);
-          
+
           return {
             start: startDate,
             end: endDate,
@@ -158,7 +164,8 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: `${fallbackPrevYear}-${String(fallbackPrevMonth).padStart(2, '0')}-01`,
           compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
-      default:
+      }
+      default: {
         const defaultNextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
         const defaultNextYear = currentMonth === 12 ? currentYear + 1 : currentYear;
         const defaultPrevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
@@ -169,6 +176,7 @@ export const useMetrics = (period: string = 'current', options?: UseMetricsOptio
           compareStart: `${defaultPrevYear}-${String(defaultPrevMonth).padStart(2, '0')}-01`,
           compareEnd: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
+      }
     }
   };
 

@@ -141,7 +141,7 @@ export const useTestEmail = ({ type, template }: UseTestEmailProps) => {
       });
 
       setTestEmailOpen(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending test email:', error);
       toast({
         title: "Erro ao enviar email",

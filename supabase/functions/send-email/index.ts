@@ -134,7 +134,7 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    const emailRequest: any = {
+    const emailRequest: Record<string, unknown> = {
       from: "Financeiro FlowCode <financeiro@flowcode.cc>",
       to: [to],
       subject: processedSubject,
@@ -157,10 +157,10 @@ const handler = async (req: Request): Promise<Response> => {
         ...corsHeaders,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Error sending email:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

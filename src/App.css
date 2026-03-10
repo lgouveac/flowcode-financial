@@ -1,53 +1,114 @@
 @layer base {
   :root {
+    /* Professional Financial Colors */
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 220 10% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 220 10% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 262 83% 58%;
+    --popover-foreground: 220 10% 15%;
+    
+    /* Professional Primary - Trust Blue */
+    --primary: 220 90% 56%;
     --primary-foreground: 0 0% 98%;
-    --primary-hover: 262 83% 52%;
-    --primary-muted: 262 83% 90%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --secondary-hover: 240 4.8% 90%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --primary-hover: 220 90% 50%;
+    --primary-muted: 220 90% 15%;
+    
+    /* Financial Success Green */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 98%;
+    --success-muted: 142 76% 15%;
+    
+    /* Professional Warning */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
+    --warning-muted: 38 92% 15%;
+    
+    /* Neutral Colors */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 220 10% 25%;
+    --secondary-hover: 210 20% 92%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 210 10% 45%;
+    --accent: 210 20% 96%;
+    --accent-foreground: 220 10% 25%;
+    
+    /* Status Colors */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 262 83% 58%;
+    --destructive-muted: 0 84% 15%;
+    
+    /* Borders and Inputs */
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 220 90% 56%;
+    
+    /* Enhanced Financial Colors */
+    --profit: 142 76% 36%;
+    --loss: 0 84% 60%;
+    --neutral: 210 10% 45%;
+    
+    /* Surface Elevations */
+    --surface-1: 0 0% 100%;
+    --surface-2: 220 20% 98%;
+    --surface-3: 220 20% 96%;
+    
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 213 31% 91%;
-    --card: 222 47% 11%;
-    --card-foreground: 213 31% 91%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 215 20.2% 65.1%;
-    --primary: 263 83% 62%;
-    --primary-foreground: 213 31% 91%;
-    --primary-hover: 263 83% 56%;
-    --primary-muted: 263 83% 40%;
-    --secondary: 217 19% 27%;
-    --secondary-foreground: 213 31% 91%;
-    --secondary-hover: 217 19% 32%;
-    --muted: 217 19% 27%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217 19% 27%;
-    --accent-foreground: 213 31% 91%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 213 31% 91%;
-    --border: 217 19% 27%;
-    --input: 217 19% 27%;
-    --ring: 263 83% 62%;
+    /* Dark Mode Professional Colors */
+    --background: 222 47% 8%;
+    --foreground: 213 31% 95%;
+    --card: 222 47% 10%;
+    --card-foreground: 213 31% 95%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 213 31% 95%;
+    
+    /* Professional Primary - Trust Blue Dark */
+    --primary: 220 90% 60%;
+    --primary-foreground: 222 47% 8%;
+    --primary-hover: 220 90% 55%;
+    --primary-muted: 220 90% 25%;
+    
+    /* Financial Success Green Dark */
+    --success: 142 76% 45%;
+    --success-foreground: 222 47% 8%;
+    --success-muted: 142 76% 20%;
+    
+    /* Professional Warning Dark */
+    --warning: 38 92% 55%;
+    --warning-foreground: 222 47% 8%;
+    --warning-muted: 38 92% 20%;
+    
+    /* Neutral Colors Dark */
+    --secondary: 217 19% 22%;
+    --secondary-foreground: 213 31% 95%;
+    --secondary-hover: 217 19% 28%;
+    --muted: 217 19% 22%;
+    --muted-foreground: 215 20.2% 65%;
+    --accent: 217 19% 22%;
+    --accent-foreground: 213 31% 95%;
+    
+    /* Status Colors Dark */
+    --destructive: 0 62.8% 55%;
+    --destructive-foreground: 213 31% 95%;
+    --destructive-muted: 0 62.8% 20%;
+    
+    /* Borders and Inputs Dark */
+    --border: 217 19% 25%;
+    --input: 217 19% 25%;
+    --ring: 220 90% 60%;
+    
+    /* Enhanced Financial Colors Dark */
+    --profit: 142 76% 45%;
+    --loss: 0 62.8% 55%;
+    --neutral: 215 20.2% 65%;
+    
+    /* Surface Elevations Dark */
+    --surface-1: 222 47% 10%;
+    --surface-2: 222 47% 12%;
+    --surface-3: 222 47% 15%;
   }
 }
 

@@ -14,12 +14,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 type AuthContextType = {
   session: Session | null;
   user: User | null;
-  profile: any;
+  profile: Record<string, unknown> | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const isPasswordRecoveryRef = useRef(false);
   const { toast } = useToast();
@@ -296,15 +296,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // No need to manually navigate - the auth state change will trigger a redirect
       return { error: null };
-    } catch (error: any) {
-      console.error('Unexpected sign in error:', error.message);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Unexpected sign in error:', err.message);
       toast({
         title: 'Erro ao fazer login',
-        description: error.message,
+        description: err.message,
         variant: 'destructive',
       });
       setLoading(false);
-      return { error };
+      return { error: err };
     }
   };
 
@@ -339,14 +340,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setLoading(false);
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
       toast({
         title: 'Erro ao criar conta',
-        description: error.message,
+        description: err.message,
         variant: 'destructive',
       });
       setLoading(false);
-      return { error };
+      return { error: err };
     }
   };
 
@@ -378,11 +380,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!error) {
         navigate('/auth/login');
       }
-    } catch (error: any) {
-      console.error('Unexpected error during sign out:', error.message);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error('Unexpected error during sign out:', err.message);
       toast({
         title: 'Erro ao fazer logout',
-        description: error.message,
+        description: err.message,
         variant: 'destructive',
       });
       setLoading(false);
@@ -413,14 +416,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       setLoading(false);
       return { error: null };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
       toast({
         title: 'Erro ao enviar e-mail de recuperação',
-        description: error.message,
+        description: err.message,
         variant: 'destructive',
       });
       setLoading(false);
-      return { error };
+      return { error: err };
     }
   };
 

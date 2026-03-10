@@ -13,7 +13,7 @@ export const useBillingData = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchBillingWithClients = async (billingData: any[]) => {
+  const fetchBillingWithClients = async (billingData: Record<string, unknown>[]) => {
     if (!billingData || billingData.length === 0) return [];
     
     // Extract client IDs from billing data
@@ -38,12 +38,12 @@ export const useBillingData = () => {
         acc[client.id] = client;
       }
       return acc;
-    }, {} as Record<string, any>);
-    
+    }, {} as Record<string, Record<string, unknown>>);
+
     // Merge client data into billing objects
     return billingData.map(billing => ({
       ...billing,
-      clients: billing.client_id && clientsMap[billing.client_id] ? clientsMap[billing.client_id] : null
+      clients: billing.client_id && clientsMap[billing.client_id as string] ? clientsMap[billing.client_id as string] : null
     }));
   };
 
@@ -87,7 +87,7 @@ export const useBillingData = () => {
     }
   };
 
-  const fetchPaymentsWithClients = async (paymentData: any[]) => {
+  const fetchPaymentsWithClients = async (paymentData: Record<string, unknown>[]) => {
     if (!paymentData || paymentData.length === 0) return [];
     
     // Extract client IDs from payment data
@@ -112,12 +112,12 @@ export const useBillingData = () => {
         acc[client.id] = client;
       }
       return acc;
-    }, {} as Record<string, any>);
-    
+    }, {} as Record<string, Record<string, unknown>>);
+
     // Merge client data into payment objects
     return paymentData.map(payment => ({
       ...payment,
-      clients: payment.client_id && clientsMap[payment.client_id] ? clientsMap[payment.client_id] : null
+      clients: payment.client_id && clientsMap[payment.client_id as string] ? clientsMap[payment.client_id as string] : null
     }));
   };
 

@@ -98,11 +98,11 @@ export const EditEmployeeDialog = ({
       });
       onSuccess();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Erro ao atualizar",
         description:
-          error.message || "Ocorreu um erro ao atualizar o funcionário.",
+          error instanceof Error ? error.message : "Ocorreu um erro ao atualizar o funcionário.",
         variant: "destructive",
       });
     } finally {

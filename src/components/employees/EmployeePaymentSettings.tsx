@@ -84,11 +84,11 @@ export function EmployeePaymentSettings() {
         
         setMonthlyValues(valuesByEmployee);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching employees and values:", error);
       toast({
         title: "Erro ao carregar dados",
-        description: error.message || "Não foi possível carregar os funcionários e valores.",
+        description: error instanceof Error ? error.message : "Não foi possível carregar os funcionários e valores.",
         variant: "destructive",
       });
     } finally {
@@ -171,11 +171,11 @@ export function EmployeePaymentSettings() {
           variant: "destructive",
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting payment settings:", error);
       toast({
         title: "Erro ao excluir configuração",
-        description: error.message || "Não foi possível excluir a configuração de pagamento.",
+        description: error instanceof Error ? error.message : "Não foi possível excluir a configuração de pagamento.",
         variant: "destructive",
       });
     }
@@ -253,11 +253,11 @@ export function EmployeePaymentSettings() {
 
       // Reset editing state
       setEditingEmployee(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving payment settings:", error);
       toast({
         title: "Erro ao salvar configurações",
-        description: error.message || "Não foi possível salvar as configurações de pagamento.",
+        description: error instanceof Error ? error.message : "Não foi possível salvar as configurações de pagamento.",
         variant: "destructive",
       });
     }

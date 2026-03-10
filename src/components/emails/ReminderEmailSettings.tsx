@@ -49,11 +49,11 @@ export const ReminderEmailSettings = () => {
         setDaysInterval(data.days_interval);
         setActive(data.active);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching reminder settings:", error);
       toast({
         title: "Erro ao carregar configurações",
-        description: error.message || "Não foi possível carregar as configurações de lembretes.",
+        description: error instanceof Error ? error.message : "Não foi possível carregar as configurações de lembretes.",
         variant: "destructive",
       });
     } finally {
@@ -101,11 +101,11 @@ export const ReminderEmailSettings = () => {
         title: "Configurações salvas",
         description: "As configurações de lembretes foram atualizadas com sucesso.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving reminder settings:", error);
       toast({
         title: "Erro ao salvar configurações",
-        description: error.message || "Não foi possível salvar as configurações de lembretes.",
+        description: error instanceof Error ? error.message : "Não foi possível salvar as configurações de lembretes.",
         variant: "destructive",
       });
     } finally {
@@ -126,11 +126,11 @@ export const ReminderEmailSettings = () => {
       });
       
       console.log("Reminder response:", data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error triggering reminders:", error);
       toast({
         title: "Erro ao enviar lembretes",
-        description: error.message || "Não foi possível enviar os lembretes de pagamento.",
+        description: error instanceof Error ? error.message : "Não foi possível enviar os lembretes de pagamento.",
         variant: "destructive",
       });
     } finally {

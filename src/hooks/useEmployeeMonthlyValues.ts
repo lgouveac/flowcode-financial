@@ -60,11 +60,11 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
       });
 
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding monthly value:", error);
       toast({
         title: "Erro ao adicionar valor mensal",
-        description: error.message || "Não foi possível adicionar o valor mensal.",
+        description: error instanceof Error ? error.message : "Não foi possível adicionar o valor mensal.",
         variant: "destructive",
       });
       throw error;
@@ -91,11 +91,11 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
         title: "Valor mensal atualizado",
         description: `Valor atualizado para ${new Date(monthlyValue.due_date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating monthly value:", error);
       toast({
         title: "Erro ao atualizar valor mensal",
-        description: error.message || "Não foi possível atualizar o valor mensal.",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar o valor mensal.",
         variant: "destructive",
       });
       throw error;
@@ -119,11 +119,11 @@ export const useEmployeeMonthlyValues = (employeeId: string) => {
         title: "Valor mensal excluído",
         description: "O valor mensal foi excluído com sucesso.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting monthly value:", error);
       toast({
         title: "Erro ao excluir valor mensal",
-        description: error.message || "Não foi possível excluir o valor mensal.",
+        description: error instanceof Error ? error.message : "Não foi possível excluir o valor mensal.",
         variant: "destructive",
       });
       throw error;

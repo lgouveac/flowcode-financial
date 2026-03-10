@@ -160,11 +160,11 @@ export const NewProjectDialog = ({ open, onClose, onSuccess }: NewProjectDialogP
       });
 
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error creating project:', error);
       toast({
         title: "Erro ao criar projeto",
-        description: error.message || "Ocorreu um erro ao criar o projeto.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao criar o projeto.",
         variant: "destructive",
       });
     } finally {

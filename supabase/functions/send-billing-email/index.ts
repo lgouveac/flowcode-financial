@@ -270,13 +270,13 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error sending email:", error);
       throw error;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in send-billing-email function:", error);
-    
-    return new Response(JSON.stringify({ 
-      status: "error", 
-      message: error.message || "An error occurred while processing the email request.",
-      error: error
+
+    return new Response(JSON.stringify({
+      status: "error",
+      message: error instanceof Error ? error.message : "An error occurred while processing the email request.",
+      error: String(error)
     }), {
       status: 500,
       headers: {

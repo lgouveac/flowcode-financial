@@ -127,7 +127,7 @@ export const ProjectHoursPeriodView = ({ project, open, onClose }: ProjectHoursP
       case "month":
         periods = eachMonthOfInterval({ start: startDateObj, end: endDateObj });
         break;
-      case "year":
+      case "year": {
         // For years, we'll create a simple array based on the year range
         const startYear = startDateObj.getFullYear();
         const endYear = endDateObj.getFullYear();
@@ -136,6 +136,7 @@ export const ProjectHoursPeriodView = ({ project, open, onClose }: ProjectHoursP
           periods.push(new Date(year, 0, 1));
         }
         break;
+      }
     }
 
     const periodDataMap = new Map<string, PeriodData>();
@@ -150,11 +151,12 @@ export const ProjectHoursPeriodView = ({ project, open, onClose }: ProjectHoursP
           periodKey = format(periodDate, "yyyy-MM-dd");
           periodLabel = format(periodDate, "dd/MM/yyyy", { locale: ptBR });
           break;
-        case "week":
+        case "week": {
           periodKey = format(periodDate, "yyyy-'W'ww");
           const weekEnd = endOfWeek(periodDate, { weekStartsOn: 1 });
           periodLabel = `${format(periodDate, "dd/MM", { locale: ptBR })} - ${format(weekEnd, "dd/MM/yyyy", { locale: ptBR })}`;
           break;
+        }
         case "month":
           periodKey = format(periodDate, "yyyy-MM");
           periodLabel = format(periodDate, "MMMM yyyy", { locale: ptBR });
@@ -186,10 +188,11 @@ export const ProjectHoursPeriodView = ({ project, open, onClose }: ProjectHoursP
         case "day":
           periodKey = format(hourDate, "yyyy-MM-dd");
           break;
-        case "week":
+        case "week": {
           const weekStart = startOfWeek(hourDate, { weekStartsOn: 1 });
           periodKey = format(weekStart, "yyyy-'W'ww");
           break;
+        }
         case "month":
           periodKey = format(hourDate, "yyyy-MM");
           break;
@@ -244,11 +247,12 @@ export const ProjectHoursPeriodView = ({ project, open, onClose }: ProjectHoursP
         setStartDate(format(startOfYear(now), "yyyy-MM-dd"));
         setEndDate(format(endOfYear(now), "yyyy-MM-dd"));
         break;
-      case "year":
+      case "year": {
         const fiveYearsAgo = new Date(now.getFullYear() - 4, 0, 1);
         setStartDate(format(fiveYearsAgo, "yyyy-MM-dd"));
         setEndDate(format(endOfYear(now), "yyyy-MM-dd"));
         break;
+      }
     }
   };
 

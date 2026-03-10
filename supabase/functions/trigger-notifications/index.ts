@@ -124,12 +124,12 @@ const handler = async (req: Request): Promise<Response> => {
         ...corsHeaders,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Error triggering notifications:", error);
     return new Response(
-      JSON.stringify({ 
-        status: "error", 
-        message: error.message 
+      JSON.stringify({
+        status: "error",
+        message: error instanceof Error ? error.message : String(error)
       }),
       {
         status: 500,
@@ -140,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 // Process recurring billing notifications
-async function processRecurringBillingNotifications(supabase: any, intervals: any[]) {
+async function processRecurringBillingNotifications(supabase: ReturnType<typeof createClient>, intervals: Record<string, unknown>[]) {
   // Get the default template for recurring billing
   const { data: recurringTemplate, error: templateError } = await supabase
     .from('email_templates')
@@ -297,7 +297,7 @@ async function processRecurringBillingNotifications(supabase: any, intervals: an
 }
 
 // Process one-time payment notifications
-async function processOneTimePaymentNotifications(supabase: any, intervals: any[]) {
+async function processOneTimePaymentNotifications(supabase: ReturnType<typeof createClient>, intervals: Record<string, unknown>[]) {
   // Try to get the default template for one-time payments, but don't abort if not found
   // We'll use the recurring template as fallback if needed
   const { data: oneTimeTemplate, error: templateError } = await supabase
@@ -308,6 +308,7 @@ async function processOneTimePaymentNotifications(supabase: any, intervals: any[
     .eq('is_default', true)
     .single();
     
+  let templateToUse = oneTimeTemplate;
   if (templateError) {
     console.log("⚠️ No default one-time email template found, will attempt to use recurring template as fallback");
     
@@ -328,9 +329,9 @@ async function processOneTimePaymentNotifications(supabase: any, intervals: any[
     
     // Use recurring template as fallback
     console.log("✅ Will use recurring template as fallback for one-time payments");
-    var templateToUse = recurringTemplate;
+    templateToUse = recurringTemplate;
   } else {
-    var templateToUse = oneTimeTemplate;
+    templateToUse = oneTimeTemplate;
     console.log("✅ Found default one-time payment template");
   }
   

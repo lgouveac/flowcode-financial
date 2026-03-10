@@ -78,11 +78,11 @@ export function AddEmployeeDialog() {
         position: "",
         type: "fixed"
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
       toast({
         title: "Erro ao cadastrar funcionário",
-        description: error.message || "Ocorreu um erro ao adicionar o funcionário.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao adicionar o funcionário.",
         variant: "destructive"
       });
     }

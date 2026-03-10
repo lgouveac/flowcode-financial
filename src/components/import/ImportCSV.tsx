@@ -55,7 +55,7 @@ export const ImportCSV = () => {
           throw new Error(`Tipo inválido na linha ${i}: ${values[typeIndex]}. Use 'pf' ou 'pj'`);
         }
         
-        const client: any = {
+        const client: Record<string, string> = {
           name: values[nameIndex],
           email: values[emailIndex],
           type: type,
@@ -128,7 +128,7 @@ export const ImportCSV = () => {
       const values = lines[i].split(",").map(v => v.trim());
       
       try {
-        const employee: any = {
+        const employee: Record<string, string> = {
           name: values[nameIndex],
           email: values[emailIndex],
           status: "active"

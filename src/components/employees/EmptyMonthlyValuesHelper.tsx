@@ -65,11 +65,11 @@ export const EmptyMonthlyValuesHelper = () => {
         title: "Verificação concluída",
         description: "Verificação de valores mensais concluída com sucesso.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error checking employee values:", error);
       toast({
         title: "Erro na verificação",
-        description: error.message || "Não foi possível verificar os valores mensais.",
+        description: error instanceof Error ? error.message : "Não foi possível verificar os valores mensais.",
         variant: "destructive",
       });
     } finally {
@@ -106,11 +106,11 @@ export const EmptyMonthlyValuesHelper = () => {
       
       // Refresh the data
       checkEmployeeValues();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding monthly value:", error);
       toast({
         title: "Erro ao adicionar valor",
-        description: error.message || "Não foi possível adicionar o valor mensal.",
+        description: error instanceof Error ? error.message : "Não foi possível adicionar o valor mensal.",
         variant: "destructive",
       });
     } finally {

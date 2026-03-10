@@ -11,7 +11,7 @@ const supabaseUrl = 'https://itlpvpdwgiwbdpqheemw.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0bHB2cGR3Z2l3YmRwcWhlZW13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxOTA5NzEsImV4cCI6MjA1NTc2Njk3MX0.gljQ6JAfbMzP-cbA68Iz21vua9YqAqVQgpB-eLk6nAg';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function saveToWebhooksTable(webhookUrl: string, contractData: any, success: boolean, errorMsg?: string) {
+async function saveToWebhooksTable(webhookUrl: string, contractData: Record<string, unknown>, success: boolean, errorMsg?: string) {
   try {
     const data = {
       criacao_contrato: JSON.stringify({
@@ -88,12 +88,13 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error calling webhook:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     try {
       const webhookUrl = "https://n8n.sof.to/webhook-test/e39a39a2-b53d-4cda-b3cb-c526da442158";
-      await saveToWebhooksTable(webhookUrl, requestBody, false, error.message);
+      await saveToWebhooksTable(webhookUrl, {} as Record<string, unknown>, false, errorMessage);
     } catch (logError) {
       console.error('Error saving to webhooks table:', logError);
     }
@@ -101,7 +102,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: errorMessage
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

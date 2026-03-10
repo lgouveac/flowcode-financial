@@ -1,4 +1,6 @@
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.2";
+
 // CORS headers for cross-origin requests
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,28 +8,28 @@ export const corsHeaders = {
 };
 
 // Helper for preparing template data from employee and monthly value
-export function prepareTemplateData(employee: any, monthlyValue: any) {
+export function prepareTemplateData(employee: Record<string, unknown>, monthlyValue: Record<string, unknown> | null) {
   // Handle the case where monthlyValue might be null
   const amount = monthlyValue?.amount || 0;
   const monthDate = monthlyValue?.month ? new Date(monthlyValue.month) : new Date();
   
   // Log the data being used
-  logMessage(`Preparing template data for ${employee.name} with monthly value: ${JSON.stringify(monthlyValue)}`, "📋");
-  
+  logMessage(`Preparing template data for ${employee.name as string} with monthly value: ${JSON.stringify(monthlyValue)}`, "📋");
+
   // Ensure all employee fields are included in the template data
   return {
-    nome_funcionario: employee.name || "Funcionário",
-    email_funcionario: employee.email || "email@exemplo.com",
+    nome_funcionario: (employee.name as string) || "Funcionário",
+    email_funcionario: (employee.email as string) || "email@exemplo.com",
     valor_nota: amount,
     data_nota: new Date().toISOString().split('T')[0],
     mes_referencia: formatMonthYear(monthDate.toISOString()),
-    posicao: employee.position || "Colaborador",
-    observacoes: monthlyValue?.notes || "",
-    phone: employee.phone || "",
-    address: employee.address || "",
-    pix: employee.pix || "",
-    cnpj: employee.cnpj || "",
-    payment_method: employee.payment_method || "",
+    posicao: (employee.position as string) || "Colaborador",
+    observacoes: (monthlyValue?.notes as string) || "",
+    phone: (employee.phone as string) || "",
+    address: (employee.address as string) || "",
+    pix: (employee.pix as string) || "",
+    cnpj: (employee.cnpj as string) || "",
+    payment_method: (employee.payment_method as string) || "",
     valor_mensal: amount
   };
 }
@@ -72,7 +74,7 @@ export function isTimeMatch(): boolean {
 }
 
 // Fetch CC recipients for employee emails
-export async function fetchCCRecipients(supabase: any) {
+export async function fetchCCRecipients(supabase: ReturnType<typeof createClient>) {
   try {
     const { data: recipients, error } = await supabase
       .from("email_cc_recipients")
@@ -84,7 +86,7 @@ export async function fetchCCRecipients(supabase: any) {
     }
     
     logMessage(`Found ${recipients?.length || 0} CC recipients`, "📧");
-    return recipients?.map((r: any) => r.email) || [];
+    return recipients?.map((r: { email: string }) => r.email) || [];
   } catch (error) {
     logError("Error fetching CC recipients", error as Error);
     return []; // Return empty array if there's an error

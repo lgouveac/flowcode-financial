@@ -43,10 +43,10 @@ export function NewTemplateDialog({ open, onClose }: NewTemplateDialogProps) {
         description: "O template foi criado com sucesso!"
       });
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Erro ao criar template",
-        description: error.message,
+        description: error instanceof Error ? error.message : String(error),
         variant: "destructive"
       });
     }

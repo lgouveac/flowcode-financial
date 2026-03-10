@@ -66,8 +66,8 @@ export default function TestSync() {
         newProjects?.forEach(p => addResult(`  - Project: ${p.name} (contract: ${p.contract_id || 'none'})`));
       }
 
-    } catch (error: any) {
-      addResult(`❌ Test failed: ${error.message}`);
+    } catch (error: unknown) {
+      addResult(`❌ Test failed: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }

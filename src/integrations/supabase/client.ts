@@ -18,5 +18,5 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 
 // Adicionar ao window para debug (apenas em desenvolvimento)
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
-  (window as any).supabase = supabase;
+  (window as unknown as Record<string, unknown>).supabase = supabase;
 }

@@ -59,9 +59,10 @@ export function useGithubToken() {
       localStorage.setItem('github_pat', newToken);
       await fetchRepos(newToken);
       return { success: true };
-    } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setLoading(false);
     }
@@ -130,9 +131,10 @@ export function useGithubToken() {
       localStorage.setItem('github_repos', JSON.stringify(allRepos));
       
       return allRepos;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Erro ao buscar repositórios:', err);
-      setError(err.message);
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
       throw err;
     } finally {
       setLoading(false);

@@ -147,11 +147,11 @@ export const ProjectTimesheet = ({ projects, onRefresh }: ProjectTimesheetProps)
       // Refresh data
       fetchTimeEntries();
       onRefresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error adding time entry:', error);
       toast({
         title: "Erro ao lançar horas",
-        description: error.message || "Ocorreu um erro ao lançar as horas.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao lançar as horas.",
         variant: "destructive",
       });
     } finally {
@@ -175,11 +175,11 @@ export const ProjectTimesheet = ({ projects, onRefresh }: ProjectTimesheetProps)
 
       fetchTimeEntries();
       onRefresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting time entry:', error);
       toast({
         title: "Erro ao remover",
-        description: error.message || "Ocorreu um erro ao remover a entrada.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao remover a entrada.",
         variant: "destructive",
       });
     }

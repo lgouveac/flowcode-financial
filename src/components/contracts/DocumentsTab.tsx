@@ -70,7 +70,7 @@ export function DocumentsTab() {
     return '192.168.1.100';
   };
 
-  const callWebhook = async (type: 'criacao' | 'assinatura', payload: any) => {
+  const callWebhook = async (type: 'criacao' | 'assinatura', payload: Record<string, unknown>) => {
     const webhookUrl = getWebhook('documents', type);
 
     if (!webhookUrl) {

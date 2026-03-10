@@ -292,7 +292,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
   };
 
   // Atualiza uma parcela específica
-  const updateInstallmentDetail = (index: number, field: keyof InstallmentDetail, value: any) => {
+  const updateInstallmentDetail = (index: number, field: keyof InstallmentDetail, value: string | number | boolean) => {
     const updated = [...installmentDetails];
     updated[index] = { ...updated[index], [field]: value };
     setInstallmentDetails(updated);

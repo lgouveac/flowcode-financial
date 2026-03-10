@@ -5,8 +5,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3 } from "lucide-react";
 import { useEffect } from 'react';
 
+interface ChartDataPoint {
+  name: string;
+  entrada: number;
+  saida: number;
+  saldo: number;
+}
+
 interface CashFlowChartProps {
-  chartData: any[];
+  chartData: ChartDataPoint[];
   period: string;
   setPeriod: (value: string) => void;
   year: string;

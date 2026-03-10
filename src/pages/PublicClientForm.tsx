@@ -60,11 +60,11 @@ export default function PublicClientForm() {
       // Redirect to thank you page or specified redirect URL
       navigate(redirectUrl);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error submitting form:", error);
       toast({
         title: "Erro ao enviar formulário",
-        description: error.message || "Ocorreu um erro ao enviar o formulário. Por favor, tente novamente.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao enviar o formulário. Por favor, tente novamente.",
         variant: "destructive"
       });
     } finally {

@@ -45,7 +45,7 @@ export const PaymentSelector = ({
     ? payments.filter(payment => 
         payment && 
         payment.status && 
-        validStatuses.includes(payment.status as any))
+        validStatuses.includes(payment.status as "pending" | "billed" | "awaiting_invoice"))
     : [];
 
   // Debug logs

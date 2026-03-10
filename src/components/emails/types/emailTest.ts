@@ -48,7 +48,7 @@ export type EmailData = {
   to: string;
   subject: string;
   content: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export type RecordType = 'all' | 'recurring' | 'oneTime';

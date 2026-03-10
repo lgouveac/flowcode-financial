@@ -60,8 +60,8 @@ export default function ResetPassword() {
         });
         navigate('/auth/login');
       }
-    } catch (err: any) {
-      setError(err.message || 'Ocorreu um erro ao redefinir sua senha');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ocorreu um erro ao redefinir sua senha');
     } finally {
       setIsLoading(false);
     }

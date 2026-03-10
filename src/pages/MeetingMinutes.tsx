@@ -137,7 +137,7 @@ export default function MeetingMinutes() {
       }));
 
       setAtas(atasWithRelations);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao buscar atas:', error);
       toast({
         title: "Erro",
@@ -158,7 +158,7 @@ export default function MeetingMinutes() {
 
       if (error) throw error;
       setClients(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao buscar clientes:', error);
     }
   };
@@ -204,7 +204,7 @@ export default function MeetingMinutes() {
       uniqueProjects.sort((a, b) => a.name.localeCompare(b.name));
       
       setProjects(uniqueProjects);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao buscar projetos:', error);
     }
   };
@@ -223,7 +223,7 @@ export default function MeetingMinutes() {
 
     try {
       setLoading(true);
-      const ataData: any = {
+      const ataData: Record<string, string | null> = {
         title: formData.title.trim(),
         content: formData.content.trim(),
         client_id: formData.client_id && formData.client_id !== "none" ? formData.client_id : null,
@@ -261,11 +261,11 @@ export default function MeetingMinutes() {
       setEditingAta(null);
       setFormData({ title: "", content: "", client_id: "", project_id: "" });
       fetchAtas();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao salvar ata:', error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível salvar a ata.",
+        description: error instanceof Error ? error.message : "Não foi possível salvar a ata.",
         variant: "destructive",
       });
     } finally {
@@ -293,7 +293,7 @@ export default function MeetingMinutes() {
       });
 
       fetchAtas();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao excluir ata:', error);
       toast({
         title: "Erro",

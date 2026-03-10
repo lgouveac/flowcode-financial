@@ -87,7 +87,7 @@ export const EmployeeEmailSettings = ({
       });
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving settings:', error);
       toast({
         title: "Erro ao salvar",

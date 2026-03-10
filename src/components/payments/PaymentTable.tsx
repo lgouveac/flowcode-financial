@@ -164,34 +164,34 @@ export const PaymentTable = ({
       {/* Mobile Card View */}
       <div className="md:hidden">
         <TableMobileCard
-          data={filteredPayments as any[]}
+          data={filteredPayments as unknown as Record<string, unknown>[]}
           columns={[
             {
               key: 'clients',
               label: 'Cliente',
-              render: (value: any) => <span className="font-semibold">{value?.name || '-'}</span>
+              render: (value: unknown) => <span className="font-semibold">{(value as Payment['clients'])?.name || '-'}</span>
             },
             {
               key: 'description',
               label: 'Descrição',
-              render: (value: any) => <span className="text-sm">{value || '-'}</span>
+              render: (value: unknown) => <span className="text-sm">{(value as string) || '-'}</span>
             },
             {
               key: 'amount',
               label: 'Valor',
-              render: (value: any) => (
-                <span className="font-semibold">{formatCurrency(value || 0)}</span>
+              render: (value: unknown) => (
+                <span className="font-semibold">{formatCurrency((value as number) || 0)}</span>
               )
             },
             {
               key: 'due_date',
               label: 'Vencimento',
-              render: (value: any) => <span className="text-sm">{value || '-'}</span>
+              render: (value: unknown) => <span className="text-sm">{(value as string) || '-'}</span>
             },
             {
               key: 'status',
               label: 'Status',
-              render: (value: any) => (
+              render: (value: unknown) => (
                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   value === "paid" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                   : value === "overdue" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"

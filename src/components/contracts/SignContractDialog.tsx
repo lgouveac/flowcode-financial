@@ -291,11 +291,11 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
       });
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error signing contract:", error);
       toast({
         title: "Erro ao assinar contrato",
-        description: error.message || "Não foi possível assinar o contrato.",
+        description: error instanceof Error ? error.message : "Não foi possível assinar o contrato.",
         variant: "destructive",
       });
     } finally {

@@ -7,12 +7,12 @@ import { EmailTemplate } from "@/types/email";
 export const useEmailTest = (template: EmailTemplate) => {
   const { toast } = useToast();
   const [selectedRecordId, setSelectedRecordId] = useState<string>("");
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [records, setRecords] = useState<any[]>([]);
+  const [selectedRecord, setSelectedRecord] = useState<Record<string, unknown> | null>(null);
+  const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [isLoadingRecords, setIsLoadingRecords] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previewData, setPreviewData] = useState<any>(null);
+  const [previewData, setPreviewData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     fetchRecords();
@@ -36,7 +36,7 @@ export const useEmailTest = (template: EmailTemplate) => {
     setIsLoadingRecords(true);
     setError(null);
     try {
-      let data: any[] = [];
+      let data: Record<string, unknown>[] = [];
       if (template.type === 'clients') {
         // Exibe só recebimentos ativos, com clientes ativos e que tenham email
         const { data: paymentsData, error: paymentsError } = await supabase
@@ -113,9 +113,9 @@ export const useEmailTest = (template: EmailTemplate) => {
       }
 
       setRecords(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching records:', err);
-      setError(err.message || 'Failed to load records');
+      setError(err instanceof Error ? err.message : 'Failed to load records');
       setRecords([]);
     } finally {
       setIsLoadingRecords(false);
@@ -123,39 +123,43 @@ export const useEmailTest = (template: EmailTemplate) => {
   };
 
   // Agora usa sempre o objeto client completo
-  const updatePreviewData = (record: any) => {
+  const updatePreviewData = (record: Record<string, unknown>) => {
     if (template.type === 'clients') {
+      const amount = record.amount as number;
+      const dueDate = record.due_date as string | undefined;
+      const name = record.name as string;
+
       // Format currency
       const formattedAmount = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
-      }).format(record.amount);
+      }).format(amount);
 
       // Format date
-      const formattedDate = record.due_date
-        ? new Date(record.due_date).toLocaleDateString('pt-BR')
+      const formattedDate = dueDate
+        ? new Date(dueDate).toLocaleDateString('pt-BR')
         : new Date().toLocaleDateString('pt-BR');
 
       setPreviewData({
-        clientName: record.name.split(' - ')[0] || "Cliente",
-        responsibleName: record.responsible_name || record.partner_name || "Responsável",
-        amount: record.amount,
+        clientName: name.split(' - ')[0] || "Cliente",
+        responsibleName: (record.responsible_name as string) || (record.partner_name as string) || "Responsável",
+        amount: amount,
         formattedAmount: formattedAmount,
-        dueDay: new Date(record.due_date).getDate(),
+        dueDay: dueDate ? new Date(dueDate).getDate() : new Date().getDate(),
         dueDate: formattedDate,
-        description: record.description || "Serviço de teste",
+        description: (record.description as string) || "Serviço de teste",
         totalInstallments: record.total_installments || 1,
         currentInstallment: record.installment_number || 1,
         paymentMethod: record.payment_method || "pix",
         clientId: record.client_id,
         client: {
-          ...record.client // Isso inclui cnpj, cpf, partner_name, partner_cpf, endereco, company_name etc
+          ...(record.client as Record<string, unknown>) // Isso inclui cnpj, cpf, partner_name, partner_cpf, endereco, company_name etc
         }
       });
     } else {
       setPreviewData({
-        employeeName: record.name || "Funcionário",
-        employeeEmail: record.email || "email@example.com",
+        employeeName: (record.name as string) || "Funcionário",
+        employeeEmail: (record.email as string) || "email@example.com",
       });
     }
   };
@@ -174,31 +178,35 @@ export const useEmailTest = (template: EmailTemplate) => {
         throw new Error('Email do registro não encontrado');
       }
 
+      const recordAmount = (record.amount as number) || 0;
+      const recordName = record.name as string;
+      const recordDueDate = record.due_date as string | undefined;
+
       const formattedAmount = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL'
-      }).format(record.amount || 0);
+      }).format(recordAmount);
 
       let paymentMethodText = 'PIX';
       if (record.payment_method === 'boleto') paymentMethodText = 'Boleto';
       if (record.payment_method === 'credit_card') paymentMethodText = 'Cartão de Crédito';
 
-      const emailData: any = {
+      const emailData: Record<string, unknown> = {
         templateId: template.id,
         type: template.type,
         subtype: template.subtype,
         to: record.email,
         data: {
-          recipientName: record.name.split(' - ')[0] || 'Cliente',
-          responsibleName: record.responsible_name || record.partner_name || 'Responsável',
+          recipientName: recordName.split(' - ')[0] || 'Cliente',
+          responsibleName: (record.responsible_name as string) || (record.partner_name as string) || 'Responsável',
           billingValue: formattedAmount,
-          dueDate: record.due_date ? new Date(record.due_date).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
+          dueDate: recordDueDate ? new Date(recordDueDate).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR'),
           currentInstallment: record.installment_number || 1,
           totalInstallments: record.total_installments || 1,
           paymentMethod: paymentMethodText,
-          descricaoServico: record.description || "Serviço de teste",
+          descricaoServico: (record.description as string) || "Serviço de teste",
           // Passando campos do cliente se houver
-          ...record.client,
+          ...(record.client as Record<string, unknown>),
         }
       };
 
@@ -214,11 +222,12 @@ export const useEmailTest = (template: EmailTemplate) => {
       });
 
       return data;
-    } catch (err: any) {
-      setError(err.message || 'Falha ao enviar o email de teste');
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : 'Falha ao enviar o email de teste';
+      setError(errMessage);
       toast({
         title: 'Erro ao enviar email',
-        description: err.message || 'Ocorreu um erro ao enviar o email de teste.',
+        description: errMessage,
         variant: 'destructive',
       });
       throw err;

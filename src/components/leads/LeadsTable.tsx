@@ -51,7 +51,7 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
     }
   };
 
-  const startEditing = (leadId: number, field: keyof Lead, currentValue: any) => {
+  const startEditing = (leadId: number, field: keyof Lead, currentValue: string | number | null | undefined) => {
     setEditingCell({ leadId, field });
     setEditingValue(currentValue?.toString() || "");
   };
@@ -65,7 +65,7 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
     if (!editingCell) return;
 
     const { leadId, field } = editingCell;
-    let value: any = editingValue;
+    let value: string | number | null = editingValue;
 
     // Convert value to appropriate type
     if (field === "Valor") {
@@ -90,7 +90,7 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
   // Handle clicking outside to cancel editing
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (editingCell && !event.target?.closest('.editing-cell')) {
+      if (editingCell && !(event.target as HTMLElement)?.closest('.editing-cell')) {
         cancelEditing();
       }
     };
@@ -112,7 +112,7 @@ export function LeadsTable({ searchTerm }: LeadsTableProps) {
     );
   };
 
-  const renderEditableCell = (lead: Lead, field: keyof Lead, value: any, icon?: React.ReactNode) => {
+  const renderEditableCell = (lead: Lead, field: keyof Lead, value: string | number | null | undefined, icon?: React.ReactNode) => {
     const isEditing = editingCell?.leadId === lead.id && editingCell?.field === field;
 
     if (isEditing) {

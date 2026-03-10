@@ -36,11 +36,11 @@ export const NewMonthlyValueDialog = ({ open, onClose, employeeId }: NewMonthlyV
       });
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding monthly value:", error);
       toast({
         title: "Erro ao adicionar valor mensal",
-        description: error.message || "Não foi possível adicionar o valor mensal.",
+        description: error instanceof Error ? error.message : "Não foi possível adicionar o valor mensal.",
         variant: "destructive",
       });
     }

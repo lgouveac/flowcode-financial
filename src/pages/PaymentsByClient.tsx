@@ -51,20 +51,22 @@ export default function PaymentsByClient() {
           start: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
           end: new Date(currentYear, currentMonth, 0).toISOString().split('T')[0],
         };
-      case 'last_month':
+      case 'last_month': {
         const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
         const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
         return {
           start: `${lastMonthYear}-${String(lastMonth).padStart(2, '0')}-01`,
           end: `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`,
         };
-      case 'last_3_months':
+      }
+      case 'last_3_months': {
         const threeMonthsAgo = new Date(now);
         threeMonthsAgo.setMonth(now.getMonth() - 3);
         return {
           start: threeMonthsAgo.toISOString().split('T')[0],
           end: now.toISOString().split('T')[0],
         };
+      }
       default:
         return null;
     }
@@ -108,7 +110,7 @@ export default function PaymentsByClient() {
       // Track seen payments to avoid duplicates
       const seenPayments = new Set<string>();
 
-      data?.forEach((record: any) => {
+      data?.forEach((record: Record<string, unknown> & { clients?: { name: string } | null; client_id?: string }) => {
         if (!record.clients) return;
 
         // Create a unique key for this payment to detect duplicates
@@ -122,8 +124,8 @@ export default function PaymentsByClient() {
 
         seenPayments.add(paymentKey);
 
-        const clientId = record.client_id;
-        const clientName = record.clients.name;
+        const clientId = record.client_id as string;
+        const clientName = record.clients!.name;
 
         if (!clientMap.has(clientId)) {
           clientMap.set(clientId, {
@@ -137,21 +139,21 @@ export default function PaymentsByClient() {
         }
 
         const summary = clientMap.get(clientId)!;
-        summary.total_amount += record.amount;
+        summary.total_amount += record.amount as number;
         summary.payment_count += 1;
 
         // Update last payment date if this one is more recent
-        if (record.date > summary.last_payment_date) {
-          summary.last_payment_date = record.date;
+        if ((record.date as string) > summary.last_payment_date) {
+          summary.last_payment_date = record.date as string;
         }
 
         summary.payments.push({
-          id: record.id,
-          date: record.date,
-          description: record.description,
-          amount: record.amount,
-          category: record.category,
-          type: record.type
+          id: record.id as string,
+          date: record.date as string,
+          description: record.description as string,
+          amount: record.amount as number,
+          category: record.category as string,
+          type: record.type as string
         });
       });
 

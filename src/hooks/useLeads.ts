@@ -58,11 +58,11 @@ export const useLeads = () => {
         title: "Lead adicionado",
         description: "Lead criado com sucesso.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding lead:", error);
       toast({
         title: "Erro ao adicionar lead",
-        description: error.message || "Não foi possível adicionar o lead.",
+        description: error instanceof Error ? error.message : "Não foi possível adicionar o lead.",
         variant: "destructive",
       });
     }
@@ -98,11 +98,11 @@ export const useLeads = () => {
         title: "Lead atualizado",
         description: "As informações do lead foram atualizadas com sucesso.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating lead:", error);
       toast({
         title: "Erro ao atualizar lead",
-        description: error.message || "Não foi possível atualizar o lead.",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar o lead.",
         variant: "destructive",
       });
     }
@@ -124,11 +124,11 @@ export const useLeads = () => {
         title: "Lead removido",
         description: "O lead foi removido com sucesso.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting lead:", error);
       toast({
         title: "Erro ao remover lead",
-        description: error.message || "Não foi possível remover o lead.",
+        description: error instanceof Error ? error.message : "Não foi possível remover o lead.",
         variant: "destructive",
       });
     }

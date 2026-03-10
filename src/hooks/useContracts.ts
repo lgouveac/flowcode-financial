@@ -119,11 +119,11 @@ export const useContracts = () => {
       });
 
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error adding contract:", error);
       toast({
         title: "Erro ao adicionar contrato",
-        description: error.message || "Não foi possível adicionar o contrato.",
+        description: error instanceof Error ? error.message : "Não foi possível adicionar o contrato.",
         variant: "destructive",
       });
       throw error;
@@ -160,11 +160,11 @@ export const useContracts = () => {
         title: "Contrato atualizado",
         description: "As informações do contrato foram atualizadas com sucesso.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating contract:", error);
       toast({
         title: "Erro ao atualizar contrato",
-        description: error.message || "Não foi possível atualizar o contrato.",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar o contrato.",
         variant: "destructive",
       });
       throw error;
@@ -188,11 +188,11 @@ export const useContracts = () => {
         title: "Contrato removido",
         description: "O contrato foi removido com sucesso.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting contract:", error);
       toast({
         title: "Erro ao remover contrato",
-        description: error.message || "Não foi possível remover o contrato.",
+        description: error instanceof Error ? error.message : "Não foi possível remover o contrato.",
         variant: "destructive",
       });
     }

@@ -164,11 +164,11 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
       if (onRefresh) {
         onRefresh();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro ao deletar recebimentos:', error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível deletar os recebimentos selecionados.",
+        description: error instanceof Error ? error.message : "Não foi possível deletar os recebimentos selecionados.",
         variant: "destructive",
       });
     } finally {
@@ -249,36 +249,36 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
       {/* Mobile Card View */}
       <div className="md:hidden">
         <TableMobileCard
-          data={billings as any[]}
+          data={billings as Record<string, unknown>[]}
           columns={[
             {
               key: 'clients',
               label: 'Cliente',
-              render: (value: any) => <span className="font-semibold">{value?.name || '-'}</span>
+              render: (value: unknown) => <span className="font-semibold">{(value as Record<string, string>)?.name || '-'}</span>
             },
             {
               key: 'description',
               label: 'Descrição',
-              render: (value: any) => <span className="text-sm">{value || '-'}</span>
+              render: (value: unknown) => <span className="text-sm">{(value as string) || '-'}</span>
             },
             {
               key: 'amount',
               label: 'Valor',
-              render: (value: any) => (
+              render: (value: unknown) => (
                 <span className="font-semibold">
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0)}
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((value as number) || 0)}
                 </span>
               )
             },
             {
               key: 'due_day',
               label: 'Vencimento',
-              render: (value: any) => <span className="text-sm">{value || '-'}</span>
+              render: (value: unknown) => <span className="text-sm">{(value as string) || '-'}</span>
             },
             {
               key: 'status',
               label: 'Status',
-              render: (value: any) => (
+              render: (value: unknown) => (
                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   value === "paid" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                   : value === "overdue" ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
@@ -293,7 +293,7 @@ export const BillingTable = ({ billings, onRefresh, enableDuplicate, templates =
               )
             }
           ]}
-          onRowClick={(row) => handleOpenDetails(row as any)}
+          onRowClick={(row) => handleOpenDetails(row as unknown as RecurringBilling)}
           emptyMessage="Nenhum recebimento encontrado"
         />
       </div>

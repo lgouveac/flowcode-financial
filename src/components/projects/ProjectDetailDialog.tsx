@@ -16,6 +16,9 @@ import { useTimer } from "./TimerContext";
 import { useGithubToken } from "@/hooks/useGithubToken";
 import { GithubConnectionButton } from "./GithubConnectionButton";
 import { fetchRepositoryStats } from "@/services/githubStats";
+import { ProjectPRDEditor } from "./ProjectPRDEditor";
+import { ProjectAccessTable } from "./ProjectAccessTable";
+import { FileText, Shield } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -89,7 +92,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
   const { isAuthenticated, repos, loading: reposLoading, token } = useGithubToken();
   const [selectedGithubRepo, setSelectedGithubRepo] = useState<string>(project.github_repo_full_name || "none");
   const [savingGithub, setSavingGithub] = useState(false);
-  const [githubStats, setGithubStats] = useState<any>(null);
+  const [githubStats, setGithubStats] = useState<Awaited<ReturnType<typeof fetchRepositoryStats>> | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
 
   const { toast } = useToast();
@@ -333,7 +336,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
       const endDate = parseISO(periodForm.end_date);
       const dates = eachDayOfInterval({ start: startDate, end: endDate });
 
-      let entries: any[] = [];
+      let entries: { project_id: string; employee_id: string; date_worked: string; hours_worked: number; description: string }[] = [];
 
       if (periodForm.hours_type === "per_day") {
         // Hours per day - create entry for each day with the specified hours
@@ -637,12 +640,12 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
       acc[empId].totalHours += entry.hours_worked;
       acc[empId].entries.push(entry);
       return acc;
-    }, {} as any);
+    }, {} as Record<string, { name: string; totalHours: number; entries: ProjectHour[] }>);
 
     const totalHours = filteredHours.reduce((sum, entry) => sum + entry.hours_worked, 0);
     const totalCost = totalHours * hourlyRate;
 
-    const employeesHTML = Object.values(employeeHours).map((emp: any) => {
+    const employeesHTML = Object.values(employeeHours).map((emp) => {
       const empCost = emp.totalHours * hourlyRate;
       return `
         <tr>
@@ -654,10 +657,10 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
     }).join('');
 
     // Generate detailed activities section
-    const activitiesHTML = Object.values(employeeHours).map((emp: any) => {
+    const activitiesHTML = Object.values(employeeHours).map((emp) => {
       const entriesHTML = emp.entries
-        .sort((a: any, b: any) => new Date(a.date_worked).getTime() - new Date(b.date_worked).getTime())
-        .map((entry: any) => {
+        .sort((a: ProjectHour, b: ProjectHour) => new Date(a.date_worked).getTime() - new Date(b.date_worked).getTime())
+        .map((entry: ProjectHour) => {
           const cost = entry.hours_worked * hourlyRate;
           return `
             <tr>
@@ -823,7 +826,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
             total_hours: totalHours,
             hourly_rate: hourlyRate,
             total_cost: totalCost,
-            employee_hours: Object.values(employeeHours).map((emp: any) => ({
+            employee_hours: Object.values(employeeHours).map((emp) => ({
               name: emp.name,
               hours: emp.totalHours,
               cost: emp.totalHours * hourlyRate
@@ -859,7 +862,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
     try {
       setSavingGithub(true);
       
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       
       if (selectedGithubRepo && selectedGithubRepo !== "none") {
         const selectedRepo = repos.find(r => r.full_name === selectedGithubRepo);
@@ -877,11 +880,11 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
               console.log('✅ Estatísticas carregadas:', stats);
               setGithubStats(stats);
               updateData.github_last_sync_at = stats.lastSyncAt;
-            } catch (statsError: any) {
+            } catch (statsError: unknown) {
               console.error('❌ Erro ao buscar estatísticas:', statsError);
               toast({
                 title: "Aviso",
-                description: `Repositório vinculado, mas não foi possível carregar as estatísticas: ${statsError.message || 'Erro desconhecido'}`,
+                description: `Repositório vinculado, mas não foi possível carregar as estatísticas: ${statsError instanceof Error ? statsError.message : 'Erro desconhecido'}`,
                 variant: "default",
               });
               // Não falhar a operação se as estatísticas derem erro
@@ -921,11 +924,11 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
 
       // Passar o projeto atualizado para o refresh
       onRefresh(updatedProject);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao salvar repositório:', error);
       toast({
         title: "Erro",
-        description: error.message || "Não foi possível atualizar o repositório",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar o repositório",
         variant: "destructive",
       });
     } finally {
@@ -999,8 +1002,16 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
         </DialogHeader>
 
         <Tabs defaultValue="code" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="code">Código</TabsTrigger>
+            <TabsTrigger value="prd">
+              <FileText className="h-4 w-4 mr-2" />
+              PRD
+            </TabsTrigger>
+            <TabsTrigger value="access">
+              <Shield className="h-4 w-4 mr-2" />
+              Acessos
+            </TabsTrigger>
             <TabsTrigger value="hours">Horas</TabsTrigger>
           </TabsList>
 
@@ -1154,7 +1165,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                                   <div>
                                     <p className="text-sm font-semibold mb-2">Commits Recentes</p>
                                     <div className="space-y-2 max-h-64 overflow-y-auto">
-                                      {githubStats.recentCommits.map((commit: any) => (
+                                      {githubStats.recentCommits.map((commit) => (
                                         <div key={commit.sha} className="p-2 border rounded text-sm">
                                           <div className="flex items-center gap-2 mb-1">
                                             <code className="text-xs bg-muted px-1 rounded">{commit.sha}</code>
@@ -1196,7 +1207,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                                 </CardHeader>
                                 <CardContent>
                                   <div className="space-y-3">
-                                    {githubStats.contributors.map((contributor: any) => (
+                                    {githubStats.contributors.map((contributor) => (
                                       <div key={contributor.login} className="flex items-center justify-between p-3 border rounded-lg">
                                         <div className="flex items-center gap-3">
                                           <img 
@@ -1257,7 +1268,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                                     <div>
                                       <p className="text-sm font-semibold mb-2">PRs Recentes</p>
                                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                                        {githubStats.pullRequests.recent.map((pr: any) => (
+                                        {githubStats.pullRequests.recent.map((pr) => (
                                           <div key={pr.number} className="p-2 border rounded text-sm">
                                             <div className="flex items-center gap-2 mb-1">
                                               <span className={`px-2 py-0.5 rounded text-xs ${
@@ -1305,7 +1316,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                                     <div>
                                       <p className="text-sm font-semibold mb-2">Issues Recentes</p>
                                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                                        {githubStats.issues.recent.map((issue: any) => (
+                                        {githubStats.issues.recent.map((issue) => (
                                           <div key={issue.number} className="p-2 border rounded text-sm">
                                             <div className="flex items-center gap-2 mb-1">
                                               <span className={`px-2 py-0.5 rounded text-xs ${
@@ -1343,7 +1354,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                                 </CardHeader>
                                 <CardContent>
                                   <div className="space-y-2">
-                                    {githubStats.releases.map((release: any) => (
+                                    {githubStats.releases.map((release) => (
                                       <div key={release.tag} className="p-3 border rounded-lg">
                                         <div className="flex items-center justify-between">
                                           <div>
@@ -1393,7 +1404,7 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                                     <div>
                                       <p className="text-sm font-semibold mb-2">Lista de Branches</p>
                                       <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                                        {githubStats.branches.list.map((branch: any) => (
+                                        {githubStats.branches.list.map((branch) => (
                                           <div key={branch.name} className="p-2 border rounded text-sm flex items-center justify-between">
                                             <span>{branch.name}</span>
                                             {branch.protected && (
@@ -1419,6 +1430,22 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Aba PRD */}
+          <TabsContent value="prd" className="space-y-4">
+            <ProjectPRDEditor
+              projectId={Number(project.id)}
+              initialPRD={project.prd}
+              onSave={() => {
+                onRefresh();
+              }}
+            />
+          </TabsContent>
+
+          {/* Aba Acessos */}
+          <TabsContent value="access" className="space-y-4">
+            <ProjectAccessTable projectId={Number(project.id)} />
           </TabsContent>
 
           {/* Aba Horas */}

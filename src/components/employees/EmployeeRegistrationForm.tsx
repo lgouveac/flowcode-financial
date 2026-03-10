@@ -83,11 +83,11 @@ export const EmployeeRegistrationForm = ({ onSuccess, onCancel }: EmployeeRegist
       });
 
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error registering employee:", error);
       toast({
         title: "Erro ao registrar funcionário",
-        description: error.message || "Ocorreu um erro ao registrar o funcionário.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao registrar o funcionário.",
         variant: "destructive"
       });
     } finally {

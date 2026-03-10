@@ -20,7 +20,7 @@ export default function Login() {
   const { toast } = useToast();
 
   // Get the location the user came from, or redirect to the home page
-  const from = (location.state as any)?.from?.pathname || '/';
+  const from = ((location.state as Record<string, unknown>)?.from as Record<string, unknown>)?.pathname as string || '/';
   
   // If user is already logged in, redirect to homepage
   useEffect(() => {

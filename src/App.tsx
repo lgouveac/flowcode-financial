@@ -38,6 +38,8 @@ import PublicProjectView from "./pages/PublicProjectView";
 import PublicProjects from "./pages/PublicProjects";
 import TestSync from "./pages/TestSync";
 import MeetingMinutes from "./pages/MeetingMinutes";
+import TasksKanban from "./pages/TasksKanban";
+import EnhancedDashboardPreview from "./components/enhanced-dashboard-preview";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,7 +89,9 @@ const App = () => {
                       <Route path="leads" element={<Leads />} />
                       <Route path="users" element={<Users />} />
                       <Route path="projects" element={<Projects />} />
+                      <Route path="tasks" element={<TasksKanban />} />
                       <Route path="meeting-minutes" element={<MeetingMinutes />} />
+                      <Route path="dashboard-preview" element={<EnhancedDashboardPreview />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/auth/login" replace />} />
                   </Routes>

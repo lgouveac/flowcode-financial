@@ -4,11 +4,11 @@ import { logMessage, logError, fetchCCRecipients } from "./utils.ts";
 
 // Send email to employee using the provided template and data
 export async function sendEmployeeEmail(
-  supabase: any,
-  employee: any,
-  emailTemplate: any,
+  supabase: ReturnType<typeof createClient>,
+  employee: { name: string; email: string },
+  emailTemplate: { id: string; subtype?: string },
   templateData: Record<string, string | number>
-): Promise<{ success: boolean; result?: any; error?: string }> {
+): Promise<{ success: boolean; result?: unknown; error?: string }> {
   try {
     logMessage(`Sending email to ${employee.name} (${employee.email})`, "📧");
     
@@ -38,14 +38,14 @@ export async function sendEmployeeEmail(
 
     logMessage(`Email sent to ${employee.name}: ${JSON.stringify(emailResponse)}`, "✅");
     return { success: true, result: emailResponse };
-  } catch (error: any) {
-    logError(`Error processing employee ${employee.name}`, error);
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    logError(`Error processing employee ${(employee as { name: string }).name}`, error instanceof Error ? error : new Error(String(error)));
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
 // Fetch active employees with their monthly values for the current month
-export async function fetchEmployeesWithValues(supabase: any, month: string, ignoreFilters: boolean = false): Promise<any[]> {
+export async function fetchEmployeesWithValues(supabase: ReturnType<typeof createClient>, month: string, ignoreFilters: boolean = false): Promise<Record<string, unknown>[]> {
   try {
     logMessage(`Fetching employees with monthly values for month: ${month}, ignoreFilters: ${ignoreFilters}`, "🔍");
     
@@ -144,14 +144,14 @@ export async function fetchEmployeesWithValues(supabase: any, month: string, ign
 
       return validEmployees;
     }
-  } catch (error: any) {
-    logError("Error in fetchEmployeesWithValues", error);
+  } catch (error: unknown) {
+    logError("Error in fetchEmployeesWithValues", error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
 
 // Fetch all email templates for employees and find the appropriate one based on employee preference or default
-export async function fetchEmailTemplate(supabase: any, preferredType?: string): Promise<any> {
+export async function fetchEmailTemplate(supabase: ReturnType<typeof createClient>, preferredType?: string | boolean): Promise<Record<string, unknown>> {
   try {
     // Get all employee templates
     const { data: allTemplates, error: templatesError } = await supabase
@@ -194,14 +194,14 @@ export async function fetchEmailTemplate(supabase: any, preferredType?: string):
     
     logMessage(`Selected email template: ${template.name} (${template.subtype})`, "📝");
     return template;
-  } catch (error: any) {
-    logError("Error fetching email template", error);
+  } catch (error: unknown) {
+    logError("Error fetching email template", error instanceof Error ? error : new Error(String(error)));
     throw error;
   }
 }
 
 // Fetch global settings for email notifications
-export async function fetchGlobalSettings(supabase: any): Promise<any> {
+export async function fetchGlobalSettings(supabase: ReturnType<typeof createClient>): Promise<Record<string, unknown>> {
   const { data: globalSettings, error: globalError } = await supabase
     .from("global_settings")
     .select("employee_emails_send_day")
@@ -218,7 +218,7 @@ export async function fetchGlobalSettings(supabase: any): Promise<any> {
 }
 
 // Fetch email settings for notification timing
-export async function fetchEmailSettings(supabase: any): Promise<any> {
+export async function fetchEmailSettings(supabase: ReturnType<typeof createClient>): Promise<Record<string, unknown>> {
   const { data: emailSettings, error: emailError } = await supabase
     .from("employee_email_settings")
     .select("notification_time")
