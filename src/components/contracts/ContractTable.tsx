@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import * as React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,7 @@ export function ContractTable() {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const { toast } = useToast();
   const { getWebhook } = useWebhooks();
+  const queryClient = useQueryClient();
 
   const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este contrato?")) {
@@ -157,15 +159,19 @@ export function ContractTable() {
 
       if (webhookResponse.ok) {
         toast({
-          title: "Webhook enviado",
-          description: "O webhook foi chamado com sucesso para o novo contrato.",
+          title: "Contrato enviado para geração",
+          description: "O n8n está gerando o contrato. Atualize a lista em alguns segundos.",
         });
+        // Atualiza a lista após o n8n ter tempo de criar o contrato
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["contracts"] });
+        }, 5000);
       }
     } catch (error) {
       console.error("Erro ao chamar webhook:", error);
       toast({
-        title: "Aviso",
-        description: "Contrato criado, mas houve problema ao chamar o webhook.",
+        title: "Erro ao enviar para geração",
+        description: "Houve problema ao chamar o webhook de criação do contrato.",
         variant: "destructive",
       });
     }

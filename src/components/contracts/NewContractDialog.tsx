@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ClientSelector } from "@/components/recurring-billing/ClientSelector";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useContracts } from "@/hooks/useContracts";
 import { useWebhooks } from "@/hooks/useWebhooks";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,7 +19,6 @@ interface NewContractDialogProps {
 }
 
 export function NewContractDialog({ open, onClose, onContractCreated }: NewContractDialogProps) {
-  const { addContract } = useContracts();
   const { getWebhook } = useWebhooks();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -74,10 +72,8 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
     isSubmittingRef.current = true;
     setLoading(true);
     try {
-      // Tentar converter para número, se não for possível, manter como texto
       const totalValueNum = parseFloat(formData.total_value);
       const isNumeric = !isNaN(totalValueNum) && isFinite(totalValueNum);
-      const totalValue = isNumeric ? totalValueNum : formData.total_value;
       const installments = parseInt(formData.installments);
       const installmentValue = isNumeric ? totalValueNum / installments : undefined;
 
@@ -94,9 +90,8 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
 
       const contractData = {
         client_id: formData.client_id,
-        contract_id: formData.contract_id || undefined,
         scope: formData.scope,
-        total_value: totalValue,
+        total_value: isNumeric ? totalValueNum : formData.total_value,
         installments: installments,
         installment_value: installmentValue,
         start_date: formData.start_date || undefined,
@@ -105,26 +100,18 @@ export function NewContractDialog({ open, onClose, onContractCreated }: NewContr
         contract_type: formData.contract_type,
         contractor_type: formData.contractor_type,
         data_de_assinatura: formData.data_de_assinatura || undefined,
-        link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
         installment_value_text: formData.installment_value_text || undefined,
+        info_parcelas_clientes: formData.installment_value_text || undefined,
         Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : undefined,
-        // Assinatura automática da FlowCode na criação
         data_assinatura_flowcode: new Date().toISOString(),
         ip_flowcode: flowcodeIP,
         assinante_flowcode: 'Lucas Gouvea Carmo',
       };
 
-      // Criar o contrato no banco de dados primeiro
-      const createdContract = await addContract(contractData);
-      
-      if (!createdContract) {
-        throw new Error("Erro ao criar contrato");
-      }
-      
-      // Callback opcional (após criar no banco) - apenas para webhook, não cria outro contrato
+      // Envia para o n8n via webhook — o n8n cria o contrato no banco
       if (onContractCreated) {
-        onContractCreated(createdContract);
+        onContractCreated(contractData as Record<string, unknown>);
       }
       
       setFormData({
