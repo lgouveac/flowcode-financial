@@ -29,9 +29,9 @@ export const syncPaymentToCashFlow = async (
     paymentData
   });
 
-  // Só sincroniza se o pagamento foi alterado para 'paid'
-  if (newStatus !== 'paid' || oldStatus === 'paid') {
-    console.log('No sync needed - payment not newly marked as paid');
+  // Só sincroniza se o novo status é 'paid'
+  if (newStatus !== 'paid') {
+    console.log('No sync needed - payment not marked as paid');
     return {
       success: true,
       message: 'No sync needed'

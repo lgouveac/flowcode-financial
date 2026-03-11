@@ -343,10 +343,11 @@ export const RecurringBilling = () => {
     return allPayments
       .filter(payment => !activeRecurringClients.has(payment.client_id))
       .map(payment => {
-        // Formatar data de vencimento
-        const formattedDueDate = payment.due_date 
-          ? format(parseISO(payment.due_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
-          : 'Dia --';
+        // Formatar data de vencimento (usa payment_date como fallback para Pagamento_Por_Entrega)
+        const dateToDisplay = payment.due_date || (payment.Pagamento_Por_Entrega ? payment.payment_date : null);
+        const formattedDueDate = dateToDisplay
+          ? format(parseISO(dateToDisplay + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
+          : (payment.Pagamento_Por_Entrega ? 'Na entrega' : 'Dia --');
 
         return {
           id: `expanded-${payment.id}`,
@@ -433,11 +434,12 @@ export const RecurringBilling = () => {
         return matchesSearch && matchesStatus;
       })
       .map(payment => {
-        // Formatar data de vencimento
+        // Formatar data de vencimento (usa payment_date como fallback para Pagamento_Por_Entrega)
         const paymentRecord = payment as Record<string, unknown>;
-        const formattedDueDate = paymentRecord.due_date
-          ? format(parseISO(paymentRecord.due_date as string + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
-          : 'Dia --';
+        const dateToDisplay = (paymentRecord.due_date || (paymentRecord.Pagamento_Por_Entrega ? paymentRecord.payment_date : null)) as string | null;
+        const formattedDueDate = dateToDisplay
+          ? format(parseISO(dateToDisplay + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
+          : (paymentRecord.Pagamento_Por_Entrega ? 'Na entrega' : 'Dia --');
 
         return {
           id: `expanded-open-${payment.id}`,

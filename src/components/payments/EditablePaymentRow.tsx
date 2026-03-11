@@ -48,9 +48,7 @@ export const EditablePaymentRow = ({
       }
 
       // Garantir que strings vazias sejam convertidas para null
-      const normalizedDueDate = payOnDelivery 
-        ? null 
-        : (editDueDate && typeof editDueDate === 'string' && editDueDate.trim() !== "" ? editDueDate : null);
+      const normalizedDueDate = editDueDate && typeof editDueDate === 'string' && editDueDate.trim() !== "" ? editDueDate : null;
 
       const { error } = await supabase
         .from('payments')
@@ -58,7 +56,7 @@ export const EditablePaymentRow = ({
           amount: parseFloat(editAmount),
           due_date: normalizedDueDate,
           status: editStatus,
-          payment_date: payOnDelivery ? null : (editPaymentDate || null),
+          payment_date: editPaymentDate || null,
           Pagamento_Por_Entrega: payOnDelivery
         })
         .eq('id', payment.id);
@@ -188,31 +186,20 @@ export const EditablePaymentRow = ({
                 id={`pay_on_delivery_${payment.id}`}
                 checked={payOnDelivery}
                 onCheckedChange={(checked) => {
-                  const value = Boolean(checked);
-                  setPayOnDelivery(value);
-                  if (value) {
-                    setEditPaymentDate("");
-                    setEditDueDate(null);
-                  }
+                  setPayOnDelivery(Boolean(checked));
                 }}
               />
               <Label htmlFor={`pay_on_delivery_${payment.id}`} className="text-xs">
                 Entrega
               </Label>
             </div>
-            {payOnDelivery ? (
-              <div className="text-xs text-gray-600">
-                Na entrega
-              </div>
-            ) : (
-              <Input
+            <Input
                 type="date"
                 value={editPaymentDate}
                 onChange={(e) => setEditPaymentDate(e.target.value)}
                 className="w-32 h-8"
                 placeholder="Data pgto"
               />
-            )}
             {editStatus === 'paid' && !payOnDelivery && !editPaymentDate && (
               <div className="text-xs text-red-500">
                 Obrigatória
@@ -221,10 +208,10 @@ export const EditablePaymentRow = ({
           </div>
         ) : (
           <div className="text-sm">
-            {payment.Pagamento_Por_Entrega ? (
-              <span className="text-blue-600">Na entrega</span>
-            ) : payment.payment_date ? (
+            {payment.payment_date ? (
               format(parseISO(payment.payment_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
+            ) : payment.Pagamento_Por_Entrega ? (
+              <span className="text-blue-600">Na entrega</span>
             ) : (
               <span className="text-gray-400">-</span>
             )}
