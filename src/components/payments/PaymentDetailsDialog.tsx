@@ -132,8 +132,8 @@ export const PaymentDetailsDialog = ({
           .update({
             description,
             amount: parseFloat(paidAmount),
-            due_date: payOnDelivery ? null : (dueDate || null),
-            payment_date: payOnDelivery ? null : (paymentDate || null),
+            due_date: dueDate || null,
+            payment_date: paymentDate || null,
             payment_method: paymentMethod,
             status: 'paid',
             email_template: emailTemplate === "none" ? null : emailTemplate,
@@ -172,7 +172,7 @@ export const PaymentDetailsDialog = ({
             {
               description,
               amount: parseFloat(paidAmount),
-              payment_date: payOnDelivery ? null : (paymentDate || null),
+              payment_date: paymentDate || null,
               client_id: payment.client_id
             }
           );
@@ -187,16 +187,14 @@ export const PaymentDetailsDialog = ({
       } else {
         // Fluxo normal (não parcial)
         // Garantir que strings vazias sejam convertidas para null
-        const normalizedDueDate = payOnDelivery 
-          ? null 
-          : (dueDate && typeof dueDate === 'string' && dueDate.trim() !== "" ? dueDate : null);
+        const normalizedDueDate = dueDate && typeof dueDate === 'string' && dueDate.trim() !== "" ? dueDate : null;
 
         console.log('Updating payment with data:', {
           id: payment.id,
           description,
           amount: parseFloat(amount),
           due_date: normalizedDueDate,
-          payment_date: payOnDelivery ? null : (paymentDate || null),
+          payment_date: paymentDate || null,
           payment_method: paymentMethod,
           status,
           email_template: emailTemplate === "none" ? null : emailTemplate,
@@ -210,7 +208,7 @@ export const PaymentDetailsDialog = ({
             description,
             amount: parseFloat(amount),
             due_date: normalizedDueDate,
-            payment_date: payOnDelivery ? null : (paymentDate || null),
+            payment_date: paymentDate || null,
             payment_method: paymentMethod,
             status,
             email_template: emailTemplate === "none" ? null : emailTemplate,
@@ -237,7 +235,7 @@ export const PaymentDetailsDialog = ({
             {
               description,
               amount: parseFloat(amount),
-              payment_date: payOnDelivery ? null : (paymentDate || null),
+              payment_date: paymentDate || null,
               client_id: payment.client_id
             }
           );
@@ -325,31 +323,17 @@ export const PaymentDetailsDialog = ({
                 id="pay_on_delivery"
                 checked={payOnDelivery}
                 onCheckedChange={(checked) => {
-                  const value = Boolean(checked);
-                  setPayOnDelivery(value);
-                  if (value) {
-                    setPaymentDate("");
-                    setDueDate(null);
-                  }
+                  setPayOnDelivery(Boolean(checked));
                 }}
               />
               <label htmlFor="pay_on_delivery" className="text-sm text-gray-300">Pagamento por entrega</label>
             </div>
-            {payOnDelivery ? (
-              <Input
-                value="Pagamento na entrega"
-                readOnly
-                disabled
-                className="bg-[#151820] border-[#2a2f3d] text-white"
-              />
-            ) : (
-              <Input
-                type="date"
-                value={paymentDate ? formatDate(paymentDate) : ""}
-                onChange={(e) => setPaymentDate(e.target.value)}
-                className="bg-[#151820] border-[#2a2f3d] text-white"
-              />
-            )}
+            <Input
+              type="date"
+              value={paymentDate ? formatDate(paymentDate) : ""}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              className="bg-[#151820] border-[#2a2f3d] text-white"
+            />
             {status === 'paid' && !payOnDelivery && !paymentDate && (
               <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
             )}

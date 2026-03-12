@@ -168,10 +168,10 @@ export default function TasksKanban() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold">Kanban de Atividades</h1>
+    <div className="container mx-auto space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">Kanban de Atividades</h1>
           <Select
             value={selectedProjectId?.toString() || ""}
             onValueChange={(value) => setSelectedProjectId(parseInt(value))}
@@ -195,15 +195,18 @@ export default function TasksKanban() {
         <div className="flex gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => {
               setSelectedStatus(null);
               setStatusDialogOpen(true);
             }}
           >
             <Settings className="h-4 w-4 mr-2" />
-            Gerenciar Status
+            <span className="hidden sm:inline">Gerenciar Status</span>
+            <span className="sm:hidden">Status</span>
           </Button>
           <Button
+            size="sm"
             onClick={() => {
               setSelectedTask(null);
               setInitialStatusId(undefined);

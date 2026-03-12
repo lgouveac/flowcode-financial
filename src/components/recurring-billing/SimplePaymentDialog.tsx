@@ -158,7 +158,7 @@ export function SimplePaymentDialog({
               due_date: payOnDelivery ? null : (dueDate || null),
               payment_method: paymentMethod,
               status: status,
-              payment_date: payOnDelivery ? null : (paymentDate || null),
+              payment_date: paymentDate || null,
               Pagamento_Por_Entrega: payOnDelivery,
               scope_type: 'closed'
             });
@@ -522,21 +522,12 @@ export function SimplePaymentDialog({
                         id="pay_on_delivery"
                         checked={payOnDelivery}
                         onCheckedChange={(checked) => {
-                          const value = Boolean(checked);
-                          setPayOnDelivery(value);
-                          if (value) setPaymentDate("");
+                          setPayOnDelivery(Boolean(checked));
                         }}
                       />
                       <Label htmlFor="pay_on_delivery" className="text-sm">Pagamento por entrega</Label>
                     </div>
-                    {payOnDelivery ? (
-                      <Input
-                        value="Pagamento na entrega"
-                        readOnly
-                        disabled
-                      />
-                    ) : (
-                      <Input
+                    <Input
                         id="payment_date"
                         type="date"
                         value={paymentDate}
@@ -544,7 +535,6 @@ export function SimplePaymentDialog({
                         disabled={isSubmitting}
                         required={status === 'paid' && !payOnDelivery}
                       />
-                    )}
                     {status === 'paid' && !payOnDelivery && !paymentDate && (
                       <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
                     )}

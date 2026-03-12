@@ -102,7 +102,7 @@ export function KanbanBoard({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth-mobile">
         {tasksByStatus.map(({ status, tasks: statusTasks }) => (
           <KanbanColumn
             key={status.id}

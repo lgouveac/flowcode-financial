@@ -12,7 +12,6 @@ import {
   DollarSign,
   TrendingUp,
   LogOut,
-  Menu,
   X,
   User,
   Moon,
@@ -22,7 +21,8 @@ import {
   Target,
   FolderOpen,
   ClipboardList,
-  Kanban
+  Kanban,
+  MoreHorizontal
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,7 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SimpleChatWidget } from "@/components/ai-chat/SimpleChatWidget";
 
 const navigation = [
@@ -53,6 +53,14 @@ const navigation = [
   { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator },
   { name: "Leads", href: "/leads", icon: Target },
   { name: "Usuários", href: "/users", icon: Shield },
+];
+
+// Bottom nav items - the most used sections in the financial app
+const bottomNavItems = [
+  { name: "Home", href: "/", icon: LayoutDashboard },
+  { name: "Recebimentos", href: "/receivables", icon: Receipt },
+  { name: "Caixa", href: "/cashflow", icon: TrendingUp },
+  { name: "Clientes", href: "/clients", icon: Users },
 ];
 
 export default function Index() {
@@ -184,20 +192,8 @@ export default function Index() {
         </div>
       </div>
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Sidebar (opened from "Mais" bottom nav item) */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden fixed top-4 left-4 z-50 
-              bg-background/80 backdrop-blur-sm
-              shadow-lg border touch-target
-              safe-area-top safe-area-left"
-          >
-            <Menu className="h-6 w-6" />
-          </Button>
-        </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0 safe-area-left">
           <div className="flex flex-col h-full bg-card">
             <SidebarContent />
@@ -208,12 +204,56 @@ export default function Index() {
       {/* Main content */}
       <div className={cn(
         "flex-1 flex flex-col min-w-0",
-        "lg:ml-64" // Add left margin on desktop to account for fixed sidebar
+        "lg:ml-64"
       )}>
-        <main className="flex-1 p-4 sm:p-5 lg:p-6 space-section">
+        <main className="flex-1 px-4 pt-4 pb-24 sm:px-5 sm:pb-5 lg:pt-6 lg:px-6 lg:pb-6 space-section">
           <Outlet />
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t safe-area-bottom">
+        <div className="flex items-center justify-around h-16">
+          {bottomNavItems.map((item) => {
+            const isActive = item.href === "/"
+              ? location.pathname === "/"
+              : location.pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full",
+                  "transition-colors touch-target",
+                  isActive
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                )}
+              >
+                <item.icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                <span className={cn(
+                  "text-[10px] leading-tight",
+                  isActive ? "font-semibold" : "font-medium"
+                )}>
+                  {item.name}
+                </span>
+              </Link>
+            );
+          })}
+          {/* "Mais" button opens full sidebar */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className={cn(
+              "flex flex-col items-center justify-center gap-0.5 flex-1 h-full",
+              "transition-colors touch-target",
+              "text-muted-foreground"
+            )}
+          >
+            <MoreHorizontal className="h-5 w-5" />
+            <span className="text-[10px] leading-tight font-medium">Mais</span>
+          </button>
+        </div>
+      </nav>
 
       {/* AI Chat Widget */}
       <SimpleChatWidget />

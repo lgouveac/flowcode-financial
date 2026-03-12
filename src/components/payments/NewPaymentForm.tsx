@@ -353,19 +353,12 @@ export const NewPaymentForm = ({
               checked={Boolean(formData.Pagamento_Por_Entrega)}
               onCheckedChange={(checked) => {
                 const value = Boolean(checked);
-                setFormData({ ...formData, Pagamento_Por_Entrega: value, payment_date: value ? '' : formData.payment_date });
+                setFormData({ ...formData, Pagamento_Por_Entrega: value });
               }}
             />
             <Label htmlFor="pay_on_delivery" className="text-sm">Pagamento por entrega</Label>
           </div>
-          {formData.Pagamento_Por_Entrega ? (
-            <Input
-              value="Pagamento na entrega"
-              readOnly
-              disabled
-            />
-          ) : (
-            <Input
+          <Input
               id="payment_date"
               type="date"
               value={formData.payment_date || ""}
@@ -373,7 +366,6 @@ export const NewPaymentForm = ({
               required={formData.status === 'paid' && !formData.Pagamento_Por_Entrega}
               disabled={isSubmitting}
             />
-          )}
           {formData.status === 'paid' && !formData.Pagamento_Por_Entrega && !formData.payment_date && (
             <p className="text-sm text-red-500">Data de pagamento é obrigatória quando status é "Pago"</p>
           )}

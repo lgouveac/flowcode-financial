@@ -367,8 +367,8 @@ export const CashFlowTable = ({
           <div className="text-muted-foreground">
             {cashFlow.length === 0 ? "Nenhuma movimentação registrada" : "Nenhuma movimentação encontrada com os filtros aplicados"}
           </div>
-        </div> : <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full">
+        </div> : <div className="overflow-x-auto rounded-lg border -mx-4 sm:mx-0">
+          <table className="w-full min-w-[700px]">
             <thead>
               <tr className="border-b">
                 <th className="text-center py-2 px-4 w-12">

@@ -37,9 +37,10 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        // Mobile: Bottom sheet style
+        // Mobile: Bottom sheet style (full width, max 85vh to leave breathing room)
         "fixed left-0 right-0 top-auto bottom-0 z-50 grid gap-4 border-t bg-background p-4 shadow-lg",
-        "max-h-[90vh] overflow-y-auto scroll-smooth-mobile",
+        "w-full max-h-[85vh] overflow-y-auto scroll-smooth-mobile",
+        "rounded-t-xl",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         "duration-200",
@@ -47,7 +48,7 @@ const DialogContent = React.forwardRef<
         "safe-area-bottom",
         // Desktop: Centralizado
         "sm:left-[50%] sm:right-auto sm:top-[50%] sm:bottom-auto",
-        "sm:w-[95%] sm:max-w-3xl sm:translate-x-[-50%] sm:translate-y-[-50%]",
+        "sm:w-[95vw] sm:max-w-3xl sm:max-h-[90vh] sm:translate-x-[-50%] sm:translate-y-[-50%]",
         "sm:rounded-lg sm:border sm:border-t sm:p-6",
         "sm:data-[state=closed]:slide-out-to-left-1/2 sm:data-[state=closed]:slide-out-to-top-[48%]",
         "sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=open]:slide-in-from-top-[48%]",

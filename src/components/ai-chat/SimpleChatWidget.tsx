@@ -242,7 +242,7 @@ export const SimpleChatWidget = () => {
   });
   
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] safe-area-bottom safe-area-right">
+    <div className="fixed bottom-[5.5rem] right-4 sm:bottom-6 sm:right-6 z-40 lg:z-[9999] safe-area-bottom safe-area-right">
       {/* Always visible button */}
       <Button
         onClick={() => {

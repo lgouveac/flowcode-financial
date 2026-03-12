@@ -363,3 +363,13 @@
     @apply gap-3 sm:gap-4;
   }
 }
+
+/* Mobile dialog: force full width regardless of consumer max-w classes */
+@media (max-width: 639px) {
+  [role="dialog"][data-state="open"] {
+    max-width: 100% !important;
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+  }
+}
