@@ -6,13 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { EditIcon, TrashIcon, PlusIcon, FileText, CheckIcon, Grid, List, Copy, Eye, ExternalLink } from "lucide-react";
+import { PlusIcon, CheckIcon, Grid, List, Eye } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { formatDate } from "@/utils/formatters";
 import { Contract } from "@/types/contract";
 import { NewContractDialog } from "./NewContractDialog";
-import { EditContractDialog } from "./EditContractDialog";
 import { SignContractDialog } from "./SignContractDialog";
 import { ContractDetailsDialog } from "./ContractDetailsDialog";
 import { useWebhooks } from "@/hooks/useWebhooks";
@@ -90,33 +89,12 @@ export function ContractTable() {
     });
   }, [contracts]);
   const [newContractOpen, setNewContractOpen] = useState(false);
-  const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const { toast } = useToast();
   const { getWebhook } = useWebhooks();
   const queryClient = useQueryClient();
-
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Tem certeza que deseja excluir este contrato?")) {
-      await deleteContract(id);
-    }
-  };
-
-  const handleCopySigningLink = (contractId: string) => {
-    const signingUrl = `${window.location.origin}/contract-signing/${contractId}`;
-    navigator.clipboard.writeText(signingUrl);
-    toast({
-      title: "Link copiado",
-      description: "Link de assinatura copiado para a área de transferência.",
-    });
-  };
-
-  const handleOpenSigningPage = (contractId: string) => {
-    const signingUrl = `${window.location.origin}/contract-signing/${contractId}`;
-    window.open(signingUrl, '_blank');
-  };
 
 
 
@@ -266,11 +244,8 @@ export function ContractTable() {
                       {contract.start_date && <span>Início: {formatDate(new Date(contract.start_date), "dd/MM/yyyy")}</span>}
                     </div>
                     <div className="flex items-center gap-1 border-t pt-2">
-                      <Button variant="ghost" size="sm" onClick={() => setViewingContract(contract)} className="h-8 w-8 p-0"><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleOpenSigningPage(contract.contract_id)} className="h-8 w-8 p-0"><ExternalLink className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => setSigningContract(contract)} className="h-8 w-8 p-0"><CheckIcon className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => setEditingContract(contract)} className="h-8 w-8 p-0"><EditIcon className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(contract.id)} className="h-8 w-8 p-0"><TrashIcon className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="sm" onClick={() => setViewingContract(contract)} className="h-8 px-2 gap-1"><Eye className="h-4 w-4" /> Ver</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setSigningContract(contract)} className="h-8 px-2 gap-1"><CheckIcon className="h-4 w-4" /> Assinar</Button>
                     </div>
                   </Card>
                 ))}
@@ -289,7 +264,7 @@ export function ContractTable() {
                     <TableHead>Valor da Parcela</TableHead>
                     <TableHead>Data de Início</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-[200px]">Ações</TableHead>
+                    <TableHead className="w-[140px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -329,11 +304,8 @@ export function ContractTable() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 min-w-fit">
-                          <Button variant="ghost" size="sm" onClick={() => setViewingContract(contract)} title="Ver Detalhes" className="h-8 w-8 p-0 flex-shrink-0"><Eye className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenSigningPage(contract.contract_id)} title="Abrir Página de Assinatura" className="h-8 w-8 p-0 flex-shrink-0"><ExternalLink className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => setSigningContract(contract)} title={contract.status === "completed" ? "Chamar Webhook / Re-assinar" : "Marcar como Assinado"} className="h-8 w-8 p-0 flex-shrink-0"><CheckIcon className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => setEditingContract(contract)} title="Editar" className="h-8 w-8 p-0 flex-shrink-0"><EditIcon className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(contract.id)} title="Excluir" className="h-8 w-8 p-0 flex-shrink-0"><TrashIcon className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => setViewingContract(contract)} title="Ver Detalhes" className="h-8 px-2 gap-1 flex-shrink-0"><Eye className="h-4 w-4" /> Ver</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setSigningContract(contract)} title={contract.status === "completed" ? "Chamar Webhook / Re-assinar" : "Marcar como Assinado"} className="h-8 px-2 gap-1 flex-shrink-0"><CheckIcon className="h-4 w-4" /> Assinar</Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -421,52 +393,19 @@ export function ContractTable() {
                           size="sm"
                           onClick={() => setViewingContract(contract)}
                           title="Ver Detalhes"
-                          className="h-8 px-2"
+                          className="h-8 px-2 gap-1"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4" /> Ver
                         </Button>
-                        
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleOpenSigningPage(contract.contract_id)}
-                          title="Abrir Página de Assinatura"
-                          className="h-8 px-2"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                        
-                        
+
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setSigningContract(contract)}
                           title={contract.status === "completed" ? "Chamar Webhook / Re-assinar" : "Marcar como Assinado"}
-                          className="h-8 px-2"
+                          className="h-8 px-2 gap-1"
                         >
-                          <CheckIcon className="h-4 w-4" />
-                        </Button>
-                        
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingContract(contract)}
-                          title="Editar"
-                          className="h-8 px-2"
-                        >
-                          <EditIcon className="h-4 w-4" />
-                        </Button>
-                        
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(contract.id)}
-                          title="Excluir"
-                          className="h-8 px-2"
-                        >
-                          <TrashIcon className="h-4 w-4" />
+                          <CheckIcon className="h-4 w-4" /> Assinar
                         </Button>
                       </div>
                     </div>
@@ -484,14 +423,6 @@ export function ContractTable() {
         onContractCreated={handleCreateContract}
       />
       
-      {editingContract && (
-        <EditContractDialog
-          contract={editingContract}
-          open={!!editingContract}
-          onClose={() => setEditingContract(null)}
-        />
-      )}
-
       {signingContract && (
         <SignContractDialog
           contract={signingContract}

@@ -18,6 +18,7 @@ import { CashFlow } from "@/components/CashFlow";
 import Emails from "./pages/Emails";
 import Contracts from "./pages/Contracts";
 import ContractSigning from "./pages/ContractSigning";
+import ContractVisualViewer from "./pages/ContractVisualViewer";
 import PaymentsByClient from "./pages/PaymentsByClient";
 import EstimatedExpenses from "./pages/EstimatedExpenses";
 import NotFound from "./pages/NotFound";
@@ -67,6 +68,7 @@ const App = () => {
                     <Route path="/register-employee" element={<PublicEmployeeForm />} />
                     <Route path="/thank-you" element={<ThankYou />} />
                     <Route path="/contract-signing/:contractId" element={<ContractSigning />} />
+                    <Route path="/contract-visual/:contractId" element={<ContractVisualViewer />} />
                     <Route path="/project-view/:projectId" element={<PublicProjectView />} />
                     <Route path="/public-projects" element={<PublicProjects />} />
                     <Route path="/test-sync" element={<TestSync />} />

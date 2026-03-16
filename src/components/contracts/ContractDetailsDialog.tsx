@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ExternalLink, Copy, Calendar, User, DollarSign, FileText, MapPin, Clock, Signature } from "lucide-react";
+import { ExternalLink, Copy, Calendar, User, DollarSign, FileText, MapPin, Clock, Signature, Eye } from "lucide-react";
 import { Contract } from "@/types/contract";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useToast } from "@/hooks/use-toast";
@@ -97,9 +97,22 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
             <CardHeader className="pb-3">
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg">Informações Gerais</CardTitle>
-                <Badge className={getStatusColor(currentContract.status)}>
-                  {getStatusLabel(currentContract.status)}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {(currentContract.contract_type === 'open_scope' || currentContract.contract_type === 'closed_scope') && currentContract.contract_id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(`/contract-visual/${currentContract.contract_id}`, '_blank')}
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver Contrato Visual
+                    </Button>
+                  )}
+                  <Badge className={getStatusColor(currentContract.status)}>
+                    {getStatusLabel(currentContract.status)}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>

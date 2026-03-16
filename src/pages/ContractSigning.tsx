@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ interface Contract {
   status: string;
   link_contrato?: string;
   obs?: string;
+  contract_type?: string;
   // Campos de assinatura cliente
   data_de_assinatura?: string;
   ip?: string;
@@ -37,8 +38,11 @@ interface Contract {
   assinante_flowcode?: string;
 }
 
+const VISUAL_VIEWER_TYPES = ["open_scope", "closed_scope"];
+
 export default function ContractSigning() {
   const { contractId } = useParams<{ contractId: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth(); // Verificar se usuário está logado
   console.log('ContractSigning component loaded with contractId:', contractId);
   
@@ -151,6 +155,18 @@ export default function ContractSigning() {
       };
 
       console.log('✅ Contract loaded successfully:', contractWithClient);
+
+      // Redirect to visual viewer if contract type has a visual template
+      // and the contract is not yet signed (status !== 'completed')
+      if (
+        data.contract_type &&
+        VISUAL_VIEWER_TYPES.includes(data.contract_type) &&
+        data.status !== 'completed'
+      ) {
+        navigate(`/contract-visual/${contractId}`, { replace: true });
+        return;
+      }
+
       setContract(contractWithClient);
     } catch (error) {
       console.error('💥 Error fetching contract - full error:', error);
