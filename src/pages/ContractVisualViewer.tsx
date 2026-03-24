@@ -1259,7 +1259,7 @@ export default function ContractVisualViewer() {
             </Button>
           ) : (
             <Button
-              onClick={() => navigate(`/contract-signing/${contractId}`)}
+              onClick={() => navigate(`/contract-signing/${contractId}?fromVisual=true`)}
               disabled={!allVisited}
               className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white disabled:opacity-40"
             >

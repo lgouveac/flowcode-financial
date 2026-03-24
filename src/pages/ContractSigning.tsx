@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,8 @@ const VISUAL_VIEWER_TYPES = ["open_scope", "closed_scope"];
 export default function ContractSigning() {
   const { contractId } = useParams<{ contractId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromVisual = searchParams.get('fromVisual') === 'true';
   const { user } = useAuth(); // Verificar se usuário está logado
   console.log('ContractSigning component loaded with contractId:', contractId);
   
@@ -161,7 +163,8 @@ export default function ContractSigning() {
       if (
         data.contract_type &&
         VISUAL_VIEWER_TYPES.includes(data.contract_type) &&
-        data.status !== 'completed'
+        data.status !== 'completed' &&
+        !fromVisual
       ) {
         navigate(`/contract-visual/${contractId}`, { replace: true });
         return;
