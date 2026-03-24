@@ -191,8 +191,6 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
       if (unsigning) {
         updatedData.data_de_assinatura = null;
         updatedData.ip = null;
-        updatedData.signature_data = null;
-        updatedData.signed_at = null;
       }
 
       await updateContract(contract.id, updatedData as Partial<Contract>);

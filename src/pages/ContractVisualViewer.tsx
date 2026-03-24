@@ -829,9 +829,8 @@ interface ContractData {
   installments?: number;
   installment_value?: number;
   installment_value_text?: string;
-  installment_details?: string;
   start_date?: string;
-  data_de_assinatura_flowcode?: string;
+  data_assinatura_flowcode?: string;
   status?: string;
   clients?: ClientData | null;
 }
@@ -1068,11 +1067,11 @@ export default function ContractVisualViewer() {
                 <p className="text-sm font-medium text-slate-300">{contract.installment_value_text}</p>
               </div>
             )}
-            {formatSigningDate(contract.data_de_assinatura_flowcode || contract.start_date) && (
+            {formatSigningDate(contract.data_assinatura_flowcode || contract.start_date) && (
               <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4">
                 <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Data</p>
                 <p className="text-sm font-medium text-slate-300">
-                  Rio de Janeiro, {formatSigningDate(contract.data_de_assinatura_flowcode || contract.start_date)}
+                  Rio de Janeiro, {formatSigningDate(contract.data_assinatura_flowcode || contract.start_date)}
                 </p>
               </div>
             )}

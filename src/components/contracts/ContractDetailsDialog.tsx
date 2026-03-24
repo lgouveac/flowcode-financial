@@ -260,7 +260,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
           )}
 
           {/* Informações de Assinatura */}
-          {(currentContract.signed_at || currentContract.data_de_assinatura || currentContract.signature_data || currentContract.flowcode_signature_data) && (
+          {(currentContract.data_de_assinatura || currentContract.data_assinatura_flowcode) && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -271,19 +271,19 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
               <CardContent>
                 <div className="space-y-8">
                   {/* Assinatura do Cliente */}
-                  {(currentContract.signed_at || currentContract.data_de_assinatura || currentContract.signature_data) && (
+                  {currentContract.data_de_assinatura && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b border-blue-200 pb-2">
-                        👤 Assinatura do Cliente
+                        Assinatura do Cliente
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <Label className="text-sm font-medium text-muted-foreground">Data de Assinatura</Label>
                           <p className="text-lg">
-                            {formatDateTime(currentContract.signed_at || currentContract.data_de_assinatura)}
+                            {formatDateTime(currentContract.data_de_assinatura)}
                           </p>
                         </div>
-                        
+
                         {currentContract.ip && (
                           <div>
                             <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
@@ -302,35 +302,26 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                             </div>
                           </div>
                         )}
-                        
-                        {currentContract.signature_data && (
-                          <div className="md:col-span-2">
-                            <Label className="text-sm font-medium text-muted-foreground">Dados da Assinatura</Label>
-                            <div className="mt-2 p-4 border rounded-lg bg-muted/30">
-                              <p className="text-sm font-mono break-all">{currentContract.signature_data}</p>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
 
                   {/* Assinatura da FlowCode */}
-                  {(currentContract.data_de_assinatura_flowcode || currentContract.flowcode_signature_data || currentContract.assinante_flowcode || currentContract.ip_flowcode) && (
+                  {(currentContract.data_assinatura_flowcode || currentContract.assinante_flowcode || currentContract.ip_flowcode) && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-purple-700 border-b border-purple-200 pb-2">
-                        🏢 Assinatura FlowCode
+                        Assinatura FlowCode
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {currentContract.data_de_assinatura_flowcode && (
+                        {currentContract.data_assinatura_flowcode && (
                           <div>
                             <Label className="text-sm font-medium text-muted-foreground">Data de Assinatura FlowCode</Label>
                             <p className="text-lg">
-                              {formatDateTime(currentContract.data_de_assinatura_flowcode)}
+                              {formatDateTime(currentContract.data_assinatura_flowcode)}
                             </p>
                           </div>
                         )}
-                        
+
                         {currentContract.assinante_flowcode && (
                           <div>
                             <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
@@ -340,7 +331,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                             <p className="text-lg">{currentContract.assinante_flowcode}</p>
                           </div>
                         )}
-                        
+
                         {currentContract.ip_flowcode && (
                           <div>
                             <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
@@ -356,15 +347,6 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
                               >
                                 <Copy className="h-4 w-4" />
                               </Button>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {currentContract.flowcode_signature_data && (
-                          <div className="md:col-span-2">
-                            <Label className="text-sm font-medium text-muted-foreground">Dados da Assinatura FlowCode</Label>
-                            <div className="mt-2 p-4 border rounded-lg bg-muted/30">
-                              <p className="text-sm font-mono break-all">{currentContract.flowcode_signature_data}</p>
                             </div>
                           </div>
                         )}

@@ -2,7 +2,6 @@
 export interface Contract {
   id: number;
   client_id?: string;
-  employee_id?: string;
   contract_id?: string;
   scope?: string;
   projeto_relacionado?: string;
@@ -10,29 +9,25 @@ export interface Contract {
   installments?: number;
   installment_value?: number;
   installment_value_text?: string;
-  installment_details?: string; // JSON string com detalhes das parcelas
   start_date?: string;
   end_date?: string;
   status?: "active" | "completed" | "cancelled" | "suspended";
   contract_type?: "open_scope" | "closed_scope" | "NDA";
   contractor_type?: "individual" | "legal_entity";
   data_de_assinatura?: string;
-  signing_date_legacy?: string;
   link_contrato?: string;
   link_contrato_externo?: string;
+  contrato_externo?: string;
   obs?: string;
   Horas?: string;
   texto_contrato?: string;
+  versao_atual?: string;
   // Assinatura Cliente
-  ip?: string; // IP da assinatura do cliente
-  signature_data?: string; // Dados da assinatura do cliente
-  signed_at?: string; // Data da assinatura do cliente (pode usar este ou data_de_assinatura)
-  
+  ip?: string;
   // Assinatura FlowCode
-  ip_flowcode?: string; // IP da assinatura da FlowCode
-  assinante_flowcode?: string; // Nome do assinante FlowCode
-  flowcode_signature_data?: string; // Dados da assinatura da FlowCode
-  data_de_assinatura_flowcode?: string; // Data da assinatura da FlowCode
+  ip_flowcode?: string;
+  assinante_flowcode?: string;
+  data_assinatura_flowcode?: string;
   created_at: string;
   updated_at?: string;
   clients?: {
@@ -52,4 +47,4 @@ export type NewContract = Omit<Contract, 'id' | 'created_at' | 'updated_at'> & {
   scope: string;
 };
 
-export type EditableContractFields = Pick<Contract, 'scope' | 'total_value' | 'installments' | 'installment_value_text' | 'installment_details' | 'start_date' | 'end_date' | 'status' | 'contract_type' | 'contractor_type' | 'data_de_assinatura' | 'link_contrato' | 'link_contrato_externo' | 'obs' | 'Horas'>;
+export type EditableContractFields = Pick<Contract, 'scope' | 'total_value' | 'installments' | 'installment_value_text' | 'start_date' | 'end_date' | 'status' | 'contract_type' | 'contractor_type' | 'data_de_assinatura' | 'link_contrato' | 'link_contrato_externo' | 'obs' | 'Horas'>;
