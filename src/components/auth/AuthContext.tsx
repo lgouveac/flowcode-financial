@@ -107,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               !location.pathname.startsWith('/register-employee') &&
               !location.pathname.startsWith('/thank-you') &&
               !location.pathname.startsWith('/contract-signing') &&
+              !location.pathname.startsWith('/contract-visual') &&
               !location.pathname.startsWith('/projects') &&
               !location.pathname.startsWith('/public-projects') &&
               !location.pathname.startsWith('/project-view') &&
@@ -144,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                       !location.pathname.startsWith('/register-employee') &&
                       !location.pathname.startsWith('/thank-you') &&
                       !location.pathname.startsWith('/contract-signing') &&
+                      !location.pathname.startsWith('/contract-visual') &&
                       !location.pathname.startsWith('/projects') &&
                       !location.pathname.startsWith('/public-projects') &&
                       !location.pathname.startsWith('/project-view') &&
@@ -190,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               !location.pathname.startsWith('/register-employee') &&
               !location.pathname.startsWith('/thank-you') &&
               !location.pathname.startsWith('/contract-signing') &&
+              !location.pathname.startsWith('/contract-visual') &&
               !location.pathname.startsWith('/projects') &&
               !location.pathname.startsWith('/public-projects') &&
               !location.pathname.startsWith('/project-view') &&
@@ -243,6 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     !location.pathname.startsWith('/register-employee') &&
                     !location.pathname.startsWith('/thank-you') &&
                     !location.pathname.startsWith('/contract-signing') &&
+                    !location.pathname.startsWith('/contract-visual') &&
                     !location.pathname.startsWith('/projects') &&
                     !location.pathname.startsWith('/public-projects') &&
                     !location.pathname.startsWith('/project-view') &&
