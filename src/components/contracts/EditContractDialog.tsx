@@ -162,6 +162,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
 
       const updatedData = {
         scope: formData.scope,
+        projeto_relacionado: formData.projeto_relacionado || undefined,
         total_value: totalValue,
         installments: installments,
         installment_value: installmentValue,
@@ -175,9 +176,7 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         link_contrato: formData.link_contrato || undefined,
         obs: formData.obs || undefined,
         Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : undefined,
-        // Adicionar informações detalhadas das parcelas se disponíveis
         installment_details: installmentDetails.length > 0 ? JSON.stringify(installmentDetails) : undefined,
-        // NÃO incluir texto_contrato no update do banco
       };
 
       await updateContract(contract.id, updatedData);
