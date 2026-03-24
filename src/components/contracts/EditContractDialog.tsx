@@ -127,16 +127,18 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         fontFamily: "mono",
       });
 
-      // Carregar parcelas detalhadas se existirem
-      if (contract.installment_details) {
+      // Carregar parcelas detalhadas do installment_value_text (se for JSON)
+      if (contract.installment_value_text) {
         try {
-          const details: InstallmentDetail[] = JSON.parse(contract.installment_details);
-          setInstallmentDetails(details);
-          if (details.length > 0) {
+          const details: InstallmentDetail[] = JSON.parse(contract.installment_value_text);
+          if (Array.isArray(details) && details.length > 0 && details[0].number !== undefined) {
+            setInstallmentDetails(details);
             setShowAdvancedInstallments(true);
+          } else {
+            setInstallmentDetails([]);
           }
-        } catch (error) {
-          console.error("Erro ao parsear installment_details:", error);
+        } catch {
+          // Não é JSON, é texto livre - ok, manter vazio
           setInstallmentDetails([]);
         }
       } else {
@@ -171,7 +173,9 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         total_value: totalValue,
         installments: installments,
         installment_value: installmentValue,
-        installment_value_text: formData.installment_value_text || null,
+        installment_value_text: installmentDetails.length > 0
+          ? JSON.stringify(installmentDetails)
+          : (formData.installment_value_text || null),
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
         status: formData.status,
@@ -181,7 +185,6 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
         link_contrato: formData.link_contrato || null,
         obs: formData.obs || null,
         Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : null,
-        installment_details: installmentDetails.length > 0 ? JSON.stringify(installmentDetails) : null,
       };
 
       // Limpar campos de assinatura ao reverter para não-assinado
