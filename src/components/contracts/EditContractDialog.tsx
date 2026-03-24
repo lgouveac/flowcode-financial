@@ -160,26 +160,39 @@ export function EditContractDialog({ contract, open, onClose }: EditContractDial
       const installments = parseInt(formData.installments) || 1;
       const installmentValue = isNumeric ? totalValueNum / installments : undefined;
 
-      const updatedData = {
+      // Se mudou de assinado para não-assinado, limpar dados de assinatura
+      const wasCompleted = contract.status === 'completed';
+      const isNowNotCompleted = formData.status !== 'completed';
+      const unsigning = wasCompleted && isNowNotCompleted;
+
+      const updatedData: Record<string, unknown> = {
         scope: formData.scope,
-        projeto_relacionado: formData.projeto_relacionado || undefined,
+        projeto_relacionado: formData.projeto_relacionado || null,
         total_value: totalValue,
         installments: installments,
         installment_value: installmentValue,
-        installment_value_text: formData.installment_value_text || undefined,
-        start_date: formData.start_date || undefined,
-        end_date: formData.end_date || undefined,
+        installment_value_text: formData.installment_value_text || null,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
         status: formData.status,
         contract_type: formData.contract_type,
         contractor_type: formData.contractor_type,
-        data_de_assinatura: formData.data_de_assinatura || undefined,
-        link_contrato: formData.link_contrato || undefined,
-        obs: formData.obs || undefined,
-        Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : undefined,
-        installment_details: installmentDetails.length > 0 ? JSON.stringify(installmentDetails) : undefined,
+        data_de_assinatura: formData.data_de_assinatura || null,
+        link_contrato: formData.link_contrato || null,
+        obs: formData.obs || null,
+        Horas: formData.contract_type === "open_scope" && formData.Horas ? formData.Horas : null,
+        installment_details: installmentDetails.length > 0 ? JSON.stringify(installmentDetails) : null,
       };
 
-      await updateContract(contract.id, updatedData);
+      // Limpar campos de assinatura ao reverter para não-assinado
+      if (unsigning) {
+        updatedData.data_de_assinatura = null;
+        updatedData.ip = null;
+        updatedData.signature_data = null;
+        updatedData.signed_at = null;
+      }
+
+      await updateContract(contract.id, updatedData as Partial<Contract>);
 
       // Disparar webhook de edição se configurado
       const webhookUrl = getWebhook('prestacao_servico', 'edicao');

@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { ExternalLink, Copy, Calendar, User, DollarSign, FileText, MapPin, Clock, Signature, Eye } from "lucide-react";
+import { ExternalLink, Copy, Calendar, User, DollarSign, FileText, MapPin, Clock, Signature, Eye, Pencil } from "lucide-react";
 import { Contract } from "@/types/contract";
 import { formatCurrency, formatDate } from "@/utils/formatters";
 import { useToast } from "@/hooks/use-toast";
 import { useContracts } from "@/hooks/useContracts";
+import { EditContractDialog } from "./EditContractDialog";
 
 interface ContractDetailsDialogProps {
   contract: Contract | null;
@@ -48,6 +49,7 @@ const getStatusLabel = (status?: string) => {
 
 export function ContractDetailsDialog({ contract, open, onClose }: ContractDetailsDialogProps) {
   const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const { toast } = useToast();
   const { contracts } = useContracts();
 
@@ -82,6 +84,7 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -98,12 +101,21 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
               <div className="flex justify-between items-start">
                 <CardTitle className="text-lg">Informações Gerais</CardTitle>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditOpen(true)}
+                    className="text-amber-600 hover:bg-amber-50"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
                   {(currentContract.contract_type === 'open_scope' || currentContract.contract_type === 'closed_scope') && currentContract.contract_id && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => window.open(`/contract-visual/${currentContract.contract_id}`, '_blank')}
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                      className="text-blue-600 hover:bg-blue-50"
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Ver Contrato Visual
@@ -434,5 +446,14 @@ export function ContractDetailsDialog({ contract, open, onClose }: ContractDetai
         </div>
       </DialogContent>
     </Dialog>
+
+    {currentContract && (
+      <EditContractDialog
+        contract={currentContract}
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+      />
+    )}
+    </>
   );
 }
