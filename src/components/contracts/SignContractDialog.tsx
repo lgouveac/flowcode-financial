@@ -331,7 +331,7 @@ export function SignContractDialog({ contract, open, onClose }: SignContractDial
               </div>
               <div>
                 <span className="text-muted-foreground">Valor Total:</span>
-                <p className="font-medium">{contract.total_value ? formatCurrency(contract.total_value) : "N/A"}</p>
+                <p className="font-medium">{contract.total_value ? formatCurrency(Number(contract.total_value)) : "N/A"}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Parcelas:</span>

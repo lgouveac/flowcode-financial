@@ -116,8 +116,8 @@ export function NDADialog({ open, onClose }: NDADialogProps) {
 
       if (employeesError) throw employeesError;
 
-      setClients(clientsData || []);
-      setEmployees(employeesData || []);
+      setClients((clientsData || []) as Client[]);
+      setEmployees((employeesData || []) as Employee[]);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({

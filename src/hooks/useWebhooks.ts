@@ -10,9 +10,12 @@ interface WebhookConfig {
   profissionais_criacao: string;
   profissionais_assinatura: string;
   profissionais_edicao: string;
+  documents_criacao: string;
+  documents_assinatura: string;
+  documents_edicao: string;
 }
 
-type ContractType = 'prestacao_servico' | 'nda' | 'profissionais';
+type ContractType = 'prestacao_servico' | 'nda' | 'profissionais' | 'documents';
 type WebhookAction = 'criacao' | 'assinatura' | 'edicao';
 
 export function useWebhooks() {
@@ -25,7 +28,10 @@ export function useWebhooks() {
     nda_edicao: '',
     profissionais_criacao: '',
     profissionais_assinatura: '',
-    profissionais_edicao: ''
+    profissionais_edicao: '',
+    documents_criacao: '',
+    documents_assinatura: '',
+    documents_edicao: ''
   });
 
   // Carregar webhooks do localStorage na inicialização
@@ -39,7 +45,10 @@ export function useWebhooks() {
       nda_edicao: localStorage.getItem('nda_edicao_webhook') || '',
       profissionais_criacao: localStorage.getItem('profissionais_criacao_webhook') || '',
       profissionais_assinatura: localStorage.getItem('profissionais_assinatura_webhook') || '',
-      profissionais_edicao: localStorage.getItem('profissionais_edicao_webhook') || ''
+      profissionais_edicao: localStorage.getItem('profissionais_edicao_webhook') || '',
+      documents_criacao: localStorage.getItem('documents_criacao_webhook') || '',
+      documents_assinatura: localStorage.getItem('documents_assinatura_webhook') || '',
+      documents_edicao: localStorage.getItem('documents_edicao_webhook') || ''
     };
     
     setWebhooks(loadedWebhooks);

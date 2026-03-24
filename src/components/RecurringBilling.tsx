@@ -435,7 +435,7 @@ export const RecurringBilling = () => {
       })
       .map(payment => {
         // Formatar data de vencimento (usa payment_date como fallback para Pagamento_Por_Entrega)
-        const paymentRecord = payment as Record<string, unknown>;
+        const paymentRecord = payment as unknown as Record<string, unknown>;
         const dateToDisplay = (paymentRecord.due_date || (paymentRecord.Pagamento_Por_Entrega ? paymentRecord.payment_date : null)) as string | null;
         const formattedDueDate = dateToDisplay
           ? format(parseISO(dateToDisplay + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })

@@ -98,7 +98,7 @@ export function ContractTable() {
 
 
 
-  const handleCreateContract = async (contractData: Contract) => {
+  const handleCreateContract = async (contractData: Record<string, unknown>) => {
     try {
       // Buscar URL do webhook dinâmico
       const webhookUrl = getWebhook('prestacao_servico', 'criacao');

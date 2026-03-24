@@ -98,7 +98,7 @@ export function NewNDAContractDialog({ open, onClose, onContractCreated }: NewND
         total_value: 0, // NDA não tem valor
         installments: 1,
         installment_value: 0,
-        status: "active",
+        status: "active" as const,
         contract_type: "NDA", // Definir como NDA
         contractor_type: "individual",
         // Assinatura automática da FlowCode na criação
