@@ -40,6 +40,7 @@ import PublicProjects from "./pages/PublicProjects";
 import TestSync from "./pages/TestSync";
 import MeetingMinutes from "./pages/MeetingMinutes";
 import TasksKanban from "./pages/TasksKanban";
+import PublicTaskSubmit from "./pages/PublicTaskSubmit";
 import EnhancedDashboardPreview from "./components/enhanced-dashboard-preview";
 
 const queryClient = new QueryClient({
@@ -71,6 +72,7 @@ const App = () => {
                     <Route path="/contract-visual/:contractId" element={<ContractVisualViewer />} />
                     <Route path="/project-view/:projectId" element={<PublicProjectView />} />
                     <Route path="/public-projects" element={<PublicProjects />} />
+                    <Route path="/submit-task/:token" element={<PublicTaskSubmit />} />
                     <Route path="/test-sync" element={<TestSync />} />
                     <Route path="/auth/login" element={<Login />} />
                     <Route path="/auth/register" element={<Register />} />

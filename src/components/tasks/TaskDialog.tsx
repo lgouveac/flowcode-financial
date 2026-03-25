@@ -12,7 +12,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ProjectTask, TaskStatus, TaskPriority } from "@/types/task";
+import { Bug, ListTodo, Link, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import type { ProjectTask, TaskStatus, TaskPriority, TaskType } from "@/types/task";
 
 interface TaskDialogProps {
   open: boolean;
@@ -211,6 +213,57 @@ export function TaskDialog({
               </Popover>
             </div>
           </div>
+
+          {/* Report info (read-only when submitted by client) */}
+          {task?.task_type && (
+            <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                {task.task_type === "bug" ? (
+                  <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                    <Bug className="h-3 w-3 mr-1" />Bug
+                  </Badge>
+                ) : (
+                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                    <ListTodo className="h-3 w-3 mr-1" />Backlog
+                  </Badge>
+                )}
+                <span className="text-muted-foreground">Reportado por cliente</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {task.reported_by_name && (
+                  <div>
+                    <span className="text-muted-foreground">Nome:</span>{" "}
+                    {task.reported_by_name}
+                  </div>
+                )}
+                {task.reported_by_email && (
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>{" "}
+                    {task.reported_by_email}
+                  </div>
+                )}
+                {task.reported_url && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">URL:</span>{" "}
+                    <a
+                      href={task.reported_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline"
+                    >
+                      {task.reported_url}
+                    </a>
+                  </div>
+                )}
+                {task.reported_view && (
+                  <div>
+                    <span className="text-muted-foreground">Visão:</span>{" "}
+                    {task.reported_view}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center space-x-2">
             <Switch

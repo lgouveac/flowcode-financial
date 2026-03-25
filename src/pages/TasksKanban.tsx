@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
 import { TaskDialog } from "@/components/tasks/TaskDialog";
 import { StatusDialog } from "@/components/tasks/StatusDialog";
@@ -11,18 +10,28 @@ import { useTasks } from "@/hooks/useTasks";
 import { useTaskStatuses } from "@/hooks/useTaskStatuses";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Settings, Loader2, FolderOpen } from "lucide-react";
+import { Plus, Settings, Loader2, FolderOpen, Share2, Users, Hash, ChevronRight, Search, X, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import type { ProjectTask, TaskStatus } from "@/types/task";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface Project {
+interface ProjectOverview {
   id: number;
   name: string;
+  status: string | null;
+  created_at: string;
+  client_name: string;
+  client_id: string;
+  task_count: number;
+  submit_token?: string;
 }
 
 export default function TasksKanban() {
+  const [allProjects, setAllProjects] = useState<ProjectOverview[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectName, setSelectedProjectName] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -30,33 +39,41 @@ export default function TasksKanban() {
   const [selectedStatus, setSelectedStatus] = useState<TaskStatus | null>(null);
   const [taskDetailOpen, setTaskDetailOpen] = useState(false);
   const [initialStatusId, setInitialStatusId] = useState<string | undefined>();
-  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingOverview, setLoadingOverview] = useState(true);
   const { toast } = useToast();
 
   const { tasks, loading: tasksLoading, createTask, updateTask, deleteTask, moveTask, toggleTaskPublic, addComment } = useTasks(selectedProjectId);
   const { statuses, loading: statusesLoading, createStatus, updateStatus, deleteStatus } = useTaskStatuses(selectedProjectId);
 
   useEffect(() => {
-    fetchProjects();
+    fetchOverview();
     fetchEmployees();
   }, []);
 
-  const fetchProjects = async () => {
+  const fetchOverview = async () => {
     try {
-      setLoadingProjects(true);
-      const { data, error } = await supabase
+      setLoadingOverview(true);
+      const { data: projectsData, error: projError } = await supabase
         .from('projetos')
-        .select('id, name')
+        .select('id, name, status, created_at, client_id, submit_token, clients(id, name), project_tasks(id)')
+        .not('client_id', 'is', null)
         .order('name', { ascending: true });
 
-      if (error) throw error;
+      if (projError) throw projError;
 
-      setProjects((data || []) as Project[]);
-      
-      // Selecionar o primeiro projeto automaticamente
-      if (data && data.length > 0 && !selectedProjectId) {
-        setSelectedProjectId(data[0].id);
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const overview: ProjectOverview[] = (projectsData || []).map((p: Record<string, any>) => ({
+        id: p.id,
+        name: p.name || 'Sem nome',
+        status: p.status,
+        created_at: p.created_at,
+        client_name: p.clients?.name || 'Sem cliente',
+        client_id: p.client_id,
+        task_count: p.project_tasks?.length || 0,
+        submit_token: p.submit_token,
+      }));
+
+      setAllProjects(overview);
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast({
@@ -65,8 +82,20 @@ export default function TasksKanban() {
         variant: "destructive",
       });
     } finally {
-      setLoadingProjects(false);
+      setLoadingOverview(false);
     }
+  };
+
+  const handleSelectProject = (projectId: number) => {
+    const proj = allProjects.find(p => p.id === projectId);
+    setSelectedProjectId(projectId);
+    setSelectedProjectName(proj ? `${proj.client_name} — ${proj.name}` : "");
+    setSearchQuery("");
+  };
+
+  const handleBackToList = () => {
+    setSelectedProjectId(undefined);
+    setSelectedProjectName("");
   };
 
   const fetchEmployees = async () => {
@@ -159,7 +188,7 @@ export default function TasksKanban() {
     setTaskDialogOpen(true);
   };
 
-  if (loadingProjects) {
+  if (loadingOverview) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -167,32 +196,63 @@ export default function TasksKanban() {
     );
   }
 
+  const currentProject = allProjects.find(p => p.id === selectedProjectId);
+
   return (
     <div className="container mx-auto space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">Kanban de Atividades</h1>
-          <Select
-            value={selectedProjectId?.toString() || ""}
-            onValueChange={(value) => setSelectedProjectId(parseInt(value))}
-          >
-            <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Selecione um projeto" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((project) => (
-                <SelectItem key={project.id} value={project.id.toString()}>
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4" />
-                    {project.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {selectedProjectId ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={handleBackToList} className="gap-1 -ml-2">
+                <ArrowLeft className="h-4 w-4" />
+                Projetos
+              </Button>
+              <h1 className="text-2xl sm:text-3xl font-bold">{selectedProjectName}</h1>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl sm:text-3xl font-bold">Kanban de Atividades</h1>
+              <div className="relative w-full sm:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+                <Input
+                  placeholder="Buscar cliente ou projeto..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="!pl-10 pr-8"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex gap-2">
+          {currentProject?.submit_token && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const link = `${window.location.origin}/submit-task/${currentProject.submit_token}`;
+                navigator.clipboard.writeText(link);
+                toast({
+                  title: "Link copiado!",
+                  description: "Link de submissão pública copiado para a área de transferência.",
+                });
+              }}
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Link Público</span>
+              <span className="sm:hidden">Link</span>
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -221,12 +281,11 @@ export default function TasksKanban() {
       </div>
 
       {!selectedProjectId ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Selecione um projeto para ver as tarefas</p>
-          </CardContent>
-        </Card>
+        <ProjectsOverviewList
+          projects={allProjects}
+          searchQuery={searchQuery}
+          onSelectProject={(projectId) => handleSelectProject(projectId)}
+        />
       ) : tasksLoading || statusesLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin" />
@@ -325,6 +384,31 @@ export default function TasksKanban() {
                       <strong>Atribuído a:</strong> {selectedTask.assigned_employee.name}
                     </div>
                   )}
+                  {selectedTask.task_type && (
+                    <div>
+                      <strong>Tipo:</strong>{" "}
+                      {selectedTask.task_type === 'bug' ? '🐛 Bug' : '📋 Backlog'}
+                    </div>
+                  )}
+                  {selectedTask.reported_by_name && (
+                    <div>
+                      <strong>Reportado por:</strong> {selectedTask.reported_by_name}
+                      {selectedTask.reported_by_email && ` (${selectedTask.reported_by_email})`}
+                    </div>
+                  )}
+                  {selectedTask.reported_url && (
+                    <div className="col-span-2">
+                      <strong>URL:</strong>{" "}
+                      <a href={selectedTask.reported_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                        {selectedTask.reported_url}
+                      </a>
+                    </div>
+                  )}
+                  {selectedTask.reported_view && (
+                    <div>
+                      <strong>Visão:</strong> {selectedTask.reported_view}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -338,6 +422,123 @@ export default function TasksKanban() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/* ───── Notion-style project listing ───── */
+
+const statusConfig: Record<string, { label: string; className: string }> = {
+  active: { label: "Ativo", className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" },
+  paused: { label: "Pausado", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300" },
+  completed: { label: "Concluído", className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" },
+};
+
+function ProjectsOverviewList({
+  projects,
+  searchQuery,
+  onSelectProject,
+}: {
+  projects: ProjectOverview[];
+  searchQuery: string;
+  onSelectProject: (projectId: number) => void;
+}) {
+  // Deduplicate by name + client_id (merge task counts, keep highest id)
+  const deduped = Object.values(
+    projects.reduce<Record<string, ProjectOverview>>((acc, p) => {
+      const key = `${p.client_id}::${p.name}`;
+      if (!acc[key]) {
+        acc[key] = { ...p };
+      } else {
+        acc[key].task_count += p.task_count;
+        // Keep the project with the highest id (most recent)
+        if (p.id > acc[key].id) {
+          const totalTasks = acc[key].task_count;
+          acc[key] = { ...p, task_count: totalTasks };
+        }
+      }
+      return acc;
+    }, {})
+  );
+
+  // Filter by search query
+  const query = searchQuery.toLowerCase().trim();
+  const filtered = query
+    ? deduped.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.client_name.toLowerCase().includes(query)
+      )
+    : deduped;
+
+  const sorted = filtered.sort(
+    (a, b) => a.client_name.localeCompare(b.client_name) || a.name.localeCompare(b.name)
+  );
+
+  if (sorted.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">
+            {query ? "Nenhum resultado encontrado" : "Nenhum projeto encontrado"}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className="grid grid-cols-[150px_1fr_100px_80px_90px_40px] gap-3 px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/40 border-b">
+        <span>Cliente</span>
+        <span>Projeto</span>
+        <span>Status</span>
+        <span>Tarefas</span>
+        <span>Criado em</span>
+        <span></span>
+      </div>
+
+      {/* Rows */}
+      <div className="divide-y">
+        {sorted.map((project) => {
+          const st = statusConfig[project.status || ''] || { label: project.status || '—', className: "bg-muted text-muted-foreground" };
+
+          return (
+            <button
+              key={project.id}
+              onClick={() => onSelectProject(project.id)}
+              className="w-full grid grid-cols-[150px_1fr_100px_80px_90px_40px] gap-3 items-center px-4 py-3 hover:bg-accent/50 transition-colors text-left group"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm truncate">{project.client_name}</span>
+              </div>
+
+              <div className="flex items-center gap-2 min-w-0">
+                <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium truncate">{project.name}</span>
+              </div>
+
+              <Badge variant="outline" className={`text-[11px] justify-center ${st.className}`}>
+                {st.label}
+              </Badge>
+
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Hash className="h-3.5 w-3.5" />
+                {project.task_count}
+              </div>
+
+              <span className="text-xs text-muted-foreground">
+                {new Date(project.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+              </span>
+
+              <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground transition-colors" />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

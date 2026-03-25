@@ -1,15 +1,19 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  Calendar, 
-  User, 
-  MessageSquare, 
-  Globe, 
+import {
+  Calendar,
+  User,
+  MessageSquare,
+  Globe,
   Copy,
   MoreVertical,
   Edit,
-  Trash2
+  Trash2,
+  Bug,
+  ListTodo,
+  Link,
+  Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -108,9 +112,26 @@ export function TaskCard({
         )}
         
         <div className="flex flex-wrap gap-1 items-center text-xs">
+          {task.task_type && (
+            <Badge
+              variant="outline"
+              className={
+                task.task_type === "bug"
+                  ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                  : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+              }
+            >
+              {task.task_type === "bug" ? (
+                <><Bug className="h-3 w-3 mr-1" />Bug</>
+              ) : (
+                <><ListTodo className="h-3 w-3 mr-1" />Backlog</>
+              )}
+            </Badge>
+          )}
+
           {task.priority && (
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className={priorityColors[task.priority]}
             >
               {task.priority === 'high' ? 'Alta' : task.priority === 'medium' ? 'Média' : 'Baixa'}
@@ -138,6 +159,20 @@ export function TaskCard({
             </div>
           )}
           
+          {task.reported_by_name && (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <User className="h-3 w-3" />
+              <span className="truncate max-w-[80px]">{task.reported_by_name}</span>
+            </div>
+          )}
+
+          {task.reported_view && (
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <Eye className="h-3 w-3" />
+              <span>{task.reported_view}</span>
+            </div>
+          )}
+
           {task.is_public && (
             <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
               <Globe className="h-3 w-3 mr-1" />

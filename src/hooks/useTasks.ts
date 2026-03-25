@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import type { ProjectTask, TaskStatus, TaskComment, NewProjectTask, NewTaskStatus, NewTaskComment } from '@/types/task';
+import type { ProjectTask, TaskStatus, TaskComment, TaskAttachment, NewProjectTask, NewTaskStatus, NewTaskComment, NewTaskAttachment } from '@/types/task';
 
 export const useTasks = (projectId?: number) => {
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
@@ -232,6 +232,74 @@ export const useTasks = (projectId?: number) => {
     }
   };
 
+  const uploadAttachment = async (
+    file: File,
+    taskId: string,
+    commentId?: string
+  ): Promise<TaskAttachment | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${taskId}/${crypto.randomUUID()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('task-attachments')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('task-attachments')
+        .getPublicUrl(fileName);
+
+      const fileType = file.type.startsWith('image/')
+        ? 'image'
+        : file.type.startsWith('video/')
+        ? 'video'
+        : 'file';
+
+      const { data, error } = await supabase
+        .from('task_attachments')
+        .insert({
+          task_id: taskId,
+          comment_id: commentId || null,
+          file_url: urlData.publicUrl,
+          file_type: fileType,
+          file_name: file.name,
+          file_size: file.size,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return data as TaskAttachment;
+    } catch (error) {
+      console.error('Error uploading attachment:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar o arquivo.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const fetchAttachments = async (taskId: string): Promise<TaskAttachment[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('task_attachments')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      return (data || []) as TaskAttachment[];
+    } catch (error) {
+      console.error('Error fetching attachments:', error);
+      return [];
+    }
+  };
+
   return {
     tasks,
     loading,
@@ -241,7 +309,9 @@ export const useTasks = (projectId?: number) => {
     deleteTask,
     moveTask,
     toggleTaskPublic,
-    addComment
+    addComment,
+    uploadAttachment,
+    fetchAttachments,
   };
 };
 
