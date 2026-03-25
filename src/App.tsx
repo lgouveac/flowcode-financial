@@ -41,6 +41,7 @@ import TestSync from "./pages/TestSync";
 import MeetingMinutes from "./pages/MeetingMinutes";
 import TasksKanban from "./pages/TasksKanban";
 import PublicTaskSubmit from "./pages/PublicTaskSubmit";
+import { RoleGate } from "./components/auth/RoleGate";
 import EnhancedDashboardPreview from "./components/enhanced-dashboard-preview";
 
 const queryClient = new QueryClient({
@@ -82,20 +83,23 @@ const App = () => {
                     <Route path="/auth/email-confirmed" element={<EmailConfirmed />} />
                     <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>}>
                       <Route index element={<Overview />} />
-                      <Route path="clients" element={<ClientTable />} />
-                      <Route path="employees" element={<EmployeesPage />} />
-                      <Route path="receivables" element={<RecurringBilling />} />
-                      <Route path="contracts" element={<Contracts />} />
-                      <Route path="emails" element={<Emails />} />
-                      <Route path="payments" element={<PaymentsByClient />} />
-                      <Route path="cashflow" element={<CashFlow showChart={true} />} />
-                      <Route path="estimated-expenses" element={<EstimatedExpenses />} />
-                      <Route path="leads" element={<Leads />} />
-                      <Route path="users" element={<Users />} />
+                      {/* Admin-only routes */}
+                      <Route path="employees" element={<RoleGate allowedRoles={['admin']}><EmployeesPage /></RoleGate>} />
+                      <Route path="emails" element={<RoleGate allowedRoles={['admin']}><Emails /></RoleGate>} />
+                      <Route path="users" element={<RoleGate allowedRoles={['admin']}><Users /></RoleGate>} />
+                      <Route path="dashboard-preview" element={<RoleGate allowedRoles={['admin']}><EnhancedDashboardPreview /></RoleGate>} />
+                      {/* Admin + Financial routes */}
+                      <Route path="clients" element={<RoleGate allowedRoles={['admin', 'financial']}><ClientTable /></RoleGate>} />
+                      <Route path="receivables" element={<RoleGate allowedRoles={['admin', 'financial']}><RecurringBilling /></RoleGate>} />
+                      <Route path="contracts" element={<RoleGate allowedRoles={['admin', 'financial']}><Contracts /></RoleGate>} />
+                      <Route path="payments" element={<RoleGate allowedRoles={['admin', 'financial']}><PaymentsByClient /></RoleGate>} />
+                      <Route path="cashflow" element={<RoleGate allowedRoles={['admin', 'financial']}><CashFlow showChart={true} /></RoleGate>} />
+                      <Route path="estimated-expenses" element={<RoleGate allowedRoles={['admin', 'financial']}><EstimatedExpenses /></RoleGate>} />
+                      <Route path="leads" element={<RoleGate allowedRoles={['admin', 'financial']}><Leads /></RoleGate>} />
+                      {/* Admin + Employee routes */}
                       <Route path="projects" element={<Projects />} />
                       <Route path="tasks" element={<TasksKanban />} />
                       <Route path="meeting-minutes" element={<MeetingMinutes />} />
-                      <Route path="dashboard-preview" element={<EnhancedDashboardPreview />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/auth/login" replace />} />
                   </Routes>

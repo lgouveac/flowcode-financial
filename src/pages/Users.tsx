@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -60,60 +61,35 @@ export default function Users() {
 
   const fetchUsers = async () => {
     try {
-      console.log('Buscando usuários do auth...');
-      
-      // Buscar usuários da tabela auth.users do Supabase com paginação
-      const { data, error } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000 // Buscar até 1000 usuários
-      });
-      
-      console.log('Resultado auth.admin.listUsers:', { data, error });
+      // Fetch all profiles (admin can see all via RLS policy)
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('full_name', { ascending: true });
 
-      if (error) {
-        console.error('Erro ao buscar usuários do auth:', error);
-        // Se não tiver permissão de admin, criar dados de exemplo
-        console.log('Criando usuários de exemplo (sem permissão admin)...');
-        const exampleUsers = [
-          {
-            id: '1',
-            email: 'lucas.carmo@flowcode.cc',
-            full_name: 'Lucas Carmo',
-            created_at: new Date().toISOString(),
-            status: 'active' as const,
-            role: 'admin'
-          },
-          {
-            id: '2', 
-            email: 'usuario@exemplo.com',
-            full_name: 'Usuário Exemplo',
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-            status: 'active' as const,
-            role: 'user'
-          }
-        ];
-        setUsers(exampleUsers);
-        return;
+      if (profileError) throw profileError;
+
+      // Try to get emails from auth admin API
+      let emailMap = new Map<string, string>();
+      try {
+        const { data: authData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (authData?.users) {
+          authData.users.forEach(u => emailMap.set(u.id, u.email || ''));
+        }
+      } catch {
+        // No admin access — emails won't be available
       }
 
-      if (data?.users) {
-        console.log('Usuários encontrados no auth:', data.users.length);
-        
-        const mappedUsers = data.users.map(user => ({
-          id: user.id,
-          email: user.email || '',
-          full_name: user.user_metadata?.full_name || user.user_metadata?.name,
-          created_at: user.created_at,
-          status: user.banned_until ? 'blocked' : 'active' as const,
-          role: user.app_metadata?.role || 'user'
-        }));
+      const mappedUsers: User[] = (profiles || []).map((p: Record<string, unknown>) => ({
+        id: p.id as string,
+        email: emailMap.get(p.id as string) || '',
+        full_name: (p.full_name as string) || undefined,
+        created_at: (p.created_at as string) || new Date().toISOString(),
+        status: 'active' as const,
+        role: (p.role as string) || 'employee',
+      }));
 
-        console.log('Usuários mapeados:', mappedUsers);
-        setUsers(mappedUsers);
-      } else {
-        setUsers([]);
-      }
-      
+      setUsers(mappedUsers);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
       setUsers([]);
@@ -205,6 +181,33 @@ export default function Users() {
       });
     } finally {
       setProcessingUserId(null);
+    }
+  };
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      setUsers(prev =>
+        prev.map(u => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+
+      toast({
+        title: "Role atualizado",
+        description: `Permissão alterada para ${newRole === 'admin' ? 'Administrador' : newRole === 'financial' ? 'Financeiro' : 'Colaborador'}.`,
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar role:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a permissão.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -466,19 +469,40 @@ export default function Users() {
                               <Mail className="h-4 w-4" />
                               {user.email}
                             </span>
-                            {user.role && (
-                              <span className="flex items-center gap-1">
-                                <Shield className="h-4 w-4" />
-                                {user.role}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4">
-                        <div className="text-right text-sm text-muted-foreground">
-                          <p>Cadastrado em:</p>
+                      <div className="flex items-center gap-3">
+                        <Select
+                          value={user.role || 'employee'}
+                          onValueChange={(value) => handleRoleChange(user.id, value)}
+                        >
+                          <SelectTrigger className="w-[140px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">
+                              <span className="flex items-center gap-1.5">
+                                <Shield className="h-3 w-3" />
+                                Administrador
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="financial">
+                              <span className="flex items-center gap-1.5">
+                                <UsersIcon className="h-3 w-3" />
+                                Financeiro
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="employee">
+                              <span className="flex items-center gap-1.5">
+                                <UserCheck className="h-3 w-3" />
+                                Colaborador
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="text-right text-sm text-muted-foreground hidden sm:block">
                           <p>{formatDate(user.created_at)}</p>
                         </div>
                         <Badge className={getStatusColor(user.status)}>

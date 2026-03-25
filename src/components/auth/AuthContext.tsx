@@ -73,7 +73,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return;
           }
           // Use setTimeout to avoid potential deadlocks with Supabase client
-          setTimeout(() => {
+          setTimeout(async () => {
+            // Check if user is approved
+            const { data: approval } = await supabase
+              .from('user_approvals')
+              .select('status')
+              .eq('user_id', newSession.user.id)
+              .single();
+
+            // If there's a pending/rejected approval, block access
+            if (approval && approval.status !== 'approved') {
+              console.log('User not approved yet, signing out');
+              await supabase.auth.signOut();
+              setUser(null);
+              setSession(null);
+              setProfile(null);
+              setLoading(false);
+              toast({
+                title: 'Acesso pendente',
+                description: 'Sua conta está aguardando aprovação do administrador.',
+                variant: 'destructive',
+              });
+              navigate('/auth/login', { replace: true });
+              return;
+            }
+
             // Fetch user profile
             supabase
               .from('profiles')
@@ -316,7 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -337,9 +361,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
+      // Create pending approval record
+      if (signUpData?.user) {
+        await supabase.from('user_approvals').insert({
+          user_id: signUpData.user.id,
+          email,
+          full_name: fullName,
+          status: 'pending',
+        });
+      }
+
       toast({
         title: 'Conta criada com sucesso',
-        description: 'Verifique seu e-mail para confirmar sua conta.',
+        description: 'Aguarde a aprovação do administrador para acessar o sistema.',
       });
       
       setLoading(false);

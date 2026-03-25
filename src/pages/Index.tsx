@@ -30,6 +30,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/components/ThemeProvider";
 import { FlowcodeLogo } from "@/components/ui/logo";
 import { useAuth } from "@/components/auth/AuthContext";
+import { usePermissions, UserRole } from "@/hooks/usePermissions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,28 +40,30 @@ import {
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SimpleChatWidget } from "@/components/ai-chat/SimpleChatWidget";
 
-const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Clientes", href: "/clients", icon: Users },
-  { name: "Funcionários", href: "/employees", icon: UserCheck },
-  { name: "Recebimentos", href: "/receivables", icon: Receipt },
-  { name: "Contratos", href: "/contracts", icon: FileText },
-  { name: "Projetos", href: "/projects", icon: FolderOpen },
-  { name: "Kanban de Atividades", href: "/tasks", icon: Kanban },
-  { name: "Atas de Reunião", href: "/meeting-minutes", icon: ClipboardList },
-  { name: "Pagamentos", href: "/payments", icon: DollarSign },
-  { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp },
-  { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator },
-  { name: "Leads", href: "/leads", icon: Target },
-  { name: "Usuários", href: "/users", icon: Shield },
+const navigation: { name: string; href: string; icon: typeof LayoutDashboard; roles: UserRole[] }[] = [
+  { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: ['admin', 'financial', 'employee'] },
+  { name: "Clientes", href: "/clients", icon: Users, roles: ['admin', 'financial'] },
+  { name: "Funcionários", href: "/employees", icon: UserCheck, roles: ['admin'] },
+  { name: "Recebimentos", href: "/receivables", icon: Receipt, roles: ['admin', 'financial'] },
+  { name: "Contratos", href: "/contracts", icon: FileText, roles: ['admin', 'financial'] },
+  { name: "Projetos", href: "/projects", icon: FolderOpen, roles: ['admin', 'employee'] },
+  { name: "Kanban de Atividades", href: "/tasks", icon: Kanban, roles: ['admin', 'employee'] },
+  { name: "Atas de Reunião", href: "/meeting-minutes", icon: ClipboardList, roles: ['admin', 'employee'] },
+  { name: "Pagamentos", href: "/payments", icon: DollarSign, roles: ['admin', 'financial'] },
+  { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp, roles: ['admin', 'financial'] },
+  { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator, roles: ['admin', 'financial'] },
+  { name: "Leads", href: "/leads", icon: Target, roles: ['admin', 'financial'] },
+  { name: "Usuários", href: "/users", icon: Shield, roles: ['admin'] },
 ];
 
-// Bottom nav items - the most used sections in the financial app
-const bottomNavItems = [
-  { name: "Home", href: "/", icon: LayoutDashboard },
-  { name: "Recebimentos", href: "/receivables", icon: Receipt },
-  { name: "Caixa", href: "/cashflow", icon: TrendingUp },
-  { name: "Clientes", href: "/clients", icon: Users },
+// Bottom nav items - filtered by role at render time
+const allBottomNavItems: { name: string; href: string; icon: typeof LayoutDashboard; roles: UserRole[] }[] = [
+  { name: "Home", href: "/", icon: LayoutDashboard, roles: ['admin', 'financial', 'employee'] },
+  { name: "Projetos", href: "/projects", icon: FolderOpen, roles: ['employee'] },
+  { name: "Tarefas", href: "/tasks", icon: Kanban, roles: ['employee'] },
+  { name: "Recebimentos", href: "/receivables", icon: Receipt, roles: ['admin', 'financial'] },
+  { name: "Caixa", href: "/cashflow", icon: TrendingUp, roles: ['admin', 'financial'] },
+  { name: "Clientes", href: "/clients", icon: Users, roles: ['admin', 'financial'] },
 ];
 
 export default function Index() {
@@ -68,7 +71,11 @@ export default function Index() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
   const { user } = useAuth();
+  const { role } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const filteredNavigation = navigation.filter((item) => item.roles.includes(role));
+  const bottomNavItems = allBottomNavItems.filter((item) => item.roles.includes(role));
   
   // Configuração da API Key do OpenRouter
   const [openAIKey, setOpenAIKey] = useState<string | undefined>(
@@ -118,7 +125,7 @@ export default function Index() {
       {/* Navigation */}
       <nav className="flex-1 mt-6 px-3 overflow-y-auto">
         <div className="space-y-1">
-          {navigation.map((item) => {
+          {filteredNavigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Link
