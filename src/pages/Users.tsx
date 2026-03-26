@@ -70,7 +70,7 @@ export default function Users() {
       if (profileError) throw profileError;
 
       // Try to get emails from auth admin API
-      let emailMap = new Map<string, string>();
+      const emailMap = new Map<string, string>();
       try {
         const { data: authData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
         if (authData?.users) {

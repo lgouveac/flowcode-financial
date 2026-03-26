@@ -253,25 +253,10 @@ export const RecurringBilling = () => {
   const closedScopeBillings = useMemo(() => {
     if (!payments || !Array.isArray(payments)) return [];
 
-    // Criar set de clientes que têm cobrança no escopo aberto
-    const openScopeClients = new Set(
-      billings
-        ?.filter(billing => billing.status !== 'cancelled') // Apenas cobranças ativas do escopo aberto
-        .map(billing => billing.client_id) || []
-    );
-
-    // Filtrar pagamentos de escopo fechado, EXCLUINDO clientes com cobrança do escopo aberto ativa
-    const closedPayments = payments.filter(payment => {
-      // E o cliente NÃO deve ter cobrança do escopo aberto ativa
-      const clientNotInOpenScope = !openScopeClients.has(payment.client_id);
-      
-      return clientNotInOpenScope;
-    });
-
     // Agrupar apenas por cliente
-    const groups: { [key: string]: typeof closedPayments[number][] } = {};
+    const groups: { [key: string]: typeof payments[number][] } = {};
 
-    closedPayments.forEach(payment => {
+    payments.forEach(payment => {
       const groupKey = payment.client_id;
       
       if (!groups[groupKey]) {
@@ -335,13 +320,7 @@ export const RecurringBilling = () => {
       return typeof payment.id === 'string' && !payment.id.startsWith('recurring-');
     }) || [];
 
-    // Filtrar clientes que não têm cobrança recorrente ativa
-    const activeRecurringClients = new Set(
-      billings?.filter(billing => billing.status !== 'cancelled').map(billing => billing.client_id) || []
-    );
-
     return allPayments
-      .filter(payment => !activeRecurringClients.has(payment.client_id))
       .map(payment => {
         // Formatar data de vencimento (usa payment_date como fallback para Pagamento_Por_Entrega)
         const dateToDisplay = payment.due_date || (payment.Pagamento_Por_Entrega ? payment.payment_date : null);
