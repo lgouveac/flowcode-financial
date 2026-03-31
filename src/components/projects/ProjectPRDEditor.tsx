@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -91,7 +92,7 @@ export function ProjectPRDEditor({ projectId, initialPRD, onSave }: ProjectPRDEd
               <Label>Preview</Label>
               <div 
                 className="prose max-w-none border rounded-md p-4 mt-2 bg-muted/50"
-                dangerouslySetInnerHTML={{ __html: prd }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(prd) }}
               />
             </div>
           )}

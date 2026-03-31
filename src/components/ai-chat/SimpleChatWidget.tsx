@@ -24,8 +24,7 @@ export const SimpleChatWidget = () => {
   );
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   
-  // Usar a chave do OpenRouter diretamente
-  const openAIKey = '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';
+  const openAIKey = localStorage.getItem('openai_api_key') || import.meta.env.VITE_OPENAI_API_KEY || '';
   
   const { messages, isLoading, error, sendMessage, clearChat } = useAIChat({
     apiKey: openAIKey,
@@ -48,21 +47,9 @@ export const SimpleChatWidget = () => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    console.log('🔥 handleSendMessage chamado!', {
-      inputMessage: inputMessage.substring(0, 50),
-      isLoading,
-      hasMessage: !!inputMessage.trim()
-    });
-    
-    if (!inputMessage.trim() || isLoading) {
-      console.log('❌ Saindo: sem mensagem ou carregando');
-      return;
-    }
-    
-    console.log('✅ Chamando sendMessage...');
+    if (!inputMessage.trim() || isLoading) return;
     await sendMessage(inputMessage);
     setInputMessage('');
-    console.log('✅ sendMessage concluído');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -233,22 +220,11 @@ export const SimpleChatWidget = () => {
   };
 
   
-  console.log('🎨 SimpleChatWidget renderizado!', {
-    isOpen,
-    messagesCount: messages.length,
-    hasApiKey: !!openAIKey,
-    isLoading,
-    error
-  });
-  
   return (
     <div className="fixed bottom-[5.5rem] right-4 sm:bottom-6 sm:right-6 z-40 lg:z-[9999] safe-area-bottom safe-area-right">
       {/* Always visible button */}
       <Button
-        onClick={() => {
-          console.log('💬 Botão do chat clicado! Abrindo:', !isOpen);
-          setIsOpen(!isOpen);
-        }}
+        onClick={() => setIsOpen(!isOpen)}
         size="icon"
         className="w-14 h-14 rounded-full shadow-lg touch-target"
         style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999 }}

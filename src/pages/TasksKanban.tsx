@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import DOMPurify from "dompurify";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { KanbanBoard } from "@/components/tasks/KanbanBoard";
@@ -353,7 +354,7 @@ export default function TasksKanban() {
                 {selectedTask.description && (
                   <div
                     className="prose max-w-none"
-                    dangerouslySetInnerHTML={{ __html: selectedTask.description }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedTask.description) }}
                   />
                 )}
                 <div className="grid grid-cols-2 gap-4 text-sm">

@@ -22,7 +22,8 @@ import {
   FolderOpen,
   ClipboardList,
   Kanban,
-  MoreHorizontal
+  MoreHorizontal,
+  KeyRound
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +54,7 @@ const navigation: { name: string; href: string; icon: typeof LayoutDashboard; ro
   { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp, roles: ['admin', 'financial'] },
   { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator, roles: ['admin', 'financial'] },
   { name: "Leads", href: "/leads", icon: Target, roles: ['admin', 'financial'] },
+  { name: "Cofre de Acessos", href: "/access-vault", icon: KeyRound, roles: ['admin'] },
   { name: "Usuários", href: "/users", icon: Shield, roles: ['admin'] },
 ];
 
@@ -77,12 +79,10 @@ export default function Index() {
   const filteredNavigation = navigation.filter((item) => item.roles.includes(role));
   const bottomNavItems = allBottomNavItems.filter((item) => item.roles.includes(role));
   
-  // Configuração da API Key do OpenRouter
   const [openAIKey, setOpenAIKey] = useState<string | undefined>(
-    // Primeiro tenta localStorage, depois variável de ambiente, senão usa a sua chave
-    localStorage.getItem('openai_api_key') || 
-    import.meta.env.VITE_OPENROUTER_API_KEY || 
-    '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'
+    localStorage.getItem('openai_api_key') ||
+    import.meta.env.VITE_OPENAI_API_KEY ||
+    undefined
   );
 
   const handleLogout = async () => {

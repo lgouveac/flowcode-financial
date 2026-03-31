@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -582,7 +583,7 @@ export default function ContractSigning() {
                   <CardContent>
                     <div 
                       className="prose prose-lg max-w-none text-muted-foreground whitespace-pre-wrap [&_p]:text-muted-foreground [&_ul]:text-muted-foreground [&_ol]:text-muted-foreground [&_li]:text-muted-foreground [&_strong]:text-foreground [&_b]:text-foreground"
-                      dangerouslySetInnerHTML={{ __html: contract.obs }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(contract.obs) }}
                     />
                   </CardContent>
                 </Card>

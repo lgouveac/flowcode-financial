@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import DOMPurify from "dompurify";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -103,10 +104,12 @@ export function TaskCard({
         {task.description && (
           <div 
             className="text-xs text-muted-foreground mb-2 line-clamp-2"
-            dangerouslySetInnerHTML={{ 
-              __html: task.description.length > 100 
-                ? task.description.substring(0, 100) + '...' 
-                : task.description 
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(
+                task.description.length > 100
+                  ? task.description.substring(0, 100) + '...'
+                  : task.description
+              )
             }}
           />
         )}
