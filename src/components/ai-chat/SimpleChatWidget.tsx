@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import ReactMarkdown from 'react-markdown';
 
 export const SimpleChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -291,7 +292,13 @@ export const SimpleChatWidget = () => {
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-card-foreground'
                   }`}>
-                    {message.content}
+                    {message.role === 'assistant' ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:my-1.5">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      message.content
+                    )}
                   </div>
                 </div>
               ))}
@@ -380,7 +387,13 @@ export const SimpleChatWidget = () => {
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-card-foreground'
                   }`}>
-                    <div className="whitespace-pre-wrap">{message.content}</div>
+                    {message.role === 'assistant' ? (
+                      <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:my-2">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                    ) : (
+                      <div className="whitespace-pre-wrap">{message.content}</div>
+                    )}
                   </div>
                 </div>
               ))}
