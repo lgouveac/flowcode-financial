@@ -1,10 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessVaultEntry, NewAccessVaultEntry } from "@/types/access-vault";
 
 export const useAccessVault = (projectId?: number) => {
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+
   const [entries, setEntries] = useState<AccessVaultEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -23,7 +26,7 @@ export const useAccessVault = (projectId?: number) => {
       const { data, error } = await query;
 
       if (error) {
-        toast({
+        toastRef.current({
           title: "Erro ao carregar acessos",
           description: error.message,
           variant: "destructive",
@@ -37,7 +40,7 @@ export const useAccessVault = (projectId?: number) => {
     } finally {
       setIsLoading(false);
     }
-  }, [projectId, toast]);
+  }, [projectId]);
 
   useEffect(() => {
     fetchEntries();
