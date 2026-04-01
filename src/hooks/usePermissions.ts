@@ -30,6 +30,7 @@ const ROUTE_PERMISSIONS: Record<UserRole, string[]> = {
     '/tasks',
     '/meeting-minutes',
     '/dashboard-preview',
+    '/access-vault',
   ],
   financial: [
     '/',

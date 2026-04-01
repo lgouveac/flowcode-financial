@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_vault: {
+        Row: {
+          id: string
+          service_name: string
+          category: string
+          project_id: number | null
+          url: string | null
+          username: string | null
+          password: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          service_name: string
+          category?: string
+          project_id?: number | null
+          url?: string | null
+          username?: string | null
+          password?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          service_name?: string
+          category?: string
+          project_id?: number | null
+          url?: string | null
+          username?: string | null
+          password?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_vault_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_vault_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atas_calls: {
         Row: {
           client_id: string | null

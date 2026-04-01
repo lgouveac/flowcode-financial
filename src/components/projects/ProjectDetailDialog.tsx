@@ -18,6 +18,8 @@ import { GithubConnectionButton } from "./GithubConnectionButton";
 import { fetchRepositoryStats } from "@/services/githubStats";
 import { ProjectPRDEditor } from "./ProjectPRDEditor";
 import { ProjectAccessTable } from "./ProjectAccessTable";
+import { ProjectCredentialsTable } from "@/components/access-vault/ProjectCredentialsTable";
+import { Separator } from "@/components/ui/separator";
 import { FileText, Shield } from "lucide-react";
 
 interface Employee {
@@ -1444,7 +1446,9 @@ export const ProjectDetailDialog = ({ project, open, onClose, onRefresh }: Proje
           </TabsContent>
 
           {/* Aba Acessos */}
-          <TabsContent value="access" className="space-y-4">
+          <TabsContent value="access" className="space-y-6">
+            <ProjectCredentialsTable projectId={Number(project.id)} />
+            <Separator />
             <ProjectAccessTable projectId={Number(project.id)} />
           </TabsContent>
 

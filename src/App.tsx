@@ -43,6 +43,7 @@ import TasksKanban from "./pages/TasksKanban";
 import PublicTaskSubmit from "./pages/PublicTaskSubmit";
 import { RoleGate } from "./components/auth/RoleGate";
 import EnhancedDashboardPreview from "./components/enhanced-dashboard-preview";
+import AccessVault from "./pages/AccessVault";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,6 +88,7 @@ const App = () => {
                       <Route path="employees" element={<RoleGate allowedRoles={['admin']}><EmployeesPage /></RoleGate>} />
                       <Route path="emails" element={<RoleGate allowedRoles={['admin']}><Emails /></RoleGate>} />
                       <Route path="users" element={<RoleGate allowedRoles={['admin']}><Users /></RoleGate>} />
+                      <Route path="access-vault" element={<RoleGate allowedRoles={['admin']}><AccessVault /></RoleGate>} />
                       <Route path="dashboard-preview" element={<RoleGate allowedRoles={['admin']}><EnhancedDashboardPreview /></RoleGate>} />
                       {/* Admin + Financial routes */}
                       <Route path="clients" element={<RoleGate allowedRoles={['admin', 'financial']}><ClientTable /></RoleGate>} />
