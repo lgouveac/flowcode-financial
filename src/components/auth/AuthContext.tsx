@@ -135,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               !location.pathname.startsWith('/projects') &&
               !location.pathname.startsWith('/public-projects') &&
               !location.pathname.startsWith('/project-view') &&
+              !location.pathname.startsWith('/submit-task') &&
               !location.pathname.startsWith('/test-sync')) {
             navigate('/auth/login');
           }
@@ -173,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                       !location.pathname.startsWith('/projects') &&
                       !location.pathname.startsWith('/public-projects') &&
                       !location.pathname.startsWith('/project-view') &&
+                      !location.pathname.startsWith('/submit-task') &&
                       !location.pathname.startsWith('/test-sync')) {
                     navigate('/auth/login');
                   }
@@ -220,13 +222,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               !location.pathname.startsWith('/projects') &&
               !location.pathname.startsWith('/public-projects') &&
               !location.pathname.startsWith('/project-view') &&
+              !location.pathname.startsWith('/submit-task') &&
               !location.pathname.startsWith('/test-sync')) {
             navigate('/auth/login');
           }
         });
         return;
       }
-      
+
       // Valid session
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
@@ -274,6 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     !location.pathname.startsWith('/projects') &&
                     !location.pathname.startsWith('/public-projects') &&
                     !location.pathname.startsWith('/project-view') &&
+                    !location.pathname.startsWith('/submit-task') &&
                     !location.pathname.startsWith('/test-sync')) {
                   navigate('/auth/login');
                 }
