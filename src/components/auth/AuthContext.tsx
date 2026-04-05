@@ -74,15 +74,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           // Use setTimeout to avoid potential deadlocks with Supabase client
           setTimeout(async () => {
-            // Check if user is approved
-            const { data: approval } = await supabase
+            // Check if user is approved (table may not exist)
+            const { data: approval, error: approvalError } = await supabase
               .from('user_approvals')
               .select('status')
               .eq('user_id', newSession.user.id)
               .single();
 
             // If there's a pending/rejected approval, block access
-            if (approval && approval.status !== 'approved') {
+            // Skip check if table doesn't exist or query fails
+            if (!approvalError && approval && approval.status !== 'approved') {
               console.log('User not approved yet, signing out');
               await supabase.auth.signOut();
               setUser(null);
@@ -365,13 +366,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
-      // Create pending approval record
+      // Create pending approval record (table may not exist)
       if (signUpData?.user) {
         await supabase.from('user_approvals').insert({
           user_id: signUpData.user.id,
           email,
           full_name: fullName,
           status: 'pending',
+        }).then(({ error: insertError }) => {
+          if (insertError) console.warn('user_approvals insert skipped:', insertError.message);
         });
       }
 
