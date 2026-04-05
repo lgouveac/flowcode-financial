@@ -74,29 +74,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           // Use setTimeout to avoid potential deadlocks with Supabase client
           setTimeout(async () => {
-            // Check if user is approved (table may not exist)
-            const { data: approval, error: approvalError } = await supabase
-              .from('user_approvals')
-              .select('status')
-              .eq('user_id', newSession.user.id)
-              .single();
+            // Check if user is approved (table may not exist — skip silently)
+            try {
+              const { data: approval, error: approvalError } = await supabase
+                .from('user_approvals')
+                .select('status')
+                .eq('user_id', newSession.user.id)
+                .single();
 
-            // If there's a pending/rejected approval, block access
-            // Skip check if table doesn't exist or query fails
-            if (!approvalError && approval && approval.status !== 'approved') {
-              console.log('User not approved yet, signing out');
-              await supabase.auth.signOut();
-              setUser(null);
-              setSession(null);
-              setProfile(null);
-              setLoading(false);
-              toast({
-                title: 'Acesso pendente',
-                description: 'Sua conta está aguardando aprovação do administrador.',
-                variant: 'destructive',
-              });
-              navigate('/auth/login', { replace: true });
-              return;
+              if (!approvalError && approval && approval.status !== 'approved') {
+                console.log('User not approved yet, signing out');
+                await supabase.auth.signOut();
+                setUser(null);
+                setSession(null);
+                setProfile(null);
+                setLoading(false);
+                toast({
+                  title: 'Acesso pendente',
+                  description: 'Sua conta está aguardando aprovação do administrador.',
+                  variant: 'destructive',
+                });
+                navigate('/auth/login', { replace: true });
+                return;
+              }
+            } catch (e) {
+              // Table doesn't exist or RLS blocks — skip approval check
+              console.warn('user_approvals check skipped:', e);
             }
 
             // Fetch user profile

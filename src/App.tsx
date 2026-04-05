@@ -44,6 +44,8 @@ import PublicTaskSubmit from "./pages/PublicTaskSubmit";
 import { RoleGate } from "./components/auth/RoleGate";
 import EnhancedDashboardPreview from "./components/enhanced-dashboard-preview";
 import AccessVault from "./pages/AccessVault";
+import ClientDetailPage from "./pages/ClientDetailPage";
+import ProjectDetailPage from "./pages/ProjectDetailPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +94,7 @@ const App = () => {
                       <Route path="dashboard-preview" element={<RoleGate allowedRoles={['admin']}><EnhancedDashboardPreview /></RoleGate>} />
                       {/* Admin + Financial routes */}
                       <Route path="clients" element={<RoleGate allowedRoles={['admin', 'financial']}><ClientTable /></RoleGate>} />
+                      <Route path="clients/:clientId" element={<RoleGate allowedRoles={['admin', 'financial']}><ClientDetailPage /></RoleGate>} />
                       <Route path="receivables" element={<RoleGate allowedRoles={['admin', 'financial']}><RecurringBilling /></RoleGate>} />
                       <Route path="contracts" element={<RoleGate allowedRoles={['admin', 'financial']}><Contracts /></RoleGate>} />
                       <Route path="payments" element={<RoleGate allowedRoles={['admin', 'financial']}><PaymentsByClient /></RoleGate>} />
@@ -100,6 +103,8 @@ const App = () => {
                       <Route path="leads" element={<RoleGate allowedRoles={['admin', 'financial']}><Leads /></RoleGate>} />
                       {/* Admin + Employee routes */}
                       <Route path="projects" element={<Projects />} />
+                      <Route path="projects/:projectId" element={<ProjectDetailPage />} />
+                      <Route path="projects/:projectId/:tab" element={<ProjectDetailPage />} />
                       <Route path="tasks" element={<TasksKanban />} />
                       <Route path="meeting-minutes" element={<MeetingMinutes />} />
                     </Route>

@@ -9,6 +9,9 @@ export interface Project {
   data_inicio_ciclo?: string;
   created_at: string;
   
+  // Public task submission
+  submit_token?: string;
+
   // GitHub fields
   github_repo_full_name?: string;
   github_repo_url?: string;

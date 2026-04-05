@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import type { Project } from "@/types/project";
 import { format, parseISO, eachDayOfInterval, differenceInDays } from "date-fns";
 
 export default function Projects() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
@@ -351,8 +353,7 @@ export default function Projects() {
   }
 
   const handleProjectClick = (project: Project) => {
-    setSelectedProject(project);
-    setProjectDetailOpen(true);
+    navigate(`/projects/${project.id}`);
   };
 
   const handleAddHours = (project: Project) => {
@@ -770,7 +771,12 @@ export default function Projects() {
                   {project.clients && (
                     <div className="flex items-center text-sm">
                       <span className="font-medium text-muted-foreground mr-2">Cliente:</span>
-                      <span>{project.clients.name}</span>
+                      <span
+                        className="text-primary hover:underline cursor-pointer"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/clients/${project.clients!.id}`); }}
+                      >
+                        {project.clients.name}
+                      </span>
                     </div>
                   )}
                   {project.contratos && (

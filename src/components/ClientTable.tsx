@@ -1,5 +1,6 @@
 import { PlusIcon, Search } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -101,9 +102,10 @@ export const ClientTable = () => {
       description: "O novo cliente foi cadastrado com sucesso."
     });
   };
+  const navigate = useNavigate();
+
   const handleClientClick = (client: Client) => {
-    setSelectedClient(client);
-    setShowEditDialog(true);
+    navigate(`/clients/${client.id}`);
   };
   const handleDeleteClient = (client: Client) => {
     setClientToDelete(client);
