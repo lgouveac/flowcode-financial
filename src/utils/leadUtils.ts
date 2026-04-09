@@ -13,8 +13,9 @@ export const calculateAverageClosingTime = (leads: Lead[]): number => {
 
   wonLeads.forEach(lead => {
     // Use manual tempo_fechamento if available
-    if (lead.tempo_fechamento && lead.tempo_fechamento > 0) {
-      validClosingTimes.push(lead.tempo_fechamento);
+    const tempoFechamento = Number(lead.tempo_fechamento);
+    if (tempoFechamento && tempoFechamento > 0 && tempoFechamento < 3650) {
+      validClosingTimes.push(tempoFechamento);
     }
     // Fall back to calculated time if dates are available
     else if (lead.won_at && lead.created_at) {
@@ -36,12 +37,17 @@ export const calculateAverageClosingTime = (leads: Lead[]): number => {
  * Format closing time for display
  */
 export const formatClosingTime = (days: number): string => {
-  if (days === 0) return "N/A";
-  if (days === 1) return "1 dia";
-  if (days < 30) return `${Math.round(days)} dias`;
+  const safeDays = Number(days);
+  if (!safeDays || safeDays <= 0 || !isFinite(safeDays)) return "N/A";
 
-  const months = Math.floor(days / 30);
-  const remainingDays = Math.round(days % 30);
+  // Cap at 3650 days (10 years) - anything above is bad data
+  if (safeDays > 3650) return "N/A";
+
+  if (safeDays === 1) return "1 dia";
+  if (safeDays < 30) return `${Math.round(safeDays)} dias`;
+
+  const months = Math.floor(safeDays / 30);
+  const remainingDays = Math.round(safeDays % 30);
 
   if (months === 1 && remainingDays === 0) return "1 mês";
   if (months === 1) return `1 mês e ${remainingDays} dias`;

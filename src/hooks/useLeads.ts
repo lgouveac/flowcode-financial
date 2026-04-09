@@ -30,7 +30,10 @@ export const useLeads = () => {
         }
 
         console.log(`Found ${data?.length || 0} leads`);
-        setLeads(data || []);
+        setLeads((data || []).map(lead => ({
+          ...lead,
+          tempo_fechamento: lead.tempo_fechamento ? Number(lead.tempo_fechamento) : undefined,
+        })));
       } catch (err) {
         console.error("Catch error:", err);
       } finally {

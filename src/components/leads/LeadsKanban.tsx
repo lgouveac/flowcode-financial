@@ -43,9 +43,12 @@ import { formatDate } from "@/utils/formatters";
 const calculateClosingTime = (startDate: string, endDate: string): string => {
   const start = new Date(startDate);
   const end = new Date(endDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return "N/A";
+
   const diffTime = Math.abs(end.getTime() - start.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+  if (diffDays <= 0 || diffDays > 3650) return "N/A";
   if (diffDays === 1) return "1 dia";
   if (diffDays < 30) return `${diffDays} dias`;
 
