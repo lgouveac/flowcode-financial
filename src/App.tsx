@@ -90,7 +90,7 @@ const App = () => {
                       <Route path="employees" element={<RoleGate allowedRoles={['admin']}><EmployeesPage /></RoleGate>} />
                       <Route path="emails" element={<RoleGate allowedRoles={['admin']}><Emails /></RoleGate>} />
                       <Route path="users" element={<RoleGate allowedRoles={['admin']}><Users /></RoleGate>} />
-                      <Route path="access-vault" element={<RoleGate allowedRoles={['admin']}><AccessVault /></RoleGate>} />
+                      {/* AccessVault is now accessed through project detail page "Acessos" tab */}
                       <Route path="dashboard-preview" element={<RoleGate allowedRoles={['admin']}><EnhancedDashboardPreview /></RoleGate>} />
                       {/* Admin + Financial routes */}
                       <Route path="clients" element={<RoleGate allowedRoles={['admin', 'financial']}><ClientTable /></RoleGate>} />
@@ -105,7 +105,7 @@ const App = () => {
                       <Route path="projects" element={<Projects />} />
                       <Route path="projects/:projectId" element={<ProjectDetailPage />} />
                       <Route path="projects/:projectId/:tab" element={<ProjectDetailPage />} />
-                      <Route path="tasks" element={<TasksKanban />} />
+                      {/* Tasks kanban is now accessed through project detail page "Tarefas" tab */}
                       <Route path="meeting-minutes" element={<MeetingMinutes />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/auth/login" replace />} />

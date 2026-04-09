@@ -21,9 +21,7 @@ import {
   Target,
   FolderOpen,
   ClipboardList,
-  Kanban,
-  MoreHorizontal,
-  KeyRound
+  MoreHorizontal
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,21 +46,18 @@ const navigation: { name: string; href: string; icon: typeof LayoutDashboard; ro
   { name: "Recebimentos", href: "/receivables", icon: Receipt, roles: ['admin', 'financial'] },
   { name: "Contratos", href: "/contracts", icon: FileText, roles: ['admin', 'financial'] },
   { name: "Projetos", href: "/projects", icon: FolderOpen, roles: ['admin', 'employee'] },
-  { name: "Kanban de Atividades", href: "/tasks", icon: Kanban, roles: ['admin', 'employee'] },
   { name: "Atas de Reunião", href: "/meeting-minutes", icon: ClipboardList, roles: ['admin', 'employee'] },
   { name: "Pagamentos", href: "/payments", icon: DollarSign, roles: ['admin', 'financial'] },
   { name: "Fluxo de Caixa", href: "/cashflow", icon: TrendingUp, roles: ['admin', 'financial'] },
   { name: "Despesas Estimadas", href: "/estimated-expenses", icon: Calculator, roles: ['admin', 'financial'] },
   { name: "Leads", href: "/leads", icon: Target, roles: ['admin', 'financial'] },
-  { name: "Cofre de Acessos", href: "/access-vault", icon: KeyRound, roles: ['admin'] },
   { name: "Usuários", href: "/users", icon: Shield, roles: ['admin'] },
 ];
 
 // Bottom nav items - filtered by role at render time
 const allBottomNavItems: { name: string; href: string; icon: typeof LayoutDashboard; roles: UserRole[] }[] = [
   { name: "Home", href: "/", icon: LayoutDashboard, roles: ['admin', 'financial', 'employee'] },
-  { name: "Projetos", href: "/projects", icon: FolderOpen, roles: ['employee'] },
-  { name: "Tarefas", href: "/tasks", icon: Kanban, roles: ['employee'] },
+  { name: "Projetos", href: "/projects", icon: FolderOpen, roles: ['admin', 'employee'] },
   { name: "Recebimentos", href: "/receivables", icon: Receipt, roles: ['admin', 'financial'] },
   { name: "Caixa", href: "/cashflow", icon: TrendingUp, roles: ['admin', 'financial'] },
   { name: "Clientes", href: "/clients", icon: Users, roles: ['admin', 'financial'] },
