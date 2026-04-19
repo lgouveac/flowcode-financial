@@ -6,7 +6,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlusIcon, CheckIcon, Grid, List, Eye } from "lucide-react";
+import { PlusIcon, CheckIcon, Grid, List, Eye, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useContracts } from "@/hooks/useContracts";
 import { formatCurrency } from "@/components/payments/utils/formatUtils";
 import { formatDate } from "@/utils/formatters";
@@ -91,6 +101,7 @@ export function ContractTable() {
   const [newContractOpen, setNewContractOpen] = useState(false);
   const [signingContract, setSigningContract] = useState<Contract | null>(null);
   const [viewingContract, setViewingContract] = useState<Contract | null>(null);
+  const [deletingContract, setDeletingContract] = useState<Contract | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const { toast } = useToast();
   const { getWebhook } = useWebhooks();
@@ -246,6 +257,7 @@ export function ContractTable() {
                     <div className="flex items-center gap-1 border-t pt-2">
                       <Button variant="ghost" size="sm" onClick={() => setViewingContract(contract)} className="h-8 px-2 gap-1"><Eye className="h-4 w-4" /> Ver</Button>
                       <Button variant="ghost" size="sm" onClick={() => setSigningContract(contract)} className="h-8 px-2 gap-1"><CheckIcon className="h-4 w-4" /> Assinar</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setDeletingContract(contract)} className="h-8 px-2 gap-1 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /> Excluir</Button>
                     </div>
                   </Card>
                 ))}
@@ -306,6 +318,7 @@ export function ContractTable() {
                         <div className="flex items-center gap-1 min-w-fit">
                           <Button variant="ghost" size="sm" onClick={() => setViewingContract(contract)} title="Ver Detalhes" className="h-8 px-2 gap-1 flex-shrink-0"><Eye className="h-4 w-4" /> Ver</Button>
                           <Button variant="ghost" size="sm" onClick={() => setSigningContract(contract)} title={contract.status === "completed" ? "Chamar Webhook / Re-assinar" : "Marcar como Assinado"} className="h-8 px-2 gap-1 flex-shrink-0"><CheckIcon className="h-4 w-4" /> Assinar</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setDeletingContract(contract)} title="Excluir contrato" className="h-8 px-2 gap-1 flex-shrink-0 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -407,6 +420,16 @@ export function ContractTable() {
                         >
                           <CheckIcon className="h-4 w-4" /> Assinar
                         </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeletingContract(contract)}
+                          title="Excluir contrato"
+                          className="h-8 px-2 gap-1 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" /> Excluir
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -438,6 +461,32 @@ export function ContractTable() {
           onClose={() => setViewingContract(null)}
         />
       )}
+
+      <AlertDialog open={!!deletingContract} onOpenChange={(open) => !open && setDeletingContract(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contrato?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O contrato
+              {deletingContract?.clients?.name ? ` de "${deletingContract.clients.name}"` : ""} será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (deletingContract) {
+                  await deleteContract(deletingContract.id);
+                  setDeletingContract(null);
+                }
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </>
   );
