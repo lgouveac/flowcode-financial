@@ -64,6 +64,7 @@ interface ClauseMeta {
   borderColor: string;
   summary: string[];
   highlights: ClauseHighlight[];
+  showFullText?: boolean;
 }
 
 interface TemplateData {
@@ -115,6 +116,7 @@ const OPEN_SCOPE_CLAUSES: ClauseMeta[] = [
       { icon: Percent, label: "Juros 1%/mês", description: "Em caso de atraso" },
       { icon: Ban, label: "Suspensão", description: "Após 10 dias de atraso" },
     ],
+    showFullText: true,
   },
   {
     number: 3,
@@ -467,6 +469,7 @@ const CLOSED_SCOPE_CLAUSES: ClauseMeta[] = [
       { icon: Ban, label: "Suspensão", description: "Após 10 dias de atraso" },
       { icon: CreditCard, label: "Proporcional", description: "Paga-se pelo executado" },
     ],
+    showFullText: true,
   },
   {
     number: 3,
@@ -906,17 +909,41 @@ export default function ContractVisualViewer() {
     setExpandedText(false);
   };
 
+  const parseBRNumber = (v: unknown): number | null => {
+    if (v === null || v === undefined || v === "") return null;
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    const cleaned = String(v)
+      .replace(/[R$\s]/g, "")
+      .replace(/\.(?=\d{3}(\D|$))/g, "")
+      .replace(",", ".");
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const formatBRL = (v: unknown): string | null => {
+    const n = parseBRNumber(v);
+    return n === null ? null : n.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+  };
+
+  const formatValueDisplay = (v: unknown): string | null => {
+    if (v === null || v === undefined) return null;
+    const n = parseBRNumber(v);
+    if (n !== null) return `R$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+    const s = String(v).trim();
+    return s === "" ? null : s;
+  };
+
   const interpolateText = (text: string): string => {
     if (!contract) return text;
+    const parsedInstallment = parseBRNumber(contract.installment_value);
+    const installmentInfo =
+      contract.installment_value_text ||
+      (contract.installments && parsedInstallment !== null
+        ? `${contract.installments}x de R$ ${parsedInstallment.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+        : "[Condições de pagamento]");
     return text
       .replace("{{scope}}", contract.scope || "[Escopo do projeto]")
-      .replace(
-        "{{installment_info}}",
-        contract.installment_value_text ||
-          (contract.installments && contract.installment_value
-            ? `${contract.installments}x de R$ ${Number(contract.installment_value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-            : "[Condições de pagamento]")
-      );
+      .replace("{{installment_info}}", installmentInfo);
   };
 
   // ── Loading state ──
@@ -1053,11 +1080,11 @@ export default function ContractVisualViewer() {
                 <p className="text-sm text-slate-300 line-clamp-3">{contract.scope}</p>
               </div>
             )}
-            {contract.total_value && (
+            {formatValueDisplay(contract.total_value) && (
               <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4">
                 <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Valor</p>
                 <p className="text-lg font-semibold text-emerald-400">
-                  R$ {Number(contract.total_value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  {formatValueDisplay(contract.total_value)}
                 </p>
               </div>
             )}
@@ -1203,32 +1230,75 @@ export default function ContractVisualViewer() {
               })}
             </div>
 
-            {/* Full text collapsible */}
-            <Collapsible open={expandedText} onOpenChange={setExpandedText}>
-              <CollapsibleTrigger asChild>
-                <button className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2 w-full">
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${expandedText ? "rotate-180" : ""}`}
-                  />
-                  <span>{expandedText ? "Ocultar" : "Ver"} texto completo da cláusula</span>
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Card className="bg-white/[0.02] border-white/10">
-                    <CardContent className="p-6">
-                      <pre className="text-sm text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
-                        {interpolateText(rawTexts[clause.number] || "")}
-                      </pre>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </CollapsibleContent>
-            </Collapsible>
+            {/* Full text — always visible for key clauses, collapsible otherwise */}
+            {clause.showFullText ? (
+              <div>
+                {/* Structured info cards (scope, value, installments) */}
+                {(contract.scope || formatValueDisplay(contract.total_value) || contract.installment_value_text) && (
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    {contract.scope && (
+                      <div className="col-span-2 rounded-xl bg-white/[0.03] border border-white/10 p-4">
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Escopo</p>
+                        <p className="text-sm text-slate-300 whitespace-pre-wrap">{contract.scope}</p>
+                      </div>
+                    )}
+                    {formatValueDisplay(contract.total_value) && (
+                      <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4">
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Valor</p>
+                        <p className="text-base font-semibold text-emerald-400">
+                          {formatValueDisplay(contract.total_value)}
+                        </p>
+                      </div>
+                    )}
+                    {contract.installment_value_text && (
+                      <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4">
+                        <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Parcelas</p>
+                        <p className="text-sm font-medium text-slate-300 whitespace-pre-wrap">
+                          {contract.installment_value_text}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <p className={`text-xs font-semibold uppercase tracking-wider ${clause.color} mb-2`}>
+                  Texto completo da cláusula
+                </p>
+                <Card className={`bg-white/[0.02] ${clause.borderColor} border`}>
+                  <CardContent className="p-6">
+                    <pre className="text-sm text-slate-200 whitespace-pre-wrap font-sans leading-relaxed">
+                      {interpolateText(rawTexts[clause.number] || "")}
+                    </pre>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Collapsible open={expandedText} onOpenChange={setExpandedText}>
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200 transition-colors mb-2 w-full">
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform duration-200 ${expandedText ? "rotate-180" : ""}`}
+                    />
+                    <span>{expandedText ? "Ocultar" : "Ver"} texto completo da cláusula</span>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Card className="bg-white/[0.02] border-white/10">
+                      <CardContent className="p-6">
+                        <pre className="text-sm text-slate-300 whitespace-pre-wrap font-sans leading-relaxed">
+                          {interpolateText(rawTexts[clause.number] || "")}
+                        </pre>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
           </motion.div>
         </AnimatePresence>
 
